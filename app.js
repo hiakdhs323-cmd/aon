@@ -851,3 +851,4 @@ $("file").onchange=async()=>{
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
 readRoute();
+refreshIdentity();
