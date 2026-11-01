@@ -1305,22 +1305,31 @@ try {
         } else if (match === "pagecount") {
           return String((this.database.data || []).length);
         } else {
-          const externalMatch = p1.trim().match(/^(https?:\/\/[^\s]+)(?:\s+([\s\S]+))?$/i);
+          const externalMatch = p1.trim().match(/^(https?:\/\/[^\s|]+)(?:\|([\s\S]+)|\s+([\s\S]+))?$/i);
           if (externalMatch) {
-            let href = this.getToolDataRestore(externalMatch[1], "slash");
+            let sourceHref = externalMatch[1];
+            let label = externalMatch[2] || externalMatch[3] || sourceHref;
+            if (!externalMatch[2] && !externalMatch[3]) {
+              const playEntry = sourceHref.match(/^(https?:\/\/playentry\.org\/project\/[a-f0-9]{24})([가-힣A-Za-z][가-힣A-Za-z0-9_-]*)$/i);
+              if (playEntry) {
+                sourceHref = playEntry[1];
+                label = playEntry[2];
+              }
+            }
+            let href = this.getToolDataRestore(sourceHref, "slash");
             href = unescapeHtml(href);
             if (/^https?:\/\//i.test(href)) {
               const safeHref = href.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              const label = externalMatch[2] || externalMatch[1];
+              const safeLabel = escapeHtml(label);
               const dataName = this.getToolDataStorage(
                 '<a class="opennamu_link_out" target="_blank" rel="noopener noreferrer" href="' + safeHref + '">',
                 "</a>",
                 matchOriginal
               );
-              return "<" + dataName + ">" + label + "</" + dataName + ">";
+              return "<" + dataName + ">" + safeLabel + "</" + dataName + ">";
             }
           }
-          return "<macro>" + p1 + "</macro>";
+          return `<macro>${p1}</macro>`;
         }
       };
       this.renderData = this.renderData.replace(/\[([^[\]]+)\]/g, manageMacroSingle);
