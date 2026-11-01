@@ -222,3 +222,42 @@ body{background:var(--wiki-canvas);color:#202633}
 .editor-counter{padding:5px 2px 3px;text-align:right;color:#8994a5;font-size:11px}
 #editor-content{border-radius:0 0 7px 7px}
 #editor-content:focus{outline-offset:-1px}
+
+
+/* Footnote hover cards */
+.wiki-content a.wiki-footnote-trigger{position:relative;display:inline-block;cursor:help;text-decoration:underline dotted;text-underline-offset:2px}
+.wiki-content .wiki-footnote-tooltip{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 9px);
+  z-index:100;
+  display:block;
+  width:max-content;
+  max-width:min(340px,calc(100vw - 42px));
+  padding:9px 12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;
+  background:#202735;
+  color:#fff;
+  box-shadow:0 8px 24px rgba(13,24,43,.24);
+  font-size:12px;
+  font-weight:400;
+  line-height:1.65;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+  transform:translate(-50%,4px);
+  transition:opacity .13s ease,transform .13s ease,visibility .13s;
+}
+.wiki-content .wiki-footnote-tooltip.visible{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0);
+}
+.wiki-content .wiki-footnote-trigger.tooltip-open{z-index:101}
+@media(max-width:560px){
+  .wiki-content .wiki-footnote-tooltip{max-width:calc(100vw - 32px);font-size:12px}
+}
