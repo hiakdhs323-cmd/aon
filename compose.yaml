@@ -1,0 +1,12 @@
+services:
+  aonwiki:
+    build: .
+    container_name: aonwiki
+    restart: unless-stopped
+    ports:
+      - "${AONWIKI_PORT:-3000}:3000"
+    volumes:
+      - aonwiki-data:/app/data
+
+volumes:
+  aonwiki-data:
