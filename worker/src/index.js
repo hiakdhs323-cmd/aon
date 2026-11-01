@@ -16,7 +16,7 @@ function getCors(request, env) {
   };
 }
 function cleanTitle(value) {
-  return String(value || "").trim().replace(/[\\/#?<>\[\]{}|]/g, "").slice(0, 120);
+  return String(value || "").replace(/[\\u0000-\\u001f\\u007f]/g, "").trim().slice(0, 120);
 }
 
 function namuFileHash(data) {
@@ -114,6 +114,11 @@ export default {
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
+        if (!(columns.results || []).some(column => column.name === "summary")) {
+          await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+        }
         const result = await env.DB.prepare("SELECT id, title, editor, created_at, summary FROM revisions WHERE title = ? ORDER BY id DESC LIMIT 50").bind(title).all();
         return response({ revisions: result.results || [] }, 200, cors);
       }
