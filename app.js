@@ -196,6 +196,133 @@ function renderContent(source,target=$("article"),options={}){
  }
  return state
 }
+
+let namuDatabaseCache = { expires: 0, records: [] };
+async function getNamuDatabase(source, docTitle) {
+  if (Date.now() > namuDatabaseCache.expires) {
+    const [pageData, fileData] = await Promise.all([
+      api("/api/pages"),
+      api("/api/files").catch(() => ({ files: [] }))
+    ]);
+    const records = (pageData.pages || []).map(page => ({ title: page.title, data: "" }));
+    (fileData.files || []).forEach(file => records.push({ title: "file:" + file.filename, data: "" }));
+    namuDatabaseCache = { expires: Date.now() + 30000, records };
+  }
+  const records = namuDatabaseCache.records.map(item => ({ ...item }));
+  const current = records.find(item => item.title === docTitle);
+  if (current) current.data = source;
+  else records.push({ title: docTitle, data: source });
+  const includeNames = [...String(source).matchAll(/\[include\(\s*([^,\])]+)/gi)]
+    .map(match => match[1].trim())
+    .filter(Boolean);
+  for (const name of [...new Set(includeNames)]) {
+    if (records.some(item => item.title === name && item.data)) continue;
+    try {
+      const result = await api("/api/page?title=" + encodeURIComponent(name));
+      if (result.page) {
+        const found = records.find(item => item.title === name);
+        if (found) found.data = result.page.content || "";
+        else records.push({ title: name, data: result.page.content || "" });
+      }
+    } catch {}
+  }
+  return { data: records };
+}
+function safeWikiStyle(raw) {
+  const allowed = new Set(["color","background","background-color","font-size","font-weight","font-style","text-align","text-decoration","width","max-width","min-width","height","max-height","margin","margin-left","margin-right","padding","border","border-color","border-width","border-style","border-radius","float","display","vertical-align","white-space","list-style-type"]);
+  const output = [];
+  String(raw || "").split(";").forEach(entry => {
+    const at = entry.indexOf(":");
+    if (at < 1) return;
+    const key = entry.slice(0, at).trim().toLowerCase();
+    const value = entry.slice(at + 1).trim();
+    if (!allowed.has(key) || !value || /url\s*\(|expression|javascript|@import|[<>]/i.test(value)) return;
+    output.push(key + ":" + value);
+  });
+  return output.join(";");
+}
+function sanitizeNamuOutput(root, docTitle) {
+  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT H1 H2 H3 H4 H5 H6 HR I IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
+  const allowedAttrs = new Set(("alt class colspan height href id lang open rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
+  [...root.querySelectorAll("*")].forEach(node => {
+    const tag = node.tagName;
+    if (["SCRIPT","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)) {
+      node.remove();
+      return;
+    }
+    if (!allowedTags.has(tag)) {
+      node.replaceWith(...node.childNodes);
+      return;
+    }
+    [...node.attributes].forEach(attr => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith("on") || !allowedAttrs.has(name)) {
+        node.removeAttribute(attr.name);
+        return;
+      }
+      if (name === "style") {
+        const style = safeWikiStyle(attr.value);
+        if (style) node.setAttribute("style", style);
+        else node.removeAttribute("style");
+      }
+      if ((name === "href" || name === "src" || name === "poster") && /^\s*(javascript|data|vbscript):/i.test(attr.value)) {
+        node.removeAttribute(attr.name);
+      }
+    });
+    if (tag === "A") {
+      const href = node.getAttribute("href") || "";
+      if (href.startsWith("/w/")) {
+        const path = href.slice(3).split("#");
+        let page = path[0], anchor = path[1] || "";
+        try { page = decodeURIComponent(page); anchor = decodeURIComponent(anchor); } catch {}
+        node.setAttribute("href", routeFor(page, anchor));
+        node.addEventListener("click", event => { event.preventDefault(); navigateInternal(page + (anchor ? "#" + anchor : "")); });
+      } else if (/^https?:\/\//i.test(href)) {
+        node.setAttribute("target", "_blank");
+        node.setAttribute("rel", "noopener noreferrer");
+      } else if (href.startsWith("/image/") || href.startsWith("/media/")) {
+        node.setAttribute("href", apiBase() + href);
+      }
+    }
+    if (tag === "IMG") {
+      const src = node.getAttribute("src") || "";
+      if (src.startsWith("/image/") || src.startsWith("/media/")) node.setAttribute("src", apiBase() + src);
+      node.setAttribute("loading", "lazy");
+      node.setAttribute("decoding", "async");
+      node.addEventListener("error", () => {
+        const label = document.createElement("span");
+        label.className = "broken-image";
+        label.textContent = "[이미지를 불러오지 못했습니다]";
+        node.replaceWith(label);
+      }, { once: true });
+    }
+  });
+}
+async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
+  if (!window.NamuMarkBundle || !window.NamuMarkBundle.NamuMark) {
+    renderContent(source, target);
+    return;
+  }
+  try {
+    const database = await getNamuDatabase(source, docTitle);
+    const parser = new window.NamuMarkBundle.NamuMark(
+      String(source || ""),
+      { docName: docTitle, useTocSet: "default" },
+      database
+    );
+    const result = parser.parse();
+    const holder = document.createElement("div");
+    holder.innerHTML = result[0] || "";
+    sanitizeNamuOutput(holder, docTitle);
+    target.replaceChildren(...holder.childNodes);
+    target.classList.add("namumark-rendered");
+  } catch (error) {
+    console.error("NamuMark parse failed", error);
+    target.classList.remove("namumark-rendered");
+    renderContent(source, target);
+  }
+}
+
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
@@ -205,7 +332,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   currentContent=data.page.content||"";$("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
-  $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";renderContent(currentContent);
+  $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";await renderNamuMarkup(currentContent, $("article"), title);
   if(anchor)requestAnimationFrame(()=>scrollToAnchor(anchor))
  }catch(error){$("message").textContent=error.message;$("article").replaceChildren()}
 }
