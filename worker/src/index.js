@@ -87,7 +87,10 @@ async function currentUser(request, env) {
   const tokenHash = await sha256(auth.slice(7));
   const now = new Date().toISOString();
   const user = await env.DB.prepare("SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
-  if (user) return { ...user, role: "user", isAdmin: false };
+  if (user) {
+    const isAonAccount = String(user.username || "").normalize("NFC").trim() === "아온";
+    return { ...user, role: "user", isAdmin: isAonAccount };
+  }
   if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   return null;
 }
@@ -140,7 +143,8 @@ export default {
         return response({ authenticated: Boolean(user), username: user?.username || null, role: user?.role || "anonymous", isAdmin: Boolean(user?.isAdmin) }, 200, cors);
       }
       if (url.pathname === "/api/admin/token/rotate" && request.method === "POST") {
-        if (!(await isAdminRequest(request, env))) return response({ error: "관리자 권한이 필요합니다." }, 403, cors);
+        const adminUser = await currentUser(request, env);
+        if (!adminUser || !adminUser.isAdmin) return response({ error: "관리자 권한이 필요합니다." }, 403, cors);
         const token = makeAdminToken();
         await ensureAdminTokenTable(env);
         await env.DB.prepare("INSERT INTO admin_tokens (id, token_hash, updated_at) VALUES ('primary', ?, ?) ON CONFLICT(id) DO UPDATE SET token_hash = excluded.token_hash, updated_at = excluded.updated_at")
@@ -194,6 +198,46 @@ export default {
       }
       if (url.pathname === "/api/health" && request.method === "GET") {
         return response({ ok: true, service: "AonWiki API" }, 200, cors);
+      }
+      if (url.pathname === "/api/account/password" && request.method === "POST") {
+        const authorization = request.headers.get("Authorization") || "";
+        if (!authorization.startsWith("Bearer ")) return response({ error: "로그인이 필요합니다." }, 401, cors);
+        const sessionTokenHash = await sha256(authorization.slice(7));
+        const now = new Date().toISOString();
+        const user = await env.DB.prepare(
+          "SELECT users.id, users.username, users.salt, users.password_hash FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
+        ).bind(sessionTokenHash, now).first();
+        if (!user) return response({ error: "일반 계정으로 로그인한 뒤 비밀번호를 변경하세요." }, 401, cors);
+
+        const body = await request.json();
+        const currentPassword = String(body.currentPassword || "");
+        const newPassword = String(body.newPassword || "");
+        if (newPassword.length < 8 || newPassword.length > 200) {
+          return response({ error: "새 비밀번호는 8~200자로 설정하세요." }, 400, cors);
+        }
+        const currentHash = await passwordHash(currentPassword, user.salt);
+        if (!constantTimeEqual(currentHash, user.password_hash)) {
+          return response({ error: "현재 비밀번호가 올바르지 않습니다." }, 403, cors);
+        }
+        if (constantTimeEqual(await passwordHash(newPassword, user.salt), user.password_hash)) {
+          return response({ error: "현재와 다른 비밀번호를 입력하세요." }, 400, cors);
+        }
+
+        const newSalt = crypto.randomUUID();
+        const newHash = await passwordHash(newPassword, newSalt);
+        await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ? WHERE id = ?")
+          .bind(newSalt, newHash, user.id).run();
+        await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
+
+        const token = [...crypto.getRandomValues(new Uint8Array(32))]
+          .map(byte => byte.toString(16).padStart(2, "0")).join("");
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
+          .bind(await sha256(token), user.id, expires).run();
+        return response({
+          ok: true, token, username: user.username, expires_at: expires,
+          message: "비밀번호가 변경되었습니다. 다른 기기의 로그인은 모두 해제되었습니다."
+        }, 200, cors);
       }
       if (url.pathname === "/api/register" && request.method === "POST") {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
