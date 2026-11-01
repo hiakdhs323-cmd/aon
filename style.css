@@ -214,3 +214,11 @@ body{background:var(--wiki-canvas);color:#202633}
  .editor-field>textarea{min-height:240px}
  .editor-actions{padding:13px 14px}
 }
+
+
+.editor-markup-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:8px 9px;border:1px solid #d4ddeb;border-top:0;background:#f8faff}
+.editor-markup-toolbar button{min-height:28px;padding:3px 9px;border:1px solid transparent;border-radius:5px;background:transparent;color:#435675;font-size:12px}
+.editor-markup-toolbar button:hover{border-color:#d4deed;background:#fff;color:#214f9f}
+.editor-counter{padding:5px 2px 3px;text-align:right;color:#8994a5;font-size:11px}
+#editor-content{border-radius:0 0 7px 7px}
+#editor-content:focus{outline-offset:-1px}
