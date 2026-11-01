@@ -43,6 +43,20 @@
       </section>
       <footer class="site-footer">AonWiki · 문서 내용은 이용자가 작성합니다.</footer>
     </section>
+    <section id="editor-view" class="editor-view" hidden>
+      <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="editor-breadcrumb">새 문서 작성</span></div>
+      <section class="editor-card">
+        <div class="editor-page-heading"><div><p class="editor-kicker">AONWIKI EDITOR</p><h1 id="editor-heading">새 문서 작성</h1></div><button id="editor-help-toggle" class="button" type="button">문법 도움말</button></div>
+        <form id="editor-form">
+          <div id="editor-title-wrap" class="editor-field"><label for="editor-title">문서 제목</label><input id="editor-title" maxlength="120" placeholder="문서 제목을 입력하세요." autocomplete="off"></div>
+          <div class="editor-field"><label for="editor-content">문서 내용</label><div class="editor-tabs"><button id="editor-tab-write" class="active" type="button">편집</button><button id="editor-tab-preview" type="button">미리보기</button><span>나무마크</span></div><textarea id="editor-content" spellcheck="false" placeholder="문서 내용을 입력하세요."></textarea><article id="editor-preview" class="wiki-content editor-preview" hidden></article></div>
+          <div class="editor-field"><label for="editor-summary">편집 요약 <span class="optional-label">(선택)</span></label><input id="editor-summary" maxlength="200" placeholder="수정한 내용을 간단히 적어 주세요."></div>
+          <div id="editor-help" class="editor-help" hidden><h2>나무마크 문법 도움말</h2><p><code>== 문단 ==</code> 문단 제목 · <code>[[문서]]</code> 문서 링크 · <code>[[파일:이름.png]]</code> 이미지</p><p><code>'''굵게'''</code> 굵게 · <code>''기울임''</code> 기울임 · <code>~~취소선~~</code> 취소선 · <code>[* 각주]</code> 각주</p><p><code>|| 표 || 표 ||</code> 표 · <code>* 목록</code> 목록 · <code>[목차]</code> 목차 · <code>{{{코드}}}</code> 코드 블록</p></div>
+          <p id="editor-status" class="editor-status" role="status"></p>
+          <div class="editor-actions"><button id="editor-cancel" class="button" type="button">취소</button><button id="editor-save" class="button button-primary" type="submit">저장</button></div>
+        </form>
+      </section>
+    </section>
   </main>
 </div>
 <dialog id="dialog">
