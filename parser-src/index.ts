@@ -2697,7 +2697,7 @@ try {
     }
 
     const handlerFootnote = (match: string, p1: string) => {
-      const findRegex = new RegExp('<footnote_title id="' + p1 + '">((?:(?!<footnote_title|</footnote_title>).)*)</footnote_title>');
+      const findRegex = new RegExp('<footnote_title id="' + p1 + '_title">((?:(?!<footnote_title|</footnote_title>).)*)</footnote_title>');
       let findData = this.renderData.match(findRegex);
       let findDataNew!: string;
       if (findData) {
