@@ -153,7 +153,7 @@ export default {
       return response({ error: "요청한 경로를 찾을 수 없습니다." }, 404, cors);
     } catch (error) {
       console.error("AonWiki API error", error);
-      return response({ error: "서버 내부 오류입니다. Cloudflare Worker 로그를 확인하세요." }, 500, cors);
+      return response({ error: "서버 내부 오류", detail: String(error?.message || error).slice(0, 300) }, 500, cors);
     }
   }
 };
