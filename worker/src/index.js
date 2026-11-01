@@ -363,6 +363,13 @@ export default {
         const result = await env.DB.prepare("SELECT id, title, editor, created_at, summary FROM revisions WHERE title = ? ORDER BY id DESC LIMIT 50").bind(title).all();
         return response({ revisions: result.results || [] }, 200, cors);
       }
+      if (url.pathname === "/api/revision" && request.method === "GET") {
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 버전 ID가 아닙니다." }, 400, cors);
+        const revision = await env.DB.prepare("SELECT id, title, content, editor, created_at, summary FROM revisions WHERE id = ?").bind(id).first();
+        if (!revision) return response({ error: "문서 버전을 찾을 수 없습니다." }, 404, cors);
+        return response({ revision }, 200, cors);
+      }
       if (url.pathname === "/api/page" && request.method === "PUT") {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "문서를 편집하려면 로그인하세요." }, 401, cors);
