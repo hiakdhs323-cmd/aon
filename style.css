@@ -508,3 +508,71 @@ html[data-theme="dark"] .wiki-content .wiki-toc a:hover {
 html[data-theme="dark"] .wiki-content .opennamu_TOC_fold .opennamu_TOC {
   border-top-color: #344154 !important;
 }
+
+
+/* Dark mode: announcements, notices, home panels, navigation and footer */
+html[data-theme="dark"] .home-notice,
+html[data-theme="dark"] .notice,
+html[data-theme="dark"] .home-search-hint,
+html[data-theme="dark"] .home-help,
+html[data-theme="dark"] .home-section,
+html[data-theme="dark"] .editor-help,
+html[data-theme="dark"] .wiki-content blockquote,
+html[data-theme="dark"] .wiki-content pre,
+html[data-theme="dark"] .wiki-content code {
+  background: #202c3d !important;
+  color: #dce6f5 !important;
+  border-color: #46566e !important;
+}
+html[data-theme="dark"] .home-notice {
+  border-left-color: #8ab4f8 !important;
+}
+html[data-theme="dark"] .home-kicker,
+html[data-theme="dark"] .home-heading p:last-child,
+html[data-theme="dark"] .home-section .section-heading span,
+html[data-theme="dark"] .loading,
+html[data-theme="dark"] .empty-list,
+html[data-theme="dark"] .home-help,
+html[data-theme="dark"] .article-footer,
+html[data-theme="dark"] .site-footer,
+html[data-theme="dark"] .nav-caption,
+html[data-theme="dark"] .nav-heading,
+html[data-theme="dark"] .optional-label,
+html[data-theme="dark"] .editor-kicker {
+  color: #b4c1d3 !important;
+}
+html[data-theme="dark"] .home-section .section-heading,
+html[data-theme="dark"] .article-footer,
+html[data-theme="dark"] .site-footer,
+html[data-theme="dark"] .editor-actions {
+  border-color: #344154 !important;
+}
+html[data-theme="dark"] .nav-item {
+  color: #c4d5ef !important;
+}
+html[data-theme="dark"] .nav-item:hover,
+html[data-theme="dark"] .nav-item.active {
+  background: #263449 !important;
+  color: #e6efff !important;
+}
+html[data-theme="dark"] .title-button,
+html[data-theme="dark"] .editor-tabs button.active,
+html[data-theme="dark"] .editor-help code {
+  background: #263449 !important;
+  color: #dce8ff !important;
+  border-color: #46566e !important;
+}
+html[data-theme="dark"] .live-notice-info span {
+  color: #c4d0e0 !important;
+}
+html[data-theme="dark"] .live-notice-close:hover {
+  background: #344154 !important;
+  color: #ffffff !important;
+}
+html[data-theme="dark"] .dialog-status,
+html[data-theme="dark"] .editor-status {
+  color: #ffaaaa !important;
+}
+html[data-theme="dark"] .wiki-image figcaption {
+  color: #b4c1d3 !important;
+}
