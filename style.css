@@ -438,3 +438,40 @@ html[data-theme="dark"] .mk-include-target,html[data-theme="dark"] .mk-directive
 html[data-theme="dark"] .mk-color{color:#ffacd0}
 html[data-theme="dark"] .mk-size{color:#8be4d0}
 html[data-theme="dark"] .mk-command{color:#8bdce8}
+
+
+/* Dark mode: make every listing row consistent and readable */
+html[data-theme="dark"] .page-row,
+html[data-theme="dark"] .recent-change-row,
+html[data-theme="dark"] .backlink-row,
+html[data-theme="dark"] .category-index-row {
+  background: transparent !important;
+  color: #e6edf7;
+  border-color: #344154 !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] .page-row a,
+html[data-theme="dark"] .recent-change-row > a,
+html[data-theme="dark"] .backlink-row > a,
+html[data-theme="dark"] .category-index-row > a {
+  color: #a9c7ff !important;
+}
+html[data-theme="dark"] .page-row time,
+html[data-theme="dark"] .recent-change-row > span,
+html[data-theme="dark"] .backlink-row > span,
+html[data-theme="dark"] .category-index-row > span {
+  color: #b4c1d3 !important;
+}
+html[data-theme="dark"] .recent-change-list,
+html[data-theme="dark"] .backlink-list,
+html[data-theme="dark"] .category-index-list,
+html[data-theme="dark"] .page-list {
+  background: transparent !important;
+  border-color: #344154 !important;
+}
+html[data-theme="dark"] .page-row:hover,
+html[data-theme="dark"] .recent-change-row:hover,
+html[data-theme="dark"] .backlink-row:hover,
+html[data-theme="dark"] .category-index-row:hover {
+  background: #202c3d !important;
+}
