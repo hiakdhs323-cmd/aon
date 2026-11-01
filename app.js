@@ -457,6 +457,31 @@ function sanitizeNamuOutput(root, docTitle) {
     }
   });
 }
+function enhanceFootnoteHover(root) {
+  root.querySelectorAll('a[id*="rfn_"][title]').forEach(link => {
+    const note = (link.getAttribute("title") || "").trim();
+    if (!note || link.querySelector(".wiki-footnote-tooltip")) return;
+    link.classList.add("wiki-footnote-trigger");
+    const tooltipId = "wiki-footnote-tip-" + Math.random().toString(36).slice(2);
+    link.setAttribute("aria-label", "각주 " + link.textContent.trim() + ": " + note);
+    link.setAttribute("aria-describedby", tooltipId);
+    const tooltip = document.createElement("span");
+    tooltip.className = "wiki-footnote-tooltip";
+    tooltip.id = tooltipId;
+    tooltip.setAttribute("role", "tooltip");
+    tooltip.textContent = note;
+    link.append(tooltip);
+    link.removeAttribute("title");
+    const show = () => { tooltip.classList.add("visible"); link.classList.add("tooltip-open"); };
+    const hide = () => { tooltip.classList.remove("visible"); link.classList.remove("tooltip-open"); };
+    link.addEventListener("mouseenter", show);
+    link.addEventListener("mouseleave", hide);
+    link.addEventListener("focus", show);
+    link.addEventListener("blur", hide);
+    link.addEventListener("keydown", event => { if (event.key === "Escape") hide(); });
+  });
+}
+
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
   if (!window.NamuMarkBundle || !window.NamuMarkBundle.NamuMark) {
     renderContent(source, target);
@@ -475,6 +500,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     sanitizeNamuOutput(holder, docTitle);
     target.replaceChildren(...holder.childNodes);
     target.classList.add("namumark-rendered");
+    enhanceFootnoteHover(target);
     if (window.katex) {
       target.querySelectorAll('span[id*="opennamu_math_"]').forEach(element => {
         try {
