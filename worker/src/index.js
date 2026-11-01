@@ -105,6 +105,18 @@ export default {
         }
         return response({ pages: result.results || [] }, 200, cors);
       }
+      if (url.pathname === "/api/category" && request.method === "GET") {
+        const name = String(url.searchParams.get("name") || "").trim().slice(0, 160);
+        if (!name) return response({ error: "분류 이름을 입력하세요." }, 400, cors);
+        const patterns = [
+          "%[[분류:" + name + "]]%",
+          "%[[분류:" + name + "|%",
+          "%[[category:" + name + "]]%",
+          "%[[category:" + name + "|%"
+        ];
+        const result = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE content LIKE ? OR content LIKE ? OR content LIKE ? OR content LIKE ? ORDER BY updated_at DESC LIMIT 500").bind(...patterns).all();
+        return response({ name, pages: result.results || [] }, 200, cors);
+      }
       if (url.pathname === "/api/page" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
