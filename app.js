@@ -60,7 +60,7 @@ function createImage(parent,fileSpec,state,markdownAlt=""){
  if(params.caption)addText(figure,"figcaption",params.caption);
  parent.append(figure);
  const fail=()=>{const broken=document.createElement("span");broken.className="broken-image";broken.textContent="[이미지 파일을 찾을 수 없음: "+filename+"]";figure.replaceWith(broken)};
- if(/^https?:\/\//i.test(filename)||filename.startsWith("/"))img.src=filename;
+ if(/^https?:\/\//i.test(filename)||filename.startsWith("/"))img.src=filename;else if(/^[a-f0-9-]{36}$/i.test(filename))img.src=apiBase()+"/media/"+filename;
  else api("/api/file?name="+encodeURIComponent(filename)).then(d=>{if(d.image&&d.image.url)img.src=d.image.url;else fail()}).catch(fail);
  img.addEventListener("error",fail);
 }
