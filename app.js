@@ -139,11 +139,27 @@ $("search").addEventListener("submit", async event => {
     const pages = data.pages || [];
     if (pages.length) {
       if (pages.length === 1) await loadPage(pages[0].title);
-      else showDialog("검색 결과", pages.map(p => ({ id: "result-" + p.title, label: p.title, value: "" })), async () => {
-        const first = pages[0];
-        $("dialog").close();
-        await loadPage(first.title);
-      }, "첫 번째 결과 열기");
+      else {
+        const body = $("dialog-body");
+        body.replaceChildren();
+        for (const page of pages) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = page.title;
+          button.style.display = "block";
+          button.style.margin = "8px 0";
+          button.addEventListener("click", async () => {
+            $("dialog").close();
+            await loadPage(page.title);
+          });
+          body.append(button);
+        }
+        $("dialog-title").textContent = "검색 결과";
+        $("dialog-status").textContent = "";
+        $("save").textContent = "닫기";
+        $("save").onclick = () => $("dialog").close();
+        $("dialog").showModal();
+      }
     } else $("message").textContent = "검색 결과가 없습니다.";
   } catch (error) {
     $("message").textContent = error.message;
