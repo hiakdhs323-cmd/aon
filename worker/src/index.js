@@ -114,7 +114,7 @@ export default {
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
-        const result = await env.DB.prepare("SELECT id, title, editor, created_at FROM revisions WHERE title = ? ORDER BY id DESC LIMIT 50").bind(title).all();
+        const result = await env.DB.prepare("SELECT id, title, editor, created_at, summary FROM revisions WHERE title = ? ORDER BY id DESC LIMIT 50").bind(title).all();
         return response({ revisions: result.results || [] }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
@@ -155,7 +155,7 @@ export default {
         const now = new Date().toISOString();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at) VALUES (?, ?, ?, ?, ?)").bind(key, file.type, encoded, String(file.name || "image").slice(0, 120), now).run();
-        return response({ ok: true, key, url: new URL("/media/" + key, url.origin).href }, 201, cors);
+        return response({ ok: true, key, filename: String(file.name || "image").slice(0, 120), url: new URL("/media/" + key, url.origin).href }, 201, cors);
       }
       if (url.pathname === "/api/file" && request.method === "GET") {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
