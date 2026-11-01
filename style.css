@@ -261,3 +261,11 @@ body{background:var(--wiki-canvas);color:#202633}
 @media(max-width:560px){
   .wiki-content .wiki-footnote-tooltip{max-width:calc(100vw - 32px);font-size:12px}
 }
+
+/* Category index and enhanced wiki navigation */
+.category-index-list{border-top:1px solid #eaecf0;margin-top:14px}
+.category-index-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;border-bottom:1px solid #eaecf0}
+.category-index-row a{font-weight:600}
+.category-index-row span{flex:0 0 auto;color:#72777d;font-size:12px}
+.category-index-intro{color:#54595d;margin:8px 0 16px}
+@media(max-width:850px){.category-index-row{padding:9px 5px}}
