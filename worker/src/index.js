@@ -267,7 +267,10 @@ export default {
         const base = requestedName.slice(0, dot), extension = requestedName.slice(dot);
         let storedFilename = requestedName;
         let suffix = 2;
-        while (await env.DB.prepare("SELECT id FROM images WHERE filename = ? COLLATE NOCASE").bind(storedFilename).first()) {
+        while (
+          await env.DB.prepare("SELECT id FROM images WHERE filename = ? COLLATE NOCASE").bind(storedFilename).first() ||
+          await env.DB.prepare("SELECT image_id FROM image_aliases WHERE alias = ? COLLATE NOCASE").bind(storedFilename).first()
+        ) {
           storedFilename = base + " (" + suffix++ + ")" + extension;
         }
         const now = new Date().toISOString();
@@ -303,7 +306,8 @@ export default {
         if (!user.isAdmin && image.owner !== user.username) return response({ error: "본인이 올린 파일만 이름을 변경할 수 있습니다." }, 403, cors);
         const newFilename = cleanImageName(body.filename, image.content_type);
         const collision = await env.DB.prepare("SELECT id FROM images WHERE filename = ? COLLATE NOCASE AND id <> ?").bind(newFilename, id).first();
-        if (collision) return response({ error: "이미 사용 중인 파일 이름입니다." }, 409, cors);
+        const aliasCollision = await env.DB.prepare("SELECT image_id FROM image_aliases WHERE alias = ? COLLATE NOCASE AND image_id <> ?").bind(newFilename, id).first();
+        if (collision || aliasCollision) return response({ error: "이미 사용 중이거나 이전 이름으로 예약된 파일 이름입니다." }, 409, cors);
         if (newFilename !== image.filename) {
           await env.DB.prepare("INSERT INTO image_aliases (alias, image_id, created_at) VALUES (?, ?, ?) ON CONFLICT(alias) DO NOTHING")
             .bind(image.filename, id, new Date().toISOString()).run();
