@@ -290,3 +290,26 @@ body{background:var(--wiki-canvas);color:#202633}
 .live-notice-close{width:28px;height:28px;flex:0 0 28px;border:0;background:transparent;color:#54595d;font-size:21px;line-height:1}
 .live-notice-close:hover{background:#eaecf0}
 @media(max-width:600px){.live-notice-host{top:112px;right:10px;width:calc(100vw - 20px)}.live-notice{gap:7px;padding:9px}.live-notice .button{padding:0 8px;font-size:12px}}
+
+
+/* Responsive wiki tables and infoboxes */
+.wiki-content .table_safe{
+  box-sizing:border-box;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.wiki-content .table_safe>table{max-width:100%;border-collapse:collapse}
+.wiki-content .table_safe td,.wiki-content .table_safe th{overflow-wrap:anywhere;word-break:normal}
+.editor-field-help{margin:6px 25px 0;color:#68758a;font-size:12px;line-height:1.5}
+@media(max-width:850px){
+  .wiki-content .table_safe[style*="float:right"],
+  .wiki-content .table_safe[style*="float: right"]{
+    float:none!important;clear:both!important;width:100%!important;max-width:100%!important;margin:12px 0 18px!important;
+  }
+  .wiki-content .table_safe>table{width:100%;max-width:100%;table-layout:auto}
+}
+@media(max-width:560px){.editor-field-help{margin-left:18px;margin-right:18px}}
