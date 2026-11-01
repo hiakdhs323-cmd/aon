@@ -412,7 +412,7 @@ $("editor-tab-preview").onclick = () => {
   $("editor-preview").hidden = false;
   $("editor-tab-preview").classList.add("active");
   $("editor-tab-write").classList.remove("active");
-  renderContent($("editor-content").value, $("editor-preview"));
+  renderNamuMarkup($("editor-content").value, $("editor-preview"), editorIsNew ? $("editor-title").value.trim() : editorOriginalTitle);
 };
 $("editor-content").addEventListener("keydown", event => {
   if (event.key === "Tab") {
