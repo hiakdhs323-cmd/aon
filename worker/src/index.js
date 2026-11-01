@@ -116,13 +116,17 @@ export default {
       }
       if (url.pathname === "/api/home" && request.method === "GET") {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, updated_at TEXT NOT NULL, editor TEXT NOT NULL DEFAULT '')").run();
-        const result = await env.DB.prepare("SELECT key, value FROM wiki_settings WHERE key IN ('home_title','home_tagline','home_notice','home_content')").all();
+        const result = await env.DB.prepare("SELECT key, value FROM wiki_settings WHERE key IN ('home_title','home_tagline','home_notice','home_content','home_search_hint','home_list_title','home_bottom_title','home_bottom_text')").all();
         const settings = Object.fromEntries((result.results || []).map(row => [row.key, row.value]));
         return response({ settings: {
           title: settings.home_title || "AonWiki",
           tagline: settings.home_tagline || "함께 만드는 지식 백과사전",
           notice: settings.home_notice || "",
-          content: settings.home_content || ""
+          content: settings.home_content || "",
+          searchHint: settings.home_search_hint || "검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.",
+          listTitle: settings.home_list_title || "최근 수정된 문서",
+          bottomTitle: settings.home_bottom_title || "문서가 없나요?",
+          bottomText: settings.home_bottom_text || "로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다."
         } }, 200, cors);
       }
       if (url.pathname === "/api/home" && request.method === "PUT") {
@@ -133,7 +137,11 @@ export default {
           home_title: String(body.title || "AonWiki").trim().slice(0, 80),
           home_tagline: String(body.tagline || "").trim().slice(0, 200),
           home_notice: String(body.notice || "").trim().slice(0, 2000),
-          home_content: String(body.content || "").slice(0, 200000)
+          home_content: String(body.content || "").slice(0, 200000),
+          home_search_hint: String(body.searchHint || "").trim().slice(0, 300),
+          home_list_title: String(body.listTitle || "").trim().slice(0, 80),
+          home_bottom_title: String(body.bottomTitle || "").trim().slice(0, 80),
+          home_bottom_text: String(body.bottomText || "").trim().slice(0, 500)
         };
         const now = new Date().toISOString();
         for (const [key, value] of Object.entries(settings)) {
