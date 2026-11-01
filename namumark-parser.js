@@ -75,6 +75,104 @@ var NamuMarkBundle = (() => {
     "useFontSize",
     "useMonaco"
   ];
+  function splitSafeExpression(input, operator) {
+    const parts = [];
+    let quote = "";
+    let depth = 0;
+    let start = 0;
+    for (let i = 0; i <= input.length - operator.length; i++) {
+      const char = input[i];
+      if (quote) {
+        if (char === quote && input[i - 1] !== "\\") quote = "";
+        continue;
+      }
+      if (char === "'" || char === '"') {
+        quote = char;
+        continue;
+      }
+      if (char === "(") {
+        depth++;
+        continue;
+      }
+      if (char === ")") {
+        depth--;
+        continue;
+      }
+      if (depth === 0 && input.slice(i, i + operator.length) === operator) {
+        parts.push(input.slice(start, i).trim());
+        start = i + operator.length;
+        i += operator.length - 1;
+      }
+    }
+    if (!parts.length) return [input.trim()];
+    parts.push(input.slice(start).trim());
+    return parts;
+  }
+  function evaluateSafeNamuIf(expression, pageName) {
+    const source = String(expression || "").trim();
+    if (!source || source.length > 500) return false;
+    const stripOuter = (input) => {
+      let value = input.trim();
+      while (value.startsWith("(") && value.endsWith(")")) {
+        let depth = 0, quote = "", closesAtEnd = false;
+        for (let i = 0; i < value.length; i++) {
+          const ch = value[i];
+          if (quote) {
+            if (ch === quote && value[i - 1] !== "\\") quote = "";
+            continue;
+          }
+          if (ch === "'" || ch === '"') {
+            quote = ch;
+            continue;
+          }
+          if (ch === "(") depth++;
+          if (ch === ")") depth--;
+          if (depth === 0) {
+            closesAtEnd = i === value.length - 1;
+            break;
+          }
+        }
+        if (!closesAtEnd) break;
+        value = value.slice(1, -1).trim();
+      }
+      return value;
+    };
+    const valueOf = (raw) => {
+      const value = stripOuter(raw);
+      if (/^(docName|title|pagename)$/i.test(value)) return pageName;
+      if (/^true$/i.test(value)) return true;
+      if (/^false$/i.test(value)) return false;
+      if (/^null$/i.test(value)) return null;
+      if (/^-?\d+(?:\.\d+)?$/.test(value)) return Number(value);
+      const stringMatch = value.match(/^(['"])([\s\S]*)\1$/);
+      if (stringMatch) return stringMatch[2];
+      return void 0;
+    };
+    const evaluate = (raw, depth = 0) => {
+      if (depth > 16) return false;
+      const value = stripOuter(raw);
+      const ors = splitSafeExpression(value, "||");
+      if (ors.length > 1) return ors.some((part) => evaluate(part, depth + 1));
+      const ands = splitSafeExpression(value, "&&");
+      if (ands.length > 1) return ands.every((part) => evaluate(part, depth + 1));
+      if (value.startsWith("!") && !value.startsWith("!=")) return !evaluate(value.slice(1), depth + 1);
+      const comparison = value.match(/^([\s\S]+?)\s*(===|!==|==|!=|>=|<=|>|<)\s*([\s\S]+)$/);
+      if (comparison) {
+        const left = valueOf(comparison[1]), right = valueOf(comparison[3]), op = comparison[2];
+        if (left === void 0 || right === void 0) return false;
+        if (op === "===" || op === "==") return left === right;
+        if (op === "!==" || op === "!=") return left !== right;
+        if (typeof left !== "number" || typeof right !== "number") return false;
+        if (op === ">") return left > right;
+        if (op === "<") return left < right;
+        if (op === ">=") return left >= right;
+        return left <= right;
+      }
+      const literal = valueOf(value);
+      return literal === true || literal === 1 || typeof literal === "string" && literal.length > 0;
+    };
+    return evaluate(source);
+  }
   var NamuMark = class _NamuMark {
     constructor(wikiText, config, database, doType = "exter") {
       __publicField(this, "renderData", "");
@@ -191,6 +289,7 @@ var NamuMarkBundle = (() => {
       config.useTocSet = "default";
       this.config = config;
       this.database = database;
+      this.docName = String(config.docName || "");
     }
     getToolPxAddCheck(data) {
       if (data.match(/^[0-9]+$/)) return data + "px";
@@ -495,6 +594,23 @@ var NamuMarkBundle = (() => {
           interCount += 1;
           dataName = this.getToolDataStorage('<div style="' + wikiDataStyleData + '">', "</div>", middleDataOrg);
           wikiCount += 1;
+        } else if (middleName === "#!style") {
+          const styleData = this.getToolDataRevert(middleData.replace(/^#!style(?:[ \t]*\n)/i, "")).replace(/^\n|\n$/g, "");
+          dataName = this.getToolDataStorage("<style>" + styleData, "</style>", middleDataOrg);
+        } else if (middleName === "#!latex") {
+          const latexData = this.getToolDataRevert(middleData.replace(/^#!latex(?:[ \t]*\n)/i, "")).replace(/^\n|\n$/g, "");
+          dataName = this.getToolDataStorage('<div class="namu-latex-block">' + escapeHtml(latexData), "</div>", middleDataOrg);
+        } else if (middleName === "#!if") {
+          const ifMatch = middleData.match(/^#!if[ \t]+([^\n]+)\n/i);
+          const expression = ifMatch ? this.getToolDataRevert(ifMatch[1]).trim() : "";
+          const body = this.getToolDataRevert(middleData.replace(/^#!if[^\n]*\n/i, "")).replace(/^\n|\n$/g, "");
+          if (evaluateSafeNamuIf(expression, this.docName)) {
+            const interName = "inter_data_" + interCount;
+            interData[interName] = body;
+            middleDataPass = "<" + interName + ">";
+            interCount += 1;
+          }
+          dataName = this.getToolDataStorage("", "", middleDataOrg);
         } else if (middleName === "#!html") {
           let htmlData = middleData.replace(/^#!html( |\n)/g, "");
           if (middleSlash) {
@@ -1079,6 +1195,8 @@ try {
             matchOriginal
           );
           return "<" + dataName + "></" + dataName + ">";
+        } else if (["\uBAA9\uCC28", "tableofcontents", "toc"].includes(nameData) && String(match[1] || "").trim().toLowerCase() === "hide") {
+          return "<toc_need_part_hide>";
         } else if (nameData === "toc") {
           return "<toc_no_auto>";
         } else if (nameData === "ruby") {
@@ -1842,18 +1960,12 @@ try {
         let data = p1;
         let dataSub = data.replace(/<([^<>]*)>/g, "");
         data = data.replace(/<([^<>]*)>/g, handlerTocFilter);
-        const headingRegex = /<h([1-6])>/;
-        const headingData = headingRegex.exec(this.renderData);
-        if (headingData) {
-          const headingLevel = headingData[1];
-          this.renderData = this.renderData.replace(headingRegex, `<h${headingLevel} id="${dataSub}">`);
-        }
         return data;
       };
       if (this.dataToc !== "") {
         this.renderData += "</div>";
         const tocSearchRegex = /<toc_data>((?:(?!<toc_data>|<\/toc_data>).)*)<\/toc_data>/;
-        let tocDataOn = 0;
+        const tocDataOn = /<toc_need_part(?:_hide)?>/.test(this.renderData) ? 1 : 0;
         const tocData = this.renderData.match(tocSearchRegex) || [];
         let tocDataNew = tocData ? tocData[1] : "";
         this.dataToc = tocDataNew;
@@ -1861,16 +1973,16 @@ try {
         const useTocSet = this.config.useTocSet;
         this.renderData = this.renderData.replace(new RegExp(tocSearchRegex), "");
         if (useTocSet === "off") {
-          this.renderData = this.renderData.replace(/<toc_need_part>/g, "");
+          this.renderData = this.renderData.replace(/<toc_need_part(?:_hide)?>/g, "");
         } else {
-          if (this.renderData.match(tocSearchRegex)) {
-            tocDataOn = 1;
-          }
-          const tmpRegex = /<toc_need_part>/;
           for (let i = 0; i < 20; i++) {
-            this.renderData = this.renderData.replace(tmpRegex, this.dataToc);
+            this.renderData = this.renderData.replace(
+              /<toc_need_part_hide>/,
+              '<details class="opennamu_TOC_fold"><summary>\uBAA9\uCC28</summary>' + this.dataToc + "</details>"
+            );
+            this.renderData = this.renderData.replace(/<toc_need_part>/, this.dataToc);
           }
-          this.renderData = this.renderData.replace(/<toc_need_part>/g, "");
+          this.renderData = this.renderData.replace(/<toc_need_part(?:_hide)?>/g, "");
         }
         if (this.docSet["docType"] !== "view" || this.renderData.match(/<toc_no_auto>/) || useTocSet === "half_off" || useTocSet === "off" || tocDataOn === 1) {
           this.renderData = this.renderData.replace(/<toc_no_auto>/g, "");
@@ -1878,7 +1990,7 @@ try {
           this.renderData = this.renderData.replace(/(?<in><h[1-6] id="[^"]*">)/, `<br>${this.dataToc}$<in>`);
         }
       } else {
-        this.renderData = this.renderData.replace(/<toc_need_part>/g, "");
+        this.renderData = this.renderData.replace(/<toc_need_part(?:_hide)?>/g, "");
         this.renderData = this.renderData.replace(/<toc_no_auto>/g, "");
       }
       const handlerFootnote = (match, p1) => {
