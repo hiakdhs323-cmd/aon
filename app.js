@@ -6,13 +6,65 @@ let currentTitle="",currentContent="",loggedInName=sessionStorage.getItem(NAME_S
 const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){return "#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
+let isWikiAdmin=false;
+let currentRole="anonymous";
+async function refreshIdentity(){
+ try{
+  const me=await api("/api/me");
+  isWikiAdmin=Boolean(me.isAdmin);
+  currentRole=me.role||"anonymous";
+  loggedInName=me.authenticated?(me.username||""):"";
+  if(loggedInName)sessionStorage.setItem(NAME_SETTING,loggedInName);
+  else sessionStorage.removeItem(NAME_SETTING);
+ }catch{
+  isWikiAdmin=false;
+  currentRole="anonymous";
+  loggedInName="";
+ }
+ $("login").textContent=loggedInName?"로그아웃 · "+loggedInName:"로그인";
+ const roleLabel=$("role-label");
+ roleLabel.hidden=!loggedInName;
+ roleLabel.textContent=isWikiAdmin?"위키 관리자":"회원";
+ roleLabel.classList.toggle("admin",isWikiAdmin);
+ $("home-admin-tools").hidden=!isWikiAdmin;
+ $("file-manager").hidden=!loggedInName;
+ $("delete-page").hidden=!isWikiAdmin||!currentTitle;
+}
+
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
-function showHome(push=true){if(push)history.pushState(null,"", "#/");currentTitle="";currentContent="";$("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("new").classList.remove("active");loadHome()}
+function showHome(push=true){
+ if(push)history.pushState(null,"","#/");
+ currentTitle="";currentContent="";
+ $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
+ document.body.classList.remove("editor-active");
+ $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;
+ $("new").classList.remove("active");loadHome()
+}
 async function loadHome(){
  const list=$("page-list");list.replaceChildren();$("page-count").textContent="";
- try{const data=await api("/api/pages");const pages=(data.pages||[]).filter(p=>p.title!=="대문");$("page-count").textContent=pages.length+"개 문서";
+ try{
+  const [data,homeData]=await Promise.all([
+   api("/api/pages"),
+   api("/api/home").catch(()=>({settings:{}}))
+  ]);
+  const settings=homeData.settings||{};
+  $("home-title").textContent=settings.title||"AonWiki";
+  $("home-tagline").textContent=settings.tagline||"함께 만드는 지식 백과사전";
+  const notice=$("home-notice");notice.textContent=settings.notice||"";notice.hidden=!settings.notice;
+  const content=settings.content||"";
+  if(content)await renderNamuMarkup(content,$("home-content"),"대문");
+  else $("home-content").replaceChildren();
+  $("home-admin-tools").hidden=!isWikiAdmin;
+  const pages=(data.pages||[]).filter(p=>p.title!=="대문");
+  $("page-count").textContent=pages.length+"개 문서";
   if(!pages.length){addText(list,"p","아직 등록된 문서가 없습니다. 로그인 후 첫 문서를 만들어 보세요.").className="empty-list";return}
-  pages.forEach(page=>{const row=document.createElement("div");row.className="page-row";const a=document.createElement("a");a.href=routeFor(page.title);a.textContent=page.title;a.onclick=e=>{e.preventDefault();openPage(page.title)};const time=document.createElement("time");time.textContent=page.updated_at?new Date(page.updated_at).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}):"";row.append(a,time);list.append(row)});
+  pages.forEach(page=>{
+   const row=document.createElement("div");row.className="page-row";
+   const a=document.createElement("a");a.href=routeFor(page.title);a.textContent=page.title;
+   a.onclick=e=>{e.preventDefault();openPage(page.title)};
+   const time=document.createElement("time");time.textContent=page.updated_at?new Date(page.updated_at).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}):"";
+   row.append(a,time);list.append(row)
+  });
  }catch(error){addText(list,"p",error.message).className="empty-list"}
 }
 function openPage(title,anchor=""){title=String(title||"").trim();if(!title||title==="대문"){showHome(true);return}history.pushState(null,"",routeFor(title,anchor));loadPage(title,false,anchor)}
@@ -482,7 +534,7 @@ async function renderCategoryPage(name) {
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
- currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;
+ currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
  $("heading-edit").hidden=false;
@@ -491,7 +543,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    const name=title.replace(/^(?:category|분류):/i,"");
    $("message").textContent="";
    await renderCategoryPage(name);
-   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("heading-edit").hidden=true;
+   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;
    return;
   }
   const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
