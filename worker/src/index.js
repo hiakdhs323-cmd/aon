@@ -16,7 +16,7 @@ function getCors(request, env) {
   };
 }
 function cleanTitle(value) {
-  return String(value || "").replace(/[\\u0000-\\u001f\\u007f]/g, "").trim().slice(0, 120);
+  return String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
 }
 
 function namuFileHash(data) {
