@@ -813,6 +813,7 @@ async function openFileManager(){
      const newName=$("rename-file-name").value.trim();
      if(!newName)throw Error("파일 이름을 입력하세요.");
      await api("/api/file",{method:"PATCH",body:JSON.stringify({id:file.id,filename:newName})});
+     namuDatabaseCache.expires=0;
      $("dialog").close();await openFileManager()
     },"변경");
    };
@@ -852,6 +853,7 @@ $("file").onchange=async()=>{
  showDialog("이미지 업로드",[{id:"upload-filename",label:"파일 이름",value:defaultName}],async()=>{
   const form=new FormData();form.append("file",file);form.append("filename",$("upload-filename").value.trim());
   const data=await api("/api/upload",{method:"POST",body:form});
+  namuDatabaseCache.expires=0;
   const markup="[[파일:"+data.filename+"|width=500]]";
   if(!$("editor-view").hidden){
    const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.focus();
