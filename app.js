@@ -958,6 +958,7 @@ function editPage(title = currentTitle, content = currentContent) {
   $("editor-status").textContent = "";
   $("editor-preview").replaceChildren();
   $("editor-preview").hidden = true;
+  $("editor-code-wrap").hidden = false;
   $("editor-content").hidden = false;
   $("editor-tab-write").classList.add("active");
   $("editor-tab-preview").classList.remove("active");
@@ -975,12 +976,14 @@ $("editor-help-toggle").onclick = () => {
   $("editor-help").hidden = !$("editor-help").hidden;
 };
 $("editor-tab-write").onclick = () => {
+  $("editor-code-wrap").hidden = false;
   $("editor-content").hidden = false;
   $("editor-preview").hidden = true;
   $("editor-tab-write").classList.add("active");
   $("editor-tab-preview").classList.remove("active");
 };
 $("editor-tab-preview").onclick = () => {
+  $("editor-code-wrap").hidden = true;
   $("editor-content").hidden = true;
   $("editor-preview").hidden = false;
   $("editor-tab-preview").classList.add("active");
