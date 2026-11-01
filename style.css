@@ -406,3 +406,35 @@ html[data-theme="dark"] .diff-add{background:#18382c;color:#a8e6bf}
 html[data-theme="dark"] .diff-remove{background:#48262d;color:#ffc0c0}
 html[data-theme="dark"] .diff-same{color:#a9b6c9}
 @media(max-width:850px){.editor-code-wrap{height:58vh;min-height:280px}.history-version-row{align-items:flex-start;flex-direction:column}.history-version-actions{width:100%}}
+
+
+/* Dark theme contrast fixes: article content, editor tools, comparison and syntax highlighting */
+html[data-theme="dark"]{--blue:#8ab4f8;--line:#46566e;--light-line:#344154;--muted:#b0bdd0;--panel:#202c3d}
+html[data-theme="dark"] .wiki-fold>summary{background:#202c3d;color:#a9c7ff;border-color:#7199d3}
+html[data-theme="dark"] .wiki-fold-content{border-left-color:#52637b}
+html[data-theme="dark"] .wiki-toc{background:#1b2432;color:#e2e8f0;border-color:#46566e}
+html[data-theme="dark"] .wiki-toc a,html[data-theme="dark"] .wiki-content .wiki-categories a{color:#a9c7ff}
+html[data-theme="dark"] .wiki-content table{background:#1b2432;color:#e2e8f0}
+html[data-theme="dark"] .wiki-content td{background:#1b2432;color:#e2e8f0}
+html[data-theme="dark"] .wiki-content th{background:#2b394d;color:#f1f5f9}
+html[data-theme="dark"] .wiki-content blockquote{border-left-color:#71829a}
+html[data-theme="dark"] .wiki-content hr{border-color:#46566e}
+html[data-theme="dark"] .wiki-content .wiki-categories a{background:#202c3d;border-color:#46566e}
+html[data-theme="dark"] .editor-markup-toolbar button,html[data-theme="dark"] .editor-tabs button{color:#dce6f5}
+html[data-theme="dark"] .editor-field input,html[data-theme="dark"] .editor-field textarea,html[data-theme="dark"] .editor-field select,html[data-theme="dark"] #editor-title,html[data-theme="dark"] #editor-summary{background:#151d29;color:#e2e8f0;border-color:#46566e}
+html[data-theme="dark"] .editor-field input::placeholder,html[data-theme="dark"] .editor-field textarea::placeholder{color:#9aa9bd}
+html[data-theme="dark"] .editor-help,html[data-theme="dark"] .editor-counter,html[data-theme="dark"] .editor-status,html[data-theme="dark"] .muted,html[data-theme="dark"] .compare-intro{color:#b4c1d3}
+html[data-theme="dark"] .history-version-info span{color:#b4c1d3}
+html[data-theme="dark"] .history-version-actions .selected{background:#304769;color:#e4efff;border-color:#7199d3}
+html[data-theme="dark"] .revision-diff-line{border-bottom-color:rgba(180,195,215,.14)}
+html[data-theme="dark"] .revision-diff-sign{color:#cbd5e1}
+html[data-theme="dark"] .compare-summary{color:#e2e8f0}
+html[data-theme="dark"] .wiki-content .wiki-footnote-tooltip{border:1px solid #53647b;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+html[data-theme="dark"] .mk-syntax{color:#a3afc2}
+html[data-theme="dark"] .mk-link-target{color:#a9c7ff}
+html[data-theme="dark"] .mk-category-label,html[data-theme="dark"] .mk-file-label{color:#a3afc2}
+html[data-theme="dark"] .mk-external-url{color:#8fe0e8}
+html[data-theme="dark"] .mk-include-target,html[data-theme="dark"] .mk-directive{color:#d0baff}
+html[data-theme="dark"] .mk-color{color:#ffacd0}
+html[data-theme="dark"] .mk-size{color:#8be4d0}
+html[data-theme="dark"] .mk-command{color:#8bdce8}
