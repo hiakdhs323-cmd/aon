@@ -50,6 +50,10 @@ async function loadHome(){
   const settings=homeData.settings||{};
   $("home-title").textContent=settings.title||"AonWiki";
   $("home-tagline").textContent=settings.tagline||"함께 만드는 지식 백과사전";
+  const hint=$("home-search-hint");hint.textContent=settings.searchHint||"검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.";
+  $("home-list-title").textContent=settings.listTitle||"최근 수정된 문서";
+  $("home-bottom-title").textContent=settings.bottomTitle||"문서가 없나요?";
+  $("home-bottom-text").textContent=settings.bottomText||"로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.";
   const notice=$("home-notice");notice.textContent=settings.notice||"";notice.hidden=!settings.notice;
   const content=settings.content||"";
   if(content)await renderNamuMarkup(content,$("home-content"),"대문");
@@ -609,12 +613,20 @@ async function editHomepage(){
   {id:"home-edit-title",label:"대문 제목",value:settings.title||"AonWiki"},
   {id:"home-edit-tagline",label:"소개 문구",value:settings.tagline||""},
   {id:"home-edit-notice",label:"공지 / 안내",value:settings.notice||"",multiline:true},
+  {id:"home-edit-hint",label:"검색 안내 문구",value:settings.searchHint||""},
+  {id:"home-edit-list-title",label:"문서 목록 제목",value:settings.listTitle||""},
+  {id:"home-edit-bottom-title",label:"하단 안내 제목",value:settings.bottomTitle||""},
+  {id:"home-edit-bottom-text",label:"하단 안내 문구",value:settings.bottomText||""},
   {id:"home-edit-content",label:"대문 본문 (나무마크)",value:settings.content||"",multiline:true}
  ],async()=>{
   await api("/api/home",{method:"PUT",body:JSON.stringify({
    title:$("home-edit-title").value,
    tagline:$("home-edit-tagline").value,
    notice:$("home-edit-notice").value,
+   searchHint:$("home-edit-hint").value,
+   listTitle:$("home-edit-list-title").value,
+   bottomTitle:$("home-edit-bottom-title").value,
+   bottomText:$("home-edit-bottom-text").value,
    content:$("home-edit-content").value
   })});
   $("dialog").close();await loadHome()
