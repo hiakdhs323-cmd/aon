@@ -1527,28 +1527,44 @@ try {
           }
           this.renderData = this.renderData.replace(linkRegex, "");
         } else if (/^(?:inter|인터):([^:]+):/i.test(linkMain)) {
-          const linkInterRegex = /^(?:inter|인터):([^:]+):/i;
-          const linkInterNameMatch = linkMain.match(linkInterRegex) || [];
-          let linkInterName = linkInterNameMatch ? linkInterNameMatch[1] : "";
-          linkMain = linkMain.replace(new RegExp(linkInterRegex, "g"), "");
-          const linkTitle = `${linkInterName}:${linkMain}`;
-          linkMain = linkMain.replace(/&#x27;/g, "<link_single>");
-          const linkDataSharpRegex = /#([^#]+)$/;
-          let linkDataSharpMatch = linkMain.match(linkDataSharpRegex) || [];
-          let linkDataSharp;
-          if (linkDataSharpMatch.length === 0) {
-            linkDataSharp = linkDataSharpMatch[1];
-            linkDataSharp = unescapeHtml(linkDataSharp);
-            linkDataSharp = "#" + urlPas(linkDataSharp);
-            linkMain = linkMain.replace(new RegExp(linkDataSharpRegex, "g"), "");
-          } else {
-            linkDataSharp = "";
+          const prefixMatch = linkMain.match(/^(?:inter|인터):([^:]+):/i);
+          const prefix = (prefixMatch?.[1] || "").toLowerCase();
+          let target = linkMain.slice(prefixMatch?.[0].length || 0);
+          let fragment = "";
+          const hashIndex = target.lastIndexOf("#");
+          if (hashIndex >= 0) {
+            fragment = target.slice(hashIndex + 1);
+            target = target.slice(0, hashIndex);
           }
-          linkMain = linkMain.replaceAll("<link_single>", "&#x27;");
-          linkMain = this.getToolDataRestore(linkMain, "slash");
-          linkMain = unescapeHtml(linkMain);
-          linkMain = urlPas(linkMain);
-          this.renderData = this.renderData.replace(linkRegex, linkData[2]);
+          const interwikiBases = {
+            wikipedia: "https://en.wikipedia.org/wiki/",
+            enwiki: "https://en.wikipedia.org/wiki/",
+            kowiki: "https://ko.wikipedia.org/wiki/",
+            "ko.wikipedia": "https://ko.wikipedia.org/wiki/",
+            wiktionary: "https://en.wiktionary.org/wiki/",
+            commons: "https://commons.wikimedia.org/wiki/",
+            wikisource: "https://en.wikisource.org/wiki/",
+            wikibooks: "https://en.wikibooks.org/wiki/",
+            wikiquote: "https://en.wikiquote.org/wiki/",
+            wikinews: "https://en.wikinews.org/wiki/",
+            wikiversity: "https://en.wikiversity.org/wiki/",
+            metawiki: "https://meta.wikimedia.org/wiki/"
+          };
+          const base = interwikiBases[prefix];
+          if (!base || !target.trim()) {
+            this.renderData = this.renderData.replace(linkRegex, linkData[1] || linkDataFull);
+          } else {
+            const safeTarget = encodeURIComponent(target.trim().replace(/ /g, "_")).replace(/%2F/gi, "/");
+            const safeFragment = fragment ? "#" + encodeURIComponent(fragment) : "";
+            const href = base + safeTarget + safeFragment;
+            const label = linkData[1] || prefix + ":" + target;
+            const dataName = this.getToolDataStorage(
+              '<a class="opennamu_link_out opennamu_interwiki_link" target="_blank" rel="noopener noreferrer" href="' + href + '">',
+              "</a>",
+              linkDataFull
+            );
+            this.renderData = this.renderData.replace(linkRegex, "<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
+          }
         } else if (/^https?:\/\//i.test(linkMain)) {
           linkMain = this.getToolDataRestore(linkMain, "slash");
           const linkTitle = linkMain;
@@ -1786,7 +1802,7 @@ try {
     }
     // re.sub fix
     manageHr() {
-      const hrRegex = /\n-{4,9}\n/;
+      const hrRegex = /\n-{4,}\n/;
       let hrCountMax = (this.renderData.match(new RegExp(hrRegex, "g")) || []).length * 3;
       while (true) {
         const hrData = hrRegex.exec(this.renderData);
