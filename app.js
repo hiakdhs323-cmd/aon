@@ -516,11 +516,42 @@ function enhanceFootnoteHover(root) {
     const show = () => { tooltip.classList.add("visible"); link.classList.add("tooltip-open"); };
     const hide = () => { tooltip.classList.remove("visible"); link.classList.remove("tooltip-open"); };
     link.addEventListener("mouseenter", show);
-    link.addEventListener("mouseleave", hide);
+    link.addEventListener("mouseleave", () => {
+      if (document.activeElement !== link) hide();
+    });
     link.addEventListener("focus", show);
-    link.addEventListener("blur", hide);
-    link.addEventListener("keydown", event => { if (event.key === "Escape") hide(); });
+    link.addEventListener("blur", () => {
+      if (!tooltip.classList.contains("visible")) hide();
+    });
+    // Prevent the default #fn-N navigation. Show the note beside its marker instead.
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const wasVisible = tooltip.classList.contains("visible");
+      root.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
+        openTip.classList.remove("visible");
+        openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
+      });
+      if (!wasVisible) show();
+    });
+    link.addEventListener("keydown", event => {
+      if (event.key === "Escape") hide();
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        link.click();
+      }
+    });
   });
+  if (!root.dataset.footnoteDismissBound) {
+    root.dataset.footnoteDismissBound = "1";
+    root.addEventListener("click", event => {
+      if (event.target.closest(".wiki-footnote-trigger")) return;
+      root.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
+        openTip.classList.remove("visible");
+        openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
+      });
+    });
+  }
 }
 
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
