@@ -22,9 +22,6 @@ function isAdmin(request, env) {
   const value = request.headers.get("Authorization") || "";
   return Boolean(env.ADMIN_TOKEN && value === "Bearer " + env.ADMIN_TOKEN);
 }
-function safeFileName(value) {
-  return String(value || "image").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "image";
-}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -74,27 +71,33 @@ export default {
         if (!isAdmin(request, env)) return response({ error: "이미지 업로드에는 관리자 토큰이 필요합니다." }, 401, cors);
         const form = await request.formData();
         const file = form.get("file");
-        if (!file || typeof file.stream !== "function") return response({ error: "이미지 파일을 선택하세요." }, 400, cors);
+        if (!file || typeof file.arrayBuffer !== "function") return response({ error: "이미지 파일을 선택하세요." }, 400, cors);
         const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
         if (!allowedTypes.includes(file.type)) return response({ error: "PNG, JPG, GIF, WebP 파일만 지원합니다." }, 415, cors);
-        if (file.size < 1 || file.size > 5 * 1024 * 1024) return response({ error: "이미지는 5MB 이하로 업로드해 주세요." }, 413, cors);
-        const key = "uploads/" + new Date().toISOString().slice(0, 10) + "/" + crypto.randomUUID() + "-" + safeFileName(file.name);
-        await env.IMAGES.put(key, file.stream(), {
-          httpMetadata: { contentType: file.type, cacheControl: "public, max-age=31536000, immutable" }
-        });
+        if (file.size < 1 || file.size > 1 * 1024 * 1024) return response({ error: "D1 저장 방식은 이미지 1MB 이하만 지원합니다." }, 413, cors);
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        const encoded = btoa(binary);
+        const key = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at) VALUES (?, ?, ?, ?, ?)").bind(key, file.type, encoded, String(file.name || "image").slice(0, 120), now).run();
         return response({ ok: true, key, url: new URL("/media/" + key, url.origin).href }, 201, cors);
       }
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
-        const key = decodeURIComponent(url.pathname.slice("/media/".length));
-        if (!key.startsWith("uploads/") || key.includes("..")) return new Response("Not found", { status: 404 });
-        const object = await env.IMAGES.get(key);
-        if (!object) return new Response("Not found", { status: 404 });
+        const key = url.pathname.slice("/media/".length);
+        if (!/^[a-f0-9-]{36}$/i.test(key)) return new Response("Not found", { status: 404 });
+        const image = await env.DB.prepare("SELECT content_type, data_base64 FROM images WHERE id = ?").bind(key).first();
+        if (!image) return new Response("Not found", { status: 404 });
+        const binary = atob(image.data_base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const headers = new Headers(cors);
-        object.writeHttpMetadata(headers);
-        headers.set("ETag", object.httpEtag);
-        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("Content-Type", image.content_type);
+        headers.set("Cache-Control", "public, max-age=3600");
         headers.set("X-Content-Type-Options", "nosniff");
-        return new Response(object.body, { headers });
+        return new Response(bytes, { headers });
       }
       return response({ error: "요청한 경로를 찾을 수 없습니다." }, 404, cors);
     } catch (error) {
