@@ -314,6 +314,15 @@ export default {
       }
       if (url.pathname === "/api/files" && request.method === "GET") {
         await ensureImageSchema(env);
+        const manage = url.searchParams.get("manage") === "1";
+        if (manage) {
+          const user = await currentUser(request, env);
+          if (!user) return response({ error: "파일 관리에는 로그인이 필요합니다." }, 401, cors);
+          const result = user.isAdmin
+            ? await env.DB.prepare("SELECT id, filename, content_type, created_at, owner FROM images ORDER BY created_at DESC LIMIT 500").all()
+            : await env.DB.prepare("SELECT id, filename, content_type, created_at, owner FROM images WHERE owner = ? ORDER BY created_at DESC LIMIT 500").bind(user.username).all();
+          return response({ files: result.results || [], isAdmin: Boolean(user.isAdmin) }, 200, cors);
+        }
         const result = await env.DB.prepare("SELECT id, filename, content_type, created_at FROM images ORDER BY created_at DESC LIMIT 500").all();
         return response({ files: result.results || [] }, 200, cors);
       }
