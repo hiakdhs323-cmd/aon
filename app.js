@@ -496,6 +496,10 @@ $("editor-image").onclick=()=>{
  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
  $("file").click()
 };
+$("editor-image").onclick=()=>{
+ if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
+ $("file").click()
+};
 $("file").onchange=async()=>{
  const file=$("file").files[0];
  $("file").value="";
