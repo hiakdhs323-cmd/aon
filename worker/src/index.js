@@ -273,12 +273,15 @@ export default {
       }
       if (url.pathname === "/api/pages" && request.method === "GET") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
+        const createdAfter = String(url.searchParams.get("created_after") || "").slice(0, 40);
         let result;
         if (q) {
           const pattern = "%" + q.replace(/[\\%_]/g, "") + "%";
-          result = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC LIMIT 100").bind(pattern, pattern).all();
+          result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC LIMIT 100").bind(pattern, pattern).all();
+        } else if (createdAfter && !Number.isNaN(Date.parse(createdAfter))) {
+          result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE created_at > ? ORDER BY created_at DESC LIMIT 100").bind(createdAfter).all();
         } else {
-          result = await env.DB.prepare("SELECT title, updated_at FROM pages ORDER BY updated_at DESC LIMIT 100").all();
+          result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages ORDER BY updated_at DESC LIMIT 100").all();
         }
         return response({ pages: result.results || [] }, 200, cors);
       }
