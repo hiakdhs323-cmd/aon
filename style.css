@@ -57,3 +57,42 @@ dialog{width:min(760px,calc(100vw - 24px));max-height:90vh;overflow:auto;padding
 .wiki-content .opennamu_not_exist_link{color:#ba0000}
 .wiki-content .opennamu_category{margin:20px 0 12px;padding:9px 0;border-top:1px solid #eaecf0;font-size:12px}
 .wiki-content .opennamu_category a{margin:0 4px}
+
+
+/* Article headings: clear Namuwiki-like hierarchy */
+.wiki-content h1,
+.wiki-content h2,
+.wiki-content h3,
+.wiki-content h4,
+.wiki-content h5,
+.wiki-content h6{
+  color:#202122;
+  scroll-margin-top:82px;
+  overflow-wrap:anywhere;
+}
+.wiki-content h1{font-size:30px;font-weight:600;line-height:1.35;margin:34px 0 17px;padding:0 0 9px;border-bottom:2px solid #202122}
+.wiki-content h2{font-size:25px;font-weight:600;line-height:1.4;margin:32px 0 14px;padding:0 0 7px;border-bottom:1px solid #a2a9b1}
+.wiki-content h3{font-size:21px;font-weight:600;line-height:1.45;margin:26px 0 11px;padding:0 0 4px;border-bottom:1px solid #eaecf0}
+.wiki-content h4{font-size:18px;font-weight:600;line-height:1.5;margin:22px 0 9px}
+.wiki-content h5{font-size:16px;font-weight:600;line-height:1.5;margin:19px 0 8px}
+.wiki-content h6{font-size:15px;font-weight:600;line-height:1.5;margin:17px 0 7px}
+.wiki-content h1 sub,.wiki-content h2 sub,.wiki-content h3 sub,.wiki-content h4 sub,.wiki-content h5 sub,.wiki-content h6 sub{font-size:11px;font-weight:400;vertical-align:middle;color:#72777d}
+.wiki-content h1 sub a,.wiki-content h2 sub a,.wiki-content h3 sub a,.wiki-content h4 sub a,.wiki-content h5 sub a,.wiki-content h6 sub a{color:#72777d}
+.wiki-content h1 sub a:last-child,.wiki-content h2 sub a:last-child,.wiki-content h3 sub a:last-child,.wiki-content h4 sub a:last-child,.wiki-content h5 sub a:last-child,.wiki-content h6 sub a:last-child{display:inline-block;padding:0 3px;text-decoration:none}
+.wiki-content hr{
+  display:block;
+  height:0;
+  border:0;
+  border-top:1px solid #a2a9b1;
+  margin:26px 0;
+  padding:0;
+  opacity:1;
+}
+.wiki-content hr.main_hr{border-top:1px solid #a2a9b1;margin:30px 0 18px}
+.wiki-content hr::before,.wiki-content hr::after{content:none}
+@media(max-width:700px){
+ .wiki-content h1{font-size:27px;margin-top:26px}
+ .wiki-content h2{font-size:23px;margin-top:27px}
+ .wiki-content h3{font-size:20px;margin-top:22px}
+ .wiki-content hr{margin:21px 0}
+}
