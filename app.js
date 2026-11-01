@@ -487,12 +487,40 @@ $("history").onclick=async()=>{
  }catch(error){$("message").textContent=error.message}
 };
 $("history-tab").onclick=()=>$("history").click();
-$("upload").onclick=()=>{if(!currentTitle)return; if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}$("file").click()};
+$("upload").onclick=()=>{
+ if(!currentTitle)return;
+ if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
+ $("file").click()
+};
+$("editor-image").onclick=()=>{
+ if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
+ $("file").click()
+};
 $("file").onchange=async()=>{
- const file=$("file").files[0];$("file").value="";if(!file)return;if(file.size>1024*1024){$("message").textContent="이미지는 1MB 이하만 업로드할 수 있습니다.";return}
+ const file=$("file").files[0];
+ $("file").value="";
+ if(!file)return;
+ if(file.size>1024*1024){
+  const message="이미지는 1MB 이하만 업로드할 수 있습니다.";
+  if(!$("editor-view").hidden)$("editor-status").textContent=message;
+  else $("message").textContent=message;
+  return
+ }
  const form=new FormData();form.append("file",file);
- try{const data=await api("/api/upload",{method:"POST",body:form});editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+"[[파일:"+(data.filename||file.name)+"|width=500]]")}
- catch(error){$("message").textContent=error.message}
+ try{
+  const data=await api("/api/upload",{method:"POST",body:form});
+  const markup="[[파일:"+(data.filename||file.name)+"|width=500]]";
+  if(!$("editor-view").hidden){
+   const field=$("editor-content");
+   field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");
+   field.focus();
+  }else if(currentTitle){
+   editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);
+  }
+ }catch(error){
+  if(!$("editor-view").hidden)$("editor-status").textContent=error.message;
+  else $("message").textContent=error.message;
+ }
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
