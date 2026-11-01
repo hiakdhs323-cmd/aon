@@ -1073,7 +1073,7 @@ function highlightNamuLine(line, insideCode) {
   if (/^\s*(?:\*+|\d+\.)\s/.test(line)) return '<span class="mk-list">' + escaped + '</span>';
   if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return '<span class="mk-rule">' + escaped + '</span>';
 
-  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^]]+\]|\[https?:\/\/[^\]]+\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
+  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
   let output = "", last = 0, match;
   while ((match = tokenPattern.exec(line))) {
     output += escapeHighlightText(line.slice(last, match.index));
