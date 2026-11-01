@@ -7,7 +7,7 @@ const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){return "#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
-function showHome(push=true){if(push)history.pushState(null,"", "#/");currentTitle="";currentContent="";$("home-view").hidden=false;$("document-view").hidden=true;$("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("new").classList.remove("active");loadHome()}
+function showHome(push=true){if(push)history.pushState(null,"", "#/");currentTitle="";currentContent="";$("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("new").classList.remove("active");loadHome()}
 async function loadHome(){
  const list=$("page-list");list.replaceChildren();$("page-count").textContent="";
  try{const data=await api("/api/pages");const pages=(data.pages||[]).filter(p=>p.title!=="대문");$("page-count").textContent=pages.length+"개 문서";
@@ -199,7 +199,7 @@ function renderContent(source,target=$("article"),options={}){
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
- currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;
+ currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;
  $("title").textContent=title;$("crumb").textContent=title;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
  try{const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   currentContent=data.page.content||"";$("message").textContent="";
@@ -221,7 +221,7 @@ function openLogin(){
   const data=await api("/api/"+mode,{method:"POST",body:JSON.stringify({username,password})});
   if(mode==="register"){$("dialog-status").textContent=data.message+" 로그인 화면으로 돌아가 로그인하세요.";return}
   sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem(NAME_SETTING,data.username);loggedInName=data.username;$("login").textContent="로그아웃 · "+loggedInName;$("dialog").close();
-  if(currentTitle)loadPage(currentTitle,false);else loadHome()
+  if(document.body.classList.contains("editor-active"))return;if(currentTitle)loadPage(currentTitle,false);else loadHome()
  }, "로그인");
  const toggle=document.createElement("button");toggle.type="button";toggle.className="button";toggle.textContent="계정 만들기";toggle.style.marginTop="10px";
  toggle.onclick=()=>{mode=mode==="login"?"register":"login";$("dialog-title").textContent=mode==="login"?"로그인":"회원가입";$("save").textContent=mode==="login"?"로그인":"가입하기";toggle.textContent=mode==="login"?"계정 만들기":"로그인으로 돌아가기"};
@@ -232,17 +232,113 @@ if(loggedInName)$("login").textContent="로그아웃 · "+loggedInName;
 $("settings").onclick=()=>showDialog("API 설정",[{id:"api-url",label:"Cloudflare Worker API 주소",value:apiBase()},{id:"admin-token",label:"관리자 토큰(선택)",type:"password"}],async()=>{
  const base=$("api-url").value.trim().replace(/\/$/,"");if(base&&!base.startsWith("https://"))throw Error("https:// 주소를 입력하세요.");if(base)localStorage.setItem(API_SETTING,base);if($("admin-token").value)sessionStorage.setItem(TOKEN_SETTING,$("admin-token").value);$("dialog").close();readRoute()
 });
-function editPage(title=currentTitle,content=currentContent){
- if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
- showDialog(title?"문서 편집":"새 문서 만들기",[{id:"edit-title",label:"문서 제목",value:title,placeholder:"문서 제목"},{id:"edit-content",label:"문서 내용 (나무위키 문법)",value:content,multiline:true,placeholder:"== 개요 ==\n문서 내용입니다.[* 각주 내용]\n[[다른 문서]]\n[[파일:이미지 파일명.png]]"}],async()=>{
-  const newTitle=$("edit-title").value.trim(),body=$("edit-content").value;
-  if(!newTitle)throw Error("문서 제목을 입력하세요.");if(newTitle==="대문")throw Error("대문은 시작 화면이며 일반 문서로 편집할 수 없습니다.");if(body.length>200000)throw Error("문서는 200,000자 이하로 작성해 주세요.");
-  await api("/api/page",{method:"PUT",body:JSON.stringify({title:newTitle,content:body})});$("dialog").close();openPage(newTitle)
- });
- const preview=document.createElement("button");preview.type="button";preview.className="button";preview.textContent="미리보기";preview.style.margin="10px 0";
- const previewBox=document.createElement("div");previewBox.className="wiki-content";previewBox.hidden=true;$("dialog-body").append(preview,previewBox);
- preview.onclick=()=>{previewBox.hidden=!previewBox.hidden;preview.textContent=previewBox.hidden?"미리보기":"미리보기 닫기";if(!previewBox.hidden)renderContent($("edit-content").value,previewBox)}
+let editorOriginalTitle = "";
+let editorIsNew = false;
+
+function editPage(title = currentTitle, content = currentContent) {
+  if (!loggedInName && !sessionStorage.getItem(TOKEN_SETTING)) {
+    openLogin();
+    return;
+  }
+  editorOriginalTitle = String(title || "");
+  editorIsNew = !editorOriginalTitle;
+  $("home-view").hidden = true;
+  $("document-view").hidden = true;
+  $("editor-view").hidden = false;
+  document.body.classList.add("editor-active");
+  $("home").classList.remove("active");
+  $("new").classList.add("active");
+  $("editor-heading").textContent = editorIsNew ? "새 문서 작성" : "문서 편집";
+  $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
+  $("editor-title-wrap").hidden = !editorIsNew;
+  $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
+  $("editor-title").readOnly = !editorIsNew;
+  $("editor-content").value = String(content || "");
+  $("editor-summary").value = "";
+  $("editor-status").textContent = "";
+  $("editor-preview").replaceChildren();
+  $("editor-preview").hidden = true;
+  $("editor-content").hidden = false;
+  $("editor-tab-write").classList.add("active");
+  $("editor-tab-preview").classList.remove("active");
+  $("editor-save").textContent = editorIsNew ? "문서 등록" : "저장";
+  $("editor-save").disabled = false;
+  $("editor-help").hidden = true;
 }
+
+$("editor-cancel").onclick = () => {
+  document.body.classList.remove("editor-active");
+  if (editorOriginalTitle) openPage(editorOriginalTitle);
+  else showHome(true);
+};
+$("editor-help-toggle").onclick = () => {
+  $("editor-help").hidden = !$("editor-help").hidden;
+};
+$("editor-tab-write").onclick = () => {
+  $("editor-content").hidden = false;
+  $("editor-preview").hidden = true;
+  $("editor-tab-write").classList.add("active");
+  $("editor-tab-preview").classList.remove("active");
+};
+$("editor-tab-preview").onclick = () => {
+  $("editor-content").hidden = true;
+  $("editor-preview").hidden = false;
+  $("editor-tab-preview").classList.add("active");
+  $("editor-tab-write").classList.remove("active");
+  renderContent($("editor-content").value, $("editor-preview"));
+};
+$("editor-content").addEventListener("keydown", event => {
+  if (event.key === "Tab") {
+    event.preventDefault();
+    const field = event.currentTarget;
+    field.setRangeText("    ", field.selectionStart, field.selectionEnd, "end");
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    $("editor-form").requestSubmit();
+  }
+});
+$("editor-form").onsubmit = async event => {
+  event.preventDefault();
+  const title = editorIsNew ? $("editor-title").value.trim() : editorOriginalTitle;
+  const content = $("editor-content").value;
+  const summary = $("editor-summary").value.trim();
+  const status = $("editor-status");
+  const saveButton = $("editor-save");
+  status.textContent = "";
+  if (!title) { status.textContent = "문서 제목을 입력하세요."; return; }
+  if (title === "대문") { status.textContent = "대문은 시작 화면이므로 일반 문서로 등록할 수 없습니다."; return; }
+  if (content.length > 200000) { status.textContent = "문서는 200,000자 이하로 작성해 주세요."; return; }
+  saveButton.disabled = true;
+  saveButton.textContent = "저장 중…";
+  try {
+    if (editorIsNew) {
+      const data = await api("/api/pages?q=" + encodeURIComponent(title));
+      if ((data.pages || []).some(page => page.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
+        throw new Error("같은 제목의 문서가 이미 있습니다.");
+      }
+    }
+    await api("/api/page", {
+      method: "PUT",
+      body: JSON.stringify({ title, content, summary, createOnly: editorIsNew })
+    });
+    sessionStorage.removeItem("aonwiki-draft");
+    document.body.classList.remove("editor-active");
+    history.replaceState(null, "", routeFor(title));
+    await loadPage(title, false);
+  } catch (error) {
+    status.textContent = error.message;
+    saveButton.disabled = false;
+    saveButton.textContent = editorIsNew ? "문서 등록" : "저장";
+  }
+};
+$("editor-content").addEventListener("input", () => {
+  sessionStorage.setItem("aonwiki-draft", JSON.stringify({
+    originalTitle: editorOriginalTitle,
+    title: $("editor-title").value,
+    content: $("editor-content").value
+  }));
+});
 $("home").onclick=()=>showHome(true);
 $("new").onclick=()=>editPage("","");
 $("home-new").onclick=()=>editPage("","");
