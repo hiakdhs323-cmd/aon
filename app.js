@@ -385,8 +385,8 @@ function sanitizeNamuStylesheet(raw) {
   return safeRules.join("\n");
 }
 function sanitizeNamuOutput(root, docTitle) {
-  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
-  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
+  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
+  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan fn_target frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
   [...root.querySelectorAll("*")].forEach(node => {
     const tag = node.tagName;
     if (["SCRIPT","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)) {
@@ -458,6 +458,16 @@ function sanitizeNamuOutput(root, docTitle) {
         }
       }
       const href = node.getAttribute("href") || "";
+      // Footnote markers are UI popups, never ordinary hash-navigation links.
+      const footnoteTarget = node.getAttribute("fn_target") ||
+        (href.startsWith("#") ? (() => { try { return decodeURIComponent(href.slice(1)); } catch { return href.slice(1); } })() : "");
+      if (node.id.includes("rfn_") && footnoteTarget) {
+        node.setAttribute("data-wiki-footnote-target", footnoteTarget);
+        node.removeAttribute("href");
+        node.setAttribute("role", "button");
+        node.setAttribute("tabindex", "0");
+        return;
+      }
       if (href.startsWith("/edit_section/")) {
         node.remove();
         return;
@@ -508,9 +518,14 @@ function enhanceFootnoteHover(root) {
       openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
     });
   };
-  root.querySelectorAll('a[id*="rfn_"][title]').forEach(link => {
-    const note = (link.getAttribute("title") || "").trim();
-    if (!note || link.classList.contains("wiki-footnote-trigger")) return;
+  root.querySelectorAll('a[id*="rfn_"]').forEach(link => {
+    if (link.classList.contains("wiki-footnote-trigger")) return;
+    const targetId = link.getAttribute("data-wiki-footnote-target") || "";
+    const noteElement = targetId
+      ? [...root.querySelectorAll("[id]")].find(element => element.id === targetId + "_title")
+      : null;
+    const note = (link.getAttribute("title") || noteElement?.textContent || "").trim();
+    if (!note) return;
     link.classList.add("wiki-footnote-trigger");
     const tooltipId = "wiki-footnote-tip-" + Math.random().toString(36).slice(2);
     link.setAttribute("aria-label", "각주 " + link.textContent.trim() + ": " + note);
