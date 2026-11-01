@@ -18,6 +18,20 @@ function getCors(request, env) {
 function cleanTitle(value) {
   return String(value || "").trim().replace(/[\\/#?<>\[\]{}|]/g, "").slice(0, 120);
 }
+
+function namuFileHash(data) {
+  let hash = 2166136261;
+  for (let i = 0; i < data.length; i++) {
+    hash ^= data.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const parts = [];
+  for (let i = 0; i < 7; i++) {
+    const value = Math.imul(hash ^ (0x9e3779b9 * (i + 1)), 0x85ebca6b);
+    parts.push((value >>> 0).toString(16).padStart(8, "0"));
+  }
+  return parts.join("").slice(0, 56);
+}
 function legacyAdmin(request, env) {
   const value = request.headers.get("Authorization") || "";
   return Boolean(env.ADMIN_TOKEN && value === "Bearer " + env.ADMIN_TOKEN);
@@ -155,6 +169,34 @@ export default {
         }
         if (!image) return response({ error: "파일을 찾을 수 없습니다." }, 404, cors);
         return response({ image: { key: image.id, filename: image.filename, content_type: image.content_type, url: new URL("/media/" + image.id, url.origin).href } }, 200, cors);
+      }
+
+      if (url.pathname === "/api/files" && request.method === "GET") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const result = await env.DB.prepare("SELECT id, filename, content_type, created_at FROM images ORDER BY created_at DESC LIMIT 500").all();
+        return response({ files: result.results || [] }, 200, cors);
+      }
+      if (url.pathname.startsWith("/image/") && request.method === "GET") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const match = url.pathname.match(/^\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+$/i);
+        if (!match) return new Response("Not found", { status: 404 });
+        const result = await env.DB.prepare("SELECT id, filename, content_type, data_base64 FROM images").all();
+        const image = (result.results || []).find(item => {
+          const file = String(item.filename || "");
+          const dot = file.lastIndexOf(".");
+          const base = dot > 0 ? file.slice(0, dot) : file;
+          const ext = dot > 0 ? file.slice(dot + 1).toLowerCase() : "jpg";
+          return namuFileHash(base) === match[1].toLowerCase() && ext === match[2].toLowerCase();
+        });
+        if (!image) return new Response("Not found", { status: 404 });
+        const binary = atob(image.data_base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const headers = new Headers(cors);
+        headers.set("Content-Type", image.content_type);
+        headers.set("Cache-Control", "public, max-age=3600");
+        headers.set("X-Content-Type-Options", "nosniff");
+        return new Response(bytes, { headers });
       }
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
         const key = url.pathname.slice("/media/".length);
