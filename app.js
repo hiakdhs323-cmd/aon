@@ -857,15 +857,22 @@ function editPage(title = currentTitle, content = currentContent) {
   $("editor-heading").textContent = editorIsNew ? "새 문서 작성" : "문서 편집";
   $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
   $("editor-title-wrap").hidden = false;
+  $("editor-title-wrap").querySelector("label").textContent = editorIsNew ? "문서 제목" : "문서 제목 변경";
+  $("editor-title-help").hidden = editorIsNew;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
   $("editor-title").readOnly = false;
+  $("editor-title").disabled = false;
+  $("editor-title").removeAttribute("readonly");
+  $("editor-title").removeAttribute("disabled");
   let editorText = String(content || "");
   try {
     const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
-    if (draft && draft.originalTitle === editorOriginalTitle && typeof draft.content === "string" &&
-        draft.content !== editorText && confirm("저장되지 않은 편집 초안이 있습니다. 복구할까요?")) {
-      editorText = draft.content;
-      if (editorIsNew && draft.title) $("editor-title").value = draft.title;
+    const draftHasChanges = draft && draft.originalTitle === editorOriginalTitle &&
+      ((typeof draft.content === "string" && draft.content !== editorText) ||
+       (typeof draft.title === "string" && draft.title !== $("editor-title").value));
+    if (draftHasChanges && confirm("저장되지 않은 편집 초안이 있습니다. 복구할까요?")) {
+      if (typeof draft.content === "string") editorText = draft.content;
+      if (typeof draft.title === "string") $("editor-title").value = draft.title;
     }
   } catch {}
   $("editor-content").value = editorText;
@@ -901,7 +908,7 @@ $("editor-tab-preview").onclick = () => {
   $("editor-preview").hidden = false;
   $("editor-tab-preview").classList.add("active");
   $("editor-tab-write").classList.remove("active");
-  renderNamuMarkup($("editor-content").value, $("editor-preview"), editorIsNew ? $("editor-title").value.trim() : editorOriginalTitle);
+  renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle);
 };
 $("editor-content").addEventListener("keydown", event => {
   if (event.key === "Tab") {
@@ -948,15 +955,24 @@ $("editor-form").onsubmit = async event => {
     saveButton.textContent = editorIsNew ? "문서 등록" : "저장";
   }
 };
+function saveEditorDraft() {
+  sessionStorage.setItem("aonwiki-draft", JSON.stringify({
+    originalTitle: editorOriginalTitle,
+    title: $("editor-title").value,
+    content: $("editor-content").value
+  }));
+}
+$("editor-title").addEventListener("input", () => {
+  saveEditorDraft();
+  if (!$("editor-preview").hidden) {
+    renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle);
+  }
+});
 $("editor-content").addEventListener("input", () => {
   const content=$("editor-content").value;
   $("editor-counter").textContent=content.length.toLocaleString("ko-KR")+" / 200,000자";
   $("editor-status").textContent=content.length>200000?"문서가 200,000자를 초과했습니다.":"";
-  sessionStorage.setItem("aonwiki-draft", JSON.stringify({
-    originalTitle: editorOriginalTitle,
-    title: $("editor-title").value,
-    content
-  }));
+  saveEditorDraft();
 });
 function insertEditorMarkup(kind){
  const field=$("editor-content"),start=field.selectionStart,end=field.selectionEnd;
