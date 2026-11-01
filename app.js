@@ -26,6 +26,7 @@ async function refreshIdentity(){
  roleLabel.hidden=!loggedInName;
  roleLabel.textContent=isWikiAdmin?"위키 관리자":"회원";
  roleLabel.classList.toggle("admin",isWikiAdmin);
+ $("change-password").hidden=!(loggedInName && currentRole==="user");
  $("home-admin-tools").hidden=!isWikiAdmin;
  $("file-manager").hidden=!loggedInName;
  $("delete-page").hidden=!isWikiAdmin||!currentTitle;
@@ -610,6 +611,28 @@ $("login").onclick=async()=>{
  }
  openLogin()
 };
+$("change-password").onclick=()=>{
+ if(!loggedInName||currentRole!=="user"){openLogin();return}
+ showDialog("비밀번호 변경",[
+  {id:"password-current",label:"현재 비밀번호",type:"password",placeholder:"현재 비밀번호"},
+  {id:"password-new",label:"새 비밀번호",type:"password",placeholder:"8~200자"},
+  {id:"password-confirm",label:"새 비밀번호 확인",type:"password",placeholder:"새 비밀번호 다시 입력"}
+ ],async()=>{
+  const currentPassword=$("password-current").value;
+  const newPassword=$("password-new").value;
+  const confirmPassword=$("password-confirm").value;
+  if(!currentPassword)throw Error("현재 비밀번호를 입력하세요.");
+  if(newPassword.length<8||newPassword.length>200)throw Error("새 비밀번호는 8~200자로 설정하세요.");
+  if(newPassword!==confirmPassword)throw Error("새 비밀번호가 서로 일치하지 않습니다.");
+  const result=await api("/api/account/password",{method:"POST",body:JSON.stringify({currentPassword,newPassword})});
+  sessionStorage.setItem(TOKEN_SETTING,result.token);
+  sessionStorage.setItem(NAME_SETTING,result.username);
+  $("dialog").close();
+  await refreshIdentity();
+  if(currentTitle)loadPage(currentTitle,false);else loadHome();
+  alert(result.message||"비밀번호가 변경되었습니다.");
+ },"비밀번호 변경");
+};
 $("settings").onclick=()=>{
  showDialog("연결 및 관리자 인증",[
   {id:"api-url",label:"Cloudflare Worker API 주소",value:apiBase()},
@@ -671,7 +694,7 @@ $("admin-token-rotate").onclick=async()=>{
  if(!confirm("초기 관리자 토큰을 폐기하고 새 랜덤 관리자 토큰으로 교체할까요? 이전 토큰은 즉시 사용할 수 없게 됩니다."))return;
  try{
   const data=await api("/api/admin/token/rotate",{method:"POST"});
-  sessionStorage.setItem(TOKEN_SETTING,data.token);
+  if(currentRole!=="user")sessionStorage.setItem(TOKEN_SETTING,data.token);
   await refreshIdentity();
   showDialog("새 관리자 토큰 발급 완료",[
    {id:"generated-admin-token",label:"새 관리자 토큰 (다시 표시되지 않습니다)",value:data.token}
