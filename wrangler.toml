@@ -9,7 +9,7 @@ ALLOWED_ORIGIN = "https://hiakdhs323-cmd.github.io"
 [[d1_databases]]
 binding = "DB"
 database_name = "aonwiki"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "db0fb2f9-141d-428e-8d61-0252075a1dc6"
 migrations_dir = "worker"
 
 [[r2_buckets]]
