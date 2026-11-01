@@ -152,10 +152,15 @@ export default {
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
         const encoded = btoa(binary);
         const key = crypto.randomUUID();
+        const originalFilename = String(file.name || "image").replace(/[\\/:*?"<>|]/g, "_").slice(0, 100);
+        const extensionIndex = originalFilename.lastIndexOf(".");
+        const storedFilename = extensionIndex > 0
+          ? originalFilename.slice(0, extensionIndex) + "_" + key.slice(0, 8) + originalFilename.slice(extensionIndex)
+          : originalFilename + "_" + key.slice(0, 8);
         const now = new Date().toISOString();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at) VALUES (?, ?, ?, ?, ?)").bind(key, file.type, encoded, String(file.name || "image").slice(0, 120), now).run();
-        return response({ ok: true, key, filename: String(file.name || "image").slice(0, 120), url: new URL("/media/" + key, url.origin).href }, 201, cors);
+        await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at) VALUES (?, ?, ?, ?, ?)").bind(key, file.type, encoded, storedFilename, now).run();
+        return response({ ok: true, key, filename: storedFilename, url: new URL("/media/" + key, url.origin).href }, 201, cors);
       }
       if (url.pathname === "/api/file" && request.method === "GET") {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
