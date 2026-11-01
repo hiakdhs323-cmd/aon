@@ -29,6 +29,7 @@ async function refreshIdentity(){
  $("change-password").hidden=!(loggedInName && currentRole==="user");
  $("home-admin-tools").hidden=!isWikiAdmin;
  $("file-manager").hidden=!loggedInName;
+ $("upload").hidden=!loggedInName;
  $("delete-page").hidden=!isWikiAdmin||!currentTitle;
 }
 
@@ -38,7 +39,7 @@ function showHome(push=true){
  currentTitle="";currentContent="";
  $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
  document.body.classList.remove("editor-active");
- $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;
+ $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=!loggedInName;$("delete-page").hidden=true;
  $("new").classList.remove("active");loadHome()
 }
 async function loadHome(){
@@ -76,6 +77,7 @@ function openPage(title,anchor=""){title=String(title||"").trim();if(!title||tit
 function readRoute(){
  const hash=location.hash||"#/";
  if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
+ if(hash==="#/categories"){loadCategoryIndex(false);return}
  let title="",anchor="";
  if(hash.startsWith("#/w/")){const rest=hash.slice(4),parts=rest.split("#");try{title=decodeURIComponent(parts[0]);anchor=parts[1]?decodeURIComponent(parts[1]):""}catch{title=parts[0]}}
  else if(hash.startsWith("#/")){try{title=decodeURIComponent(hash.slice(2))}catch{title=hash.slice(2)}}
@@ -136,7 +138,7 @@ function footnoteReference(raw,state,parent){
 }
 function inlineRender(parent,source,state){
  const text=String(source||"");
- const token=/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[\[파일:([^\]]+)\]\]|\[\[([^\]]+)\]\]|\[\*([^\]]*)\]|\[(목차|tableofcontents)(?:\((hide)\))?\]|\[(각주|footnote)\]|\[br\]|\[clearfix\]|\[(https?:\/\/[^\s\]]+)(?:\s+([^\]]+))?\]|'''([\s\S]+?)'''|''([\s\S]+?)''|__([\s\S]+?)__|~~([\s\S]+?)~~|--([\s\S]+?)--|\^\^([\s\S]+?)\^\^|,,([\s\S]+?),,|\{\{\{([\s\S]+?)\}\}\}/gi;
+ const token=/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[\[파일:([^\]]+)\]\]|\[\[([^\]]+)\]\]|\[\*([^\]]*)\]|\[(목차|tableofcontents)(?:\((hide)\))?\]|\[(각주|footnote)\]|\[br\]|\[clearfix\]|\[(https?:\/\/[^\s\]\|]+)(?:[\s|]+([^\]]+))?\]|'''([\s\S]+?)'''|''([\s\S]+?)''|__([\s\S]+?)__|~~([\s\S]+?)~~|--([\s\S]+?)--|\^\^([\s\S]+?)\^\^|,,([\s\S]+?),,|\{\{\{([\s\S]+?)\}\}\}/gi;
  let pos=0,m;
  while((m=token.exec(text))){
   parent.append(document.createTextNode(text.slice(pos,m.index)));
@@ -153,7 +155,7 @@ function inlineRender(parent,source,state){
   else if(m[8]!==undefined){const marker=document.createElement("span");marker.className="wiki-footnote-marker";parent.append(marker)}
   else if(m[0]==="[br]"){parent.append(document.createElement("br"))}
   else if(m[0]==="[clearfix]"){const clear=document.createElement("div");clear.className="wiki-clear";parent.append(clear)}
-  else if(m[9]!==undefined){const a=document.createElement("a");a.href=m[9];a.target="_blank";a.rel="noopener noreferrer";a.textContent=m[10]||m[9];parent.append(a)}
+  else if(m[9]!==undefined){let href=m[9],label=m[10]||href;const entry=href.match(/^(https?:\/\/playentry\.org\/project\/[a-f0-9]{24})([가-힣A-Za-z][가-힣A-Za-z0-9_-]*)$/i);if(!m[10]&&entry){href=entry[1];label=entry[2]}const a=document.createElement("a");a.href=href;a.target="_blank";a.rel="noopener noreferrer";a.textContent=label;parent.append(a)}
   else if(m[11]!==undefined)addText(parent,"strong",m[11]);
   else if(m[12]!==undefined)addText(parent,"em",m[12]);
   else if(m[13]!==undefined)addText(parent,"u",m[13]);
@@ -252,7 +254,7 @@ function renderContent(source,target=$("article"),options={}){
   if(headings.length){const toc=document.createElement("nav");toc.className="wiki-toc";addText(toc,"div","목차").className="wiki-toc-title";const ol=document.createElement("ol");headings.forEach((h,n)=>{const li=document.createElement("li");li.className="toc-level-"+h.tagName.toLowerCase();const a=document.createElement("a");a.href="#"+h.id;a.textContent=h.textContent;a.onclick=e=>{e.preventDefault();h.scrollIntoView({behavior:"smooth",block:"start"})};li.append(a);ol.append(li)});toc.append(ol);const marker=target.querySelector(".wiki-toc-marker");if(marker){if(marker.dataset.hide==="1"){const details=document.createElement("details");details.className="wiki-toc";const summary=addText(details,"summary","목차");details.append(...toc.childNodes);marker.replaceWith(details)}else marker.replaceWith(toc)}else target.prepend(toc)}
   else target.querySelectorAll(".wiki-toc-marker").forEach(x=>x.remove());
   const fp=target.querySelector(".wiki-footnote-marker");if(state.footnotes.length){const box=document.createElement("section");box.className="wiki-footnotes";addText(box,"h2","각주");const ol=document.createElement("ol");state.footnotes.forEach(note=>{const li=document.createElement("li");li.id="fn-"+note.number;inlineRender(li,note.content,{footnotes:[],namedFootnotes:new Map(),categories:[]});note.refs.forEach(ref=>{const a=document.createElement("a");a.href="#"+ref;a.className="footnote-back";a.textContent="↩";li.append(a)});ol.append(li)});box.append(ol);if(fp)fp.replaceWith(box);else target.append(box)}else if(fp)fp.remove();
-  if(state.categories.length){const box=document.createElement("div");box.className="wiki-categories";state.categories.forEach(cat=>{const a=document.createElement("a");a.href="#/";a.textContent="분류:"+cat;a.onclick=e=>{e.preventDefault();searchFor(cat)};box.append(a)});target.append(box)}
+  if(state.categories.length){const box=document.createElement("div");box.className="wiki-categories";state.categories.forEach(cat=>{const a=document.createElement("a");a.href=routeFor("분류:"+cat);a.textContent="분류:"+cat;a.onclick=e=>{e.preventDefault();openPage("분류:"+cat)};box.append(a)});target.append(box)}
   return state
  }
  return state
@@ -533,6 +535,25 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
   }
 }
 
+async function loadCategoryIndex(pushRoute=true){
+ if(pushRoute)history.pushState(null,"","#/categories");
+ currentTitle="분류 목록";currentContent="";
+ $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");
+ $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;
+ $("title").textContent="분류 목록";$("crumb").textContent="분류 목록";$("message").textContent="";
+ const article=$("article");article.replaceChildren();
+ try{
+  const data=await api("/api/categories");
+  const categories=data.categories||[];
+  const intro=addText(article,"p","AonWiki에 등록된 분류 목록입니다. 각 분류를 선택하면 해당 문서들을 볼 수 있습니다.");intro.className="category-index-intro";
+  if(!categories.length){addText(article,"p","아직 등록된 분류가 없습니다. 문서 끝에 [[분류:분류명]]을 추가해 보세요.").className="empty-list";return}
+  const list=document.createElement("div");list.className="category-index-list";
+  categories.forEach(category=>{const row=document.createElement("div");row.className="category-index-row";const link=document.createElement("a");link.href=routeFor("분류:"+category.name);link.textContent=category.name;link.onclick=e=>{e.preventDefault();openPage("분류:"+category.name)};const count=addText(row,"span",category.count+"개 문서");row.append(link,count);list.append(row)});article.append(list);
+ }catch(error){addText(article,"p",error.message).className="empty-list"}
+}
+function openRandomPage(){api("/api/pages").then(data=>{const pages=(data.pages||[]).filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title));if(!pages.length)throw Error("이동할 문서가 없습니다.");openPage(pages[Math.floor(Math.random()*pages.length)].title)}).catch(error=>{$("message").textContent=error.message})}
+
 async function renderCategoryPage(name) {
   const data = await api("/api/category?name=" + encodeURIComponent(name));
   const article = $("article");
@@ -579,6 +600,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    return;
   }
   const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
+  if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
   currentContent=data.page.content||"";$("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
@@ -731,9 +753,9 @@ function editPage(title = currentTitle, content = currentContent) {
   $("new").classList.add("active");
   $("editor-heading").textContent = editorIsNew ? "새 문서 작성" : "문서 편집";
   $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
-  $("editor-title-wrap").hidden = !editorIsNew;
+  $("editor-title-wrap").hidden = false;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
-  $("editor-title").readOnly = !editorIsNew;
+  $("editor-title").readOnly = false;
   let editorText = String(content || "");
   try {
     const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
@@ -791,7 +813,7 @@ $("editor-content").addEventListener("keydown", event => {
 });
 $("editor-form").onsubmit = async event => {
   event.preventDefault();
-  const title = editorIsNew ? $("editor-title").value.trim() : editorOriginalTitle;
+  const title = $("editor-title").value.trim();
   const content = $("editor-content").value;
   const summary = $("editor-summary").value.trim();
   const status = $("editor-status");
@@ -811,7 +833,7 @@ $("editor-form").onsubmit = async event => {
     }
     await api("/api/page", {
       method: "PUT",
-      body: JSON.stringify({ title, content, summary, createOnly: editorIsNew })
+      body: JSON.stringify({ title, originalTitle: editorIsNew ? "" : editorOriginalTitle, content, summary, createOnly: editorIsNew })
     });
     sessionStorage.removeItem("aonwiki-draft");
     document.body.classList.remove("editor-active");
@@ -842,8 +864,16 @@ function insertEditorMarkup(kind){
   italic:["''","''","기울임"],
   link:["[[","]]","문서 제목"],
   list:["* ","","목록 항목"],
-  footnote:["[* ","]","각주 내용"]
+  footnote:["[* ","]","각주 내용"],
+  category:["[[분류:","]]","분류명"],
+  external:["[https://example.com|","]","표시문구"]
  };
+ if(kind==="category"||kind==="external"){
+  const item=templates[kind],value=item[0]+(selected||item[2])+item[1];
+  field.setRangeText(value,start,end,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
+  if(!selected)field.setSelectionRange(start+item[0].length,start+item[0].length+item[2].length);
+  return;
+ }
  if(kind==="hr"||kind==="table"){
   const value=kind==="hr"?"\n----\n":"\n||항목 1||항목 2||\n||내용||내용||\n";
   field.setRangeText(value,start,end,"end");
@@ -861,6 +891,8 @@ document.querySelectorAll("[data-markup]").forEach(button=>{
  button.addEventListener("click",()=>insertEditorMarkup(button.dataset.markup));
 });
 $("home").onclick=()=>showHome(true);
+$("categories").onclick=()=>loadCategoryIndex(true);
+$("random-page").onclick=()=>openRandomPage();
 $("new").onclick=()=>editPage("","");
 $("home-new").onclick=()=>editPage("","");
 $("edit").onclick=()=>editPage();
@@ -928,7 +960,6 @@ async function openFileManager(){
 }
 $("file-manager").onclick=()=>openFileManager();
 $("upload").onclick=()=>{
- if(!currentTitle){$("message").textContent="문서를 연 뒤 이미지를 업로드하세요.";return}
  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
  $("file").click()
 };
@@ -954,6 +985,13 @@ $("file").onchange=async()=>{
    const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
   }else if(currentTitle){
    $("dialog").close();editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);return
+  }else{
+   $("dialog").close();
+   showDialog("이미지 업로드 완료",[{id:"uploaded-image-markup",label:"문서에 붙여넣을 나무마크",value:markup}],async()=>{$("dialog").close()},"닫기");
+   addText($("dialog-body"),"p","이미지는 파일 관리에서 확인할 수 있습니다. 아래 문법을 복사해 대문이나 문서에 붙여넣으세요.").className="dialog-help";
+   const copy=document.createElement("button");copy.type="button";copy.className="button";copy.textContent="문법 복사";
+   copy.onclick=async()=>{try{await navigator.clipboard.writeText(markup);copy.textContent="복사 완료"}catch{const field=$("uploaded-image-markup");field.focus();field.select();copy.textContent="선택 완료"}};
+   $("dialog-body").append(copy);return
   }
   $("dialog").close()
  },"업로드");
