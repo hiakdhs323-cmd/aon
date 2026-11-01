@@ -1,3 +1,4 @@
+// AonWiki NamuMark compatibility enhancements: external links, interwiki, safe conditional blocks.
 const v4 = () => crypto.randomUUID();
 import { escapeHtml, globalRegExp, sha224Replace, unescapeHtml, urlPas } from "./misc";
 
