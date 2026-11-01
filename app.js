@@ -792,11 +792,13 @@ function insertEditorMarkup(kind){
  if(kind==="hr"||kind==="table"){
   const value=kind==="hr"?"\n----\n":"\n||항목 1||항목 2||\n||내용||내용||\n";
   field.setRangeText(value,start,end,"end");
+  field.dispatchEvent(new Event("input",{bubbles:true}));
   field.focus();return;
  }
  const item=templates[kind];if(!item)return;
  const value=item[0]+(selected||item[2])+item[1];
  field.setRangeText(value,start,end,"end");
+ field.dispatchEvent(new Event("input",{bubbles:true}));
  field.focus();
  if(!selected)field.setSelectionRange(start+item[0].length,start+item[0].length+item[2].length);
 }
@@ -859,7 +861,7 @@ async function openFileManager(){
    insert.onclick=async()=>{
     const markup="[[파일:"+file.filename+"|width=500]]";
     if(!$("editor-view").hidden){
-     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.focus();$("dialog").close()
+     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();$("dialog").close()
     }else{
      try{await navigator.clipboard.writeText(markup);insert.textContent="복사됨"}catch{insert.textContent="복사 권한 없음"}
     }
@@ -894,7 +896,7 @@ $("file").onchange=async()=>{
   namuDatabaseCache.expires=0;
   const markup="[[파일:"+data.filename+"|width=500]]";
   if(!$("editor-view").hidden){
-   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.focus();
+   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
   }else if(currentTitle){
    $("dialog").close();editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);return
   }
