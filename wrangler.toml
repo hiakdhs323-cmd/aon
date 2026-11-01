@@ -4,7 +4,7 @@ compatibility_date = "2026-10-31"
 workers_dev = true
 
 [vars]
-ALLOWED_ORIGIN = "https://hiakdhs323-cmd.github.io"
+ALLOWED_ORIGIN = "https://hiakdhs323-cmd.github.io,https://aon69446.p-e.kr"
 
 [[d1_databases]]
 binding = "DB"
