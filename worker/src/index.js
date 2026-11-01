@@ -110,11 +110,18 @@ export default {
         const title = cleanTitle(body.title);
         const content = String(body.content || "");
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        if (title === "대문") return response({ error: "대문은 문서 목록 시작 화면이므로 편집할 수 없습니다." }, 403, cors);
         if (content.length > 200000) return response({ error: "문서는 200,000자 이하로 작성해 주세요." }, 413, cors);
         const previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(title).first();
+        if (body.createOnly && previous) return response({ error: "같은 제목의 문서가 이미 있습니다." }, 409, cors);
+        const summary = String(body.summary || "").trim().slice(0, 200);
         const now = new Date().toISOString();
         await env.DB.prepare("INSERT INTO pages (title, content, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at").bind(title, content, previous ? previous.created_at : now, now).run();
-        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at) VALUES (?, ?, ?, ?)").bind(title, content, user.username, now).run();
+        const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
+        if (!(columns.results || []).some(column => column.name === "summary")) {
+          await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+        }
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, summary).run();
         return response({ ok: true, title, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
