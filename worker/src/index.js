@@ -136,6 +136,19 @@ export default {
         await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at) VALUES (?, ?, ?, ?, ?)").bind(key, file.type, encoded, String(file.name || "image").slice(0, 120), now).run();
         return response({ ok: true, key, url: new URL("/media/" + key, url.origin).href }, 201, cors);
       }
+      if (url.pathname === "/api/file" && request.method === "GET") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const name = String(url.searchParams.get("name") || "").trim().slice(0, 160);
+        if (!name) return response({ error: "파일 이름을 입력하세요." }, 400, cors);
+        let image;
+        if (/^[a-f0-9-]{36}$/i.test(name)) {
+          image = await env.DB.prepare("SELECT id, filename, content_type FROM images WHERE id = ?").bind(name).first();
+        } else {
+          image = await env.DB.prepare("SELECT id, filename, content_type FROM images WHERE filename = ? COLLATE NOCASE ORDER BY created_at DESC LIMIT 1").bind(name).first();
+        }
+        if (!image) return response({ error: "파일을 찾을 수 없습니다." }, 404, cors);
+        return response({ image: { key: image.id, filename: image.filename, content_type: image.content_type, url: new URL("/media/" + image.id, url.origin).href } }, 200, cors);
+      }
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
         const key = url.pathname.slice("/media/".length);
         if (!/^[a-f0-9-]{36}$/i.test(key)) return new Response("Not found", { status: 404 });
