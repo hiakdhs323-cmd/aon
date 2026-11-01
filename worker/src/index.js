@@ -190,10 +190,6 @@ export default {
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
         return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
       }
-      if (url.pathname === "/api/me" && request.method === "GET") {
-        const user = await currentUser(request,env);
-        return user ? response({ok:true,username:user.username},200,cors) : response({error:"로그인이 필요합니다."},401,cors);
-      }
       if (url.pathname === "/api/pages" && request.method === "GET") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
         let result;
@@ -312,8 +308,11 @@ export default {
         const image = await env.DB.prepare("SELECT id, filename, content_type, owner FROM images WHERE id = ?").bind(id).first();
         if (!image) return response({ error: "파일을 찾을 수 없습니다." }, 404, cors);
         if (!user.isAdmin && image.owner !== user.username) return response({ error: "본인이 올린 파일만 이름을 변경할 수 있습니다." }, 403, cors);
+        if (!String(body.filename || "").trim()) return response({ error: "새 파일 이름을 입력하세요." }, 400, cors);
         const newFilename = cleanImageName(body.filename, image.content_type);
         const collision = await env.DB.prepare("SELECT id FROM images WHERE filename = ? COLLATE NOCASE AND id <> ?").bind(newFilename, id).first();
+        const previousAliasCollision = await env.DB.prepare("SELECT image_id FROM image_aliases WHERE alias = ? COLLATE NOCASE AND image_id <> ?").bind(image.filename, id).first();
+        if (previousAliasCollision) return response({ error: "이전 이름이 다른 파일에서 사용 중이어서 안전하게 변경할 수 없습니다." }, 409, cors);
         const aliasCollision = await env.DB.prepare("SELECT image_id FROM image_aliases WHERE alias = ? COLLATE NOCASE AND image_id <> ?").bind(newFilename, id).first();
         if (collision || aliasCollision) return response({ error: "이미 사용 중이거나 이전 이름으로 예약된 파일 이름입니다." }, 409, cors);
         if (newFilename !== image.filename) {
