@@ -40,3 +40,20 @@ dialog{width:min(760px,calc(100vw - 24px));max-height:90vh;overflow:auto;padding
 .wiki-content .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:4px 0}
 .wiki-content .opennamu_TOC_list{line-height:1.7}
 .editor-tabs #editor-image{margin-left:0;border-left:1px solid #c8ccd1}
+
+/* NamuMark TOC and advanced rendering */
+.wiki-content .opennamu_TOC{display:table;min-width:210px;max-width:100%;margin:12px 0 22px;padding:10px 15px;border:1px solid #a2a9b1;background:#f8f9fa;color:#202122;font-size:13px;line-height:1.75}
+.wiki-content .opennamu_TOC_title{display:block;text-align:center;font-weight:700;margin:0 0 5px}
+.wiki-content .opennamu_TOC_list{display:inline-block;line-height:1.8}
+.wiki-content .opennamu_TOC_list a{white-space:nowrap}
+.wiki-content .opennamu_TOC_fold{display:table;min-width:210px;max-width:100%;margin:12px 0 22px;border:1px solid #a2a9b1;background:#f8f9fa}
+.wiki-content .opennamu_TOC_fold>summary{padding:7px 12px;text-align:center;font-weight:700;cursor:pointer;color:#0645ad}
+.wiki-content .opennamu_TOC_fold .opennamu_TOC{display:block;min-width:0;margin:0;border:0;border-top:1px solid #eaecf0}
+.wiki-content .table_safe{max-width:100%;overflow-x:auto;overflow-y:hidden}
+.wiki-content .table_safe table{max-width:100%;border-collapse:collapse}
+.wiki-content .namu-latex-block{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:7px 0;text-align:center}
+.wiki-content .namu-latex-block .katex-display{margin:0}
+.wiki-content .opennamu_folding{padding:8px 10px}
+.wiki-content .opennamu_not_exist_link{color:#ba0000}
+.wiki-content .opennamu_category{margin:20px 0 12px;padding:9px 0;border-top:1px solid #eaecf0;font-size:12px}
+.wiki-content .opennamu_category a{margin:0 4px}
