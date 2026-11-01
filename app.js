@@ -32,9 +32,8 @@ function inlineRender(parent,text){
  let pos=0,m;
  while((m=re.exec(text))){
   parent.append(document.createTextNode(text.slice(pos,m.index)));
-  if(m[1]){const title=m[1].trim(),a=document.createElement("a");a.href="#";a.textContent=m[2]||title;a.onclick=e=>{e.preventDefault();loadPage(title)};parent.append(a)}
-  else if(m[3])addText(parent,"strong",m[3]);
-  else if(m[4])addText(parent,"strong",m[4]);
+  if(m[1]){const title=m[1].trim(),link=document.createElement("a");link.href="#";link.textContent=m[2]||title;link.onclick=e=>{e.preventDefault();loadPage(title)};parent.append(link)}
+  else if(m[3]||m[4])addText(parent,"strong",m[3]||m[4]);
   else if(m[5])addText(parent,"em",m[5]);
   else if(m[6])addText(parent,"del",m[6]);
   else if(m[7])addText(parent,"u",m[7]);
@@ -109,18 +108,7 @@ $("settings").addEventListener("click", () => showDialog("API 설정", [
   if (base) localStorage.setItem(API_SETTING, base); else localStorage.removeItem(API_SETTING);
   if ($("admin-token").value) sessionStorage.setItem(TOKEN_SETTING, $("admin-token").value);
   $("dialog").close();
-  await $("login").addEventListener("click",()=>{
- if(loggedInName){sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem("aonwiki-username");loggedInName="";$("login").textContent="로그인";$("message").textContent="로그아웃했습니다.";return}
- let mode="login";
- showDialog("로그인",[
- {id:"auth-username",label:"아이디",placeholder:"한글/영문/숫자 2~20자"},
- {id:"auth-password",label:"비밀번호",type:"password",placeholder:"8자 이상"}
- ],async()=>{
- const username=$("auth-username").value.trim(),password=$("auth-password").value;
- const data=await api("/api/"+mode,{method:"POST",body:JSON.stringify({username,password})});
- if(mode==="register"){$("dialog-status").textContent=data.message;return}
- sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem("aonwiki-username",data.username);loggedInName=data.username;
- $("login").textContent="로그아웃 · "+loggedInName;$("dialog").close();$("message").textContent=loggedInName+"님 로그인됨";await loadPage(currentTitle);
+  await loadPage(currentTitle);
  });
  const toggle=document.createElement("button");toggle.type="button";toggle.className="secondary-button";toggle.textContent="계정 만들기";toggle.style.marginTop="10px";$("dialog-body").append(toggle);
  toggle.onclick=()=>{mode=mode==="login"?"register":"login";$("dialog-title").textContent=mode==="login"?"로그인":"회원가입";$("save").textContent=mode==="login"?"로그인":"가입하기";toggle.textContent=mode==="login"?"계정 만들기":"로그인으로 돌아가기"};
@@ -224,4 +212,15 @@ $("file").addEventListener("change", async () => {
   }
 });
 
-loadPage(currentTitle);
+$("login").addEventListener("click",()=>{
+ if(loggedInName){sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem("aonwiki-username");loggedInName="";$("login").textContent="로그인";$("message").textContent="로그아웃했습니다.";return}
+ let mode="login";
+ showDialog("로그인",[
+ {id:"auth-username",label:"아이디",placeholder:"한글/영문/숫자 2~20자"},
+ {id:"auth-password",label:"비밀번호",type:"password",placeholder:"8자 이상"}
+ ],async()=>{
+ const username=$("auth-username").value.trim(),password=$("auth-password").value;
+ const data=await api("/api/"+mode,{method:"POST",body:JSON.stringify({username,password})});
+ if(mode==="register"){$("dialog-status").textContent=data.message;return}
+ sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem("aonwiki-username",data.username);loggedInName=data.username;
+ $("login").textContent="로그아웃 · "+loggedInName;$("dialog").close();$("message").textContent=loggedInName+"님 로그인됨";await loadPage(currentTitle);
