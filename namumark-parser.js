@@ -2025,7 +2025,7 @@ try {
         this.renderData = this.renderData.replace(/<toc_no_auto>/g, "");
       }
       const handlerFootnote = (match, p1) => {
-        const findRegex = new RegExp('<footnote_title id="' + p1 + '">((?:(?!<footnote_title|</footnote_title>).)*)</footnote_title>');
+        const findRegex = new RegExp('<footnote_title id="' + p1 + '_title">((?:(?!<footnote_title|</footnote_title>).)*)</footnote_title>');
         let findData = this.renderData.match(findRegex);
         let findDataNew;
         if (findData) {
