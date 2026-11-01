@@ -342,7 +342,7 @@ function sanitizeNamuOutput(root, docTitle) {
         const heading = node.closest("h1,h2,h3,h4,h5,h6");
         const section = heading ? heading.nextElementSibling : null;
         if (section && section.id && section.id.includes("opennamu_heading_")) {
-          node.setAttribute("href", "#");
+          node.removeAttribute("href");
           node.setAttribute("role", "button");
           node.setAttribute("tabindex", "0");
           const toggleSection = event => {
