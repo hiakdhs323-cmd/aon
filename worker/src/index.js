@@ -18,9 +18,26 @@ function getCors(request, env) {
 function cleanTitle(value) {
   return String(value || "").trim().replace(/[\\/#?<>\[\]{}|]/g, "").slice(0, 120);
 }
-function isAdmin(request, env) {
+function legacyAdmin(request, env) {
   const value = request.headers.get("Authorization") || "";
   return Boolean(env.ADMIN_TOKEN && value === "Bearer " + env.ADMIN_TOKEN);
+}
+async function sha256(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function passwordHash(password, salt) {
+  const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: 120000, hash: "SHA-256" }, material, 256);
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function currentUser(request, env) {
+  if (legacyAdmin(request, env)) return { username: "관리자" };
+  const auth = request.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const tokenHash = await sha256(auth.slice(7));
+  const now = new Date().toISOString();
+  return await env.DB.prepare("SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
 }
 export default {
   async fetch(request, env) {
@@ -30,6 +47,38 @@ export default {
     try {
       if (url.pathname === "/api/health" && request.method === "GET") {
         return response({ ok: true, service: "AonWiki API" }, 200, cors);
+      }
+      if (url.pathname === "/api/register" && request.method === "POST") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+        const body = await request.json();
+        const username = String(body.username || "").trim();
+        const password = String(body.password || "");
+        if (!/^[A-Za-z0-9가-힣_-]{2,20}$/.test(username)) return response({error:"아이디는 한글/영문/숫자/_/- 2~20자로 입력하세요."},400,cors);
+        if (password.length < 8 || password.length > 200) return response({error:"비밀번호는 8~200자로 설정하세요."},400,cors);
+        const exists = await env.DB.prepare("SELECT id FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        if (exists) return response({error:"이미 사용 중인 아이디입니다."},409,cors);
+        const id = crypto.randomUUID(), salt = crypto.randomUUID(), now = new Date().toISOString();
+        const hash = await passwordHash(password, salt);
+        await env.DB.prepare("INSERT INTO users (id,username,salt,password_hash,created_at) VALUES (?,?,?,?,?)").bind(id,username,salt,hash,now).run();
+        return response({ok:true,message:"가입 완료! 로그인해 주세요."},201,cors);
+      }
+      if (url.pathname === "/api/login" && request.method === "POST") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+        const body = await request.json();
+        const username = String(body.username || "").trim();
+        const password = String(body.password || "");
+        const user = await env.DB.prepare("SELECT id,username,salt,password_hash FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        if (!user || await passwordHash(password,user.salt) !== user.password_hash) return response({error:"아이디 또는 비밀번호가 올바르지 않습니다."},401,cors);
+        const token = [...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,"0")).join("");
+        const expires = new Date(Date.now()+7*24*60*60*1000).toISOString();
+        await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
+        return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
+      }
+      if (url.pathname === "/api/me" && request.method === "GET") {
+        const user = await currentUser(request,env);
+        return user ? response({ok:true,username:user.username},200,cors) : response({error:"로그인이 필요합니다."},401,cors);
       }
       if (url.pathname === "/api/pages" && request.method === "GET") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
@@ -55,7 +104,8 @@ export default {
         return response({ revisions: result.results || [] }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
-        if (!isAdmin(request, env)) return response({ error: "관리자 토큰이 없거나 올바르지 않습니다. 설정을 확인하세요." }, 401, cors);
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "문서를 편집하려면 로그인하세요." }, 401, cors);
         const body = await request.json();
         const title = cleanTitle(body.title);
         const content = String(body.content || "");
@@ -64,11 +114,12 @@ export default {
         const previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(title).first();
         const now = new Date().toISOString();
         await env.DB.prepare("INSERT INTO pages (title, content, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at").bind(title, content, previous ? previous.created_at : now, now).run();
-        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at) VALUES (?, ?, ?, ?)").bind(title, content, "관리자", now).run();
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at) VALUES (?, ?, ?, ?)").bind(title, content, user.username, now).run();
         return response({ ok: true, title, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
-        if (!isAdmin(request, env)) return response({ error: "이미지 업로드에는 관리자 토큰이 필요합니다." }, 401, cors);
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "이미지를 업로드하려면 로그인하세요." }, 401, cors);
         const form = await request.formData();
         const file = form.get("file");
         if (!file || typeof file.arrayBuffer !== "function") return response({ error: "이미지 파일을 선택하세요." }, 400, cors);
