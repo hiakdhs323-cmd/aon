@@ -527,12 +527,11 @@ function enhanceFootnoteHover(root) {
     link.addEventListener("click", event => {
       event.preventDefault();
       event.stopPropagation();
-      const wasVisible = tooltip.classList.contains("visible");
       root.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
         openTip.classList.remove("visible");
         openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
       });
-      if (!wasVisible) show();
+      show();
     });
     link.addEventListener("keydown", event => {
       if (event.key === "Escape") hide();
@@ -542,11 +541,11 @@ function enhanceFootnoteHover(root) {
       }
     });
   });
-  if (!root.dataset.footnoteDismissBound) {
-    root.dataset.footnoteDismissBound = "1";
-    root.addEventListener("click", event => {
-      if (event.target.closest(".wiki-footnote-trigger")) return;
-      root.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
+  if (!window.aonWikiFootnoteDismissBound) {
+    window.aonWikiFootnoteDismissBound = true;
+    document.addEventListener("click", event => {
+      if (event.target.closest?.(".wiki-footnote-trigger")) return;
+      document.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
         openTip.classList.remove("visible");
         openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
       });
