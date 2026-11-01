@@ -371,12 +371,50 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
   }
 }
 
+async function renderCategoryPage(name) {
+  const data = await api("/api/category?name=" + encodeURIComponent(name));
+  const article = $("article");
+  article.replaceChildren();
+  const intro = document.createElement("p");
+  intro.textContent = "‘" + name + "’ 분류에 속하는 문서 목록입니다.";
+  article.append(intro);
+  const pages = data.pages || [];
+  if (!pages.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-list";
+    empty.textContent = "이 분류에 등록된 문서가 없습니다.";
+    article.append(empty);
+    return;
+  }
+  const list = document.createElement("ul");
+  pages.forEach(page => {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = routeFor(page.title);
+    link.textContent = page.title;
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      openPage(page.title);
+    });
+    item.append(link);
+    list.append(item);
+  });
+  article.append(list);
+}
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;
  $("title").textContent=title;$("crumb").textContent=title;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
- try{const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
+ try{
+  if (/^(?:category|분류):/i.test(title)) {
+   const name=title.replace(/^(?:category|분류):/i,"");
+   $("message").textContent="";
+   await renderCategoryPage(name);
+   $("edit").hidden=true;$("heading-edit").hidden=true;
+   return;
+  }
+  const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   currentContent=data.page.content||"";$("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
