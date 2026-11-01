@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 const API_SETTING = "aonwiki-api";
 const TOKEN_SETTING = "aonwiki-key";
+let loggedInName = sessionStorage.getItem("aonwiki-username") || "";
 let currentTitle = "대문";
 let currentContent = "";
 const DEFAULT_API_URL = "https://aon.hiakdhs323.workers.dev";
@@ -26,42 +27,38 @@ function addText(parent, tag, text, className) {
   return el;
 }
 
-function renderContent(source) {
-  const root = $("article");
-  root.replaceChildren();
-  const blocks = String(source || "").split(/\n\s*\n/);
-  for (const block of blocks) {
-    const heading = block.match(/^==\s*(.*?)\s*==$/);
-    if (heading) {
-      addText(root, "h2", heading[1]);
-      continue;
-    }
-    const p = document.createElement("p");
-    const lines = block.split("\n");
-    lines.forEach((line, index) => {
-      if (index) p.append(document.createElement("br"));
-      const linkMatch = line.match(/^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/);
-      const imageMatch = line.match(/^!\[([^\]]*)\]\((https:\/\/[^\s)]+)\)$/);
-      if (linkMatch) {
-        const a = document.createElement("a");
-        a.href = "#";
-        a.textContent = linkMatch[2] || linkMatch[1];
-        a.addEventListener("click", event => { event.preventDefault(); loadPage(linkMatch[1]); });
-        p.append(a);
-      } else if (imageMatch) {
-        const img = document.createElement("img");
-        img.alt = imageMatch[1];
-        img.src = imageMatch[2];
-        img.loading = "lazy";
-        p.append(img);
-      } else {
-        p.append(document.createTextNode(line));
-      }
-    });
-    root.append(p);
-  }
+function inlineRender(parent,text){
+ const re=/\\[\\[([^\\]|]+)(?:\\|([^\\]]+))?\\]\\]|\\*\\*([^*]+)\\*\\*|'''([^']+)'''|''([^']+)''|~~([^~]+)~~|__([^_]+)__/g;
+ let pos=0,m;
+ while((m=re.exec(text))){
+  parent.append(document.createTextNode(text.slice(pos,m.index)));
+  if(m[1]){const title=m[1].trim(),a=document.createElement("a");a.href="#";a.textContent=m[2]||title;a.onclick=e=>{e.preventDefault();loadPage(title)};parent.append(a)}
+  else if(m[3])addText(parent,"strong",m[3]);
+  else if(m[4])addText(parent,"strong",m[4]);
+  else if(m[5])addText(parent,"em",m[5]);
+  else if(m[6])addText(parent,"del",m[6]);
+  else if(m[7])addText(parent,"u",m[7]);
+  pos=re.lastIndex;
+ }
+ parent.append(document.createTextNode(text.slice(pos)));
 }
-
+function renderContent(source,target=$("article")){
+ target.replaceChildren(); let list=null,listType="",quote=null,code=null,p=null;
+ for(const line of String(source||"").split("\n")){
+  if(line.trim().startsWith("{{{")&&!code){code=[];p=null;list=null;continue}
+  if(code){if(line.trim().startsWith("}}}")){const pre=document.createElement("pre");pre.textContent=code.join("\n");target.append(pre);code=null}else code.push(line);continue}
+  const hm=line.match(/^(={1,6})\s*(.*?)\s*\1$/);
+  if(hm){p=null;list=null;quote=null;addText(target,"h"+Math.min(6,hm[1].length),hm[2]);continue}
+  if(/^[-]{4,}$/.test(line.trim())){p=null;list=null;target.append(document.createElement("hr"));continue}
+  const lm=line.match(/^([*#])\s*(.*)$/);
+  if(lm){p=null;quote=null;const type=lm[1]==="*"?"ul":"ol";if(!list||listType!==type){list=document.createElement(type);target.append(list);listType=type}const li=document.createElement("li");inlineRender(li,lm[2]);list.append(li);continue}else{list=null;listType=""}
+  if(/^>\s?/.test(line)){p=null;if(!quote){quote=document.createElement("blockquote");target.append(quote)}const q=document.createElement("p");inlineRender(q,line.replace(/^>\s?/,""));quote.append(q);continue}else quote=null;
+  if(!line.trim()){p=null;continue}
+  if(!p){p=document.createElement("p");target.append(p)}else p.append(document.createElement("br"));
+  inlineRender(p,line);
+ }
+ if(code){const pre=document.createElement("pre");pre.textContent=code.join("\n");target.append(pre)}
+}
 async function loadPage(title) {
   currentTitle = String(title || "대문").trim() || "대문";
   $("title").textContent = currentTitle;
@@ -70,7 +67,7 @@ async function loadPage(title) {
     const data = await api("/api/page?title=" + encodeURIComponent(currentTitle));
     currentContent = data.page ? data.page.content : "";
     renderContent(currentContent);
-    $("message").textContent = data.page ? "문서를 불러왔습니다." : "문서가 없습니다. 관리자 토큰으로 새 문서를 만들 수 있습니다.";
+    $("message").textContent = data.page ? "문서를 불러왔습니다." : "문서가 없습니다. 로그인 후 새 문서를 만들 수 있습니다.";
   } catch (error) {
     $("message").textContent = error.message;
     $("article").replaceChildren();
@@ -112,7 +109,26 @@ $("settings").addEventListener("click", () => showDialog("API 설정", [
   if (base) localStorage.setItem(API_SETTING, base); else localStorage.removeItem(API_SETTING);
   if ($("admin-token").value) sessionStorage.setItem(TOKEN_SETTING, $("admin-token").value);
   $("dialog").close();
-  await loadPage(currentTitle);
+  await $("login").addEventListener("click",()=>{
+ if(loggedInName){sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem("aonwiki-username");loggedInName="";$("login").textContent="로그인";$("message").textContent="로그아웃했습니다.";return}
+ let mode="login";
+ showDialog("로그인",[
+ {id:"auth-username",label:"아이디",placeholder:"한글/영문/숫자 2~20자"},
+ {id:"auth-password",label:"비밀번호",type:"password",placeholder:"8자 이상"}
+ ],async()=>{
+ const username=$("auth-username").value.trim(),password=$("auth-password").value;
+ const data=await api("/api/"+mode,{method:"POST",body:JSON.stringify({username,password})});
+ if(mode==="register"){$("dialog-status").textContent=data.message;return}
+ sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem("aonwiki-username",data.username);loggedInName=data.username;
+ $("login").textContent="로그아웃 · "+loggedInName;$("dialog").close();$("message").textContent=loggedInName+"님 로그인됨";await loadPage(currentTitle);
+ });
+ const toggle=document.createElement("button");toggle.type="button";toggle.className="secondary-button";toggle.textContent="계정 만들기";toggle.style.marginTop="10px";$("dialog-body").append(toggle);
+ toggle.onclick=()=>{mode=mode==="login"?"register":"login";$("dialog-title").textContent=mode==="login"?"로그인":"회원가입";$("save").textContent=mode==="login"?"로그인":"가입하기";toggle.textContent=mode==="login"?"계정 만들기":"로그인으로 돌아가기"};
+ $("save").textContent="로그인";
+});
+if(loggedInName)$("login").textContent="로그아웃 · "+loggedInName;
+
+loadPage(currentTitle);
 }));
 
 function editPage(title = currentTitle, content = currentContent) {
@@ -128,6 +144,10 @@ function editPage(title = currentTitle, content = currentContent) {
     $("dialog").close();
     await loadPage(pageTitle);
   });
+  const pb=document.createElement("button");pb.type="button";pb.className="secondary-button";pb.textContent="미리보기";pb.style.margin="10px 0";
+  const pv=document.createElement("div");pv.className="wiki-content editor-preview";pv.hidden=true;
+  $("dialog-body").append(pb,pv);
+  pb.onclick=()=>{pv.hidden=!pv.hidden;pb.textContent=pv.hidden?"미리보기":"편집으로 돌아가기";if(!pv.hidden)renderContent($("edit-content").value,pv)};
 }
 
 $("edit").addEventListener("click", () => editPage());
