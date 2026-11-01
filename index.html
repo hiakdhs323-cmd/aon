@@ -1,2 +1,22 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AonWiki</title><link rel="stylesheet" href="style.css"></head><body><header><a class="brand" href="./">AonWiki</a><form id="search"><input id="query" placeholder="문서 검색" aria-label="문서 검색"><button>검색</button></form><button id="settings">설정</button><button id="edit">편집</button></header><main><nav><button id="home">대문</button><button id="new">새 문서</button><button id="history">문서 역사</button><button id="upload">이미지 업로드</button></nav><p class="muted">AonWiki / <span id="crumb">대문</span></p><h1 id="title">대문</h1><div id="message" class="notice">Cloudflare Worker API 주소를 설정하면 위키 문서가 연결됩니다.</div><article id="article">AonWiki에 오신 것을 환영합니다.</article><p class="muted">GitHub Pages · Cloudflare Workers · D1 · R2</p></main><dialog id="dialog"><h2 id="dialog-title">설정</h2><div id="dialog-body"></div><p id="dialog-status" class="muted"></p><div class="actions"><button id="save">저장</button><button id="cancel">닫기</button></div></dialog><input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden><script src="app.js"></script></body></html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#008577"><title>대문 - AonWiki</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="topbar">
+<a class="brand" href="./"><span class="brand-mark">A</span><span>Aon<span class="brand-green">Wiki</span></span></a>
+<form id="search" class="searchbar"><input id="query" placeholder="AonWiki에서 검색" aria-label="문서 검색"><button type="submit" aria-label="검색">⌕</button></form>
+<div class="top-actions"><button id="settings" class="secondary-button" type="button">⚙ 설정</button><button id="edit" class="primary-button" type="button">✎ 편집</button></div>
+</header>
+<div class="page-shell">
+<aside class="left-sidebar"><div class="sidebar-label">AONWIKI</div><button id="home" class="side-link active" type="button"><span>⌂</span> 대문</button><button id="new" class="side-link" type="button"><span>＋</span> 새 문서 만들기</button><div class="sidebar-divider"></div><div class="sidebar-label">문서 도구</div><button id="history" class="side-link" type="button"><span>◷</span> 문서 역사</button><button id="upload" class="side-link" type="button"><span>▧</span> 이미지 업로드</button><div class="sidebar-note"><i></i><div><b>AonWiki</b><small>함께 만드는 지식 백과사전</small></div></div></aside>
+<main class="main-column"><div class="breadcrumbs"><a href="./">AonWiki</a><span>›</span><span id="crumb">대문</span></div>
+<section class="article-card"><div class="article-heading"><div><div class="eyebrow">AONWIKI DOCUMENT</div><h1 id="title">대문</h1></div><button id="heading-edit" class="edit-icon" type="button" title="문서 편집">✎</button></div>
+<div class="article-tabs"><span class="tab-active">문서</span><button id="history-tab" type="button">역사</button><span class="tab-spacer"></span><span class="language-label">한국어</span></div>
+<div id="message" class="notice" role="status">문서를 불러오는 중입니다…</div><article id="article" class="wiki-content">AonWiki에 오신 것을 환영합니다.</article>
+<footer class="article-footer"><span>이 문서는 AonWiki에서 관리합니다.</span><span>마지막 업데이트는 문서 역사에서 확인할 수 있습니다.</span></footer></section><div class="site-footer">AonWiki · GitHub Pages · Cloudflare</div></main>
+<aside class="right-sidebar"><section class="side-card"><h2>▤ 문서 바로가기</h2><p>찾고 싶은 문서를 검색하거나 문서 안의 링크를 눌러 이동하세요.</p><div class="quick-search">⌕　문서 검색</div></section>
+<section class="side-card"><h2>위키 정보</h2><div class="info-row"><span>서비스</span><b>AonWiki</b></div><div class="info-row"><span>문서 저장소</span><b>Cloudflare D1</b></div><div class="info-row"><span>이미지 저장소</span><b>Cloudflare R2</b></div><div class="info-row"><span>문서 편집</span><b>관리자 권한</b></div></section>
+<section class="side-card tip-card"><b>ⓘ 위키 사용 팁</b><p>문서 편집에서 <code>[[문서 제목]]</code> 형식으로 다른 문서에 연결할 수 있습니다.</p></section></aside></div>
+<dialog id="dialog"><div class="dialog-head"><div><div class="eyebrow">AONWIKI</div><h2 id="dialog-title">설정</h2></div><button id="cancel" class="dialog-close" type="button">×</button></div><div id="dialog-body"></div><p id="dialog-status" class="dialog-status" role="status"></p><div class="actions"><button id="save" class="primary-button" type="button">저장</button></div></dialog>
+<input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden><script src="app.js"></script><script>document.getElementById('heading-edit').addEventListener('click',()=>document.getElementById('edit').click());document.getElementById('history-tab').addEventListener('click',()=>document.getElementById('history').click());</script>
+</body></html>
