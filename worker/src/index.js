@@ -94,6 +94,10 @@ async function currentUser(request, env) {
   if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   return null;
 }
+async function ensurePageAliasSchema(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS page_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, title TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_page_aliases_title ON page_aliases(title)").run();
+}
 async function ensureImageSchema(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL, owner TEXT NOT NULL DEFAULT '')").run();
   const columns = await env.DB.prepare("PRAGMA table_info(images)").all();
@@ -278,6 +282,23 @@ export default {
         }
         return response({ pages: result.results || [] }, 200, cors);
       }
+      if (url.pathname === "/api/categories" && request.method === "GET") {
+        const result = await env.DB.prepare("SELECT title, content FROM pages ORDER BY updated_at DESC LIMIT 5000").all();
+        const categories = new Map();
+        for (const page of (result.results || [])) {
+          const content = String(page.content || "");
+          const matches = content.matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:\|[^\]]*)?\]\]/gi);
+          for (const match of matches) {
+            const name = String(match[1] || "").trim();
+            if (!name) continue;
+            const key = name.toLocaleLowerCase();
+            const item = categories.get(key) || { name, count: 0 };
+            item.count++;
+            categories.set(key, item);
+          }
+        }
+        return response({ categories: [...categories.values()].sort((a, b) => a.name.localeCompare(b.name, "ko")) }, 200, cors);
+      }
       if (url.pathname === "/api/category" && request.method === "GET") {
         const name = String(url.searchParams.get("name") || "").trim().slice(0, 160);
         if (!name) return response({ error: "분류 이름을 입력하세요." }, 400, cors);
@@ -293,7 +314,12 @@ export default {
       if (url.pathname === "/api/page" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
-        const page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
+        let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
+        if (!page) {
+          await ensurePageAliasSchema(env);
+          const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+          if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
+        }
         return response({ page: page || null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
@@ -312,21 +338,51 @@ export default {
         if (!user) return response({ error: "문서를 편집하려면 로그인하세요." }, 401, cors);
         const body = await request.json();
         const title = cleanTitle(body.title);
+        const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
         if (title === "대문") return response({ error: "대문은 문서 목록 시작 화면이므로 편집할 수 없습니다." }, 403, cors);
         if (content.length > 200000) return response({ error: "문서는 200,000자 이하로 작성해 주세요." }, 413, cors);
-        const previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(title).first();
-        if (body.createOnly && previous) return response({ error: "같은 제목의 문서가 이미 있습니다." }, 409, cors);
-        const summary = String(body.summary || "").trim().slice(0, 200);
         const now = new Date().toISOString();
-        await env.DB.prepare("INSERT INTO pages (title, content, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at").bind(title, content, previous ? previous.created_at : now, now).run();
+        const summary = String(body.summary || "").trim().slice(0, 200);
         const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
         if (!(columns.results || []).some(column => column.name === "summary")) {
           await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
         }
-        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, summary).run();
-        return response({ ok: true, title, updated_at: now }, 200, cors);
+
+        let previous = null;
+        if (body.createOnly) {
+          previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(title).first();
+          if (previous) return response({ error: "같은 제목의 문서가 이미 있습니다." }, 409, cors);
+          await env.DB.prepare("INSERT INTO pages (title, content, created_at, updated_at) VALUES (?, ?, ?, ?)")
+            .bind(title, content, now, now).run();
+        } else if (originalTitle && originalTitle !== title) {
+          await ensurePageAliasSchema(env);
+          previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(originalTitle).first();
+          if (!previous) return response({ error: "이전 문서를 찾을 수 없습니다. 새로고침 후 다시 시도하세요." }, 404, cors);
+          const occupied = await env.DB.prepare("SELECT title FROM pages WHERE title = ? COLLATE NOCASE").bind(title).first();
+          if (occupied) return response({ error: "변경할 제목이 이미 사용 중입니다." }, 409, cors);
+          const aliasCollision = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+          if (aliasCollision && aliasCollision.title !== originalTitle) {
+            return response({ error: "변경할 제목이 다른 문서의 이전 제목으로 사용 중입니다." }, 409, cors);
+          }
+
+          await env.DB.prepare("UPDATE pages SET title = ?, content = ?, updated_at = ? WHERE title = ?")
+            .bind(title, content, now, originalTitle).run();
+          await env.DB.prepare("UPDATE revisions SET title = ? WHERE title = ?").bind(title, originalTitle).run();
+          await env.DB.prepare("UPDATE page_aliases SET title = ? WHERE title = ?").bind(title, originalTitle).run();
+          await env.DB.prepare("INSERT INTO page_aliases (alias, title, created_at) VALUES (?, ?, ?) ON CONFLICT(alias) DO UPDATE SET title = excluded.title, created_at = excluded.created_at")
+            .bind(originalTitle, title, now).run();
+        } else {
+          previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(title).first();
+          if (!previous) return response({ error: "수정할 문서를 찾을 수 없습니다." }, 404, cors);
+          await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?")
+            .bind(content, now, title).run();
+        }
+
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
+          .bind(title, content, user.username, now, summary).run();
+        return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
         const user = await currentUser(request, env);
