@@ -128,7 +128,7 @@ export class NamuMark {
     }
 
     // 기본값으로 설정 (임의적)
-    config.useTocSet = "half_off"
+    config.useTocSet = "default"
 
     this.config = config;
 
