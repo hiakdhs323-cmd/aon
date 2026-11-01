@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff">
 <title>AonWiki</title>
-<link rel="stylesheet" href="style.css?v=20261101-account-password-r11">
+<link rel="stylesheet" href="style.css?v=20261101-wiki-features-r12">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" crossorigin="anonymous">
 </head>
@@ -20,6 +20,8 @@
     <div class="nav-heading">AonWiki</div>
     <button id="home" class="nav-item active" type="button">대문</button>
     <button id="new" class="nav-item" type="button">새 문서 만들기</button>
+    <button id="categories" class="nav-item" type="button">분류 목록</button>
+    <button id="random-page" class="nav-item" type="button">임의 문서</button>
     <div class="nav-separator"></div>
     <div class="nav-heading">문서 도구</div>
     <button id="edit" class="nav-item" type="button" hidden>문서 편집</button>
@@ -56,7 +58,7 @@
         <div class="editor-page-heading"><div><p class="editor-kicker">AONWIKI EDITOR</p><h1 id="editor-heading">새 문서 작성</h1></div><button id="editor-help-toggle" class="button" type="button">문법 도움말</button></div>
         <form id="editor-form">
           <div id="editor-title-wrap" class="editor-field"><label for="editor-title">문서 제목</label><input id="editor-title" maxlength="120" placeholder="문서 제목을 입력하세요." autocomplete="off"></div>
-          <div class="editor-field"><label for="editor-content">문서 내용</label><div class="editor-tabs"><button id="editor-tab-write" class="active" type="button">편집</button><button id="editor-tab-preview" type="button">미리보기</button><span>나무마크</span><button id="editor-image" type="button">이미지 업로드</button></div><div class="editor-markup-toolbar" role="toolbar" aria-label="문법 빠른 삽입"><button type="button" data-markup="heading">문단 제목</button><button type="button" data-markup="bold"><strong>B</strong></button><button type="button" data-markup="italic"><em>I</em></button><button type="button" data-markup="link">링크</button><button type="button" data-markup="list">목록</button><button type="button" data-markup="footnote">각주</button><button type="button" data-markup="table">표</button><button type="button" data-markup="hr">구분선</button></div><div id="editor-counter" class="editor-counter">0 / 200,000자</div><textarea id="editor-content" spellcheck="false" placeholder="문서 내용을 입력하세요."></textarea><article id="editor-preview" class="wiki-content editor-preview" hidden></article></div>
+          <div class="editor-field"><label for="editor-content">문서 내용</label><div class="editor-tabs"><button id="editor-tab-write" class="active" type="button">편집</button><button id="editor-tab-preview" type="button">미리보기</button><span>나무마크</span><button id="editor-image" type="button">이미지 업로드</button></div><div class="editor-markup-toolbar" role="toolbar" aria-label="문법 빠른 삽입"><button type="button" data-markup="heading">문단 제목</button><button type="button" data-markup="bold"><strong>B</strong></button><button type="button" data-markup="italic"><em>I</em></button><button type="button" data-markup="link">링크</button><button type="button" data-markup="list">목록</button><button type="button" data-markup="footnote">각주</button><button type="button" data-markup="category">분류</button><button type="button" data-markup="external">외부 링크</button><button type="button" data-markup="table">표</button><button type="button" data-markup="hr">구분선</button></div><div id="editor-counter" class="editor-counter">0 / 200,000자</div><textarea id="editor-content" spellcheck="false" placeholder="문서 내용을 입력하세요."></textarea><article id="editor-preview" class="wiki-content editor-preview" hidden></article></div>
           <div class="editor-field"><label for="editor-summary">편집 요약 <span class="optional-label">(선택)</span></label><input id="editor-summary" maxlength="200" placeholder="수정한 내용을 간단히 적어 주세요."></div>
           <div id="editor-help" class="editor-help" hidden><h2>나무마크 문법 도움말</h2>
 <p><code>== 문단 ==</code> 문단 제목 · <code>[[문서]]</code> 문서 링크 · <code>[[문서#s-1]]</code> 문단 링크 · <code>[anchor(이름)]</code> 앵커</p>
@@ -67,7 +69,7 @@
 <p><code>[[파일:이름.png|width=300&amp;align=right]]</code> 이미지 옵션 · <code>[ruby(漢字,ruby=かんじ)]</code> 루비 문자 · <code>[date]</code> 날짜</p>
 <p><code>{{{#!folding 제목</code> 접기 · <code>{{{#!wiki style="..."</code> 스타일 영역 · <code>{{{#!style</code> CSS 스타일 시트</p>
 <p><code>{{{#!latex</code> LaTeX 수식 · <code>{{{#!syntax python</code> 코드 강조 · <code>{{{#!if docName == "문서명"</code> 조건부 본문</p>
-<p><code>[https://example.com 표시]</code> 외부 링크 · <code>[[inter:wikipedia:문서명]]</code> 인터위키 · <code>[datetime]</code> 날짜와 시간 · <code>[pagecount]</code> 문서 데이터 수</p>
+<p><code>[https://example.com 표시]</code> 또는 <code>[https://example.com|표시]</code> 외부 링크 · <code>[[inter:wikipedia:문서명]]</code> 인터위키 · <code>[[분류:분류명]]</code> 분류 등록 · <code>[datetime]</code> 날짜와 시간 · <code>[pagecount]</code> 문서 데이터 수</p>
 <p>편집기에서 <strong>미리보기</strong>를 눌러 실제 렌더링 결과를 확인할 수 있습니다.</p></div>
           <p id="editor-status" class="editor-status" role="status"></p>
           <div class="editor-actions"><button id="editor-cancel" class="button" type="button">취소</button><button id="editor-save" class="button button-primary" type="submit">저장</button></div>
@@ -85,6 +87,6 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" crossorigin="anonymous"></script>
-<script defer src="namumark-parser.js?v=20261101-account-password-r11"></script>
-<script defer src="app.js?v=20261101-account-password-r11"></script>
+<script defer src="namumark-parser.js?v=20261101-wiki-features-r12"></script>
+<script defer src="app.js?v=20261101-wiki-features-r12"></script>
 </body></html>
