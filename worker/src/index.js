@@ -282,6 +282,33 @@ export default {
         }
         return response({ pages: result.results || [] }, 200, cors);
       }
+      if (url.pathname === "/api/recent" && request.method === "GET") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
+        if (!(columns.results || []).some(column => column.name === "summary")) {
+          await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+        }
+        const result = await env.DB.prepare("SELECT id, title, editor, created_at, summary FROM revisions ORDER BY id DESC LIMIT 200").all();
+        return response({ changes: result.results || [] }, 200, cors);
+      }
+      if (url.pathname === "/api/backlinks" && request.method === "GET") {
+        const title = cleanTitle(url.searchParams.get("title"));
+        if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        const candidate = await env.DB.prepare("SELECT title, content, updated_at FROM pages WHERE content LIKE ? ORDER BY updated_at DESC LIMIT 1000")
+          .bind("%[[" + title + "%").all();
+        const backlinks = [];
+        for (const page of (candidate.results || [])) {
+          if (page.title === title) continue;
+          let count = 0;
+          const links = String(page.content || "").matchAll(/\[\[([^\]]+)\]\]/g);
+          for (const link of links) {
+            const target = String(link[1] || "").split("|")[0].split("#")[0].trim();
+            if (target.toLocaleLowerCase() === title.toLocaleLowerCase()) count++;
+          }
+          if (count) backlinks.push({ title: page.title, updated_at: page.updated_at, count });
+        }
+        return response({ title, backlinks }, 200, cors);
+      }
       if (url.pathname === "/api/categories" && request.method === "GET") {
         const result = await env.DB.prepare("SELECT title, content FROM pages ORDER BY updated_at DESC LIMIT 5000").all();
         const categories = new Map();
