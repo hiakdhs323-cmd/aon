@@ -34,6 +34,42 @@ async function refreshIdentity(){
 }
 
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
+const liveWatchStartedAt=new Date().toISOString();
+const liveSeenTitles=new Set();
+let livePollBusy=false;
+function showNewPageNotice(page){
+ let host=$("live-notice-host");
+ if(!host){host=document.createElement("div");host.id="live-notice-host";host.className="live-notice-host";host.setAttribute("aria-live","polite");document.body.append(host)}
+ const card=document.createElement("div");card.className="live-notice";
+ const info=document.createElement("div");info.className="live-notice-info";
+ addText(info,"strong","새 문서 등록");
+ addText(info,"span",page.title+" 문서가 새로 올라왔습니다.");
+ const open=document.createElement("button");open.type="button";open.className="button button-primary";open.textContent="열기";
+ open.addEventListener("click",()=>{card.remove();openPage(page.title)});
+ const close=document.createElement("button");close.type="button";close.className="live-notice-close";close.textContent="×";close.setAttribute("aria-label","알림 닫기");
+ close.addEventListener("click",()=>card.remove());
+ card.append(info,open,close);host.prepend(card);
+ while(host.children.length>5)host.lastElementChild.remove();
+}
+async function checkForNewPages(){
+ if(livePollBusy)return;
+ livePollBusy=true;
+ try{
+  const data=await api("/api/pages?created_after="+encodeURIComponent(liveWatchStartedAt));
+  const pages=data.pages||[];
+  const fresh=pages.filter(page=>page.title&&!liveSeenTitles.has(page.title));
+  pages.forEach(page=>liveSeenTitles.add(page.title));
+  fresh.sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
+  fresh.forEach(showNewPageNotice);
+  if(fresh.length&&isHomeRoute())await loadHome();
+ }catch(error){console.warn("새 문서 실시간 확인 실패:",error)}
+ finally{livePollBusy=false}
+}
+function startLivePageWatcher(){
+ if(window.aonWikiLiveTimer)return;
+ checkForNewPages();
+ window.aonWikiLiveTimer=window.setInterval(checkForNewPages,10000);
+}
 function showHome(push=true){
  if(push)history.pushState(null,"","#/");
  currentTitle="";currentContent="";
@@ -643,6 +679,8 @@ async function loadPage(title,pushRoute=true,anchor=""){
   if(anchor)requestAnimationFrame(()=>scrollToAnchor(anchor))
  }catch(error){$("message").textContent=error.message;$("article").replaceChildren()}
 }
+$("cancel").addEventListener("click",()=>{if($("dialog").open)$("dialog").close()});
+$("dialog").addEventListener("click",event=>{if(event.target===$("dialog"))$("dialog").close()});
 function showDialog(title,fields,onSave,label="저장"){
  $("dialog-title").textContent=title;const body=$("dialog-body");body.replaceChildren();
  for(const field of fields){addText(body,"label",field.label);const input=document.createElement(field.multiline?"textarea":"input");input.id=field.id;input.value=field.value||"";if(field.type)input.type=field.type;if(field.placeholder)input.placeholder=field.placeholder;body.append(input)}
@@ -1004,28 +1042,78 @@ $("editor-image").onclick=()=>{
  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
  $("file").click()
 };
+const MAX_RAW_IMAGE_BYTES=3*1024*1024;
+const MAX_STORED_IMAGE_BYTES=900*1024;
+async function decodeImageFile(file){
+ if(typeof createImageBitmap==="function"){
+  try{const bitmap=await createImageBitmap(file);return {source:bitmap,width:bitmap.width,height:bitmap.height,close:()=>bitmap.close?.()}}catch{}
+ }
+ const url=URL.createObjectURL(file);
+ try{const image=new Image();image.src=url;await image.decode();return {source:image,width:image.naturalWidth,height:image.naturalHeight,close:()=>URL.revokeObjectURL(url)}}
+ catch(error){URL.revokeObjectURL(url);throw error}
+}
+async function compressImageForUpload(file){
+ if(file.size<=MAX_STORED_IMAGE_BYTES)return {blob:file,filename:file.name,compressed:false,animatedGif:false,originalSize:file.size};
+ const decoded=await decodeImageFile(file);
+ try{
+  if(!decoded.width||!decoded.height)throw Error("이미지 크기를 확인할 수 없습니다.");
+  const canvas=document.createElement("canvas");
+  const context=canvas.getContext("2d",{alpha:true});
+  if(!context)throw Error("이미지 압축 기능을 사용할 수 없습니다.");
+  let scale=Math.min(1,2400/Math.max(decoded.width,decoded.height));
+  const qualities=[0.86,0.78,0.70,0.62,0.54];
+  for(let pass=0;pass<6;pass++){
+   canvas.width=Math.max(1,Math.round(decoded.width*scale));
+   canvas.height=Math.max(1,Math.round(decoded.height*scale));
+   context.clearRect(0,0,canvas.width,canvas.height);
+   context.drawImage(decoded.source,0,0,canvas.width,canvas.height);
+   for(const quality of qualities){
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",quality));
+    if(!blob)continue;
+    if(blob.type!=="image/webp")throw Error("이 브라우저에서 WebP 압축을 지원하지 않습니다. 이미지를 더 작은 파일로 저장한 뒤 다시 시도하세요.");
+    if(blob.size<=MAX_STORED_IMAGE_BYTES){
+     const base=file.name.replace(/\.[^.]+$/,"")||"image";
+     return {blob,filename:base+".webp",compressed:true,animatedGif:file.type==="image/gif",originalSize:file.size}
+    }
+   }
+   scale*=0.82;
+  }
+  throw Error("자동 압축 후에도 900KB를 넘습니다. 더 작은 이미지로 다시 시도하세요.");
+ }finally{decoded.close()}
+}
+function formatImageSize(bytes){return bytes>=1024*1024?(bytes/1024/1024).toFixed(2)+"MB":Math.round(bytes/1024)+"KB"}
+
 $("file").onchange=async()=>{
  const file=$("file").files[0];$("file").value="";
  if(!file)return;
- if(file.size>1024*1024){
-  const message="이미지는 1MB 이하만 업로드할 수 있습니다.";
+ if(file.size>MAX_RAW_IMAGE_BYTES){
+  const message="이미지는 원본 3MB 이하만 업로드할 수 있습니다.";
   if(!$("editor-view").hidden)$("editor-status").textContent=message;else $("message").textContent=message;
   return
  }
  const defaultName=file.name.replace(/\.[^.]+$/,"");
  showDialog("이미지 업로드",[{id:"upload-filename",label:"파일 이름",value:defaultName}],async()=>{
-  const form=new FormData();form.append("file",file);form.append("filename",$("upload-filename").value.trim());
+  $("dialog-status").textContent="이미지를 확인하고 압축하는 중…";
+  const compressed=await compressImageForUpload(file);
+  if(compressed.animatedGif&&!confirm("용량을 줄이기 위해 GIF의 첫 프레임을 정적 WebP 이미지로 변환합니다. 애니메이션은 유지되지 않습니다. 계속할까요?"))return;
+  if(compressed.compressed){
+   $("dialog-status").textContent="압축 완료: "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+". 업로드 중…";
+  }else{$("dialog-status").textContent="업로드 중…"}
+  const form=new FormData();form.append("file",compressed.blob,compressed.filename);form.append("filename",$("upload-filename").value.trim());
   const data=await api("/api/upload",{method:"POST",body:form});
   namuDatabaseCache.expires=0;
   const markup="[[파일:"+data.filename+"|width=500]]";
+  const compressionNote=compressed.compressed?"원본 "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+"로 자동 압축했습니다.":"원본 파일을 그대로 업로드했습니다.";
   if(!$("editor-view").hidden){
    const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
+   $("editor-status").textContent=compressionNote;
   }else if(currentTitle){
    $("dialog").close();editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);return
   }else{
    $("dialog").close();
    showDialog("이미지 업로드 완료",[{id:"uploaded-image-markup",label:"문서에 붙여넣을 나무마크",value:markup}],async()=>{$("dialog").close()},"닫기");
-   addText($("dialog-body"),"p","이미지는 파일 관리에서 확인할 수 있습니다. 아래 문법을 복사해 대문이나 문서에 붙여넣으세요.").className="dialog-help";
+   addText($("dialog-body"),"p",compressionNote+" 이미지는 파일 관리에서 확인할 수 있습니다.").className="dialog-help";
+   addText($("dialog-body"),"p","아래 문법을 복사해 대문이나 문서에 붙여넣으세요.").className="dialog-help";
    const copy=document.createElement("button");copy.type="button";copy.className="button";copy.textContent="문법 복사";
    copy.onclick=async()=>{try{await navigator.clipboard.writeText(markup);copy.textContent="복사 완료"}catch{const field=$("uploaded-image-markup");field.focus();field.select();copy.textContent="선택 완료"}};
    $("dialog-body").append(copy);return
@@ -1037,3 +1125,4 @@ window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
 readRoute();
 refreshIdentity();
+startLivePageWatcher();
