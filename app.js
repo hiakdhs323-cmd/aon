@@ -565,18 +565,86 @@ function openLogin(){
   const username=$("auth-username").value.trim(),password=$("auth-password").value;
   const data=await api("/api/"+mode,{method:"POST",body:JSON.stringify({username,password})});
   if(mode==="register"){$("dialog-status").textContent=data.message+" 로그인 화면으로 돌아가 로그인하세요.";return}
-  sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem(NAME_SETTING,data.username);loggedInName=data.username;$("login").textContent="로그아웃 · "+loggedInName;$("dialog").close();
+  sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem(NAME_SETTING,data.username);loggedInName=data.username;$("dialog").close();await refreshIdentity();
   if(document.body.classList.contains("editor-active"))return;if(currentTitle)loadPage(currentTitle,false);else loadHome()
  }, "로그인");
  const toggle=document.createElement("button");toggle.type="button";toggle.className="button";toggle.textContent="계정 만들기";toggle.style.marginTop="10px";
  toggle.onclick=()=>{mode=mode==="login"?"register":"login";$("dialog-title").textContent=mode==="login"?"로그인":"회원가입";$("save").textContent=mode==="login"?"로그인":"가입하기";toggle.textContent=mode==="login"?"계정 만들기":"로그인으로 돌아가기"};
  $("dialog-body").append(toggle)
 }
-$("login").onclick=()=>{if(loggedInName){sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem(NAME_SETTING);loggedInName="";$("login").textContent="로그인";return}openLogin()};
-if(loggedInName)$("login").textContent="로그아웃 · "+loggedInName;
-$("settings").onclick=()=>showDialog("API 설정",[{id:"api-url",label:"Cloudflare Worker API 주소",value:apiBase()},{id:"admin-token",label:"관리자 토큰(선택)",type:"password"}],async()=>{
- const base=$("api-url").value.trim().replace(/\/$/,"");if(base&&!base.startsWith("https://"))throw Error("https:// 주소를 입력하세요.");if(base)localStorage.setItem(API_SETTING,base);if($("admin-token").value)sessionStorage.setItem(TOKEN_SETTING,$("admin-token").value);$("dialog").close();readRoute()
+$("login").onclick=async()=>{
+ if(loggedInName){
+  sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem(NAME_SETTING);loggedInName="";isWikiAdmin=false;currentRole="anonymous";
+  await refreshIdentity();readRoute();return
+ }
+ openLogin()
+};
+$("settings").onclick=()=>showDialog("연결 및 관리자 인증",[
+ {id:"api-url",label:"Cloudflare Worker API 주소",value:apiBase()},
+ {id:"admin-token",label:"관리자 토큰 (입력하면 위키 관리자 권한 확인)",type:"password"}
+],async()=>{
+ const base=$("api-url").value.trim().replace(/\/$/,"");
+ if(base&&!base.startsWith("https://"))throw Error("https:// 주소를 입력하세요.");
+ const previousApi=apiBase(),previousToken=sessionStorage.getItem(TOKEN_SETTING)||"";
+ if(base)localStorage.setItem(API_SETTING,base);
+ const candidate=$("admin-token").value.trim();
+ if(candidate)sessionStorage.setItem(TOKEN_SETTING,candidate);
+ try{
+  const identity=await api("/api/me");
+  if(candidate&&!identity.isAdmin)throw Error("관리자 토큰이 올바르지 않습니다.");
+  await refreshIdentity();
+  $("dialog").close();
+  readRoute()
+ }catch(error){
+  if(previousApi)localStorage.setItem(API_SETTING,previousApi);
+  if(previousToken)sessionStorage.setItem(TOKEN_SETTING,previousToken);else sessionStorage.removeItem(TOKEN_SETTING);
+  await refreshIdentity();
+  throw error
+ }
 });
+async function editHomepage(){
+ if(!isWikiAdmin){$("message").textContent="위키 관리자 권한이 필요합니다.";return}
+ const data=await api("/api/home"),settings=data.settings||{};
+ showDialog("대문 편집",[
+  {id:"home-edit-title",label:"대문 제목",value:settings.title||"AonWiki"},
+  {id:"home-edit-tagline",label:"소개 문구",value:settings.tagline||""},
+  {id:"home-edit-notice",label:"공지 / 안내",value:settings.notice||"",multiline:true},
+  {id:"home-edit-content",label:"대문 본문 (나무마크)",value:settings.content||"",multiline:true}
+ ],async()=>{
+  await api("/api/home",{method:"PUT",body:JSON.stringify({
+   title:$("home-edit-title").value,
+   tagline:$("home-edit-tagline").value,
+   notice:$("home-edit-notice").value,
+   content:$("home-edit-content").value
+  })});
+  $("dialog").close();await loadHome()
+ },"대문 저장");
+}
+$("home-edit").onclick=()=>editHomepage().catch(error=>{$("dialog-status").textContent=error.message});
+$("admin-token-rotate").onclick=async()=>{
+ if(!isWikiAdmin){$("dialog-status").textContent="위키 관리자 권한이 필요합니다.";return}
+ if(!confirm("관리자 토큰을 새로 발급할까요? 기존 토큰은 즉시 사용할 수 없게 됩니다."))return;
+ try{
+  const data=await api("/api/admin/token/rotate",{method:"POST"});
+  sessionStorage.setItem(TOKEN_SETTING,data.token);
+  await refreshIdentity();
+  showDialog("새 관리자 토큰 발급 완료",[
+   {id:"generated-admin-token",label:"새 관리자 토큰 (다시 표시되지 않습니다)",value:data.token}
+  ],async()=>{$("dialog").close()},"확인");
+  const note=document.createElement("p");note.className="dialog-help";note.textContent="새 토큰을 안전한 장소에 보관하세요. 이전 토큰은 더 이상 작동하지 않습니다.";
+  $("dialog-body").append(note);
+  const copy=document.createElement("button");copy.type="button";copy.className="button";copy.textContent="토큰 복사";
+  copy.onclick=async()=>{try{await navigator.clipboard.writeText(data.token);copy.textContent="복사 완료"}catch{ $("generated-admin-token").focus();$("generated-admin-token").select();copy.textContent="토큰을 선택했습니다." }};
+  $("dialog-body").append(copy);
+ }catch(error){$("dialog-status").textContent=error.message}
+};
+$("delete-page").onclick=async()=>{
+ if(!isWikiAdmin||!currentTitle)return;
+ if(!confirm("‘"+currentTitle+"’ 문서와 문서 역사를 삭제할까요? 이 작업은 되돌릴 수 없습니다."))return;
+ try{await api("/api/page?title="+encodeURIComponent(currentTitle),{method:"DELETE"});showHome(true)}
+ catch(error){$("message").textContent=error.message}
+};
+
 let editorOriginalTitle = "";
 let editorIsNew = false;
 
