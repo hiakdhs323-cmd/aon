@@ -95,6 +95,55 @@ export default {
     const cors = getCors(request, env);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     try {
+      if (url.pathname === "/api/me" && request.method === "GET") {
+        const user = await currentUser(request, env);
+        return response({ authenticated: Boolean(user), username: user?.username || null, role: user?.role || "anonymous", isAdmin: Boolean(user?.isAdmin) }, 200, cors);
+      }
+      if (url.pathname === "/api/admin/token/rotate" && request.method === "POST") {
+        if (!(await isAdminRequest(request, env))) return response({ error: "관리자 권한이 필요합니다." }, 403, cors);
+        const token = makeAdminToken();
+        await ensureAdminTokenTable(env);
+        await env.DB.prepare("INSERT INTO admin_tokens (id, token_hash, updated_at) VALUES ('primary', ?, ?) ON CONFLICT(id) DO UPDATE SET token_hash = excluded.token_hash, updated_at = excluded.updated_at")
+          .bind(await sha256(token), new Date().toISOString()).run();
+        return response({ ok: true, token, message: "새 관리자 토큰이 발급되었습니다. 이 값은 다시 표시되지 않습니다." }, 200, cors);
+      }
+      if (url.pathname === "/api/home" && request.method === "GET") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, updated_at TEXT NOT NULL, editor TEXT NOT NULL DEFAULT '')").run();
+        const result = await env.DB.prepare("SELECT key, value FROM wiki_settings WHERE key IN ('home_title','home_tagline','home_notice','home_content')").all();
+        const settings = Object.fromEntries((result.results || []).map(row => [row.key, row.value]));
+        return response({ settings: {
+          title: settings.home_title || "AonWiki",
+          tagline: settings.home_tagline || "함께 만드는 지식 백과사전",
+          notice: settings.home_notice || "",
+          content: settings.home_content || ""
+        } }, 200, cors);
+      }
+      if (url.pathname === "/api/home" && request.method === "PUT") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "대문을 수정하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        const body = await request.json();
+        const settings = {
+          home_title: String(body.title || "AonWiki").trim().slice(0, 80),
+          home_tagline: String(body.tagline || "").trim().slice(0, 200),
+          home_notice: String(body.notice || "").trim().slice(0, 2000),
+          home_content: String(body.content || "").slice(0, 200000)
+        };
+        const now = new Date().toISOString();
+        for (const [key, value] of Object.entries(settings)) {
+          await env.DB.prepare("INSERT INTO wiki_settings (key, value, updated_at, editor) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, editor = excluded.editor")
+            .bind(key, value, now, user.username).run();
+        }
+        return response({ ok: true, updated_at: now }, 200, cors);
+      }
+      if (url.pathname === "/api/page" && request.method === "DELETE") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "문서를 삭제하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        const title = cleanTitle(url.searchParams.get("title"));
+        if (!title || title === "대문") return response({ error: "삭제할 수 없는 문서입니다." }, 400, cors);
+        await env.DB.prepare("DELETE FROM pages WHERE title = ?").bind(title).run();
+        await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
+        return response({ ok: true, title }, 200, cors);
+      }
       if (url.pathname === "/api/health" && request.method === "GET") {
         return response({ ok: true, service: "AonWiki API" }, 200, cors);
       }
