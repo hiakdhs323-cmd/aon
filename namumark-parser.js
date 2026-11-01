@@ -188,7 +188,7 @@ var NamuMarkBundle = (() => {
           config[key] = "default";
         }
       }
-      config.useTocSet = "half_off";
+      config.useTocSet = "default";
       this.config = config;
       this.database = database;
     }
