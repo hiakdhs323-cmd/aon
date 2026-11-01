@@ -9,7 +9,7 @@ function getCors(request, env) {
   const allowed = (env.ALLOWED_ORIGIN || "https://hiakdhs323-cmd.github.io").split(",").map(v => v.trim());
   return {
     "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : allowed[0],
-    "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
@@ -32,10 +32,54 @@ function namuFileHash(data) {
   }
   return parts.join("").slice(0, 56);
 }
-function legacyAdmin(request, env) {
-  const value = request.headers.get("Authorization") || "";
-  return Boolean(env.ADMIN_TOKEN && value === "Bearer " + env.ADMIN_TOKEN);
+async function ensureAdminTokenTable(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_tokens (id TEXT PRIMARY KEY NOT NULL, token_hash TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
 }
+async function isAdminRequest(request, env) {
+  const authorization = request.headers.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) return false;
+  await ensureAdminTokenTable(env);
+  const saved = await env.DB.prepare("SELECT token_hash FROM admin_tokens WHERE id = 'primary'").first();
+  const presented = authorization.slice(7);
+  if (saved) return (await sha256(presented)) === saved.token_hash;
+  if (env.ADMIN_TOKEN && presented === env.ADMIN_TOKEN) {
+    await env.DB.prepare("INSERT INTO admin_tokens (id, token_hash, updated_at) VALUES ('primary', ?, ?) ON CONFLICT(id) DO NOTHING")
+      .bind(await sha256(presented), new Date().toISOString()).run();
+    return true;
+  }
+  return false;
+}
+async function currentUser(request, env) {
+  if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
+  const auth = request.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const tokenHash = await sha256(auth.slice(7));
+  const now = new Date().toISOString();
+  const user = await env.DB.prepare("SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
+  return user ? { ...user, role: "user", isAdmin: false } : null;
+}
+async function ensureImageSchema(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL, owner TEXT NOT NULL DEFAULT '')").run();
+  const columns = await env.DB.prepare("PRAGMA table_info(images)").all();
+  if (!(columns.results || []).some(column => column.name === "owner")) {
+    await env.DB.prepare("ALTER TABLE images ADD COLUMN owner TEXT NOT NULL DEFAULT ''").run();
+  }
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS image_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, image_id TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+}
+function cleanImageName(value, contentType) {
+  const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" })[contentType] || "img";
+  let name = String(value || "").normalize("NFC").replace(/[\\/:*?"<>|]/g, "_").replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  name = name.replace(/\.[^.]*$/, "").replace(/[. ]+$/g, "").slice(0, 100);
+  if (!name) name = "image";
+  return name + "." + extension;
+}
+function makeAdminToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
