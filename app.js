@@ -491,7 +491,7 @@ $("upload").onclick=()=>{if(!currentTitle)return; if(!loggedInName&&!sessionStor
 $("file").onchange=async()=>{
  const file=$("file").files[0];$("file").value="";if(!file)return;if(file.size>1024*1024){$("message").textContent="이미지는 1MB 이하만 업로드할 수 있습니다.";return}
  const form=new FormData();form.append("file",file);
- try{const data=await api("/api/upload",{method:"POST",body:form});editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+"[[파일:"+data.key+"|width=500]]")}
+ try{const data=await api("/api/upload",{method:"POST",body:form});editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+"[[파일:"+(data.filename||file.name)+"|width=500]]")}
  catch(error){$("message").textContent=error.message}
 };
 window.addEventListener("popstate",readRoute);
