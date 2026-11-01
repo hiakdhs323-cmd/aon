@@ -1,0 +1,17 @@
+name = "aonwiki-api"
+main = "worker/src/index.js"
+compatibility_date = "2026-10-31"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://hiakdhs323-cmd.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aonwiki"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "worker"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "aonwiki-images"
