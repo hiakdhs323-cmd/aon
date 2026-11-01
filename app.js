@@ -1,4 +1,24 @@
 const $=id=>document.getElementById(id);
+
+const THEME_SETTING = "aonwiki-theme";
+function applyWikiTheme(theme) {
+  const selected = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = selected;
+  const button = $("theme-toggle");
+  if (button) {
+    button.textContent = selected === "dark" ? "화이트 모드" : "다크 모드";
+    button.setAttribute("aria-label", selected === "dark" ? "화이트 모드로 전환" : "다크 모드로 전환");
+  }
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = selected === "dark" ? "#151a23" : "#ffffff";
+}
+applyWikiTheme(localStorage.getItem(THEME_SETTING) || "light");
+$("theme-toggle").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_SETTING, next);
+  applyWikiTheme(next);
+});
+
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
@@ -932,6 +952,7 @@ function editPage(title = currentTitle, content = currentContent) {
     }
   } catch {}
   $("editor-content").value = editorText;
+  updateEditorHighlight();
   $("editor-counter").textContent = editorText.length.toLocaleString("ko-KR") + " / 200,000자";
   $("editor-summary").value = "";
   $("editor-status").textContent = "";
@@ -1029,7 +1050,63 @@ $("editor-content").addEventListener("input", () => {
   $("editor-counter").textContent=content.length.toLocaleString("ko-KR")+" / 200,000자";
   $("editor-status").textContent=content.length>200000?"문서가 200,000자를 초과했습니다.":"";
   saveEditorDraft();
+  updateEditorHighlight();
 });
+
+function escapeHighlightText(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[char]);
+}
+function highlightNamuLine(line, insideCode) {
+  if (insideCode) return '<span class="mk-code-line">' + escapeHighlightText(line) + '</span>';
+  if (/^\s*={2,6}.*?={2,6}\s*$/.test(line)) return '<span class="mk-heading">' + escapeHighlightText(line) + '</span>';
+  if (/^\s*\|\|/.test(line)) return '<span class="mk-table">' + escapeHighlightText(line) + '</span>';
+  if (/^\s*(?:\*+|\d+\.)\s/.test(line)) return '<span class="mk-list">' + escapeHighlightText(line) + '</span>';
+  if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return '<span class="mk-rule">' + escapeHighlightText(line) + '</span>';
+  const tokenPattern = /(\[\[(?:파일|File):[^\]]+\]\]|\[\[분류:[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^]]+\]|\[https?:\/\/[^\]]+\]|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\{\{\{[^}]*\}\}\}|\{\{\{)/gi;
+  let output = "", last = 0, match;
+  while ((match = tokenPattern.exec(line))) {
+    output += escapeHighlightText(line.slice(last, match.index));
+    const token = match[0];
+    let kind = "mk-inline";
+    if (/^\[\[(?:파일|File):/i.test(token)) kind = "mk-file";
+    else if (/^\[\[분류:/i.test(token)) kind = "mk-category";
+    else if (/^\[\[/.test(token)) kind = "mk-link";
+    else if (/^\[\*/.test(token)) kind = "mk-footnote";
+    else if (/^\[https?:\/\//i.test(token)) kind = "mk-external";
+    else if (/^\{\{\{/.test(token)) kind = "mk-code";
+    else if (token.startsWith("'''")) kind = "mk-bold";
+    else if (token.startsWith("''")) kind = "mk-italic";
+    else if (token.startsWith("__")) kind = "mk-underline";
+    else if (token.startsWith("~~")) kind = "mk-strike";
+    else if (token.startsWith("^^") || token.startsWith(",,")) kind = "mk-script";
+    output += '<span class="' + kind + '">' + escapeHighlightText(token) + '</span>';
+    last = tokenPattern.lastIndex;
+  }
+  output += escapeHighlightText(line.slice(last));
+  return output || " ";
+}
+function updateEditorHighlight() {
+  const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
+  if (!field || !code || !pre) return;
+  let insideCode = false;
+  code.innerHTML = field.value.split("\n").map(line => {
+    const isFence = /^\s*\{\{\{/.test(line);
+    const output = highlightNamuLine(line, insideCode || isFence);
+    if (isFence) insideCode = !insideCode;
+    return output;
+  }).join("\n") + (field.value.endsWith("\n") ? "\n" : "");
+  pre.scrollTop = field.scrollTop;
+  pre.scrollLeft = field.scrollLeft;
+}
+$("editor-content").addEventListener("scroll", () => {
+  const pre = $("editor-highlight");
+  if (pre) { pre.scrollTop = $("editor-content").scrollTop; pre.scrollLeft = $("editor-content").scrollLeft; }
+});
+$("editor-content").addEventListener("keyup", updateEditorHighlight);
+$("editor-content").addEventListener("click", updateEditorHighlight);
+
 function insertEditorMarkup(kind){
  const field=$("editor-content"),start=field.selectionStart,end=field.selectionEnd;
  const selected=field.value.slice(start,end);
@@ -1083,10 +1160,110 @@ async function searchFor(query){
  }catch(error){$("message").textContent=error.message}
 }
 $("search").onsubmit=e=>{e.preventDefault();searchFor($("query").value)};
+function diffRevisionLines(beforeText, afterText) {
+  const before = String(beforeText || "").split("\n"), after = String(afterText || "").split("\n");
+  const n = before.length, m = after.length;
+  if ((n + 1) * (m + 1) > 1800000) {
+    let prefix = 0;
+    while (prefix < n && prefix < m && before[prefix] === after[prefix]) prefix++;
+    let suffix = 0;
+    while (suffix < n - prefix && suffix < m - prefix && before[n - 1 - suffix] === after[m - 1 - suffix]) suffix++;
+    return [
+      ...before.slice(0, prefix).map(text => ({ type: "same", text })),
+      ...before.slice(prefix, n - suffix).map(text => ({ type: "remove", text })),
+      ...after.slice(prefix, m - suffix).map(text => ({ type: "add", text })),
+      ...before.slice(n - suffix).map(text => ({ type: "same", text }))
+    ];
+  }
+  const width = m + 1, dp = new Uint32Array((n + 1) * width);
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) {
+    dp[i * width + j] = before[i] === after[j] ? 1 + dp[(i + 1) * width + j + 1] :
+      Math.max(dp[(i + 1) * width + j], dp[i * width + j + 1]);
+  }
+  const result = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (before[i] === after[j]) { result.push({ type: "same", text: before[i++] }); j++; }
+    else if (dp[(i + 1) * width + j] >= dp[i * width + j + 1]) result.push({ type: "remove", text: before[i++] });
+    else result.push({ type: "add", text: after[j++] });
+  }
+  while (i < n) result.push({ type: "remove", text: before[i++] });
+  while (j < m) result.push({ type: "add", text: after[j++] });
+  return result;
+}
+let historyItemsForCompare = [], revisionA = null, revisionB = null;
+function showHistoryList() {
+  const body = $("dialog-body"); body.replaceChildren();
+  addText(body, "p", "비교할 두 버전을 선택하세요. A는 기준 버전, B는 비교할 버전입니다.").className = "compare-intro";
+  const choices = document.createElement("div"); choices.className = "history-version-list";
+  historyItemsForCompare.forEach(item => {
+    const row = document.createElement("div"); row.className = "history-version-row";
+    const info = document.createElement("div"); info.className = "history-version-info";
+    addText(info, "strong", item.created_at || "날짜 정보 없음");
+    addText(info, "span", (item.editor || "알 수 없음") + (item.summary ? " · " + item.summary : ""));
+    const actions = document.createElement("div"); actions.className = "history-version-actions";
+    const aButton = document.createElement("button");
+    aButton.type = "button"; aButton.className = "button";
+    aButton.textContent = revisionA === item.id ? "A 선택됨" : "A 기준";
+    aButton.classList.toggle("selected", revisionA === item.id);
+    aButton.onclick = () => { revisionA = revisionA === item.id ? null : item.id; if (revisionB === item.id) revisionB = null; showHistoryList(); };
+    const bButton = document.createElement("button");
+    bButton.type = "button"; bButton.className = "button";
+    bButton.textContent = revisionB === item.id ? "B 선택됨" : "B 비교";
+    bButton.classList.toggle("selected", revisionB === item.id);
+    bButton.onclick = () => { revisionB = revisionB === item.id ? null : item.id; if (revisionA === item.id) revisionA = null; showHistoryList(); };
+    actions.append(aButton, bButton); row.append(info, actions); choices.append(row);
+  });
+  body.append(choices);
+  const compare = document.createElement("button");
+  compare.type = "button"; compare.className = "button button-primary";
+  compare.textContent = "선택한 두 버전 비교";
+  compare.disabled = !revisionA || !revisionB || revisionA === revisionB;
+  compare.onclick = () => renderRevisionComparison(revisionA, revisionB);
+  body.append(compare);
+}
+async function renderRevisionComparison(idA, idB) {
+  const body = $("dialog-body"); body.replaceChildren();
+  addText(body, "p", "두 버전의 문서 내용을 불러오는 중입니다.").className = "compare-intro";
+  try {
+    const [aData, bData] = await Promise.all([
+      api("/api/revision?id=" + encodeURIComponent(idA)), api("/api/revision?id=" + encodeURIComponent(idB))
+    ]);
+    const a = aData.revision, b = bData.revision;
+    if (!a || !b) throw new Error("비교할 버전을 찾을 수 없습니다.");
+    body.replaceChildren();
+    addText(body, "p", "A 기준: " + a.created_at + " · " + (a.editor || "알 수 없음") +
+      " → B 비교: " + b.created_at + " · " + (b.editor || "알 수 없음")).className = "compare-intro";
+    const diff = document.createElement("div"); diff.className = "revision-diff";
+    const rows = diffRevisionLines(a.content, b.content); let added = 0, removed = 0;
+    rows.forEach(line => {
+      if (line.type === "add") added++;
+      if (line.type === "remove") removed++;
+      const row = document.createElement("div"); row.className = "revision-diff-line diff-" + line.type;
+      const sign = document.createElement("span"); sign.className = "revision-diff-sign";
+      sign.textContent = line.type === "add" ? "+" : line.type === "remove" ? "−" : " ";
+      const content = document.createElement("code"); content.textContent = line.text || " ";
+      row.append(sign, content); diff.append(row);
+    });
+    addText(body, "p", "추가 " + added + "줄 · 삭제 " + removed + "줄").className = "compare-summary";
+    body.append(diff);
+    const back = document.createElement("button"); back.type = "button"; back.className = "button";
+    back.textContent = "버전 선택으로 돌아가기"; back.addEventListener("click", showHistoryList); body.prepend(back);
+    $("save").textContent = "닫기"; $("save").onclick = () => $("dialog").close();
+  } catch (error) {
+    body.replaceChildren(); addText(body, "p", error.message).className = "dialog-status";
+    const back = document.createElement("button"); back.type = "button"; back.className = "button";
+    back.textContent = "돌아가기"; back.onclick = showHistoryList; body.append(back);
+  }
+}
 $("history").onclick=async()=>{
- try{const data=await api("/api/history?title="+encodeURIComponent(currentTitle)),body=$("dialog-body");body.replaceChildren();(data.revisions||[]).forEach(item=>addText(body,"p",(item.created_at||"")+" · "+(item.editor||"알 수 없음")+(item.summary?" · "+item.summary:"")));
-  $("dialog-title").textContent=currentTitle+" — 문서 역사";$("dialog-status").textContent="";$("save").textContent="확인";$("save").onclick=()=>$("dialog").close();$("dialog").showModal()
- }catch(error){$("message").textContent=error.message}
+  try {
+    const data=await api("/api/history?title="+encodeURIComponent(currentTitle));
+    historyItemsForCompare=data.revisions||[]; revisionA=null; revisionB=null;
+    $("dialog-title").textContent=currentTitle+" — 문서 역사 및 버전 비교";
+    $("dialog-status").textContent="";
+    $("save").textContent="닫기"; $("save").onclick=()=>$("dialog").close();
+    showHistoryList(); $("dialog").showModal();
+  } catch(error) { $("message").textContent=error.message; }
 };
 $("history-tab").onclick=()=>$("history").click();
 $("backlinks-tab").onclick=()=>loadBacklinks(currentTitle,true);
