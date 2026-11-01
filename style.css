@@ -332,3 +332,78 @@ body{background:var(--wiki-canvas);color:#202633}
   .wiki-content .table_safe>table{width:100%;max-width:100%;table-layout:auto}
 }
 @media(max-width:560px){.editor-field-help{margin-left:18px;margin-right:18px}}
+
+
+/* Syntax highlighting overlay for the source editor */
+.editor-code-wrap{position:relative;width:100%;height:min(62vh,680px);min-height:320px;overflow:hidden;border:1px solid #d4ddeb;border-radius:0 0 7px 7px;background:#fbfcff}
+.editor-code-wrap:focus-within{outline:2px solid rgba(39,89,184,.14);border-color:#7393cb}
+#editor-highlight{position:absolute;inset:0;box-sizing:border-box;margin:0;padding:10px 11px;overflow:hidden;color:#334155;background:transparent;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;pointer-events:none}
+#editor-highlight code{font:inherit;white-space:inherit}
+#editor-content{position:absolute;inset:0;z-index:1;box-sizing:border-box;display:block;width:100%;height:100%;min-height:0;margin:0;padding:10px 11px;resize:none;border:0;border-radius:0;color:transparent;-webkit-text-fill-color:transparent;caret-color:#2459b1;background:transparent;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;overflow:auto;scrollbar-color:#b8c4d7 transparent}
+#editor-content::selection{background:rgba(55,115,210,.25);color:transparent}
+#editor-content::placeholder{-webkit-text-fill-color:#8994a5}
+.mk-heading{color:#9b3c9d;font-weight:700}.mk-table{color:#0b7285}.mk-list{color:#986515}.mk-rule{color:#8793a5}
+.mk-link{color:#2459b1;text-decoration:underline}.mk-file{color:#18794e;font-weight:600}.mk-category{color:#16825d;font-weight:600}
+.mk-template{color:#7c3aed;font-weight:700}.mk-include{color:#6d52a5}.mk-footnote{color:#b45309}.mk-external{color:#087b91;text-decoration:underline}
+.mk-bold{color:#9b3c9d;font-weight:700}.mk-italic{color:#8a4da0;font-style:italic}.mk-underline{color:#a04a24;text-decoration:underline}.mk-strike{color:#8a6675;text-decoration:line-through}.mk-script{color:#176c9b}
+.mk-macro{color:#c2410c;font-weight:700}.mk-macro-options{color:#986515}.mk-macro-close{color:#c2410c;font-weight:700}
+.mk-color{color:#be185d}.mk-size{color:#0f766e}.mk-command{color:#0b7285}.mk-code,.mk-code-line,.mk-code-fence{color:#65758b;background:rgba(120,135,155,.10)}
+
+/* Theme toggle */
+html[data-theme="dark"]{color-scheme:dark;--wiki-canvas:#111722;--wiki-surface:#1b2432;--wiki-border:#344154;--wiki-shadow:0 8px 24px rgba(0,0,0,.24)}
+html[data-theme="dark"] body{background:#111722;color:#e2e8f0}
+html[data-theme="dark"] .site-header,html[data-theme="dark"] .left-nav,html[data-theme="dark"] .article,html[data-theme="dark"] .editor-card,html[data-theme="dark"] .home-section,html[data-theme="dark"] .home-search-hint,html[data-theme="dark"] .editor-preview,html[data-theme="dark"] dialog,html[data-theme="dark"] .file-manager-row{background:#1b2432;color:#e2e8f0;border-color:#344154}
+html[data-theme="dark"] .site-header{background:rgba(22,30,43,.96);border-bottom-color:#303d50}
+html[data-theme="dark"] .brand-name,html[data-theme="dark"] .article-titlebar h1,html[data-theme="dark"] .editor-page-heading h1,html[data-theme="dark"] .nav-heading,html[data-theme="dark"] .wiki-content,html[data-theme="dark"] .wiki-content h1,html[data-theme="dark"] .wiki-content h2,html[data-theme="dark"] .wiki-content h3,html[data-theme="dark"] .wiki-content h4,html[data-theme="dark"] .wiki-content h5,html[data-theme="dark"] .wiki-content h6{color:#e2e8f0}
+html[data-theme="dark"] .nav-item,html[data-theme="dark"] .article-tools,html[data-theme="dark"] .article-language,html[data-theme="dark"] .breadcrumbs span:last-child{color:#c1ccdc}
+html[data-theme="dark"] .nav-item:hover,html[data-theme="dark"] .editor-tabs button.active,html[data-theme="dark"] .editor-markup-toolbar button:hover{background:#263449;color:#e8efff}
+html[data-theme="dark"] .searchbar input,html[data-theme="dark"] .searchbar button,html[data-theme="dark"] .button,html[data-theme="dark"] .title-button,html[data-theme="dark"] .editor-field>input,html[data-theme="dark"] .editor-tabs,html[data-theme="dark"] .editor-markup-toolbar,html[data-theme="dark"] #editor-counter,html[data-theme="dark"] .editor-help,html[data-theme="dark"] .notice,html[data-theme="dark"] .wiki-content blockquote,html[data-theme="dark"] .wiki-content pre,html[data-theme="dark"] .wiki-content code{background:#202c3d;color:#e2e8f0;border-color:#3b4a60}
+html[data-theme="dark"] #editor-code-wrap{background:#202c3d;border-color:#3b4a60}
+html[data-theme="dark"] #editor-highlight{color:#d5deed}
+html[data-theme="dark"] #editor-content{background:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:#9fc0ff}
+html[data-theme="dark"] .editor-page-heading,html[data-theme="dark"] .dialog-head{background:#202c3d;border-color:#344154}
+html[data-theme="dark"] .wiki-content th{background:#2b394d}
+html[data-theme="dark"] .wiki-content td,html[data-theme="dark"] .wiki-content th,html[data-theme="dark"] .wiki-content table,html[data-theme="dark"] .wiki-content h2,html[data-theme="dark"] .wiki-content h3,html[data-theme="dark"] .article-titlebar,html[data-theme="dark"] .article-tools,html[data-theme="dark"] .article-footer,html[data-theme="dark"] .site-footer,html[data-theme="dark"] .nav-separator{border-color:#344154}
+html[data-theme="dark"] .page-row,html[data-theme="dark"] .recent-change-row,html[data-theme="dark"] .backlink-row,html[data-theme="dark"] .category-index-row{border-color:#344154}
+html[data-theme="dark"] .wiki-content a,html[data-theme="dark"] .article-tools button,html[data-theme="dark"] .breadcrumbs a{color:#91baff}
+html[data-theme="dark"] .wiki-content a:hover{color:#c1d8ff}
+html[data-theme="dark"] .dialog-close{color:#dbe5f4}
+html[data-theme="dark"] .file-manager-row>img{background:#111722}
+html[data-theme="dark"] .home-heading{background:linear-gradient(120deg,#1b2a40,#1a2639 58%,#1a2940);border-color:#344966}
+html[data-theme="dark"] .home-heading h1,html[data-theme="dark"] .home-heading p{color:#e2e8f0}
+html[data-theme="dark"] .live-notice{background:#202c3d;color:#e2e8f0;border-color:#465773}
+html[data-theme="dark"] .wiki-content .wiki-footnote-tooltip{background:#080d15;color:#f1f5f9}
+html[data-theme="dark"] .mk-heading{color:#e0a3e6}html[data-theme="dark"] .mk-table{color:#67c5d5}
+html[data-theme="dark"] .mk-list{color:#e4bc72}html[data-theme="dark"] .mk-link{color:#9bbcff}
+html[data-theme="dark"] .mk-file,html[data-theme="dark"] .mk-category{color:#7dd9ae}
+html[data-theme="dark"] .mk-template{color:#c4a5ff}html[data-theme="dark"] .mk-include{color:#c2b4ed}
+html[data-theme="dark"] .mk-footnote{color:#ffc078}html[data-theme="dark"] .mk-external{color:#7ad6e2}
+html[data-theme="dark"] .mk-bold{color:#e0a3e6}html[data-theme="dark"] .mk-italic{color:#d2a3e8}
+html[data-theme="dark"] .mk-underline{color:#f1a88a}html[data-theme="dark"] .mk-strike{color:#c69aaa}
+html[data-theme="dark"] .mk-script{color:#85cfff}html[data-theme="dark"] .mk-macro{color:#ffad87}
+html[data-theme="dark"] .mk-macro-options{color:#e4bc72}html[data-theme="dark"] .mk-macro-close{color:#ffad87}
+html[data-theme="dark"] .mk-color{color:#ff91bd}html[data-theme="dark"] .mk-size{color:#70d9c2}
+html[data-theme="dark"] .mk-command{color:#67c5d5}html[data-theme="dark"] .mk-code,html[data-theme="dark"] .mk-code-line,html[data-theme="dark"] .mk-code-fence{color:#9eacc0;background:rgba(180,195,215,.10)}
+
+/* Revision comparison */
+.compare-intro{margin:0 0 12px;color:#66758c;font-size:13px;line-height:1.6}
+.history-version-list{display:flex;flex-direction:column;gap:7px;margin:10px 0 14px;max-height:52vh;overflow:auto}
+.history-version-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid #dce4ef;border-radius:8px;background:#fbfcff}
+.history-version-info{display:flex;min-width:0;flex-direction:column;gap:3px}
+.history-version-info strong{font-size:12px}
+.history-version-info span{font-size:11px;color:#77859a;overflow-wrap:anywhere}
+.history-version-actions{display:flex;gap:5px;flex:0 0 auto}
+.history-version-actions .selected{background:#e6efff;border-color:#87a8dc;color:#174b9c}
+.revision-diff{max-height:62vh;overflow:auto;margin-top:12px;border:1px solid #dce4ef;border-radius:8px;background:#f7f9fc}
+.revision-diff-line{display:grid;grid-template-columns:25px minmax(0,1fr);gap:7px;padding:2px 9px;border-bottom:1px solid rgba(120,135,155,.12);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.revision-diff-line code{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;background:transparent}
+.revision-diff-sign{text-align:center;font-weight:700}
+.diff-add{background:#e9f8ee;color:#17663a}.diff-remove{background:#fff0f0;color:#a52a2a}.diff-same{color:#64748b}
+.compare-summary{margin:10px 0 0;font-size:12px;font-weight:700}
+html[data-theme="dark"] .history-version-row{background:#202c3d;border-color:#3b4a60}
+html[data-theme="dark"] .history-version-actions .selected{background:#304769;color:#dbeafe;border-color:#6387bd}
+html[data-theme="dark"] .revision-diff{background:#151d29;border-color:#3b4a60}
+html[data-theme="dark"] .diff-add{background:#18382c;color:#a8e6bf}
+html[data-theme="dark"] .diff-remove{background:#48262d;color:#ffc0c0}
+html[data-theme="dark"] .diff-same{color:#a9b6c9}
+@media(max-width:850px){.editor-code-wrap{height:58vh;min-height:280px}.history-version-row{align-items:flex-start;flex-direction:column}.history-version-actions{width:100%}}
