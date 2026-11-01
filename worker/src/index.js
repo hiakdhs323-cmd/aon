@@ -34,29 +34,62 @@ function namuFileHash(data) {
 }
 async function ensureAdminTokenTable(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_tokens (id TEXT PRIMARY KEY NOT NULL, token_hash TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_auth_attempts (ip TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
+}
+function constantTimeEqual(left, right) {
+  const a = String(left || ""), b = String(right || "");
+  let difference = a.length ^ b.length;
+  const length = Math.max(a.length, b.length);
+  for (let i = 0; i < length; i++) difference |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return difference === 0;
 }
 async function isAdminRequest(request, env) {
   const authorization = request.headers.get("Authorization") || "";
   if (!authorization.startsWith("Bearer ")) return false;
   await ensureAdminTokenTable(env);
-  const saved = await env.DB.prepare("SELECT token_hash FROM admin_tokens WHERE id = 'primary'").first();
+  const ip = String(request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
+  const now = new Date().toISOString();
+  const rate = await env.DB.prepare("SELECT attempts, window_started_at FROM admin_auth_attempts WHERE ip = ?").bind(ip).first();
+  const windowAge = rate ? Date.now() - Date.parse(rate.window_started_at) : Infinity;
+  if (rate && windowAge >= 0 && windowAge < 15 * 60 * 1000 && Number(rate.attempts) >= 10) return false;
+
   const presented = authorization.slice(7);
-  if (saved) return (await sha256(presented)) === saved.token_hash;
-  if (env.ADMIN_TOKEN && presented === env.ADMIN_TOKEN) {
-    await env.DB.prepare("INSERT INTO admin_tokens (id, token_hash, updated_at) VALUES ('primary', ?, ?) ON CONFLICT(id) DO NOTHING")
-      .bind(await sha256(presented), new Date().toISOString()).run();
-    return true;
+  const saved = await env.DB.prepare("SELECT token_hash FROM admin_tokens WHERE id = 'primary'").first();
+  let valid = false;
+  if (saved) {
+    valid = constantTimeEqual(await sha256(presented), saved.token_hash);
+  } else if (env.ADMIN_TOKEN) {
+    valid = constantTimeEqual(presented, env.ADMIN_TOKEN);
+  }
+  if (valid) {
+    if (!saved) {
+      await env.DB.prepare("INSERT INTO admin_tokens (id, token_hash, updated_at) VALUES ('primary', ?, ?) ON CONFLICT(id) DO NOTHING")
+        .bind(await sha256(presented), now).run();
+      const confirmed = await env.DB.prepare("SELECT token_hash FROM admin_tokens WHERE id = 'primary'").first();
+      valid = Boolean(confirmed && constantTimeEqual(await sha256(presented), confirmed.token_hash));
+    }
+    if (valid) {
+      await env.DB.prepare("DELETE FROM admin_auth_attempts WHERE ip = ?").bind(ip).run();
+      return true;
+    }
+  }
+  if (!rate || windowAge < 0 || windowAge >= 15 * 60 * 1000) {
+    await env.DB.prepare("INSERT INTO admin_auth_attempts (ip, attempts, window_started_at) VALUES (?, 1, ?) ON CONFLICT(ip) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at")
+      .bind(ip, now).run();
+  } else {
+    await env.DB.prepare("UPDATE admin_auth_attempts SET attempts = attempts + 1 WHERE ip = ?").bind(ip).run();
   }
   return false;
 }
 async function currentUser(request, env) {
-  if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   const auth = request.headers.get("Authorization") || "";
   if (!auth.startsWith("Bearer ")) return null;
   const tokenHash = await sha256(auth.slice(7));
   const now = new Date().toISOString();
   const user = await env.DB.prepare("SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
-  return user ? { ...user, role: "user", isAdmin: false } : null;
+  if (user) return { ...user, role: "user", isAdmin: false };
+  if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
+  return null;
 }
 async function ensureImageSchema(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL, owner TEXT NOT NULL DEFAULT '')").run();
