@@ -773,12 +773,53 @@ $("history").onclick=async()=>{
  }catch(error){$("message").textContent=error.message}
 };
 $("history-tab").onclick=()=>$("history").click();
+async function openFileManager(){
+ if(!loggedInName){openLogin();return}
+ try{
+  const data=await api("/api/files?manage=1");
+  showDialog("파일 관리",[],async()=>{$("dialog").close()},"닫기");
+  const body=$("dialog-body");body.replaceChildren();
+  const intro=addText(body,"p",data.isAdmin?"전체 파일을 관리할 수 있습니다.":"내가 업로드한 파일만 이름을 변경할 수 있습니다.");
+  intro.className="file-manager-intro";
+  const files=data.files||[];
+  if(!files.length){addText(body,"p","관리할 파일이 없습니다.").className="empty-list";return}
+  const list=document.createElement("div");list.className="file-manager-list";
+  files.forEach(file=>{
+   const row=document.createElement("div");row.className="file-manager-row";
+   const image=document.createElement("img");image.src=apiBase()+"/media/"+file.id;image.alt=file.filename;image.loading="lazy";
+   const info=document.createElement("div");info.className="file-manager-info";
+   addText(info,"strong",file.filename);
+   addText(info,"small",(file.content_type||"이미지")+" · "+(file.created_at?new Date(file.created_at).toLocaleDateString("ko-KR"):""));
+   if(data.isAdmin&&file.owner)addText(info,"small","업로더: "+file.owner);
+   const actions=document.createElement("div");actions.className="file-manager-actions";
+   const rename=document.createElement("button");rename.type="button";rename.className="button";rename.textContent="이름 변경";
+   rename.onclick=()=>{
+    $("dialog").close();
+    const base=file.filename.replace(/\.[^.]+$/,"");
+    showDialog("파일 이름 변경",[{id:"rename-file-name",label:"새 파일 이름",value:base}],async()=>{
+     const newName=$("rename-file-name").value.trim();
+     if(!newName)throw Error("파일 이름을 입력하세요.");
+     await api("/api/file",{method:"PATCH",body:JSON.stringify({id:file.id,filename:newName})});
+     $("dialog").close();await openFileManager()
+    },"변경");
+   };
+   const insert=document.createElement("button");insert.type="button";insert.className="button";insert.textContent="문법 삽입";
+   insert.onclick=async()=>{
+    const markup="[[파일:"+file.filename+"|width=500]]";
+    if(!$("editor-view").hidden){
+     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.focus();$("dialog").close()
+    }else{
+     try{await navigator.clipboard.writeText(markup);insert.textContent="복사됨"}catch{insert.textContent="복사 권한 없음"}
+    }
+   };
+   actions.append(rename,insert);row.append(image,info,actions);list.append(row)
+  });
+  body.append(list)
+ }catch(error){$("message").textContent=error.message}
+}
+$("file-manager").onclick=()=>openFileManager();
 $("upload").onclick=()=>{
- if(!currentTitle)return;
- if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
- $("file").click()
-};
-$("editor-image").onclick=()=>{
+ if(!currentTitle){$("message").textContent="문서를 연 뒤 이미지를 업로드하세요.";return}
  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
  $("file").click()
 };
@@ -787,30 +828,25 @@ $("editor-image").onclick=()=>{
  $("file").click()
 };
 $("file").onchange=async()=>{
- const file=$("file").files[0];
- $("file").value="";
+ const file=$("file").files[0];$("file").value="";
  if(!file)return;
  if(file.size>1024*1024){
   const message="이미지는 1MB 이하만 업로드할 수 있습니다.";
-  if(!$("editor-view").hidden)$("editor-status").textContent=message;
-  else $("message").textContent=message;
+  if(!$("editor-view").hidden)$("editor-status").textContent=message;else $("message").textContent=message;
   return
  }
- const form=new FormData();form.append("file",file);
- try{
+ const defaultName=file.name.replace(/\.[^.]+$/,"");
+ showDialog("이미지 업로드",[{id:"upload-filename",label:"파일 이름",value:defaultName}],async()=>{
+  const form=new FormData();form.append("file",file);form.append("filename",$("upload-filename").value.trim());
   const data=await api("/api/upload",{method:"POST",body:form});
-  const markup="[[파일:"+(data.filename||file.name)+"|width=500]]";
+  const markup="[[파일:"+data.filename+"|width=500]]";
   if(!$("editor-view").hidden){
-   const field=$("editor-content");
-   field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");
-   field.focus();
+   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.focus();
   }else if(currentTitle){
-   editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);
+   $("dialog").close();editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);return
   }
- }catch(error){
-  if(!$("editor-view").hidden)$("editor-status").textContent=error.message;
-  else $("message").textContent=error.message;
- }
+  $("dialog").close()
+ },"업로드");
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
