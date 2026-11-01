@@ -499,13 +499,26 @@ function sanitizeNamuOutput(root, docTitle) {
   });
 }
 function enhanceFootnoteHover(root) {
+  const closeOpenFootnotes = () => {
+    document.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
+      openTip.classList.remove("visible", "mobile-fixed");
+      openTip.style.left = "";
+      openTip.style.top = "";
+      openTip.style.bottom = "";
+      openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
+    });
+  };
   root.querySelectorAll('a[id*="rfn_"][title]').forEach(link => {
     const note = (link.getAttribute("title") || "").trim();
-    if (!note || link.querySelector(".wiki-footnote-tooltip")) return;
+    if (!note || link.classList.contains("wiki-footnote-trigger")) return;
     link.classList.add("wiki-footnote-trigger");
     const tooltipId = "wiki-footnote-tip-" + Math.random().toString(36).slice(2);
     link.setAttribute("aria-label", "각주 " + link.textContent.trim() + ": " + note);
     link.setAttribute("aria-describedby", tooltipId);
+    link.setAttribute("role", "button");
+    link.setAttribute("tabindex", "0");
+    // Remove the fragment URL itself so mobile browsers cannot navigate to the footnote list.
+    link.removeAttribute("href");
     const tooltip = document.createElement("span");
     tooltip.className = "wiki-footnote-tooltip";
     tooltip.id = tooltipId;
@@ -513,24 +526,55 @@ function enhanceFootnoteHover(root) {
     tooltip.textContent = note;
     link.append(tooltip);
     link.removeAttribute("title");
-    const show = () => { tooltip.classList.add("visible"); link.classList.add("tooltip-open"); };
-    const hide = () => { tooltip.classList.remove("visible"); link.classList.remove("tooltip-open"); };
+    const show = () => {
+      closeOpenFootnotes();
+      tooltip.classList.add("visible");
+      link.classList.add("tooltip-open");
+      if (window.matchMedia("(max-width: 560px)").matches) {
+        tooltip.classList.add("mobile-fixed");
+        const anchor = link.getBoundingClientRect();
+        const tip = tooltip.getBoundingClientRect();
+        const margin = 12;
+        const left = Math.max(margin, Math.min(
+          anchor.left + anchor.width / 2 - tip.width / 2,
+          window.innerWidth - tip.width - margin
+        ));
+        let top = anchor.top - tip.height - 9;
+        if (top < margin) top = anchor.bottom + 9;
+        if (top + tip.height > window.innerHeight - margin) {
+          top = Math.max(margin, (window.innerHeight - tip.height) / 2);
+        }
+        tooltip.style.left = Math.round(left) + "px";
+        tooltip.style.top = Math.round(top) + "px";
+        tooltip.style.bottom = "auto";
+      }
+    };
+    const hide = () => {
+      tooltip.classList.remove("visible", "mobile-fixed");
+      tooltip.style.left = "";
+      tooltip.style.top = "";
+      tooltip.style.bottom = "";
+      link.classList.remove("tooltip-open");
+    };
     link.addEventListener("mouseenter", show);
     link.addEventListener("mouseleave", () => {
-      if (document.activeElement !== link) hide();
+      if (document.activeElement !== link && !window.matchMedia("(max-width: 560px)").matches) hide();
     });
     link.addEventListener("focus", show);
     link.addEventListener("blur", () => {
       if (!tooltip.classList.contains("visible")) hide();
     });
-    // Prevent the default #fn-N navigation. Show the note beside its marker instead.
+    // On touch screens, handle the press before the browser can apply any anchor behavior.
+    link.addEventListener("pointerdown", event => {
+      if (event.pointerType !== "touch") return;
+      event.preventDefault();
+      event.stopPropagation();
+      show();
+      link.focus({ preventScroll: true });
+    }, { passive: false });
     link.addEventListener("click", event => {
       event.preventDefault();
       event.stopPropagation();
-      root.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
-        openTip.classList.remove("visible");
-        openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
-      });
       show();
     });
     link.addEventListener("keydown", event => {
@@ -545,10 +589,7 @@ function enhanceFootnoteHover(root) {
     window.aonWikiFootnoteDismissBound = true;
     document.addEventListener("click", event => {
       if (event.target.closest?.(".wiki-footnote-trigger")) return;
-      document.querySelectorAll(".wiki-footnote-tooltip.visible").forEach(openTip => {
-        openTip.classList.remove("visible");
-        openTip.closest(".wiki-footnote-trigger")?.classList.remove("tooltip-open");
-      });
+      closeOpenFootnotes();
     });
   }
 }
