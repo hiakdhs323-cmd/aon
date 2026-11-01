@@ -249,52 +249,83 @@ export default {
         const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
         if (!allowedTypes.includes(file.type)) return response({ error: "PNG, JPG, GIF, WebP 파일만 지원합니다." }, 415, cors);
         if (file.size < 1 || file.size > 1 * 1024 * 1024) return response({ error: "D1 저장 방식은 이미지 1MB 이하만 지원합니다." }, 413, cors);
+        await ensureImageSchema(env);
         const bytes = new Uint8Array(await file.arrayBuffer());
         let binary = "";
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
         const encoded = btoa(binary);
         const key = crypto.randomUUID();
-        const originalFilename = String(file.name || "image").replace(/[\\/:*?"<>|]/g, "_").slice(0, 100);
-        const extensionIndex = originalFilename.lastIndexOf(".");
-        const storedFilename = extensionIndex > 0
-          ? originalFilename.slice(0, extensionIndex) + "_" + key.slice(0, 8) + originalFilename.slice(extensionIndex)
-          : originalFilename + "_" + key.slice(0, 8);
+        const requestedName = cleanImageName(form.get("filename") || file.name || "image", file.type);
+        const dot = requestedName.lastIndexOf(".");
+        const base = requestedName.slice(0, dot), extension = requestedName.slice(dot);
+        let storedFilename = requestedName;
+        let suffix = 2;
+        while (await env.DB.prepare("SELECT id FROM images WHERE filename = ? COLLATE NOCASE").bind(storedFilename).first()) {
+          storedFilename = base + " (" + suffix++ + ")" + extension;
+        }
         const now = new Date().toISOString();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at) VALUES (?, ?, ?, ?, ?)").bind(key, file.type, encoded, storedFilename, now).run();
+        await env.DB.prepare("INSERT INTO images (id, content_type, data_base64, filename, created_at, owner) VALUES (?, ?, ?, ?, ?, ?)")
+          .bind(key, file.type, encoded, storedFilename, now, user.username).run();
         return response({ ok: true, key, filename: storedFilename, url: new URL("/media/" + key, url.origin).href }, 201, cors);
       }
       if (url.pathname === "/api/file" && request.method === "GET") {
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        await ensureImageSchema(env);
         const name = String(url.searchParams.get("name") || "").trim().slice(0, 160);
         if (!name) return response({ error: "파일 이름을 입력하세요." }, 400, cors);
         let image;
         if (/^[a-f0-9-]{36}$/i.test(name)) {
-          image = await env.DB.prepare("SELECT id, filename, content_type FROM images WHERE id = ?").bind(name).first();
+          image = await env.DB.prepare("SELECT id, filename, content_type, owner FROM images WHERE id = ?").bind(name).first();
         } else {
-          image = await env.DB.prepare("SELECT id, filename, content_type FROM images WHERE filename = ? COLLATE NOCASE ORDER BY created_at DESC LIMIT 1").bind(name).first();
+          image = await env.DB.prepare("SELECT id, filename, content_type, owner FROM images WHERE filename = ? COLLATE NOCASE ORDER BY created_at DESC LIMIT 1").bind(name).first();
+          if (!image) {
+            image = await env.DB.prepare("SELECT images.id, images.filename, images.content_type, images.owner FROM image_aliases JOIN images ON images.id = image_aliases.image_id WHERE image_aliases.alias = ? COLLATE NOCASE LIMIT 1").bind(name).first();
+          }
         }
         if (!image) return response({ error: "파일을 찾을 수 없습니다." }, 404, cors);
         return response({ image: { key: image.id, filename: image.filename, content_type: image.content_type, url: new URL("/media/" + image.id, url.origin).href } }, 200, cors);
       }
-
+      if (url.pathname === "/api/file" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "파일 이름을 변경하려면 로그인하세요." }, 401, cors);
+        await ensureImageSchema(env);
+        const body = await request.json();
+        const id = String(body.id || "");
+        if (!/^[a-f0-9-]{36}$/i.test(id)) return response({ error: "잘못된 파일 식별자입니다." }, 400, cors);
+        const image = await env.DB.prepare("SELECT id, filename, content_type, owner FROM images WHERE id = ?").bind(id).first();
+        if (!image) return response({ error: "파일을 찾을 수 없습니다." }, 404, cors);
+        if (!user.isAdmin && image.owner !== user.username) return response({ error: "본인이 올린 파일만 이름을 변경할 수 있습니다." }, 403, cors);
+        const newFilename = cleanImageName(body.filename, image.content_type);
+        const collision = await env.DB.prepare("SELECT id FROM images WHERE filename = ? COLLATE NOCASE AND id <> ?").bind(newFilename, id).first();
+        if (collision) return response({ error: "이미 사용 중인 파일 이름입니다." }, 409, cors);
+        if (newFilename !== image.filename) {
+          await env.DB.prepare("INSERT INTO image_aliases (alias, image_id, created_at) VALUES (?, ?, ?) ON CONFLICT(alias) DO NOTHING")
+            .bind(image.filename, id, new Date().toISOString()).run();
+          await env.DB.prepare("UPDATE images SET filename = ? WHERE id = ?").bind(newFilename, id).run();
+          await env.DB.prepare("DELETE FROM image_aliases WHERE alias = ? COLLATE NOCASE AND image_id = ?").bind(newFilename, id).run();
+        }
+        return response({ ok: true, id, filename: newFilename, previous_filename: image.filename }, 200, cors);
+      }
       if (url.pathname === "/api/files" && request.method === "GET") {
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        const result = await env.DB.prepare("SELECT id, filename, content_type, created_at FROM images ORDER BY created_at DESC LIMIT 500").all();
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "파일 목록을 보려면 로그인하세요." }, 401, cors);
+        await ensureImageSchema(env);
+        const result = user.isAdmin
+          ? await env.DB.prepare("SELECT id, filename, content_type, created_at, owner FROM images ORDER BY created_at DESC LIMIT 500").all()
+          : await env.DB.prepare("SELECT id, filename, content_type, created_at, owner FROM images WHERE owner = ? ORDER BY created_at DESC LIMIT 500").bind(user.username).all();
         return response({ files: result.results || [] }, 200, cors);
       }
       if (url.pathname.startsWith("/image/") && request.method === "GET") {
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        await ensureImageSchema(env);
         const match = url.pathname.match(/^\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+$/i);
         if (!match) return new Response("Not found", { status: 404 });
-        const result = await env.DB.prepare("SELECT id, filename, content_type, data_base64 FROM images").all();
-        const image = (result.results || []).find(item => {
-          const file = String(item.filename || "");
-          const dot = file.lastIndexOf(".");
-          const base = dot > 0 ? file.slice(0, dot) : file;
-          const ext = dot > 0 ? file.slice(dot + 1).toLowerCase() : "jpg";
-          return namuFileHash(base) === match[1].toLowerCase() && ext === match[2].toLowerCase();
-        });
+        const candidates = await env.DB.prepare("SELECT id, filename FROM images").all();
+        let imageId = (candidates.results || []).find(item => imageNameMatches(item.filename, match[1], match[2]))?.id;
+        if (!imageId) {
+          const aliases = await env.DB.prepare("SELECT alias, image_id FROM image_aliases").all();
+          imageId = (aliases.results || []).find(item => imageNameMatches(item.alias, match[1], match[2]))?.image_id;
+        }
+        if (!imageId) return new Response("Not found", { status: 404 });
+        const image = await env.DB.prepare("SELECT content_type, data_base64 FROM images WHERE id = ?").bind(imageId).first();
         if (!image) return new Response("Not found", { status: 404 });
         const binary = atob(image.data_base64);
         const bytes = new Uint8Array(binary.length);
