@@ -629,70 +629,7 @@ function enhanceFootnoteHover(root) {
   }
 }
 
-async function renderWithNewNamuMark(source, target, docTitle) {
-  const engine = window.AonNamuMarkEngine;
-  if (!engine || typeof engine.parse !== "function" || typeof engine.Renderer !== "function") {
-    throw new Error("새 나무마크 엔진이 아직 준비되지 않았습니다.");
-  }
-
-  const findPage = async name => {
-    try {
-      const data = await api("/api/page?title=" + encodeURIComponent(String(name || "")));
-      return data.page ? { content: String(data.page.content || "") } : null;
-    } catch {
-      return null;
-    }
-  };
-  const renderer = new engine.Renderer(
-    findPage,
-    async () => null,
-    (type, name) => type === "link"
-      ? routeFor(String(name || ""))
-      : apiBase() + "/api/file?name=" + encodeURIComponent(String(name || "")),
-    async () => 0
-  );
-  const nodes = engine.parse(String(source || ""));
-  const html = await renderer.run(nodes);
-  const holder = document.createElement("div");
-  holder.innerHTML = html || "";
-  sanitizeNamuOutput(holder, docTitle);
-  target.replaceChildren(...holder.childNodes);
-  target.classList.add("namumark-rendered", "namumark-engine-v2");
-  enhanceFootnoteHover(target);
-
-  if (window.katex) {
-    target.querySelectorAll("katex[data-latex]").forEach(el => {
-      try {
-        window.katex.render(el.getAttribute("data-latex") || el.textContent || "", el, {
-          throwOnError: false, strict: "ignore"
-        });
-      } catch (error) {
-        console.warn("새 엔진 수식 렌더링을 건너뜀", error);
-      }
-    });
-  }
-  if (window.hljs) {
-    target.querySelectorAll("pre code").forEach(code => {
-      try { window.hljs.highlightElement(code); } catch {}
-    });
-  }
-}
-
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
-  // Keep syntax that is specific to the existing AonWiki parser on its proven renderer.
-  // This lets the upstream engine handle common markup without regressing wiki-only features.
-  const legacyOnlySyntax = /\\[\\[\\s*(?:파일|file|분류|category)\\s*:/i.test(String(source || "")) ||
-    /\\{\\{\\{\\s*#!(?:if|style|wiki|latex|folding)\\b/i.test(String(source || "")) ||
-    /\\[(?:목차(?:\\(|\\])|clearfix\\])/i.test(String(source || ""));
-  if (window.AonNamuMarkEngineReady && !legacyOnlySyntax) {
-    try {
-      await renderWithNewNamuMark(source, target, docTitle);
-      return;
-    } catch (error) {
-      console.error("새 나무마크 엔진 렌더링 실패; 기존 렌더러로 전환합니다.", error);
-      target.classList.remove("namumark-engine-v2");
-    }
-  }
   if (!window.NamuMarkBundle || !window.NamuMarkBundle.NamuMark) {
     renderContent(source, target);
     return;
@@ -1525,11 +1462,3 @@ readRoute();
 refreshIdentity();
 startLivePageWatcher();
 
-// If the module arrives after the initial page render, re-render the visible document once.
-window.addEventListener("aon-namumark-ready", () => {
-  if (!$("editor-view").hidden) return;
-  const target = $("article");
-  if (target && currentContent && !$("document-view").hidden) {
-    renderNamuMarkup(currentContent, target, currentTitle || "대문").catch(error => console.error(error));
-  }
-});
