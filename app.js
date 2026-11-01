@@ -1059,28 +1059,41 @@ function escapeHighlightText(value) {
   })[char]);
 }
 function highlightNamuLine(line, insideCode) {
-  if (insideCode) return '<span class="mk-code-line">' + escapeHighlightText(line) + '</span>';
-  if (/^\s*={2,6}.*?={2,6}\s*$/.test(line)) return '<span class="mk-heading">' + escapeHighlightText(line) + '</span>';
-  if (/^\s*\|\|/.test(line)) return '<span class="mk-table">' + escapeHighlightText(line) + '</span>';
-  if (/^\s*(?:\*+|\d+\.)\s/.test(line)) return '<span class="mk-list">' + escapeHighlightText(line) + '</span>';
-  if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return '<span class="mk-rule">' + escapeHighlightText(line) + '</span>';
-  const tokenPattern = /(\[\[(?:파일|File):[^\]]+\]\]|\[\[분류:[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^]]+\]|\[https?:\/\/[^\]]+\]|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\{\{\{[^}]*\}\}\}|\{\{\{)/gi;
+  const escaped = escapeHighlightText(line);
+  const trimmed = line.trim();
+  if (/^\{\{\{#![a-z0-9_-]+/i.test(trimmed)) {
+    const match = trimmed.match(/^(\{\{\{#![a-z0-9_-]+)([\s\S]*)$/i);
+    return '<span class="mk-macro">' + escapeHighlightText(match[1]) + '</span>' +
+      '<span class="mk-macro-options">' + escapeHighlightText(match[2]) + '</span>';
+  }
+  if (trimmed === "}}}") return '<span class="mk-macro-close">' + escaped + '</span>';
+  if (insideCode) return '<span class="mk-code-line">' + escaped + '</span>';
+  if (/^\s*={2,6}.*?={2,6}\s*$/.test(line)) return '<span class="mk-heading">' + escaped + '</span>';
+  if (/^\s*\|\|/.test(line)) return '<span class="mk-table">' + escaped + '</span>';
+  if (/^\s*(?:\*+|\d+\.)\s/.test(line)) return '<span class="mk-list">' + escaped + '</span>';
+  if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return '<span class="mk-rule">' + escaped + '</span>';
+
+  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^]]+\]|\[https?:\/\/[^\]]+\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
   let output = "", last = 0, match;
   while ((match = tokenPattern.exec(line))) {
     output += escapeHighlightText(line.slice(last, match.index));
     const token = match[0];
     let kind = "mk-inline";
-    if (/^\[\[(?:파일|File):/i.test(token)) kind = "mk-file";
-    else if (/^\[\[분류:/i.test(token)) kind = "mk-category";
+    if (/^\[include\(/i.test(token)) kind = /(?:^|[,(:])\s*틀\s*:/i.test(token) ? "mk-template" : "mk-include";
+    else if (/^\[\[(?:분류|category):/i.test(token)) kind = "mk-category";
+    else if (/^\[\[(?:파일|file):/i.test(token)) kind = "mk-file";
     else if (/^\[\[/.test(token)) kind = "mk-link";
     else if (/^\[\*/.test(token)) kind = "mk-footnote";
     else if (/^\[https?:\/\//i.test(token)) kind = "mk-external";
-    else if (/^\{\{\{/.test(token)) kind = "mk-code";
+    else if (/^\{\{\{#!./i.test(token)) kind = "mk-macro";
+    else if (/^\{\{\{[@#]/.test(token)) kind = "mk-color";
+    else if (/^\{\{\{/.test(token)) kind = "mk-size";
     else if (token.startsWith("'''")) kind = "mk-bold";
     else if (token.startsWith("''")) kind = "mk-italic";
     else if (token.startsWith("__")) kind = "mk-underline";
     else if (token.startsWith("~~")) kind = "mk-strike";
     else if (token.startsWith("^^") || token.startsWith(",,")) kind = "mk-script";
+    else if (/^\[(?:목차|br|date|clearfix|pagecount)/i.test(token)) kind = "mk-command";
     output += '<span class="' + kind + '">' + escapeHighlightText(token) + '</span>';
     last = tokenPattern.lastIndex;
   }
@@ -1092,10 +1105,21 @@ function updateEditorHighlight() {
   if (!field || !code || !pre) return;
   let insideCode = false;
   code.innerHTML = field.value.split("\n").map(line => {
-    const isFence = /^\s*\{\{\{/.test(line);
-    const output = highlightNamuLine(line, insideCode || isFence);
-    if (isFence) insideCode = !insideCode;
-    return output;
+    const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
+    if (opening) {
+      const output = highlightNamuLine(line, false);
+      insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
+      return output;
+    }
+    if (/^\s*\{\{\{\s*$/.test(line)) {
+      insideCode = true;
+      return '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
+    }
+    if (/^\s*\}\}\}\s*$/.test(line)) {
+      insideCode = false;
+      return highlightNamuLine(line, false);
+    }
+    return highlightNamuLine(line, insideCode);
   }).join("\n") + (field.value.endsWith("\n") ? "\n" : "");
   pre.scrollTop = field.scrollTop;
   pre.scrollLeft = field.scrollLeft;
