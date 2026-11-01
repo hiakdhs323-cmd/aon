@@ -1305,7 +1305,22 @@ try {
         } else if (match === "pagecount") {
           return String((this.database.data || []).length);
         } else {
-          return `<macro>${p1}</macro>`;
+          const externalMatch = p1.trim().match(/^(https?:\/\/[^\s]+)(?:\s+([\s\S]+))?$/i);
+          if (externalMatch) {
+            let href = this.getToolDataRestore(externalMatch[1], "slash");
+            href = unescapeHtml(href);
+            if (/^https?:\/\//i.test(href)) {
+              const safeHref = href.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const label = externalMatch[2] || externalMatch[1];
+              const dataName = this.getToolDataStorage(
+                '<a class="opennamu_link_out" target="_blank" rel="noopener noreferrer" href="' + safeHref + '">',
+                "</a>",
+                matchOriginal
+              );
+              return "<" + dataName + ">" + label + "</" + dataName + ">";
+            }
+          }
+          return "<macro>" + p1 + "</macro>";
         }
       };
       this.renderData = this.renderData.replace(/\[([^[\]]+)\]/g, manageMacroSingle);
