@@ -303,6 +303,7 @@ function sanitizeNamuOutput(root, docTitle) {
       node.textContent = sanitizeNamuStylesheet(node.textContent || "");
       return;
     }
+    const parserAction = node.getAttribute("onclick") || "";
     [...node.attributes].forEach(attr => {
       const name = attr.name.toLowerCase();
       if (name.startsWith("on") || !allowedAttrs.has(name)) {
@@ -337,7 +338,32 @@ function sanitizeNamuOutput(root, docTitle) {
       }
     }
     if (tag === "A") {
+      if (parserAction.includes("opennamu_heading_folding")) {
+        const heading = node.closest("h1,h2,h3,h4,h5,h6");
+        const section = heading ? heading.nextElementSibling : null;
+        if (section && section.id && section.id.includes("opennamu_heading_")) {
+          node.setAttribute("href", "#");
+          node.setAttribute("role", "button");
+          node.setAttribute("tabindex", "0");
+          const toggleSection = event => {
+            event.preventDefault();
+            const collapsed = section.style.display === "none";
+            section.style.display = collapsed ? "block" : "none";
+            node.textContent = collapsed ? "⊖" : "⊕";
+            node.setAttribute("aria-expanded", String(collapsed));
+          };
+          node.setAttribute("aria-expanded", String(section.style.display !== "none"));
+          node.addEventListener("click", toggleSection);
+          node.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") toggleSection(event);
+          });
+        }
+      }
       const href = node.getAttribute("href") || "";
+      if (href.startsWith("/edit_section/")) {
+        node.remove();
+        return;
+      }
       if (href.startsWith("#")) {
         let anchor = href.slice(1);
         try { anchor = decodeURIComponent(anchor); } catch {}
