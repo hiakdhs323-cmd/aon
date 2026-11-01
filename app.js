@@ -242,20 +242,48 @@ async function getNamuDatabase(source, docTitle) {
   return { data: records };
 }
 function safeWikiStyle(raw) {
-  const allowed = new Set(["color","background","background-color","font-size","font-weight","font-style","text-align","text-decoration","width","max-width","min-width","height","max-height","margin","margin-left","margin-right","padding","border","border-color","border-width","border-style","border-radius","float","display","vertical-align","white-space","list-style-type"]);
+  const allowed = new Set([
+    "color","background","background-color","font-size","font-weight","font-style",
+    "text-align","text-decoration","text-transform","line-height","letter-spacing",
+    "word-spacing","width","max-width","min-width","height","max-height","min-height",
+    "margin","margin-left","margin-right","margin-top","margin-bottom","padding",
+    "border","border-color","border-width","border-style","border-radius","border-collapse",
+    "float","clear","display","vertical-align","white-space","list-style-type",
+    "image-rendering","object-fit","overflow","overflow-wrap","box-shadow","opacity"
+  ]);
   const output = [];
   String(raw || "").split(";").forEach(entry => {
     const at = entry.indexOf(":");
     if (at < 1) return;
     const key = entry.slice(0, at).trim().toLowerCase();
     const value = entry.slice(at + 1).trim();
-    if (!allowed.has(key) || !value || /url\s*\(|expression|javascript|@import|[<>]/i.test(value)) return;
+    if (!allowed.has(key) || !value || /url\s*\(|expression|javascript|@import|[<>{}]/i.test(value)) return;
     output.push(key + ":" + value);
   });
   return output.join(";");
 }
+function sanitizeNamuStylesheet(raw) {
+  const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
+  const rules = String(raw || "").replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [];
+  const safeRules = [];
+  for (const rule of rules) {
+    const brace = rule.indexOf("{");
+    const selectorText = rule.slice(0, brace).trim();
+    const declarations = safeWikiStyle(rule.slice(brace + 1, rule.lastIndexOf("}")));
+    if (!declarations) continue;
+    const selectors = selectorText.split(",").map(value => value.trim());
+    if (!selectors.length || selectors.length > 20) continue;
+    const safeSelectors = selectors.filter(selector => {
+      const parts = selector.split(/\s*>\s*|\s+/).filter(Boolean);
+      return parts.length > 0 && parts.length <= 8 && parts.every(part => allowedSelectorPart.test(part));
+    });
+    if (!safeSelectors.length) continue;
+    safeRules.push(safeSelectors.map(selector => ".wiki-content " + selector).join(",") + "{" + declarations + "}");
+  }
+  return safeRules.join("\n");
+}
 function sanitizeNamuOutput(root, docTitle) {
-  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
+  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
   const allowedAttrs = new Set(("alt allow allowfullscreen class colspan frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
   [...root.querySelectorAll("*")].forEach(node => {
     const tag = node.tagName;
@@ -265,6 +293,10 @@ function sanitizeNamuOutput(root, docTitle) {
     }
     if (!allowedTags.has(tag)) {
       node.replaceWith(...node.childNodes);
+      return;
+    }
+    if (tag === "STYLE") {
+      node.textContent = sanitizeNamuStylesheet(node.textContent || "");
       return;
     }
     [...node.attributes].forEach(attr => {
@@ -362,6 +394,13 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "ëŒ€ë
           window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" });
         } catch (error) {
           console.warn("KaTeX rendering skipped", error);
+        }
+      });
+      target.querySelectorAll(".namu-latex-block").forEach(element => {
+        try {
+          window.katex.render(element.textContent || "", element, { displayMode: true, throwOnError: false, strict: "ignore" });
+        } catch (error) {
+          console.warn("LaTeX block rendering skipped", error);
         }
       });
     }
