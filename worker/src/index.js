@@ -79,6 +79,13 @@ function makeAdminToken() {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+function imageNameMatches(filename, hash, extension) {
+  const value = String(filename || "");
+  const dot = value.lastIndexOf(".");
+  const base = dot > 0 ? value.slice(0, dot) : value;
+  const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
+  return namuFileHash(base).toLowerCase() === hash.toLowerCase() && ext === String(extension || "").toLowerCase();
+}
 
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -306,12 +313,8 @@ export default {
         return response({ ok: true, id, filename: newFilename, previous_filename: image.filename }, 200, cors);
       }
       if (url.pathname === "/api/files" && request.method === "GET") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "파일 목록을 보려면 로그인하세요." }, 401, cors);
         await ensureImageSchema(env);
-        const result = user.isAdmin
-          ? await env.DB.prepare("SELECT id, filename, content_type, created_at, owner FROM images ORDER BY created_at DESC LIMIT 500").all()
-          : await env.DB.prepare("SELECT id, filename, content_type, created_at, owner FROM images WHERE owner = ? ORDER BY created_at DESC LIMIT 500").bind(user.username).all();
+        const result = await env.DB.prepare("SELECT id, filename, content_type, created_at FROM images ORDER BY created_at DESC LIMIT 500").all();
         return response({ files: result.results || [] }, 200, cors);
       }
       if (url.pathname.startsWith("/image/") && request.method === "GET") {
