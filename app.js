@@ -679,7 +679,17 @@ function editPage(title = currentTitle, content = currentContent) {
   $("editor-title-wrap").hidden = !editorIsNew;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
   $("editor-title").readOnly = !editorIsNew;
-  $("editor-content").value = String(content || "");
+  let editorText = String(content || "");
+  try {
+    const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
+    if (draft && draft.originalTitle === editorOriginalTitle && typeof draft.content === "string" &&
+        draft.content !== editorText && confirm("저장되지 않은 편집 초안이 있습니다. 복구할까요?")) {
+      editorText = draft.content;
+      if (editorIsNew && draft.title) $("editor-title").value = draft.title;
+    }
+  } catch {}
+  $("editor-content").value = editorText;
+  $("editor-counter").textContent = editorText.length.toLocaleString("ko-KR") + " / 200,000자";
   $("editor-summary").value = "";
   $("editor-status").textContent = "";
   $("editor-preview").replaceChildren();
@@ -759,11 +769,39 @@ $("editor-form").onsubmit = async event => {
   }
 };
 $("editor-content").addEventListener("input", () => {
+  const content=$("editor-content").value;
+  $("editor-counter").textContent=content.length.toLocaleString("ko-KR")+" / 200,000자";
+  $("editor-status").textContent=content.length>200000?"문서가 200,000자를 초과했습니다.":"";
   sessionStorage.setItem("aonwiki-draft", JSON.stringify({
     originalTitle: editorOriginalTitle,
     title: $("editor-title").value,
-    content: $("editor-content").value
+    content
   }));
+});
+function insertEditorMarkup(kind){
+ const field=$("editor-content"),start=field.selectionStart,end=field.selectionEnd;
+ const selected=field.value.slice(start,end);
+ const templates={
+  heading:["== "," ==","문단 제목"],
+  bold:["'''","'''","굵게"],
+  italic:["''","''","기울임"],
+  link:["[[","]]","문서 제목"],
+  list:["* ","","목록 항목"],
+  footnote:["[* ","]","각주 내용"]
+ };
+ if(kind==="hr"||kind==="table"){
+  const value=kind==="hr"?"\n----\n":"\n||항목 1||항목 2||\n||내용||내용||\n";
+  field.setRangeText(value,start,end,"end");
+  field.focus();return;
+ }
+ const item=templates[kind];if(!item)return;
+ const value=item[0]+(selected||item[2])+item[1];
+ field.setRangeText(value,start,end,"end");
+ field.focus();
+ if(!selected)field.setSelectionRange(start+item[0].length,start+item[0].length+item[2].length);
+}
+document.querySelectorAll("[data-markup]").forEach(button=>{
+ button.addEventListener("click",()=>insertEditorMarkup(button.dataset.markup));
 });
 $("home").onclick=()=>showHome(true);
 $("new").onclick=()=>editPage("","");
