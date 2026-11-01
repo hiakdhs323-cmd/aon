@@ -610,29 +610,35 @@ $("login").onclick=async()=>{
  }
  openLogin()
 };
-$("settings").onclick=()=>showDialog("연결 및 관리자 인증",[
- {id:"api-url",label:"Cloudflare Worker API 주소",value:apiBase()},
- {id:"admin-token",label:"관리자 토큰 (입력하면 위키 관리자 권한 확인)",type:"password"}
-],async()=>{
- const base=$("api-url").value.trim().replace(/\/$/,"");
- if(base&&!base.startsWith("https://"))throw Error("https:// 주소를 입력하세요.");
- const previousApi=apiBase(),previousToken=sessionStorage.getItem(TOKEN_SETTING)||"";
- if(base)localStorage.setItem(API_SETTING,base);
- const candidate=$("admin-token").value.trim();
- if(candidate)sessionStorage.setItem(TOKEN_SETTING,candidate);
- try{
-  const identity=await api("/api/me");
-  if(candidate&&!identity.isAdmin)throw Error("관리자 토큰이 올바르지 않습니다.");
-  await refreshIdentity();
-  $("dialog").close();
-  readRoute()
- }catch(error){
-  if(previousApi)localStorage.setItem(API_SETTING,previousApi);
-  if(previousToken)sessionStorage.setItem(TOKEN_SETTING,previousToken);else sessionStorage.removeItem(TOKEN_SETTING);
-  await refreshIdentity();
-  throw error
- }
-});
+$("settings").onclick=()=>{
+ showDialog("연결 및 관리자 인증",[
+  {id:"api-url",label:"Cloudflare Worker API 주소",value:apiBase()},
+  {id:"admin-token",label:"초기 관리자 토큰 · Cloudflare ADMIN_TOKEN",type:"password",placeholder:"최초 관리자 인증 키"}
+ ],async()=>{
+  const base=$("api-url").value.trim().replace(/\/$/,"");
+  if(base&&!base.startsWith("https://"))throw Error("https:// 주소를 입력하세요.");
+  const previousApi=apiBase(),previousToken=sessionStorage.getItem(TOKEN_SETTING)||"";
+  if(base)localStorage.setItem(API_SETTING,base);
+  const candidate=$("admin-token").value.trim();
+  if(candidate)sessionStorage.setItem(TOKEN_SETTING,candidate);
+  try{
+   const identity=await api("/api/me");
+   if(candidate&&!identity.isAdmin)throw Error("관리자 토큰이 올바르지 않습니다.");
+   await refreshIdentity();
+   $("dialog").close();
+   readRoute()
+  }catch(error){
+   if(previousApi)localStorage.setItem(API_SETTING,previousApi);
+   if(previousToken)sessionStorage.setItem(TOKEN_SETTING,previousToken);else sessionStorage.removeItem(TOKEN_SETTING);
+   await refreshIdentity();
+   throw error
+  }
+ });
+ const note=document.createElement("p");
+ note.className="dialog-help";
+ note.textContent="최초 관리자 키는 Cloudflare Worker의 ADMIN_TOKEN 비밀 변수로 등록해야 합니다. 저장소에는 비밀값을 기록하지 않습니다. 최초 인증 후에는 대문 아래의 토큰 재발급 기능으로 기존 키를 폐기하세요.";
+ $("dialog-body").append(note);
+};
 async function editHomepage(){
  if(!isWikiAdmin){$("message").textContent="위키 관리자 권한이 필요합니다.";return}
  const data=await api("/api/home"),settings=data.settings||{};
@@ -662,7 +668,7 @@ async function editHomepage(){
 $("home-edit").onclick=()=>editHomepage().catch(error=>{$("dialog-status").textContent=error.message});
 $("admin-token-rotate").onclick=async()=>{
  if(!isWikiAdmin){$("dialog-status").textContent="위키 관리자 권한이 필요합니다.";return}
- if(!confirm("관리자 토큰을 새로 발급할까요? 기존 토큰은 즉시 사용할 수 없게 됩니다."))return;
+ if(!confirm("초기 관리자 토큰을 폐기하고 새 랜덤 관리자 토큰으로 교체할까요? 이전 토큰은 즉시 사용할 수 없게 됩니다."))return;
  try{
   const data=await api("/api/admin/token/rotate",{method:"POST"});
   sessionStorage.setItem(TOKEN_SETTING,data.token);
