@@ -96,3 +96,121 @@ dialog{width:min(760px,calc(100vw - 24px));max-height:90vh;overflow:auto;padding
  .wiki-content h3{font-size:20px;margin-top:22px}
  .wiki-content hr{margin:21px 0}
 }
+
+/* Refined AonWiki visual system */
+:root{--wiki-accent:#2759b8;--wiki-accent-strong:#19469d;--wiki-accent-soft:#edf3ff;--wiki-surface:#fff;--wiki-canvas:#f5f7fb;--wiki-border:#e1e6ef;--wiki-shadow:0 8px 24px rgba(25,45,85,.06)}
+body{background:var(--wiki-canvas);color:#202633}
+.site-header{background:rgba(255,255,255,.96);border-bottom:1px solid #e4e9f1;box-shadow:0 2px 12px rgba(20,40,80,.045);backdrop-filter:blur(12px)}
+.brand-symbol{border:0;border-radius:9px;background:linear-gradient(145deg,#3169ce,#244c9e);color:#fff;box-shadow:0 4px 10px rgba(39,89,184,.2)}
+.brand-name{letter-spacing:-.9px}.brand-name span{color:var(--wiki-accent)}
+.searchbar input{border-color:#d6deeb;border-radius:8px 0 0 8px;background:#fbfcff}
+.searchbar button{border-color:#d6deeb;border-radius:0 8px 8px 0;background:#f1f5fb;color:#244d9f;font-weight:600}
+.searchbar button:hover{background:#e6eefc}
+.header-actions{gap:8px}.button{border-color:#d7dfeb;border-radius:7px;background:#fff;transition:background .15s,border-color .15s,transform .15s}
+.button:hover{background:#f2f6fd;border-color:#b9c9e3}.button:active{transform:translateY(1px)}
+.button-primary{background:var(--wiki-accent);border-color:var(--wiki-accent);box-shadow:0 3px 8px rgba(39,89,184,.16)}
+.button-primary:hover{background:var(--wiki-accent-strong);border-color:var(--wiki-accent-strong)}
+.role-label{padding:4px 9px;border-radius:999px;background:#edf2f9;color:#4d5b70;font-size:11px;font-weight:700;white-space:nowrap}
+.role-label.admin{background:#fff4df;color:#94600a}
+.layout{gap:25px;margin-top:25px}
+.left-nav{padding:11px 9px;background:#fff;border:1px solid var(--wiki-border);border-radius:12px;box-shadow:0 3px 12px rgba(25,45,85,.035)}
+.nav-heading{padding:8px 11px;color:#758196;border-bottom:1px solid #edf0f5;letter-spacing:.4px}
+.nav-item{padding:8px 11px;margin:2px 0;border-radius:7px;color:#43536c;transition:background .15s,color .15s}
+.nav-item:hover{background:#f2f6fd;color:var(--wiki-accent);text-decoration:none}
+.nav-item.active{background:var(--wiki-accent-soft);color:var(--wiki-accent);font-weight:700}
+.nav-separator{background:#edf0f5;margin:13px 4px}
+.nav-caption{margin:20px 11px 7px;padding-top:12px;border-top:1px solid #edf0f5;color:#8a95a7}
+.main{min-width:0}
+.home-view,.document-view,.editor-view{animation:wikiFadeIn .2s ease-out}
+@keyframes wikiFadeIn{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.home-heading{position:relative;overflow:hidden;padding:42px 38px 34px;border:1px solid #dce7fb;border-radius:15px;background:linear-gradient(120deg,#f7faff 0%,#edf4ff 58%,#e5efff 100%);box-shadow:var(--wiki-shadow)}
+.home-heading:after{content:"";position:absolute;width:230px;height:230px;right:-75px;top:-105px;border-radius:50%;border:34px solid rgba(57,111,205,.07);pointer-events:none}
+.home-kicker{color:#6480ad;letter-spacing:2px}
+.home-heading h1{font-size:38px;font-weight:700;letter-spacing:-1.4px;color:#233f70}
+.home-heading p:last-child{color:#61728e}
+.home-search-hint{margin:16px 0 22px;border:1px solid #e1e8f2;border-radius:9px;background:#fff;color:#607089;padding:12px 15px}
+.home-notice{margin:14px 0;padding:13px 16px;border:1px solid #d7e3f7;border-left:4px solid var(--wiki-accent);border-radius:8px;background:#f4f8ff;color:#344765;white-space:pre-wrap}
+.home-content{margin:14px 0 24px;padding:4px 2px}
+.home-section{margin:21px 0;padding:18px 20px;border:1px solid var(--wiki-border);border-radius:12px;background:#fff;box-shadow:0 3px 12px rgba(25,45,85,.035)}
+.section-heading{border-bottom:1px solid #edf0f5;padding-bottom:10px}
+.section-heading h2{font-size:19px;font-weight:700;color:#2e3d55}
+.page-list{padding-top:8px}
+.page-row{padding:9px 10px;border:0;border-radius:7px;transition:background .15s}
+.page-row:nth-child(even){background:#fafbfd}
+.page-row:hover{background:#eff5ff}
+.page-row a{font-weight:600}
+.page-row time{color:#8893a4}
+.home-help{color:#718097}
+.home-admin-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 18px;padding:12px 14px;border:1px solid #f0dfb8;border-radius:9px;background:#fffaf0}
+.admin-label{margin-right:auto;color:#916312;font-size:12px;font-weight:700}
+.document-view .article{padding:22px 28px 18px;border:1px solid var(--wiki-border);border-radius:12px;background:#fff;box-shadow:var(--wiki-shadow)}
+.document-view .breadcrumbs{margin:0 0 12px 2px}
+.article-titlebar{border-bottom-color:#bcc6d5;padding-bottom:10px}
+.article-titlebar h1{font-size:30px;font-weight:650;letter-spacing:-.6px;color:#202d42}
+.article-tools{border-bottom-color:#e9edf4}
+.notice{border-color:#dbe4f0;border-radius:7px;background:#f7f9fc}
+.wiki-content{color:#252b36}
+.wiki-content a{color:#2459b1}
+.wiki-content a:hover{color:#163f8d}
+.wiki-content hr{border-top-color:#aeb9c9}
+.article-footer{border-top-color:#e9edf4}
+.site-footer{border-top-color:#e7ebf2}
+.editor-card{border-color:#dce3ee;border-radius:13px;overflow:hidden;box-shadow:var(--wiki-shadow)}
+.editor-page-heading{background:linear-gradient(120deg,#f6f9ff,#edf3fd);border-bottom-color:#e2e9f3;padding:22px 25px}
+.editor-page-heading h1{font-size:25px;font-weight:700;color:#29436e}
+.editor-field{padding:19px 25px 0}
+.editor-field>label{color:#35445b}
+.editor-field>input,.editor-field>textarea{border-color:#d4ddeb;border-radius:7px;background:#fcfdff}
+.editor-field>input:focus,.editor-field>textarea:focus{outline:2px solid rgba(39,89,184,.14);border-color:#7393cb}
+.editor-tabs{border-color:#d4ddeb;border-radius:7px 7px 0 0;background:#f4f7fb}
+.editor-tabs button{padding:8px 15px}
+.editor-tabs button.active{color:var(--wiki-accent)}
+.editor-tabs #editor-image{margin-left:0;color:#385888}
+.editor-field>textarea{border-radius:0 0 7px 7px;background:#fbfcff}
+.editor-preview{border-color:#d4ddeb;border-radius:0 0 7px 7px}
+.editor-help{border-color:#dbe4f1;border-radius:8px;background:#f7f9fd}
+.editor-actions{border-top-color:#e8edf4}
+.file-manager-intro{color:#68778d;font-size:12px;margin:0 0 12px}
+.file-manager-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto}
+.file-manager-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;border:1px solid #e5eaf2;border-radius:9px;background:#fff}
+.file-manager-row>img{width:64px;height:56px;object-fit:contain;border-radius:6px;background:#f5f7fb}
+.file-manager-info{min-width:0;display:flex;flex-direction:column;gap:3px}
+.file-manager-info strong{overflow-wrap:anywhere;color:#2c3b53;font-size:13px}
+.file-manager-info small{color:#8591a3;font-size:11px}
+.file-manager-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.danger-link{color:#b23a3a}
+.danger-link:hover{background:#fff1f1;color:#9b2020}
+.dialog-head{background:#f8faff}
+.dialog{border-radius:12px}
+.dialog-status{padding-top:5px}
+.dialog-help{color:#69778d;font-size:12px}
+.button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+@media(max-width:850px){
+ .layout{margin-top:15px}
+ .left-nav{padding:8px;gap:3px}
+ .home-heading{padding:29px 24px 24px}
+ .home-heading h1{font-size:32px}
+ .document-view .article{padding:17px 18px}
+ .editor-page-heading{padding:17px 18px}
+ .editor-field{padding:15px 18px 0}
+}
+@media(max-width:560px){
+ .site-header{padding:8px 10px}
+ .header-actions{margin-left:auto}
+ .role-label{display:none}
+ .layout{width:calc(100% - 18px)}
+ .home-heading{padding:25px 18px 20px;border-radius:11px}
+ .home-heading h1{font-size:29px}
+ .home-section{padding:14px 12px;border-radius:10px}
+ .page-row{align-items:flex-start}
+ .page-row time{font-size:10px}
+ .document-view .article{padding:15px 13px;border-radius:9px}
+ .article-titlebar h1{font-size:25px}
+ .file-manager-row{grid-template-columns:52px minmax(0,1fr)}
+ .file-manager-row>img{width:52px;height:48px}
+ .file-manager-actions{grid-column:1/-1;justify-content:flex-start}
+ .editor-page-heading{padding:14px}
+ .editor-field{padding:13px 14px 0}
+ .editor-field>textarea{min-height:240px}
+ .editor-actions{padding:13px 14px}
+}
