@@ -679,7 +679,12 @@ async function renderWithNewNamuMark(source, target, docTitle) {
 }
 
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
-  if (window.AonNamuMarkEngineReady) {
+  // Keep syntax that is specific to the existing AonWiki parser on its proven renderer.
+  // This lets the upstream engine handle common markup without regressing wiki-only features.
+  const legacyOnlySyntax = /\\[\\[\\s*(?:파일|file|분류|category)\\s*:/i.test(String(source || "")) ||
+    /\\{\\{\\{\\s*#!(?:if|style|wiki|latex|folding)\\b/i.test(String(source || "")) ||
+    /\\[(?:목차(?:\\(|\\])|clearfix\\])/i.test(String(source || ""));
+  if (window.AonNamuMarkEngineReady && !legacyOnlySyntax) {
     try {
       await renderWithNewNamuMark(source, target, docTitle);
       return;
@@ -1522,7 +1527,7 @@ startLivePageWatcher();
 
 // If the module arrives after the initial page render, re-render the visible document once.
 window.addEventListener("aon-namumark-ready", () => {
-  if (currentTitle && $("article") && !$("document-view").hidden && !$("editor-view").hidden) return;
+  if (!$("editor-view").hidden) return;
   const target = $("article");
   if (target && currentContent && !$("document-view").hidden) {
     renderNamuMarkup(currentContent, target, currentTitle || "대문").catch(error => console.error(error));
