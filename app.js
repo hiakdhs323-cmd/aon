@@ -302,7 +302,16 @@ function sanitizeNamuOutput(root, docTitle) {
     }
     if (tag === "A") {
       const href = node.getAttribute("href") || "";
-      if (href.startsWith("/w/")) {
+      if (href.startsWith("#")) {
+        let anchor = href.slice(1);
+        try { anchor = decodeURIComponent(anchor); } catch {}
+        node.setAttribute("href", routeFor(docTitle, anchor));
+        node.addEventListener("click", event => {
+          event.preventDefault();
+          history.replaceState(null, "", routeFor(docTitle, anchor));
+          scrollToAnchor(anchor);
+        });
+      } else if (href.startsWith("/w/")) {
         const path = href.slice(3).split("#");
         let page = path[0], anchor = path[1] || "";
         try { page = decodeURIComponent(page); anchor = decodeURIComponent(anchor); } catch {}
