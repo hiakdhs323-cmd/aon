@@ -79,7 +79,7 @@ function inlineRender(parent,source,state){
  let pos=0,m;
  while((m=token.exec(text))){
   parent.append(document.createTextNode(text.slice(pos,m.index)));
-  if(m[1]!==undefined){createImage(parent,m[2].replace(/^\//,""),state,m[1])}
+  if(m[1]!==undefined){createImage(parent,m[2],state,m[1])}
   else if(m[3]!==undefined){createImage(parent,m[3],state)}
   else if(m[4]!==undefined){
    const raw=m[4],bar=raw.indexOf("|"),target=(bar>=0?raw.slice(0,bar):raw).trim(),label=bar>=0?raw.slice(bar+1):target;
@@ -179,7 +179,7 @@ function renderContent(source,target=$("article"),options={}){
   const heading=line.match(/^(={1,6})\s*(.*?)\s*\1\s*$/);
   if(heading){flush();listStack=[];const level=Math.max(2,Math.min(6,heading[1].length)),h=document.createElement("h"+level);inlineRender(h,heading[2],state);h.dataset.heading="1";target.append(h);continue}
   if(/^[-]{4,}$/.test(trim)){flush();listStack=[];target.append(document.createElement("hr"));i++;continue}
-  if(appendListLine(target,listStack,line,state)){flush();i++;continue}
+  if(/^([ \t]*)([*#]+|\d+\.|[A-Za-z]\.)\s*/.test(line)){flush();if(appendListLine(target,listStack,line,state)){i++;continue}}
   listStack=[];
   if(/^>\s?/.test(line)){flush();let quote=target.lastElementChild;if(!quote||quote.tagName!=="BLOCKQUOTE"){quote=document.createElement("blockquote");target.append(quote)}const p=document.createElement("p");inlineRender(p,line.replace(/^>\s?/,""),state);quote.append(p);i++;continue}
   paragraph.push(line);i++;
@@ -203,7 +203,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
  $("title").textContent=title;$("crumb").textContent=title;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
  try{const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   currentContent=data.page.content||"";$("message").textContent="";
-  const redirect=currentContent.match(/^\s*#redirect\s+\[\[?([^\]\n]+)\]?\]/i);
+  const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";renderContent(currentContent);
   if(anchor)requestAnimationFrame(()=>scrollToAnchor(anchor))
