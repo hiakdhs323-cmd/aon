@@ -1656,7 +1656,7 @@ try {
             return "<" + dataName + ">" + safeLabel + "</" + dataName + ">";
           }
         }
-        return \`<macro>\${p1}</macro>\`;
+        return `<macro>${p1}</macro>`;
       }
     };
 
