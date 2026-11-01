@@ -3,7 +3,8 @@ const API_SETTING = "aonwiki-api";
 const TOKEN_SETTING = "aonwiki-key";
 let currentTitle = "대문";
 let currentContent = "";
-const apiBase = () => (localStorage.getItem(API_SETTING) || "").replace(/\/$/, "");
+const DEFAULT_API_URL = "https://aon.hiakdhs323.workers.dev";
+const apiBase = () => (localStorage.getItem(API_SETTING) || DEFAULT_API_URL).replace(/\/$/, "");
 const adminToken = () => sessionStorage.getItem(TOKEN_SETTING) || "";
 
 async function api(path, options = {}) {
@@ -103,7 +104,7 @@ function showDialog(title, fields, onSave, saveLabel = "저장") {
 
 $("cancel").addEventListener("click", () => $("dialog").close());
 $("settings").addEventListener("click", () => showDialog("API 설정", [
-  { id: "api-url", label: "Cloudflare Worker API 주소", value: apiBase(), placeholder: "https://aonwiki-api.username.workers.dev" },
+  { id: "api-url", label: "Cloudflare Worker API 주소", value: apiBase(), placeholder: "https://aon.hiakdhs323.workers.dev" },
   { id: "admin-token", label: "관리자 토큰 (선택)", type: "password", value: "", placeholder: "ADMIN_TOKEN" }
 ], async () => {
   const base = $("api-url").value.trim().replace(/\/$/, "");
