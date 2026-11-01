@@ -266,6 +266,7 @@ async function getNamuDatabase(source, docTitle) {
     ]);
     const records = (pageData.pages || []).map(page => ({ title: page.title, data: "" }));
     (fileData.files || []).forEach(file => records.push({ title: "file:" + file.filename, data: "" }));
+    (fileData.aliases || []).forEach(alias => records.push({ title: "file:" + alias.alias, data: "" }));
     namuDatabaseCache = { expires: Date.now() + 30000, records };
   }
   const records = namuDatabaseCache.records.map(item => ({ ...item }));
