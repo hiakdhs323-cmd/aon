@@ -89,14 +89,6 @@ async function passwordHash(password, salt) {
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: 100000, hash: "SHA-256" }, material, 256);
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
-async function currentUser(request, env) {
-  if (legacyAdmin(request, env)) return { username: "관리자" };
-  const auth = request.headers.get("Authorization") || "";
-  if (!auth.startsWith("Bearer ")) return null;
-  const tokenHash = await sha256(auth.slice(7));
-  const now = new Date().toISOString();
-  return await env.DB.prepare("SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
-}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
