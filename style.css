@@ -475,3 +475,36 @@ html[data-theme="dark"] .backlink-row:hover,
 html[data-theme="dark"] .category-index-row:hover {
   background: #202c3d !important;
 }
+
+
+/* Dark mode TOC: cover both native and OpenNAMU-compatible markup */
+html[data-theme="dark"] .wiki-content .opennamu_TOC,
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold,
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold .opennamu_TOC,
+html[data-theme="dark"] .wiki-content .wiki-toc {
+  background: #1b2432 !important;
+  color: #e6edf7 !important;
+  border-color: #46566e !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] .wiki-content .opennamu_TOC_title,
+html[data-theme="dark"] .wiki-content .wiki-toc-title,
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold > summary,
+html[data-theme="dark"] .wiki-content .wiki-toc summary {
+  background: #202c3d !important;
+  color: #e6edf7 !important;
+  border-color: #46566e !important;
+}
+html[data-theme="dark"] .wiki-content .opennamu_TOC a,
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold a,
+html[data-theme="dark"] .wiki-content .wiki-toc a {
+  color: #a9c7ff !important;
+}
+html[data-theme="dark"] .wiki-content .opennamu_TOC a:hover,
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold a:hover,
+html[data-theme="dark"] .wiki-content .wiki-toc a:hover {
+  color: #d2e2ff !important;
+}
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold .opennamu_TOC {
+  border-top-color: #344154 !important;
+}
