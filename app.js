@@ -36,7 +36,11 @@ function navigateInternal(target){
 function scrollToAnchor(anchor){
  let id=String(anchor||"").replace(/^#/,"");try{id=decodeURIComponent(id)}catch{}
  let el=document.getElementById(id);
- if(!el){const wanted=id.replace(/^s-\d+$/,"");if(wanted)el=[...$("article").querySelectorAll("h2,h3,h4,h5,h6")].find(h=>h.textContent.trim()===wanted)}
+ if(!el){
+  const normalize=value=>String(value||"").replace(/^\s*\d+(?:\.\d+)*\.\s*/,"").replace(/\s+/g," ").trim();
+  const wanted=normalize(id);
+  if(wanted)el=[...$("article").querySelectorAll("h1,h2,h3,h4,h5,h6")].find(h=>normalize(h.textContent)===wanted);
+ }
  if(el)el.scrollIntoView({behavior:"smooth",block:"start"})
 }
 function cleanStyleValue(value){const v=String(value||"").trim();if(!v||/[;{}<>]|url\s*\(|expression|javascript/i.test(v))return "";return v}
