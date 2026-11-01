@@ -336,7 +336,8 @@ export default {
           return response({ files: result.results || [], isAdmin: Boolean(user.isAdmin) }, 200, cors);
         }
         const result = await env.DB.prepare("SELECT id, filename, content_type, created_at FROM images ORDER BY created_at DESC LIMIT 500").all();
-        return response({ files: result.results || [] }, 200, cors);
+        const aliases = await env.DB.prepare("SELECT alias FROM image_aliases ORDER BY created_at DESC LIMIT 1000").all();
+        return response({ files: result.results || [], aliases: aliases.results || [] }, 200, cors);
       }
       if (url.pathname.startsWith("/image/") && request.method === "GET") {
         await ensureImageSchema(env);
