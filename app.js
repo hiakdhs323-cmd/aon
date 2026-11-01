@@ -1064,40 +1064,68 @@ function escapeHighlightText(value) {
 function highlightNamuLine(line, insideCode) {
   const escaped = escapeHighlightText(line);
   const trimmed = line.trim();
+  const syntax = value => '<span class="mk-syntax">' + escapeHighlightText(value) + '</span>';
+  const content = value => '<span class="mk-content">' + escapeHighlightText(value) + '</span>';
   if (/^\{\{\{#![a-z0-9_-]+/i.test(trimmed)) {
     const match = trimmed.match(/^(\{\{\{#![a-z0-9_-]+)([\s\S]*)$/i);
-    return '<span class="mk-macro">' + escapeHighlightText(match[1]) + '</span>' +
-      '<span class="mk-macro-options">' + escapeHighlightText(match[2]) + '</span>';
+    return syntax(match[1]) + content(match[2]);
   }
-  if (trimmed === "}}}") return '<span class="mk-macro-close">' + escaped + '</span>';
+  if (trimmed === "}}}") return syntax(trimmed);
   if (insideCode) return '<span class="mk-code-line">' + escaped + '</span>';
-  if (/^\s*={2,6}.*?={2,6}\s*$/.test(line)) return '<span class="mk-heading">' + escaped + '</span>';
+  if (/^\s*={2,6}.*?={2,6}\s*$/.test(line)) {
+    const match = line.match(/^(\s*)(={2,6})(.*?)(={2,6})(\s*)$/);
+    if (match) return escapeHighlightText(match[1]) + syntax(match[2]) + '<span class="mk-heading-text">' + escapeHighlightText(match[3]) + '</span>' + syntax(match[4]) + escapeHighlightText(match[5]);
+  }
   if (/^\s*\|\|/.test(line)) return '<span class="mk-table">' + escaped + '</span>';
-  if (/^\s*(?:\*+|\d+\.)\s/.test(line)) return '<span class="mk-list">' + escaped + '</span>';
-  if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return '<span class="mk-rule">' + escaped + '</span>';
+  if (/^\s*(?:\*+|\d+\.)\s/.test(line)) {
+    const match = line.match(/^(\s*(?:\*+|\d+\.))(\s+)(.*)$/);
+    if (match) return syntax(match[1]) + escapeHighlightText(match[2]) + escapeHighlightText(match[3]);
+  }
+  if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return syntax(line);
 
   const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
   let output = "", last = 0, match;
   while ((match = tokenPattern.exec(line))) {
     output += escapeHighlightText(line.slice(last, match.index));
     const token = match[0];
-    let kind = "mk-inline";
-    if (/^\[include\(/i.test(token)) kind = /(?:^|[,(:])\s*틀\s*:/i.test(token) ? "mk-template" : "mk-include";
-    else if (/^\[\[(?:분류|category):/i.test(token)) kind = "mk-category";
-    else if (/^\[\[(?:파일|file):/i.test(token)) kind = "mk-file";
-    else if (/^\[\[/.test(token)) kind = "mk-link";
-    else if (/^\[\*/.test(token)) kind = "mk-footnote";
-    else if (/^\[https?:\/\//i.test(token)) kind = "mk-external";
-    else if (/^\{\{\{#!./i.test(token)) kind = "mk-macro";
-    else if (/^\{\{\{[@#]/.test(token)) kind = "mk-color";
-    else if (/^\{\{\{/.test(token)) kind = "mk-size";
-    else if (token.startsWith("'''")) kind = "mk-bold";
-    else if (token.startsWith("''")) kind = "mk-italic";
-    else if (token.startsWith("__")) kind = "mk-underline";
-    else if (token.startsWith("~~")) kind = "mk-strike";
-    else if (token.startsWith("^^") || token.startsWith(",,")) kind = "mk-script";
-    else if (/^\[(?:목차|br|date|clearfix|pagecount)/i.test(token)) kind = "mk-command";
-    output += '<span class="' + kind + '">' + escapeHighlightText(token) + '</span>';
+    if (token.startsWith("'''")) {
+      output += syntax("'''") + '<strong class="mk-bold-text">' + escapeHighlightText(token.slice(3, -3)) + '</strong>' + syntax("'''");
+    } else if (token.startsWith("''")) {
+      output += syntax("''") + '<em class="mk-italic-text">' + escapeHighlightText(token.slice(2, -2)) + '</em>' + syntax("''");
+    } else if (token.startsWith("__")) {
+      output += syntax("__") + '<span class="mk-underline-text">' + escapeHighlightText(token.slice(2, -2)) + '</span>' + syntax("__");
+    } else if (token.startsWith("~~")) {
+      output += syntax("~~") + '<del class="mk-strike-text">' + escapeHighlightText(token.slice(2, -2)) + '</del>' + syntax("~~");
+    } else if (token.startsWith("^^")) {
+      output += syntax("^^") + '<sup class="mk-script-text">' + escapeHighlightText(token.slice(2, -2)) + '</sup>' + syntax("^^");
+    } else if (token.startsWith(",,")) {
+      output += syntax(",,") + '<sub class="mk-script-text">' + escapeHighlightText(token.slice(2, -2)) + '</sub>' + syntax(",,");
+    } else if (/^\[\[(?:분류|category):/i.test(token)) {
+      output += syntax("[[") + '<span class="mk-category-label">' + escapeHighlightText(token.slice(2, token.indexOf(":") + 1)) + '</span>' + content(token.slice(token.indexOf(":") + 1, -2)) + syntax("]]");
+    } else if (/^\[\[(?:파일|file):/i.test(token)) {
+      output += syntax("[[") + '<span class="mk-file-label">' + escapeHighlightText(token.slice(2, token.indexOf(":") + 1)) + '</span>' + content(token.slice(token.indexOf(":") + 1, -2)) + syntax("]]");
+    } else if (token.startsWith("[[")) {
+      const inner = token.slice(2, -2);
+      const separator = inner.indexOf("|");
+      output += syntax("[[") + '<span class="mk-link-target">' + escapeHighlightText(separator >= 0 ? inner.slice(0, separator) : inner) + '</span>' +
+        (separator >= 0 ? syntax("|") + content(inner.slice(separator + 1)) : "") + syntax("]]");
+    } else if (token.startsWith("[*")) {
+      output += syntax("[*") + content(token.slice(2, -1)) + syntax("]");
+    } else if (/^\[https?:\/\//i.test(token)) {
+      const inner = token.slice(1, -1), separator = inner.indexOf("|");
+      output += syntax("[") + '<span class="mk-external-url">' + escapeHighlightText(separator >= 0 ? inner.slice(0, separator) : inner) + '</span>' +
+        (separator >= 0 ? syntax("|") + content(inner.slice(separator + 1)) : "") + syntax("]");
+    } else if (/^\[include\(/i.test(token)) {
+      output += syntax("[include(") + '<span class="mk-include-target">' + escapeHighlightText(token.slice(9, -2)) + '</span>' + syntax(")]");
+    } else if (/^\{\{\{#!/i.test(token)) {
+      const macro = token.match(/^(\{\{\{#![a-z0-9_-]+)([\s\S]*)$/i);
+      output += syntax(macro[1]) + content(macro[2]);
+    } else if (token.startsWith("{{{")) {
+      const inner = token.slice(3, -3);
+      output += syntax("{{{") + '<span class="mk-directive">' + escapeHighlightText(inner) + '</span>' + syntax("}}}");
+    } else {
+      output += syntax(token);
+    }
     last = tokenPattern.lastIndex;
   }
   output += escapeHighlightText(line.slice(last));
