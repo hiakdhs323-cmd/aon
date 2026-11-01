@@ -1,60 +1,61 @@
 # AonWiki
 
-**AonWiki** is a self-hosted Korean wiki project based on [openNAMU](https://github.com/openNAMU/openNAMU), an open-source wiki engine that supports NamuMark and Markdown.
+AonWiki is a Korean wiki-style site hosted as a static frontend on GitHub Pages, with Cloudflare Workers providing the API, D1 storing article text and revision metadata, and R2 storing uploaded images.
 
-> This repository builds the upstream openNAMU `beta` branch. It is not affiliated with or endorsed by the official Namuwiki service.
+## Architecture
 
-## Features
+- **Frontend:** HTML, CSS, JavaScript in this repository; deployed with GitHub Actions to GitHub Pages.
+- **API:** Cloudflare Worker in `worker/src/index.js`.
+- **Database:** Cloudflare D1. Article content and revision metadata are stored in D1.
+- **Images:** Cloudflare R2. The Worker validates uploads and serves stored images.
+- **Editor access:** one administrator token stored as a Cloudflare Worker secret. Readers can browse; only token holders can save pages or upload images.
 
-- NamuMark and Markdown support through openNAMU
-- Article creation, editing, revision/history and wiki links provided by the engine
-- SQLite database stored in a persistent `data/` directory by default
-- Docker-based local setup
-- Can be deployed to a server that supports Docker and persistent storage
+This is an original starter implementation inspired by wiki-style navigation; it is not the official Namuwiki service and does not include the complete NamuMark parser.
 
-## Run locally
+## Deploy the GitHub Pages frontend
 
-Requirements: Docker Engine and Docker Compose.
+1. Open this repository's **Settings → Pages**.
+2. Set the build/deployment source to **GitHub Actions**.
+3. Pushes to `main` run `.github/workflows/pages.yml`.
+4. The site URL should be `https://hiakdhs323-cmd.github.io/aon/` after the workflow succeeds.
 
-```bash
-git clone https://github.com/hiakdhs323-cmd/aon.git
-cd aon
-docker compose up --build -d
-```
+## Set up the Cloudflare API
 
-Open **http://localhost:3000**. On a fresh wiki, follow the setup shown by openNAMU. The upstream project states that the first account to register receives owner privileges, so do not expose a new instance publicly until you are ready to create the owner account.
-
-To stop the wiki:
+Requirements: Node.js LTS and Wrangler CLI.
 
 ```bash
-docker compose down
+npm install -g wrangler
+wrangler login
+wrangler d1 create aonwiki
+wrangler r2 bucket create aonwiki-images
 ```
 
-Wiki data is stored in the named Docker volume `aonwiki-data`. Removing the container does not remove the volume. To back up the wiki, stop the service and back up that volume.
-
-## Deployment and database persistence
-
-This is a server-side application; **GitHub Pages alone cannot run the wiki engine or its database**. Deploy the Docker image on a host that supports long-running containers and persistent disks/volumes. Mount persistent storage at `/app/data` and expose port `3000` (or configure the host's port mapping).
-
-Free hosting plans often have storage, sleep, bandwidth, or runtime limits. Some free web services erase local files on restart/redeploy, which would risk losing wiki edits. Check persistence and backup policies before choosing a host. There is no genuinely unlimited free database tier.
-
-The default openNAMU database configuration uses SQLite in `data.db`. Do not place the database on an ephemeral filesystem if you need persistent articles.
-
-## Updating openNAMU
-
-The Docker build clones the upstream `beta` branch at build time. To rebuild with the current upstream version:
+Copy the D1 database ID printed by the first command into `wrangler.toml`, replacing `REPLACE_WITH_D1_DATABASE_ID`. Then initialize the database and set an administrator token:
 
 ```bash
-docker compose build --no-cache
-docker compose up -d
+wrangler d1 execute aonwiki --remote --file=worker/schema.sql
+wrangler secret put ADMIN_TOKEN
+wrangler deploy
 ```
 
-Back up `aonwiki-data` before upgrading. The upstream project is in beta; review upstream changes before updating a production wiki.
+Use a long, random token. Do not put it in source files, commit it to GitHub, or share it publicly. The token is an administrator credential.
 
-## Upstream project and license
+After deployment, open the site, choose **설정**, and enter the Worker URL (usually `https://aonwiki-api.<your-account>.workers.dev`) and the token. The token is kept in the current browser session only.
 
-- Engine: [openNAMU](https://github.com/openNAMU/openNAMU)
-- Upstream license: BSD 3-Clause; see the upstream repository for the full license and third-party notices.
-- This repository's Docker and deployment configuration is provided for AonWiki.
+## Current starter features
 
-For engine-specific options and troubleshooting, consult the [openNAMU README](https://github.com/openNAMU/openNAMU/blob/beta/readme.md).
+- Article list/search and article reading
+- Article creation/editing and revision history
+- Wiki-style links: `[[문서 제목]]` or `[[문서 제목|표시 문구]]`
+- Section headings: `== 문단 제목 ==`
+- Image uploads for PNG, JPEG, GIF, and WebP, up to 5 MiB per file
+- Image storage in R2; article text and revision metadata in D1
+- Responsive layout for desktop and mobile
+
+## Security and limits
+
+- Public visitors can read articles. Only the administrator token can write articles or upload images.
+- This starter does **not** yet provide individual member accounts, per-user permissions, moderation queues, or a complete NamuMark implementation.
+- The Worker checks file type and size, but file extensions alone are not a guarantee that an uploaded file is safe. Only upload images you have permission to publish.
+- Cloudflare free plans have storage, request, and runtime limits; they are not unlimited. Check the current Cloudflare dashboard for actual quotas.
+- Configure `ALLOWED_ORIGIN` in `wrangler.toml` to match the exact origin of your GitHub Pages site if you move the repository to another owner/name.
