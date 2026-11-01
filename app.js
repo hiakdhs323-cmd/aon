@@ -630,29 +630,6 @@ function enhanceFootnoteHover(root) {
 }
 
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
-  if (window.AonNamuMarkEngine?.parse && window.AonNamuMarkEngine?.Renderer) {
-    try {
-      const nodes = window.AonNamuMarkEngine.parse(String(source || ""));
-      const renderer = new window.AonNamuMarkEngine.Renderer(
-        async () => null,
-        async () => null,
-        (type, name) => type === "link" ? routeFor(name) : apiBase() + "/api/file?name=" + encodeURIComponent(name),
-        async () => 0
-      );
-      const html = await renderer.run(nodes);
-      const holder = document.createElement("div");
-      holder.innerHTML = html || "";
-      sanitizeNamuOutput(holder, docTitle);
-      target.replaceChildren(...holder.childNodes);
-      target.classList.add("namumark-rendered");
-      enhanceFootnoteHover(target);
-      if (window.katex) target.querySelectorAll("katex[data-latex]").forEach(el => {
-        try { window.katex.render(el.getAttribute("data-latex") || el.textContent || "", el, {throwOnError:false, strict:"ignore"}); } catch (e) {}
-      });
-      if (window.hljs) target.querySelectorAll("pre code").forEach(code => window.hljs.highlightElement(code));
-      return;
-    } catch (error) { console.error("namumark.ts render failed", error); }
-  }
   if (!window.NamuMarkBundle || !window.NamuMarkBundle.NamuMark) {
     renderContent(source, target);
     return;
