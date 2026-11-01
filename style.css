@@ -259,7 +259,26 @@ body{background:var(--wiki-canvas);color:#202633}
 }
 .wiki-content .wiki-footnote-trigger.tooltip-open{z-index:101}
 @media(max-width:560px){
-  .wiki-content .wiki-footnote-tooltip{max-width:calc(100vw - 32px);font-size:12px}
+  .wiki-content .wiki-footnote-tooltip{max-width:calc(100vw - 24px);font-size:12px}
+  .wiki-content .wiki-footnote-tooltip.mobile-fixed{
+    position:fixed;
+    z-index:10000;
+    width:max-content;
+    max-width:calc(100vw - 24px);
+    max-height:min(42vh,280px);
+    overflow:auto;
+    overscroll-behavior:contain;
+    left:12px;
+    top:12px;
+    bottom:auto;
+    transform:none;
+    pointer-events:none;
+  }
+  .wiki-content .wiki-footnote-tooltip.mobile-fixed.visible{transform:none}
+  .wiki-content .wiki-footnote-trigger{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
 }
 
 /* Category index and enhanced wiki navigation */
