@@ -242,11 +242,11 @@ function safeWikiStyle(raw) {
   return output.join(";");
 }
 function sanitizeNamuOutput(root, docTitle) {
-  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT H1 H2 H3 H4 H5 H6 HR I IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
-  const allowedAttrs = new Set(("alt class colspan height href id lang open rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
+  const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
+  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
   [...root.querySelectorAll("*")].forEach(node => {
     const tag = node.tagName;
-    if (["SCRIPT","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)) {
+    if (["SCRIPT","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)) {
       node.remove();
       return;
     }
@@ -269,6 +269,24 @@ function sanitizeNamuOutput(root, docTitle) {
         node.removeAttribute(attr.name);
       }
     });
+    if (tag === "IFRAME") {
+      const src = node.getAttribute("src") || "";
+      const embedHosts = new Set(["www.youtube.com","youtube.com","www.instagram.com","www.facebook.com","www.tiktok.com","twitframe.com","tv.kakao.com","tv.naver.com","embed.nicovideo.jp","player.vimeo.com"]);
+      try {
+        const embedUrl = new URL(src, location.href);
+        if (embedUrl.protocol !== "https:" || !embedHosts.has(embedUrl.hostname)) {
+          node.remove();
+          return;
+        }
+        node.setAttribute("src", embedUrl.href);
+        node.setAttribute("loading", "lazy");
+        node.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+        node.setAttribute("allowfullscreen", "");
+      } catch {
+        node.remove();
+        return;
+      }
+    }
     if (tag === "A") {
       const href = node.getAttribute("href") || "";
       if (href.startsWith("/w/")) {
@@ -316,6 +334,23 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "ëŒ€ë
     sanitizeNamuOutput(holder, docTitle);
     target.replaceChildren(...holder.childNodes);
     target.classList.add("namumark-rendered");
+    if (window.katex) {
+      target.querySelectorAll('span[id*="opennamu_math_"]').forEach(element => {
+        try {
+          window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" });
+        } catch (error) {
+          console.warn("KaTeX rendering skipped", error);
+        }
+      });
+    }
+    if (window.hljs) {
+      target.querySelectorAll("pre code").forEach(code => {
+        const language = (code.className || "").trim().split(/\\s+/)[0];
+        if (language && !language.startsWith("language-")) code.classList.add("language-" + language);
+        window.hljs.highlightElement(code);
+      });
+      if (typeof window.hljs.initLineNumbersOnLoad === "function") window.hljs.initLineNumbersOnLoad();
+    }
   } catch (error) {
     console.error("NamuMark parse failed", error);
     target.classList.remove("namumark-rendered");
