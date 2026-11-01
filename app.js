@@ -212,19 +212,32 @@ async function getNamuDatabase(source, docTitle) {
   const current = records.find(item => item.title === docTitle);
   if (current) current.data = source;
   else records.push({ title: docTitle, data: source });
-  const includeNames = [...String(source).matchAll(/\[include\(\s*([^,\])]+)/gi)]
-    .map(match => match[1].trim())
-    .filter(Boolean);
-  for (const name of [...new Set(includeNames)]) {
-    if (records.some(item => item.title === name && item.data)) continue;
-    try {
-      const result = await api("/api/page?title=" + encodeURIComponent(name));
-      if (result.page) {
-        const found = records.find(item => item.title === name);
-        if (found) found.data = result.page.content || "";
-        else records.push({ title: name, data: result.page.content || "" });
+  const visited = new Set([docTitle]);
+  let pending = [...String(source).matchAll(/\[include\(\s*([^,\])]+)/gi)].map(match => match[1].trim()).filter(Boolean);
+  let fetched = 0;
+  for (let depth = 0; depth < 4 && pending.length && fetched < 50; depth++) {
+    const batch = [...new Set(pending)].filter(name => !visited.has(name)).slice(0, 20);
+    pending = [];
+    if (!batch.length) break;
+    batch.forEach(name => visited.add(name));
+    const results = await Promise.all(batch.map(async name => {
+      try {
+        const result = await api("/api/page?title=" + encodeURIComponent(name));
+        return result.page ? { title: name, data: result.page.content || "" } : null;
+      } catch { return null; }
+    }));
+    for (const item of results) {
+      if (!item) continue;
+      fetched++;
+      const found = records.find(record => record.title === item.title);
+      if (found) found.data = item.data;
+      else records.push(item);
+      for (const match of item.data.matchAll(/\[include\(\s*([^,\])]+)/gi)) {
+        const nested = match[1].trim();
+        if (nested && !visited.has(nested)) pending.push(nested);
       }
-    } catch {}
+      if (fetched >= 50) break;
+    }
   }
   return { data: records };
 }
