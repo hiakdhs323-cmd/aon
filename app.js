@@ -190,8 +190,8 @@ $("file").addEventListener("change", async () => {
   const file = $("file").files[0];
   if (!file) return;
   $("file").value = "";
-  if (file.size > 5 * 1024 * 1024) {
-    $("message").textContent = "이미지는 5MB 이하만 업로드할 수 있습니다.";
+  if (file.size > 1 * 1024 * 1024) {
+    $("message").textContent = "이미지는 1MB 이하만 업로드할 수 있습니다.";
     return;
   }
   const form = new FormData();
