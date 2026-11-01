@@ -269,3 +269,11 @@ body{background:var(--wiki-canvas);color:#202633}
 .category-index-row span{flex:0 0 auto;color:#72777d;font-size:12px}
 .category-index-intro{color:#54595d;margin:8px 0 16px}
 @media(max-width:850px){.category-index-row{padding:9px 5px}}
+
+
+/* Recent changes and backlink listings */
+.recent-change-list,.backlink-list{border-top:1px solid #eaecf0;margin-top:12px}
+.recent-change-row,.backlink-row{display:flex;align-items:baseline;justify-content:space-between;gap:15px;padding:9px 5px;border-bottom:1px solid #eaecf0}
+.recent-change-row>a,.backlink-row>a{font-weight:600;overflow-wrap:anywhere}
+.recent-change-row>span,.backlink-row>span{color:#72777d;font-size:12px;text-align:right}
+@media(max-width:650px){.recent-change-row,.backlink-row{align-items:flex-start;flex-direction:column;gap:2px}.recent-change-row>span,.backlink-row>span{text-align:left}}
