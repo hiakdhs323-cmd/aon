@@ -31,3 +31,12 @@ dialog{width:min(760px,calc(100vw - 24px));max-height:90vh;overflow:auto;padding
 .wiki-content .opennamu_category{margin-top:18px}
 .wiki-content .opennamu_footnote sup{vertical-align:super}
 .wiki-content .opennamu_footnote a:hover,.wiki-content .opennamu_TOC a:hover{text-decoration:underline}
+
+
+.wiki-content iframe{display:block;max-width:100%;border:0;margin:12px auto;background:#f8f9fa}
+.wiki-content pre code.hljs{display:block;overflow-x:auto;padding:0;background:transparent}
+.wiki-content .opennamu_render_complete{min-width:0;overflow-wrap:anywhere}
+.wiki-content .opennamu_footnote{overflow-wrap:anywhere}
+.wiki-content .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:4px 0}
+.wiki-content .opennamu_TOC_list{line-height:1.7}
+.editor-tabs #editor-image{margin-left:0;border-left:1px solid #c8ccd1}
