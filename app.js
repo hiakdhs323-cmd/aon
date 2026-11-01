@@ -78,6 +78,8 @@ function readRoute(){
  const hash=location.hash||"#/";
  if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
  if(hash==="#/categories"){loadCategoryIndex(false);return}
+ if(hash==="#/recent"){loadRecentChanges(false);return}
+ if(hash.startsWith("#/backlinks/")){let target=hash.slice("#/backlinks/".length);try{target=decodeURIComponent(target)}catch{}loadBacklinks(target,false);return}
  let title="",anchor="";
  if(hash.startsWith("#/w/")){const rest=hash.slice(4),parts=rest.split("#");try{title=decodeURIComponent(parts[0]);anchor=parts[1]?decodeURIComponent(parts[1]):""}catch{title=parts[0]}}
  else if(hash.startsWith("#/")){try{title=decodeURIComponent(hash.slice(2))}catch{title=hash.slice(2)}}
@@ -535,12 +537,45 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
   }
 }
 
+async function loadRecentChanges(pushRoute=true){
+ if(pushRoute)history.pushState(null,"","#/recent");
+ currentTitle="최근 변경";currentContent="";
+ $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ $("home").classList.remove("active");$("new").classList.remove("active");
+ $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;$("backlinks-tab").hidden=true;
+ $("title").textContent="최근 변경";$("crumb").textContent="최근 변경";$("message").textContent="";
+ const article=$("article");article.replaceChildren();
+ try{
+  const data=await api("/api/recent");const changes=data.changes||[];
+  if(!changes.length){addText(article,"p","아직 편집 기록이 없습니다.").className="empty-list";return}
+  const list=document.createElement("div");list.className="recent-change-list";
+  changes.forEach(change=>{const row=document.createElement("div");row.className="recent-change-row";const link=document.createElement("a");link.href=routeFor(change.title);link.textContent=change.title;link.onclick=e=>{e.preventDefault();openPage(change.title)};const meta=addText(row,"span",[(change.editor||"알 수 없음"),change.created_at?new Date(change.created_at).toLocaleString("ko-KR"):"",change.summary||""].filter(Boolean).join(" · "));row.append(link,meta);list.append(row)});article.append(list);
+ }catch(error){addText(article,"p",error.message).className="empty-list"}
+}
+async function loadBacklinks(title,pushRoute=true){
+ title=String(title||"").trim();if(!title)return;
+ if(pushRoute)history.pushState(null,"","#/backlinks/"+encodeURIComponent(title));
+ currentTitle=title;currentContent="";
+ $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ $("home").classList.remove("active");$("new").classList.remove("active");
+ $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;$("backlinks-tab").hidden=true;
+ $("title").textContent=title+" — 역링크";$("crumb").textContent=title+" — 역링크";$("message").textContent="";
+ const article=$("article");article.replaceChildren();
+ try{
+  const data=await api("/api/backlinks?title="+encodeURIComponent(title));const backlinks=data.backlinks||[];
+  addText(article,"p","‘"+title+"’ 문서를 링크한 문서 목록입니다.");
+  if(!backlinks.length){addText(article,"p","이 문서를 링크한 문서가 없습니다.").className="empty-list";return}
+  const list=document.createElement("div");list.className="backlink-list";
+  backlinks.forEach(page=>{const row=document.createElement("div");row.className="backlink-row";const link=document.createElement("a");link.href=routeFor(page.title);link.textContent=page.title;link.onclick=e=>{e.preventDefault();openPage(page.title)};const meta=addText(row,"span",page.count+"회 참조");row.append(link,meta);list.append(row)});article.append(list);
+ }catch(error){addText(article,"p",error.message).className="empty-list"}
+}
+
 async function loadCategoryIndex(pushRoute=true){
  if(pushRoute)history.pushState(null,"","#/categories");
  currentTitle="분류 목록";currentContent="";
  $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
  document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");
- $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;
+ $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
  $("title").textContent="분류 목록";$("crumb").textContent="분류 목록";$("message").textContent="";
  const article=$("article");article.replaceChildren();
  try{
@@ -587,7 +622,7 @@ async function renderCategoryPage(name) {
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
- currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;
+ currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
  $("heading-edit").hidden=false;
@@ -596,7 +631,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    const name=title.replace(/^(?:category|분류):/i,"");
    $("message").textContent="";
    await renderCategoryPage(name);
-   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;
+   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
   const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
@@ -891,6 +926,7 @@ document.querySelectorAll("[data-markup]").forEach(button=>{
  button.addEventListener("click",()=>insertEditorMarkup(button.dataset.markup));
 });
 $("home").onclick=()=>showHome(true);
+$("recent-changes").onclick=()=>loadRecentChanges(true);
 $("categories").onclick=()=>loadCategoryIndex(true);
 $("random-page").onclick=()=>openRandomPage();
 $("new").onclick=()=>editPage("","");
@@ -913,6 +949,7 @@ $("history").onclick=async()=>{
  }catch(error){$("message").textContent=error.message}
 };
 $("history-tab").onclick=()=>$("history").click();
+$("backlinks-tab").onclick=()=>loadBacklinks(currentTitle,true);
 async function openFileManager(){
  if(!loggedInName){openLogin();return}
  try{
