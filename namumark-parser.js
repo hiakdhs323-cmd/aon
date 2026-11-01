@@ -2018,7 +2018,7 @@ try {
         if (this.docSet["docType"] !== "view" || this.renderData.match(/<toc_no_auto>/) || useTocSet === "half_off" || useTocSet === "off" || tocDataOn === 1) {
           this.renderData = this.renderData.replace(/<toc_no_auto>/g, "");
         } else {
-          this.renderData = this.renderData.replace(/(?<in><h[1-6] id="[^"]*">)/, `<br>${this.dataToc}$<in>`);
+          this.renderData = this.renderData.replace(/(?=<h[1-6](?:\\s|)>)/, `<br>${this.dataToc}`);
         }
       } else {
         this.renderData = this.renderData.replace(/<toc_need_part(?:_hide)?>/g, "");
@@ -2034,7 +2034,7 @@ try {
         } else {
           findDataNew = "";
         }
-        findDataNew = findDataNew.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        findDataNew = findDataNew.replace(/&(?!#(?:x[0-9a-f]+|[0-9]+);|[a-z][a-z0-9]+;)/gi, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         return '<a title="' + findDataNew + '"';
       };
       this.renderData = this.renderData.replace(/<a fn_target="([^"]+)"/g, handlerFootnote);
