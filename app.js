@@ -1120,6 +1120,7 @@ $("file").onchange=async()=>{
   }
   $("dialog").close()
  },"업로드");
+ addText($("dialog-body"),"p","원본 이미지 최대 3MB까지 선택할 수 있습니다. 900KB를 넘으면 WebP로 자동 압축합니다.").className="dialog-help";
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
