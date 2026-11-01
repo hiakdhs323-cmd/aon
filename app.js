@@ -482,7 +482,7 @@ async function searchFor(query){
 }
 $("search").onsubmit=e=>{e.preventDefault();searchFor($("query").value)};
 $("history").onclick=async()=>{
- try{const data=await api("/api/history?title="+encodeURIComponent(currentTitle)),body=$("dialog-body");body.replaceChildren();(data.revisions||[]).forEach(item=>addText(body,"p",(item.created_at||"")+" · "+(item.editor||"알 수 없음")));
+ try{const data=await api("/api/history?title="+encodeURIComponent(currentTitle)),body=$("dialog-body");body.replaceChildren();(data.revisions||[]).forEach(item=>addText(body,"p",(item.created_at||"")+" · "+(item.editor||"알 수 없음")+(item.summary?" · "+item.summary:"")));
   $("dialog-title").textContent=currentTitle+" — 문서 역사";$("dialog-status").textContent="";$("save").textContent="확인";$("save").onclick=()=>$("dialog").close();$("dialog").showModal()
  }catch(error){$("message").textContent=error.message}
 };
