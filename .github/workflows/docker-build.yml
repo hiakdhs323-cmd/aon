@@ -1,20 +1,11 @@
-name: Docker build check
+name: Legacy Docker workflow (retired)
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  docker-build:
+  retired:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Build AonWiki image
-        run: docker build --tag aonwiki:ci .
+      - name: Explain current deployment
+        run: echo "Docker deployment is retired. Use the GitHub Pages workflow and Cloudflare Worker setup documented in README.md."
