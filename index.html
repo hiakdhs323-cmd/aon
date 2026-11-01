@@ -5,35 +5,44 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff">
 <title>AonWiki</title>
-<link rel="stylesheet" href="style.css?v=20261101-wiki-redesign">
+<link rel="stylesheet" href="style.css?v=20261101-namuwiki-layout">
 </head>
 <body>
 <header class="site-header">
-  <a class="brand" href="#/대문" aria-label="AonWiki 대문"><span class="brand-symbol">A</span><span class="brand-name">Aon<span>Wiki</span></span></a>
+  <a class="brand" href="#/" aria-label="AonWiki 대문"><span class="brand-symbol">A</span><span class="brand-name">Aon<span>Wiki</span></span></a>
   <form id="search" class="searchbar" role="search"><input id="query" placeholder="AonWiki에서 검색" aria-label="문서 검색" autocomplete="off"><button type="submit">검색</button></form>
-  <nav class="header-actions"><button id="login" class="button button-plain" type="button">로그인</button><button id="settings" class="button button-plain" type="button" title="API 설정">설정</button><button id="edit" class="button button-primary" type="button">편집</button></nav>
+  <nav class="header-actions"><button id="login" class="button button-plain" type="button">로그인</button><button id="settings" class="button button-plain" type="button" title="API 설정">설정</button></nav>
 </header>
 <div class="layout">
   <aside class="left-nav" aria-label="위키 메뉴">
     <div class="nav-heading">AonWiki</div>
     <button id="home" class="nav-item active" type="button">대문</button>
-    <button id="new" class="nav-item" type="button">새 문서</button>
+    <button id="new" class="nav-item" type="button">새 문서 만들기</button>
     <div class="nav-separator"></div>
-    <div class="nav-heading">문서</div>
-    <button id="history" class="nav-item" type="button">문서 역사</button>
-    <button id="upload" class="nav-item" type="button">이미지 업로드</button>
-    <p class="nav-caption">AonWiki · 함께 만드는 지식</p>
+    <div class="nav-heading">문서 도구</div>
+    <button id="edit" class="nav-item" type="button" hidden>문서 편집</button>
+    <button id="history" class="nav-item" type="button" hidden>문서 역사</button>
+    <button id="upload" class="nav-item" type="button" hidden>이미지 올리기</button>
+    <p class="nav-caption">AonWiki<br>함께 만드는 지식 백과사전</p>
   </aside>
   <main class="main">
-    <div class="breadcrumbs"><a href="#/대문">AonWiki</a><span>›</span><span id="crumb">대문</span></div>
-    <section class="article">
-      <div class="article-titlebar"><h1 id="title">대문</h1><button id="heading-edit" class="title-edit" type="button" aria-label="문서 편집">편집</button></div>
-      <div class="article-tools"><span class="current-tab">문서</span><button id="history-tab" type="button">역사</button><span class="tool-spacer"></span><span class="article-language">한국어</span></div>
-      <div id="message" class="notice" role="status">문서를 불러오는 중입니다…</div>
-      <article id="article" class="wiki-content">AonWiki에 오신 것을 환영합니다.</article>
-      <footer class="article-footer"><span>AonWiki</span><span>이 문서는 지식 공유를 위해 제공됩니다.</span></footer>
+    <section id="home-view" class="home-view">
+      <div class="home-heading"><p class="home-kicker">AONWIKI</p><h1>AonWiki</h1><p>함께 만드는 지식 백과사전</p></div>
+      <div class="home-search-hint">검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.</div>
+      <section class="home-section"><div class="section-heading"><h2>최근 수정된 문서</h2><span id="page-count"></span></div><div id="page-list" class="page-list"><p class="loading">문서 목록을 불러오는 중입니다…</p></div></section>
+      <section class="home-section"><div class="section-heading"><h2>문서가 없나요?</h2></div><p class="home-help">로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.</p><button id="home-new" class="button button-primary" type="button">새 문서 만들기</button></section>
     </section>
-    <footer class="site-footer">AonWiki · 문서 내용은 이용자가 작성합니다.</footer>
+    <section id="document-view" class="document-view" hidden>
+      <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>
+      <section class="article">
+        <div class="article-titlebar"><h1 id="title"></h1><div class="title-actions"><button id="heading-edit" class="title-button" type="button">편집</button></div></div>
+        <div class="article-tools"><span class="current-tab">문서</span><button id="history-tab" type="button">역사</button><span class="tool-spacer"></span><span class="article-language">한국어</span></div>
+        <div id="message" class="notice" role="status"></div>
+        <article id="article" class="wiki-content"></article>
+        <footer class="article-footer"><span>AonWiki</span><span>최근 수정 내역은 문서 역사에서 확인할 수 있습니다.</span></footer>
+      </section>
+      <footer class="site-footer">AonWiki · 문서 내용은 이용자가 작성합니다.</footer>
+    </section>
   </main>
 </div>
 <dialog id="dialog">
@@ -42,5 +51,5 @@
   <div class="dialog-actions"><button id="save" class="button button-primary" type="button">저장</button></div>
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
-<script src="app.js?v=20261101-wiki-redesign"></script>
+<script src="app.js?v=20261101-namuwiki-layout"></script>
 </body></html>
