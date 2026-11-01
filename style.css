@@ -345,9 +345,9 @@ body{background:var(--wiki-canvas);color:#202633}
 .mk-heading{color:#9b3c9d;font-weight:700}.mk-table{color:#0b7285}.mk-list{color:#986515}.mk-rule{color:#8793a5}
 .mk-link{color:#2459b1;text-decoration:underline}.mk-file{color:#18794e;font-weight:600}.mk-category{color:#16825d;font-weight:600}
 .mk-template{color:#7c3aed;font-weight:700}.mk-include{color:#6d52a5}.mk-footnote{color:#b45309}.mk-external{color:#087b91;text-decoration:underline}
-.mk-bold{color:#9b3c9d;font-weight:700}.mk-italic{color:#8a4da0;font-style:italic}.mk-underline{color:#a04a24;text-decoration:underline}.mk-strike{color:#8a6675;text-decoration:line-through}.mk-script{color:#176c9b}
-.mk-macro{color:#c2410c;font-weight:700}.mk-macro-options{color:#986515}.mk-macro-close{color:#c2410c;font-weight:700}
-.mk-color{color:#be185d}.mk-size{color:#0f766e}.mk-command{color:#0b7285}.mk-code,.mk-code-line,.mk-code-fence{color:#65758b;background:rgba(120,135,155,.10)}
+.mk-syntax{color:#8b93a1;font-weight:500}.mk-content{color:inherit}.mk-heading-text{font-weight:700;color:inherit}
+.mk-bold-text{font-weight:700;color:inherit}.mk-italic-text{font-style:italic;color:inherit}.mk-underline-text{text-decoration:underline;text-decoration-color:#8b93a1;text-underline-offset:2px;color:inherit}.mk-strike-text{text-decoration:line-through;text-decoration-color:#8b93a1;color:inherit}.mk-script-text{color:inherit}
+.mk-link-target{color:#0645ad}.mk-category-label,.mk-file-label{color:#8b93a1}.mk-external-url{color:#26717d}.mk-include-target{color:#7b6b9a}.mk-directive{color:#7b6b9a}.mk-color{color:#be185d}.mk-size{color:#0f766e}.mk-command{color:#0b7285}.mk-code,.mk-code-line,.mk-code-fence{color:#65758b;background:rgba(120,135,155,.10)}
 
 /* Theme toggle */
 html[data-theme="dark"]{color-scheme:dark;--wiki-canvas:#111722;--wiki-surface:#1b2432;--wiki-border:#344154;--wiki-shadow:0 8px 24px rgba(0,0,0,.24)}
@@ -378,10 +378,9 @@ html[data-theme="dark"] .mk-list{color:#e4bc72}html[data-theme="dark"] .mk-link{
 html[data-theme="dark"] .mk-file,html[data-theme="dark"] .mk-category{color:#7dd9ae}
 html[data-theme="dark"] .mk-template{color:#c4a5ff}html[data-theme="dark"] .mk-include{color:#c2b4ed}
 html[data-theme="dark"] .mk-footnote{color:#ffc078}html[data-theme="dark"] .mk-external{color:#7ad6e2}
-html[data-theme="dark"] .mk-bold{color:#e0a3e6}html[data-theme="dark"] .mk-italic{color:#d2a3e8}
-html[data-theme="dark"] .mk-underline{color:#f1a88a}html[data-theme="dark"] .mk-strike{color:#c69aaa}
-html[data-theme="dark"] .mk-script{color:#85cfff}html[data-theme="dark"] .mk-macro{color:#ffad87}
-html[data-theme="dark"] .mk-macro-options{color:#e4bc72}html[data-theme="dark"] .mk-macro-close{color:#ffad87}
+html[data-theme="dark"] .mk-syntax{color:#7f8da1}html[data-theme="dark"] .mk-link-target{color:#8ab4f8}
+html[data-theme="dark"] .mk-category-label,html[data-theme="dark"] .mk-file-label{color:#8492a6}
+html[data-theme="dark"] .mk-external-url{color:#83cbd5}html[data-theme="dark"] .mk-include-target,html[data-theme="dark"] .mk-directive{color:#c2b0ed}
 html[data-theme="dark"] .mk-color{color:#ff91bd}html[data-theme="dark"] .mk-size{color:#70d9c2}
 html[data-theme="dark"] .mk-command{color:#67c5d5}html[data-theme="dark"] .mk-code,html[data-theme="dark"] .mk-code-line,html[data-theme="dark"] .mk-code-fence{color:#9eacc0;background:rgba(180,195,215,.10)}
 
