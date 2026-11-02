@@ -668,3 +668,86 @@ html[data-theme="dark"] .hljs{background:transparent;color:#d8e3f3}
   .wiki-footnote-tooltip{font-size:13px}
 }
 
+/* Article finishing pass — compact category strip, clear hierarchy and legible notes. */
+.wiki-categories{
+  display:flex;align-items:center;flex-wrap:wrap;gap:0;
+  width:100%;min-height:36px;margin:22px 0 0;padding:6px 10px;
+  border:1px solid var(--line-strong);border-radius:5px;
+  background:var(--surface-2);color:var(--text-soft);
+  font-size:12px;line-height:1.5
+}
+.wiki-categories-label{flex:0 0 auto;margin-right:6px;color:var(--text-soft);font-weight:600}
+.wiki-categories a{
+  display:inline;color:var(--accent);padding:0;border:0;border-radius:0;
+  background:transparent;font-size:12px;line-height:1.5;text-decoration:none
+}
+.wiki-categories a+a::before{content:"·";display:inline-block;margin:0 7px;color:var(--muted)}
+.wiki-categories a:hover{text-decoration:underline;color:var(--accent-strong)}
+@media(min-width:761px){
+  .wiki-categories{min-height:34px;padding:5px 9px;font-size:11.5px}
+  .wiki-categories a{font-size:11.5px}
+}
+
+/* The NamuWiki four-equals heading level (h4) also gets its own divider. */
+.wiki-content h4{
+  clear:both;margin:24px 0 10px;padding:0 0 6px;
+  border-bottom:1px solid var(--line);font-size:20px;font-weight:800
+}
+
+/* Keep tables of contents at the article's left edge and near the introduction. */
+.wiki-content .wiki-toc,.wiki-content .opennamu_TOC,.wiki-content .opennamu_TOC_fold{
+  float:none!important;clear:both; margin:6px 0 18px!important;
+  margin-left:0!important;margin-right:auto!important;text-align:left
+}
+.wiki-content .wiki-toc,.wiki-content .opennamu_TOC{
+  display:table;max-width:100%;min-width:220px
+}
+.wiki-toc-title,.opennamu_TOC_title,.wiki-toc summary{
+  text-align:left!important
+}
+.wiki-toc ol,.opennamu_TOC_list{padding-left:22px}
+
+/* Footnote explanations should be secondary to the article text. */
+.wiki-footnote-tooltip{
+  padding:8px 10px;font-size:11.5px!important;line-height:1.5;
+  border-radius:8px;box-shadow:0 5px 18px rgba(0,0,0,.16)
+}
+.wiki-footnote-tooltip.mobile-fixed{max-width:calc(100vw - 24px)}
+.opennamu_footnote{margin:22px 0 7px;padding:10px 0 0;font-size:11.5px;line-height:1.55}
+.opennamu_footnote footnote_title{font-size:11.5px;line-height:1.55}
+.wiki-footnotes{font-size:12px;line-height:1.55}
+.wiki-footnotes li{padding:2px 0}
+
+/* NamuWiki-like edit protection notice and a persistent article-end divider. */
+.protection-notice{
+  display:block;margin:12px 0 0;padding:10px 13px;
+  border:1px solid var(--line);border-left:4px solid var(--danger);
+  border-radius:5px;background:var(--surface-2);
+  color:var(--text);font-size:13px;line-height:1.65
+}
+.protection-notice strong{font-weight:800}
+.protection-reason{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.5}
+.article-footer{
+  clear:both;margin-top:16px;padding:13px 0 2px;
+  border-top:1px solid var(--line-strong)!important
+}
+.site-footer{border-top:1px solid var(--line-strong)}
+
+/* Missing internal documents remain visibly red in both light and dark themes. */
+.wiki-content a.opennamu_not_exist_link,
+.wiki-content a.opennamu_not_exist_link:visited{
+  color:var(--danger)!important;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--danger) 45%,transparent);
+  text-underline-offset:2px
+}
+.wiki-content a.opennamu_not_exist_link:hover{color:var(--danger)!important;text-decoration-thickness:2px}
+html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,
+html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link:visited,
+html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link:hover{color:#ff7c88!important}
+
+/* Ensure the protection selector remains readable inside the administrator dialog. */
+#dialog-body select#protection-level{
+  min-height:42px;padding:9px 12px;border:1px solid var(--line-strong);
+  border-radius:8px;background:var(--surface);color:var(--text);font:inherit
+}
+html[data-theme="dark"] .protection-notice{background:#222b38;border-color:#465264;border-left-color:#e16d79}
+
