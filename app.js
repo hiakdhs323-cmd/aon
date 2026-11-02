@@ -196,7 +196,7 @@ function footnoteReference(raw,state,parent){
 }
 function inlineRender(parent,source,state){
  const text=String(source||"");
- const token=/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[\[파일:([^\]]+)\]\]|\[\[([^\]]+)\]\]|\[\*([^\]]*)\]|\[(목차|tableofcontents)(?:\((hide)\))?\]|\[(각주|footnote)\]|\[br\]|\[clearfix\]|\[(https?:\/\/[^\s\]\|]+)(?:[\s|]+([^\]]+))?\]|'''([\s\S]+?)'''|''([\s\S]+?)''|__([\s\S]+?)__|~~([\s\S]+?)~~|--([\s\S]+?)--|\^\^([\s\S]+?)\^\^|,,([\s\S]+?),,|\{\{\{([\s\S]+?)\}\}\}/gi;
+ const token=/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[\[파일:([^\]]+)\]\]|\[\[([^\]]+)\]\]|\[\*([^\]]*)\]|\[(목차|tableofcontents)(?:\((hide)\))?\]|\[(각주|footnote)\]|\[br\]|\[clearfix\]|\[(https?:\/\/[^\s\]\|]+)(?:[\s|]+([^\]]+))?\]|'''([\s\S]+?)'''|''([\s\S]+?)''|__([\s\S]+?)__|~~([\s\S]+?)~~|--([\s\S]+?)--|\^\^([\s\S]+?)\^\^|,,([\s\S]+?),,|\{\{\{([\s\S]+?)\}\}\}|\[(date|datetime)\]/gi;
  let pos=0,m;
  while((m=token.exec(text))){
   parent.append(document.createTextNode(text.slice(pos,m.index)));
@@ -229,6 +229,7 @@ function inlineRender(parent,source,state){
    else span.textContent=raw;
    parent.append(span)
   }
+  else if(m[19]!==undefined){const now=new Date();const value=m[19].toLowerCase()==="datetime"?new Intl.DateTimeFormat("ko-KR",{dateStyle:"long",timeStyle:"short"}).format(now):new Intl.DateTimeFormat("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}).format(now);parent.append(document.createTextNode(value))}
   pos=token.lastIndex;
  }
  parent.append(document.createTextNode(text.slice(pos)))
