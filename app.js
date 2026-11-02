@@ -669,6 +669,22 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
   holder.innerHTML = html;
   sanitizeNamuOutput(holder, docTitle);
   normalizeBetaLinks(holder, docTitle);
+
+  // Compatibility guard: if the beta parser leaves common AonWiki/NamuMark
+  // syntax visibly unparsed, let the existing renderer handle this document.
+  const renderedText = holder.textContent || "";
+  const unparsedPatterns = [
+    /\\[\\[[^\\]]+\\]\\]/,             // [[문서]]
+    /'''[^'\\n]+'''/,                    // '''굵게'''
+    /\\{\\{\\{[\\s\\S]*?\\}\\}\\}/, // {{{코드/블록}}}
+    /\\[\\*\\s*[^\\]]+\\]/,         // [* 각주]
+    /(?:^|\\n)={2,}[^\\n]+={2,}(?:$|\\n)/, // == 제목 ==
+    /(?:^|\\n)\\|\\|[^\\n]*\\|\\|(?:$|\\n)/ // || 표 ||
+  ];
+  if (unparsedPatterns.some(pattern => pattern.test(renderedText))) {
+    throw new Error("기존 나무마크 문법이 베타 엔진에서 변환되지 않아 호환 렌더러를 사용합니다.");
+  }
+
   target.replaceChildren(...holder.childNodes);
   target.classList.add("namumark-rendered", "namumark-beta-active");
   enhanceFootnoteHover(target);
