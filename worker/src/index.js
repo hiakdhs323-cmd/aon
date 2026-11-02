@@ -37,6 +37,20 @@ function namuFileHash(data) {
   }
   return parts.join("").slice(0, 56);
 }
+async function authRateLimited(request, env, action, limit, windowMs) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS auth_rate_limits (ip TEXT NOT NULL, action TEXT NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL, PRIMARY KEY(ip, action))").run();
+  const ip = String(request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
+  const now = new Date().toISOString();
+  const row = await env.DB.prepare("SELECT attempts, window_started_at FROM auth_rate_limits WHERE ip = ? AND action = ?").bind(ip, action).first();
+  const age = row ? Date.now() - Date.parse(row.window_started_at) : Infinity;
+  if (row && age >= 0 && age < windowMs && Number(row.attempts) >= limit) return true;
+  if (!row || age < 0 || age >= windowMs) {
+    await env.DB.prepare("INSERT INTO auth_rate_limits (ip, action, attempts, window_started_at) VALUES (?, ?, 1, ?) ON CONFLICT(ip, action) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at").bind(ip, action, now).run();
+  } else {
+    await env.DB.prepare("UPDATE auth_rate_limits SET attempts = attempts + 1 WHERE ip = ? AND action = ?").bind(ip, action).run();
+  }
+  return false;
+}
 async function ensureAdminTokenTable(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_tokens (id TEXT PRIMARY KEY NOT NULL, token_hash TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_auth_attempts (ip TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
@@ -159,6 +173,8 @@ export default {
     const url = new URL(request.url);
     const cors = getCors(request, env);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    const declaredLength = Number(request.headers.get("Content-Length") || 0);
+    if (declaredLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     try {
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
@@ -283,6 +299,7 @@ export default {
         }, 200, cors);
       }
       if (url.pathname === "/api/register" && request.method === "POST") {
+        if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1000)) return response({ error: "가입 요청이 너무 많습니다. 한 시간 뒤 다시 시도하세요." }, 429, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
         const body = await request.json();
@@ -298,6 +315,7 @@ export default {
         return response({ok:true,message:"가입 완료! 로그인해 주세요."},201,cors);
       }
       if (url.pathname === "/api/login" && request.method === "POST") {
+        if (await authRateLimited(request, env, "login", 20, 15 * 60 * 1000)) return response({ error: "로그인 시도가 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
         const body = await request.json();
