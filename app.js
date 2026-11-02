@@ -51,6 +51,8 @@ async function refreshIdentity(){
  $("file-manager").hidden=!loggedInName;
  $("upload").hidden=!loggedInName;
  $("delete-page").hidden=!isWikiAdmin||!currentTitle;
+  const protectionButton=$("page-protection");
+  if(protectionButton)protectionButton.hidden=!isWikiAdmin||!currentTitle||isHomeRoute()||/^(?:분류|category):/i.test(currentTitle);
 }
 
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
@@ -392,11 +394,32 @@ function renderContent(source,target=$("article"),options={}){
  if(!nested){
   const headings=[...target.querySelectorAll("h2[data-heading],h3[data-heading],h4[data-heading],h5[data-heading],h6[data-heading]")];
   headings.forEach((h,n)=>{h.id="s-"+(n+1)});
-  if(headings.length){const toc=document.createElement("nav");toc.className="wiki-toc";addText(toc,"div","목차").className="wiki-toc-title";const ol=document.createElement("ol");headings.forEach((h,n)=>{const li=document.createElement("li");li.className="toc-level-"+h.tagName.toLowerCase();const a=document.createElement("a");a.href="#"+h.id;a.textContent=h.textContent;a.onclick=e=>{e.preventDefault();h.scrollIntoView({behavior:"smooth",block:"start"})};li.append(a);ol.append(li)});toc.append(ol);const marker=target.querySelector(".wiki-toc-marker");if(marker){if(marker.dataset.hide==="1"){const details=document.createElement("details");details.className="wiki-toc";const summary=addText(details,"summary","목차");details.append(...toc.childNodes);marker.replaceWith(details)}else marker.replaceWith(toc)}else target.prepend(toc)}
-  else target.querySelectorAll(".wiki-toc-marker").forEach(x=>x.remove());
-  const fp=target.querySelector(".wiki-footnote-marker");if(state.footnotes.length){const box=document.createElement("section");box.className="wiki-footnotes";addText(box,"h2","각주");const ol=document.createElement("ol");state.footnotes.forEach(note=>{const li=document.createElement("li");li.id="fn-"+note.number;inlineRender(li,note.content,{footnotes:[],namedFootnotes:new Map(),categories:[]});note.refs.forEach(ref=>{const a=document.createElement("a");a.href="#"+ref;a.className="footnote-back";a.textContent="↩";li.append(a)});ol.append(li)});box.append(ol);if(fp)fp.replaceWith(box);else target.append(box)}else if(fp)fp.remove();
-  if(state.categories.length){const box=document.createElement("div");box.className="wiki-categories";state.categories.forEach(cat=>{const a=document.createElement("a");a.href=routeFor("분류:"+cat);a.textContent="분류:"+cat;a.onclick=e=>{e.preventDefault();openPage("분류:"+cat)};box.append(a)});target.append(box)}
-  return state
+   if(headings.length){
+    const toc=document.createElement("nav");toc.className="wiki-toc";
+    addText(toc,"div","목차").className="wiki-toc-title";
+    const ol=document.createElement("ol");
+    headings.forEach((h,n)=>{const li=document.createElement("li");li.className="toc-level-"+h.tagName.toLowerCase();const a=document.createElement("a");a.href="#"+h.id;a.textContent=h.textContent;a.onclick=e=>{e.preventDefault();h.scrollIntoView({behavior:"smooth",block:"start"})};li.append(a);ol.append(li)});
+    toc.append(ol);
+    const marker=target.querySelector(".wiki-toc-marker");
+    let tocBlock=toc;
+    if(marker&&marker.dataset.hide==="1"){
+      const details=document.createElement("details");details.className="wiki-toc";
+      addText(details,"summary","목차");details.append(...toc.childNodes);
+      marker.replaceWith(details);tocBlock=details;
+    }else if(marker){marker.replaceWith(toc)}
+    target.prepend(tocBlock);
+   }else target.querySelectorAll(".wiki-toc-marker").forEach(x=>x.remove());
+const fp=target.querySelector(".wiki-footnote-marker");if(state.footnotes.length){const box=document.createElement("section");box.className="wiki-footnotes";addText(box,"h2","각주");const ol=document.createElement("ol");state.footnotes.forEach(note=>{const li=document.createElement("li");li.id="fn-"+note.number;inlineRender(li,note.content,{footnotes:[],namedFootnotes:new Map(),categories:[]});note.refs.forEach(ref=>{const a=document.createElement("a");a.href="#"+ref;a.className="footnote-back";a.textContent="↩";li.append(a)});ol.append(li)});box.append(ol);if(fp)fp.replaceWith(box);else target.append(box)}else if(fp)fp.remove();
+   if(state.categories.length){
+    const box=document.createElement("div");box.className="wiki-categories";box.setAttribute("aria-label","문서 분류");
+    addText(box,"span","분류:").className="wiki-categories-label";
+    [...new Set(state.categories)].forEach(cat=>{
+      const a=document.createElement("a");a.href=routeFor("분류:"+cat);a.textContent=cat;
+      a.onclick=e=>{e.preventDefault();openPage("분류:"+cat)};box.append(a);
+    });
+    target.append(box);
+   }
+return state
  }
  return state
 }
@@ -831,8 +854,16 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
   sanitizeNamuOutput(holder, docTitle);
   normalizeBetaLinks(holder, docTitle);
   target.replaceChildren(...holder.childNodes);
+  moveWikiTocToTop(target);
   target.classList.add("namumark-rendered", "namumark-beta-active");
   enhanceFootnoteHover(target);
+}
+function moveWikiTocToTop(root) {
+  if (!root || !root.querySelector) return;
+  const folded = root.querySelector(".opennamu_TOC_fold");
+  const toc = folded || root.querySelector(".opennamu_TOC, .wiki-toc");
+  if (toc && toc.parentElement !== root) root.prepend(toc);
+  else if (toc && root.firstElementChild !== toc) root.prepend(toc);
 }
 function normalizeBetaLinks(root, docTitle) {
   root.querySelectorAll("a[href]").forEach(link => {
@@ -898,6 +929,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     holder.innerHTML = result[0] || "";
     sanitizeNamuOutput(holder, docTitle);
     target.replaceChildren(...holder.childNodes);
+    moveWikiTocToTop(target);
     target.classList.add("namumark-rendered");
     enhanceFootnoteHover(target);
     if (window.katex) {
@@ -1190,7 +1222,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
- $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
+ $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();$("page-protection").hidden=true;
  $("heading-edit").hidden=false;
  window.scrollTo({top:0,behavior:"auto"});
  try{
@@ -1201,12 +1233,12 @@ async function loadPage(title,pushRoute=true,anchor=""){
    await renderCategoryPage(name,0,staging,requestId);
    if(requestId!==pageNavigationSequence)return;
    $("article").replaceChildren(...staging.childNodes);
-   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
+   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("page-protection").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
   const data=await api("/api/page?title="+encodeURIComponent(title));
   if(requestId!==pageNavigationSequence)return;
-  if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
+  if(!data.page){currentContent="";currentProtection={level:"none",reason:""};$("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
