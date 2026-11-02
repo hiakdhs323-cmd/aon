@@ -787,7 +787,7 @@ html[data-theme="dark"] .protection-status{border-color:#8f7437;background:#302a
 /* Keep images inline inside wiki tables. */
 .wiki-content .table_safe img { display: inline-block; }
 
-/* Keep later sections below a right-floated infobox without changing its markup. */
-.wiki-content:has(.table_safe[style*="float:right"]) h2 ~ h2 {
-  clear: both;
+/* Start the article body below a right-floated infobox, including the first section. */
+.wiki-content:has(.table_safe[style*="float:right"]) h2 {
+  clear: both !important;
 }
