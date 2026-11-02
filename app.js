@@ -1096,7 +1096,7 @@ $("page-protection").onclick=()=>{
  [["none","보호 안 함"],["registered","로그인 회원만 편집"],["admin","관리자만 편집"]].forEach(([value,label])=>{const option=document.createElement("option");option.value=value;option.textContent=label;select.append(option)});
  select.value=currentProtection.level||"none";
  const label=[...$("dialog-body").querySelectorAll("label")].find(node=>node.textContent==="편집 보호 수준");
- if(label)label.after(select);
+ const oldInput=$("protection-level");if(oldInput)oldInput.replaceWith(select);else if(label)label.after(select);
 };
 $("delete-page").onclick=async()=>{
  if(!isWikiAdmin||!currentTitle)return;
