@@ -146,15 +146,14 @@ async function loadHome(){
    pages.forEach(page=>{
     const row=document.createElement("div");row.className="page-row page-card";
     row.dataset.search=String(page.title||"").toLocaleLowerCase();
-    const icon=addText(row,"span","문서");icon.className="page-card-icon";
     const body=document.createElement("div");body.className="page-card-copy";
     const a=document.createElement("a");a.className="page-card-title";a.href=routeFor(page.title);a.textContent=page.title;
     a.addEventListener("click",event=>{event.preventDefault();openPage(page.title)});
-    const sub=addText(body,"span","문서 열기");sub.className="page-card-description";
-    body.prepend(a);
     const time=document.createElement("time");time.className="page-card-time";
-    time.textContent=page.updated_at?new Date(page.updated_at).toLocaleDateString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}):"";
-    row.append(icon,body,time);list.append(row);
+    time.textContent=page.updated_at?"최근 수정 · "+new Date(page.updated_at).toLocaleDateString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}):"문서";
+    body.append(a,time);
+    const arrow=addText(row,"span","↗");arrow.className="page-card-arrow";arrow.setAttribute("aria-hidden","true");
+    row.append(body,arrow);list.append(row);
    });
    const filter=$("home-filter");if(filter)filter.value="";
   }catch(error){addText(list,"p",error.message).className="empty-list"}
