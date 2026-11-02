@@ -576,3 +576,21 @@ html[data-theme="dark"] .editor-status {
 html[data-theme="dark"] .wiki-image figcaption {
   color: #b4c1d3 !important;
 }
+
+
+/* Always-visible beta engine switch */
+.beta-engine-toggle {
+  border: 1px solid #4779d0;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #174ea6;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.beta-engine-toggle:hover { background: #dce9ff; }
+.beta-engine-toggle.is-enabled { background: #245fba; color: #fff; border-color: #245fba; }
+html[data-theme="dark"] .beta-engine-toggle { background: #263b5a; color: #d9e7ff; border-color: #638ac5; }
+html[data-theme="dark"] .beta-engine-toggle.is-enabled { background: #4779d0; color: #fff; }
+@media (max-width: 720px) {
+  .beta-engine-toggle { padding: 7px 9px; font-size: 12px; }
+}
