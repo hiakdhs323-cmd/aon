@@ -929,7 +929,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
 }
 
 async function loadRecentChanges(pushRoute=true){
- pageNavigationSequence++;
+ const requestId=++pageNavigationSequence;
  if(pushRoute)history.pushState(null,"","#/recent");
  currentTitle="최근 변경";currentContent="";
  $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
@@ -945,7 +945,7 @@ async function loadRecentChanges(pushRoute=true){
  }catch(error){addText(article,"p",error.message).className="empty-list"}
 }
 async function loadBacklinks(title,pushRoute=true){
- pageNavigationSequence++;
+ const requestId=++pageNavigationSequence;
  title=String(title||"").trim();if(!title)return;
  if(pushRoute)history.pushState(null,"","#/backlinks/"+encodeURIComponent(title));
  currentTitle=title;currentContent="";
@@ -1032,7 +1032,7 @@ function renderCategoryGroups(host, items, options = {}) {
   host.append(grid);
 }
 async function loadCategoryIndex(pushRoute = true) {
-  pageNavigationSequence++;
+  const requestId=++pageNavigationSequence;
   if (pushRoute) history.pushState(null, "", "#/categories");
   currentTitle = "분류 목록";
   currentContent = "";
@@ -1055,6 +1055,7 @@ async function loadCategoryIndex(pushRoute = true) {
   article.replaceChildren();
   try {
     const data = await api("/api/categories");
+    if(requestId!==pageNavigationSequence)return;
     const categories = data.categories || [];
     const intro = document.createElement("div");
     intro.className = "category-index-heading";
@@ -1076,10 +1077,10 @@ async function loadCategoryIndex(pushRoute = true) {
       emptyText: "아직 등록된 분류가 없습니다. 문서에 [[분류:분류명]]을 추가하면 여기에 나타납니다."
     });
   } catch (error) {
-    addText(article, "p", error.message).className = "empty-list";
+    if(requestId===pageNavigationSequence)addText(article, "p", error.message).className = "empty-list";
   }
 }
-function openRandomPage(){api("/api/pages").then(data=>{const pages=(data.pages||[]).filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title));if(!pages.length)throw Error("이동할 문서가 없습니다.");openPage(pages[Math.floor(Math.random()*pages.length)].title)}).catch(error=>{$("message").textContent=error.message})}
+function openRandomPage(){const requestId=++pageNavigationSequence;api("/api/pages").then(data=>{if(requestId!==pageNavigationSequence)return;const pages=(data.pages||[]).filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title));if(!pages.length)throw Error("이동할 문서가 없습니다.");openPage(pages[Math.floor(Math.random()*pages.length)].title)}).catch(error=>{if(requestId===pageNavigationSequence)$("message").textContent=error.message})}
 
 async function renderCategoryPage(name, offset = 0, articleHost = $("article"), requestId = pageNavigationSequence) {
   const pageSize = 100;
@@ -1124,6 +1125,7 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
     descriptionHost.className = "category-description wiki-content";
     article.append(descriptionHost);
     await renderNamuMarkup(description, descriptionHost, "분류:" + name);
+    if(requestId!==pageNavigationSequence)return;
   }
 
   const subcategories = Array.isArray(data.subcategories) ? data.subcategories : [];
