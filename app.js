@@ -938,11 +938,11 @@ async function loadRecentChanges(pushRoute=true){
  $("title").textContent="최근 변경";$("crumb").textContent="최근 변경";$("message").textContent="";
  const article=$("article");article.replaceChildren();
  try{
-  const data=await api("/api/recent");const changes=data.changes||[];
+  const data=await api("/api/recent");if(requestId!==pageNavigationSequence)return;const changes=data.changes||[];
   if(!changes.length){addText(article,"p","아직 편집 기록이 없습니다.").className="empty-list";return}
   const list=document.createElement("div");list.className="recent-change-list";
   changes.forEach(change=>{const row=document.createElement("div");row.className="recent-change-row";const link=document.createElement("a");link.href=routeFor(change.title);link.textContent=change.title;link.onclick=e=>{e.preventDefault();openPage(change.title)};const meta=addText(row,"span",[(change.editor||"알 수 없음"),change.created_at?new Date(change.created_at).toLocaleString("ko-KR"):"",change.summary||""].filter(Boolean).join(" · "));row.append(link,meta);list.append(row)});article.append(list);
- }catch(error){addText(article,"p",error.message).className="empty-list"}
+ }catch(error){if(requestId===pageNavigationSequence)addText(article,"p",error.message).className="empty-list"}
 }
 async function loadBacklinks(title,pushRoute=true){
  const requestId=++pageNavigationSequence;
@@ -955,12 +955,12 @@ async function loadBacklinks(title,pushRoute=true){
  $("title").textContent=title+" — 역링크";$("crumb").textContent=title+" — 역링크";$("message").textContent="";
  const article=$("article");article.replaceChildren();
  try{
-  const data=await api("/api/backlinks?title="+encodeURIComponent(title));const backlinks=data.backlinks||[];
+  const data=await api("/api/backlinks?title="+encodeURIComponent(title));if(requestId!==pageNavigationSequence)return;const backlinks=data.backlinks||[];
   addText(article,"p","‘"+title+"’ 문서를 링크한 문서 목록입니다.");
   if(!backlinks.length){addText(article,"p","이 문서를 링크한 문서가 없습니다.").className="empty-list";return}
   const list=document.createElement("div");list.className="backlink-list";
   backlinks.forEach(page=>{const row=document.createElement("div");row.className="backlink-row";const link=document.createElement("a");link.href=routeFor(page.title);link.textContent=page.title;link.onclick=e=>{e.preventDefault();openPage(page.title)};const meta=addText(row,"span",page.count+"회 참조");row.append(link,meta);list.append(row)});article.append(list);
- }catch(error){addText(article,"p",error.message).className="empty-list"}
+ }catch(error){if(requestId===pageNavigationSequence)addText(article,"p",error.message).className="empty-list"}
 }
 
 const CATEGORY_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -1425,7 +1425,7 @@ $("page-protection").onclick=()=>{
 $("delete-page").onclick=async()=>{
  if(!isWikiAdmin||!currentTitle)return;
  if(!confirm("‘"+currentTitle+"’ 문서와 문서 역사를 삭제할까요? 이 작업은 되돌릴 수 없습니다."))return;
- try{await api("/api/page?title="+encodeURIComponent(currentTitle),{method:"DELETE"});showHome(true)}
+ try{await api("/api/page?title="+encodeURIComponent(currentTitle),{method:"DELETE"});invalidateNamuDatabaseCache();showHome(true)}
  catch(error){$("message").textContent=error.message}
 };
 
