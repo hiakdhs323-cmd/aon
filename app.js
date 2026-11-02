@@ -776,23 +776,8 @@ $("namumark-beta-toggle")?.addEventListener("click", toggleNamumarkBeta);
 syncNamumarkBetaButton();
 let namumarkBetaModulePromise = null;
 async function renderWithNamumarkBeta(source, target, docTitle) {
-  if (!namumarkBetaModulePromise) {
-    namumarkBetaModulePromise = import("./namumark-beta.js?v=20261102-r1")
-      .then(async module => { await module.initWasm(); return module; })
-      .catch(error => { namumarkBetaModulePromise = null; throw error; });
-  }
-  const module = await namumarkBetaModulePromise;
-  const html = module.render(String(source || ""));
-  const holder = document.createElement("div");
-  holder.className = "namumark-beta-scope";
-  holder.innerHTML = html;
-  sanitizeNamuOutput(holder, docTitle);
-  normalizeBetaLinks(holder, docTitle);
-
-  // Prefer the supplied WASM engine. Since it does not implement every
-  // legacy NamuMark feature, detect syntax that requires the bundled parser
-  // and automatically render those documents with the compatibility parser.
-  // Source text is preserved; conversion is rendering-time, not destructive.
+  // Check compatibility syntax before loading the WASM module. This keeps
+  // ordinary NamuWiki documents on the bundled parser without a cold download.
   const original = String(source || "");
   const legacySyntax = [
     /\[\[[\s\S]*?\]\]/,                 // internal/interwiki links, categories, files
@@ -833,6 +818,18 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
     return;
   }
 
+  if (!namumarkBetaModulePromise) {
+    namumarkBetaModulePromise = import("./namumark-beta.js?v=20261102-r1")
+      .then(async module => { await module.initWasm(); return module; })
+      .catch(error => { namumarkBetaModulePromise = null; throw error; });
+  }
+  const module = await namumarkBetaModulePromise;
+  const html = module.render(original);
+  const holder = document.createElement("div");
+  holder.className = "namumark-beta-scope";
+  holder.innerHTML = html;
+  sanitizeNamuOutput(holder, docTitle);
+  normalizeBetaLinks(holder, docTitle);
   target.replaceChildren(...holder.childNodes);
   target.classList.add("namumark-rendered", "namumark-beta-active");
   enhanceFootnoteHover(target);
