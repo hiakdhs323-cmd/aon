@@ -104,10 +104,11 @@ async function currentUser(request, env) {
   if (!auth.startsWith("Bearer ")) return null;
   const tokenHash = await sha256(auth.slice(7));
   const now = new Date().toISOString();
-  const user = await env.DB.prepare("SELECT users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
+  const user = await env.DB.prepare("SELECT users.id, users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
   if (user) {
-    // Never derive administrator privileges from a public, user-chosen username.
-    return { ...user, role: "user", isAdmin: false };
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run();
+    const admin = await env.DB.prepare("SELECT user_id FROM wiki_admins WHERE user_id = ?").bind(user.id).first();
+    return { username: user.username, role: admin ? "admin" : "user", isAdmin: Boolean(admin) };
   }
   if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   return null;
@@ -185,6 +186,23 @@ export default {
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
         return response({ authenticated: Boolean(user), username: user?.username || null, role: user?.role || "anonymous", isAdmin: Boolean(user?.isAdmin) }, 200, cors);
+      }
+      if (url.pathname === "/api/admin/bootstrap-account" && request.method === "POST") {
+        if (!env.ADMIN_BOOTSTRAP_SECRET || env.ADMIN_BOOTSTRAP_SECRET.length < 32) return response({ error: "관리자 초기 설정이 서버에서 활성화되지 않았습니다." }, 503, cors);
+        if (await authRateLimited(request, env, "admin-bootstrap", 5, 60 * 60 * 1000)) return response({ error: "요청이 너무 많습니다. 나중에 다시 시도하세요." }, 429, cors);
+        const supplied = request.headers.get("X-Admin-Bootstrap-Secret") || "";
+        if (!constantTimeEqual(supplied, env.ADMIN_BOOTSTRAP_SECRET)) return response({ error: "인증에 실패했습니다." }, 403, cors);
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run();
+        const alreadyGranted = await env.DB.prepare("SELECT user_id FROM wiki_admins LIMIT 1").first();
+        if (alreadyGranted) return response({ error: "최초 관리자 등록은 이미 완료되었습니다." }, 409, cors);
+        const body = await request.json();
+        const username = String(body.username || "").trim();
+        const target = await env.DB.prepare("SELECT id, username FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        if (!target) return response({ error: "해당 계정이 없습니다. 먼저 계정을 만든 뒤 다시 시도하세요." }, 404, cors);
+        const now = new Date().toISOString();
+        const result = await env.DB.prepare("INSERT INTO wiki_admins (user_id, granted_at, granted_by) SELECT ?, ?, 'one-time-bootstrap' WHERE NOT EXISTS (SELECT 1 FROM wiki_admins)").bind(target.id, now).run();
+        if (!result.success || Number(result.meta?.changes || 0) !== 1) return response({ error: "최초 관리자 등록에 실패했습니다. 이미 등록되었을 수 있습니다." }, 409, cors);
+        return response({ ok: true, username: target.username, role: "admin", message: "최초 관리자 권한이 등록되었습니다. 초기 설정 비밀값은 즉시 폐기하세요." }, 200, cors);
       }
       if (url.pathname === "/api/admin/token/rotate" && request.method === "POST") {
         const adminUser = await currentUser(request, env);
