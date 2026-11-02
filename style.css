@@ -642,4 +642,29 @@ html[data-theme="dark"] .page-card-arrow{background:var(--surface-2);color:var(-
 html[data-theme="dark"] .page-row.page-card:hover .page-card-arrow{background:var(--accent);color:#122039}
 html[data-theme="dark"] pre code.hljs{color:#d8e3f3}
 html[data-theme="dark"] .hljs{background:transparent;color:#d8e3f3}
+/* Footnote popups are hidden until a reference is activated. */
+.wiki-footnote-trigger{position:relative;display:inline-block}
+.wiki-footnote-tooltip{
+  display:none;position:absolute;z-index:90;left:50%;bottom:calc(100% + 9px);
+  width:max-content;max-width:min(360px,calc(100vw - 28px));max-height:min(45vh,320px);
+  overflow:auto;padding:10px 13px;border:1px solid var(--line-strong);
+  border-radius:11px;background:var(--surface);color:var(--text);
+  box-shadow:var(--shadow);font-size:13px;font-weight:450;line-height:1.6;
+  text-align:left;white-space:normal;overflow-wrap:anywhere;transform:translateX(-50%)
+}
+.wiki-footnote-tooltip.visible{display:block}
+.wiki-footnote-tooltip.mobile-fixed{
+  position:fixed;left:12px;right:auto;bottom:auto;z-index:120;
+  width:max-content;max-width:calc(100vw - 24px);max-height:min(45vh,320px);
+  transform:none
+}
+.wiki-footnote-trigger.tooltip-open{z-index:95}
+.opennamu_footnote{
+  margin:28px 0 8px;padding:14px 0 0;border-top:1px solid var(--line);
+  color:var(--text-soft);font-size:13px;line-height:1.75;overflow-wrap:anywhere
+}
+.opennamu_footnote footnote_title{display:inline;color:var(--text-soft)}
+@media(max-width:560px){
+  .wiki-footnote-tooltip{font-size:13px}
+}
 
