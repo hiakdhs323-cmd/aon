@@ -629,7 +629,74 @@ function enhanceFootnoteHover(root) {
   }
 }
 
+const NAMUMARK_BETA_SETTING = "aonwiki-beta-namumark";
+const namumarkBetaEnabled = () => localStorage.getItem(NAMUMARK_BETA_SETTING) === "1";
+let namumarkBetaModulePromise = null;
+async function renderWithNamumarkBeta(source, target, docTitle) {
+  if (!namumarkBetaModulePromise) {
+    namumarkBetaModulePromise = import("./namumark-beta.js?v=20261102-r1")
+      .then(async module => { await module.initWasm(); return module; })
+      .catch(error => { namumarkBetaModulePromise = null; throw error; });
+  }
+  const module = await namumarkBetaModulePromise;
+  const html = module.render(String(source || ""));
+  const holder = document.createElement("div");
+  holder.className = "namumark-beta-scope";
+  holder.innerHTML = html;
+  sanitizeNamuOutput(holder, docTitle);
+  normalizeBetaLinks(holder, docTitle);
+  target.replaceChildren(...holder.childNodes);
+  target.classList.add("namumark-rendered", "namumark-beta-active");
+  enhanceFootnoteHover(target);
+}
+function normalizeBetaLinks(root, docTitle) {
+  root.querySelectorAll("a[href]").forEach(link => {
+    const href = link.getAttribute("href") || "";
+    if (/^(?:https?:|mailto:|tel:)/i.test(href)) return;
+    if (href.startsWith("#")) {
+      let anchor = href.slice(1);
+      try { anchor = decodeURIComponent(anchor); } catch {}
+      link.setAttribute("href", routeFor(docTitle, anchor));
+      link.addEventListener("click", event => {
+        event.preventDefault();
+        history.replaceState(null, "", routeFor(docTitle, anchor));
+        scrollToAnchor(anchor);
+      });
+      return;
+    }
+    let title = "";
+    if (href.startsWith("/w/")) title = href.slice(3);
+    else if (href.startsWith("/wiki/")) title = href.slice(6);
+    else if (href.startsWith("?title=")) {
+      try { title = new URLSearchParams(href.slice(1)).get("title") || ""; } catch {}
+    } else if (!href.startsWith("/") && !href.startsWith("javascript:")) title = href;
+    if (!title) return;
+    try { title = decodeURIComponent(title); } catch {}
+    title = title.replace(/_/g, " ").trim();
+    if (!title || title.startsWith("http")) return;
+    link.setAttribute("href", routeFor(title));
+    link.addEventListener("click", event => { event.preventDefault(); navigateInternal(title); });
+  });
+  root.querySelectorAll("img[src]").forEach(img => {
+    const src = img.getAttribute("src") || "";
+    if (src.startsWith("/media/") || src.startsWith("/image/")) img.src = apiBase() + src;
+  });
+}
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
+  if (namumarkBetaEnabled()) {
+    try {
+      await renderWithNamumarkBeta(source, target, docTitle);
+      return;
+    } catch (error) {
+      console.error("나무마크 베타 엔진 오류:", error);
+      target.classList.remove("namumark-beta-active");
+      target.replaceChildren();
+      const warning = document.createElement("p");
+      warning.className = "namumark-beta-warning";
+      warning.textContent = "실험실 나무마크 엔진을 불러오지 못했습니다. 기존 엔진으로 표시합니다.";
+      target.append(warning);
+    }
+  }
   if (!window.NamuMarkBundle || !window.NamuMarkBundle.NamuMark) {
     renderContent(source, target);
     return;
@@ -650,18 +717,12 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     enhanceFootnoteHover(target);
     if (window.katex) {
       target.querySelectorAll('span[id*="opennamu_math_"]').forEach(element => {
-        try {
-          window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" });
-        } catch (error) {
-          console.warn("KaTeX rendering skipped", error);
-        }
+        try { window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" }); }
+        catch (error) { console.warn("KaTeX rendering skipped", error); }
       });
       target.querySelectorAll(".namu-latex-block").forEach(element => {
-        try {
-          window.katex.render(element.textContent || "", element, { displayMode: true, throwOnError: false, strict: "ignore" });
-        } catch (error) {
-          console.warn("LaTeX block rendering skipped", error);
-        }
+        try { window.katex.render(element.textContent || "", element, { displayMode: true, throwOnError: false, strict: "ignore" }); }
+        catch (error) { console.warn("LaTeX block rendering skipped", error); }
       });
     }
     if (window.hljs) {
@@ -862,6 +923,24 @@ $("settings").onclick=()=>{
  note.className="dialog-help";
  note.textContent="최초 관리자 키는 Cloudflare Worker의 ADMIN_TOKEN 비밀 변수로 등록해야 합니다. 저장소에는 비밀값을 기록하지 않습니다. 최초 인증 후에는 대문 아래의 토큰 재발급 기능으로 기존 키를 폐기하세요.";
  $("dialog-body").append(note);
+};
+$("labs").onclick=()=>{
+  showDialog("실험실 · 베타 기능",[],async()=>{$("dialog").close()},"닫기");
+  const body=$("dialog-body"); body.replaceChildren();
+  const card=document.createElement("section"); card.className="labs-feature";
+  const heading=addText(card,"h3","새 나무마크 엔진 (베타)");
+  const desc=addText(card,"p","uiovasot/namumark의 WebAssembly 엔진을 문서 렌더링에 사용합니다. 문법 호환성이 완전하지 않을 수 있으며, 문제가 있으면 끄고 기존 엔진으로 돌아갈 수 있습니다.");
+  const label=document.createElement("label"); label.className="labs-toggle";
+  const input=document.createElement("input"); input.type="checkbox"; input.checked=namumarkBetaEnabled();
+  const textLabel=document.createElement("span"); textLabel.textContent="새 나무마크 엔진 사용";
+  label.append(input,textLabel);
+  const state=addText(card,"p",input.checked?"현재 켜짐 · 문서를 다시 열면 적용됩니다.":"현재 꺼짐 · 기존 렌더러를 사용합니다."); state.className="labs-state";
+  input.addEventListener("change",()=>{
+    localStorage.setItem(NAMUMARK_BETA_SETTING,input.checked?"1":"0");
+    state.textContent=input.checked?"켜짐 · 문서를 다시 열면 적용됩니다.":"꺼짐 · 기존 렌더러를 사용합니다.";
+  });
+  const credit=addText(card,"p","엔진 출처: uiovasot/namumark · WASM 파일은 원본 GitHub Pages에서 로드됩니다."); credit.className="labs-credit";
+  body.append(card);
 };
 async function editHomepage(){
  if(!isWikiAdmin){$("message").textContent="위키 관리자 권한이 필요합니다.";return}
