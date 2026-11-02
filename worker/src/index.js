@@ -175,6 +175,13 @@ export default {
     const declaredLength = Number(request.headers.get("Content-Length") || 0);
     if (declaredLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     try {
+      if (url.pathname === "/api/logout" && request.method === "POST") {
+        const authorization = request.headers.get("Authorization") || "";
+        if (authorization.startsWith("Bearer ")) {
+          await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(authorization.slice(7))).run();
+        }
+        return response({ ok: true }, 200, cors);
+      }
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
         return response({ authenticated: Boolean(user), username: user?.username || null, role: user?.role || "anonymous", isAdmin: Boolean(user?.isAdmin) }, 200, cors);
