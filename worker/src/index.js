@@ -113,11 +113,21 @@ async function ensureImageSchema(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS image_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, image_id TEXT NOT NULL, created_at TEXT NOT NULL)").run();
 }
 function cleanImageName(value, contentType) {
-  const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" })[contentType] || "img";
+  const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" })[contentType] || "img";
   let name = String(value || "").normalize("NFC").replace(/[\\/:*?"<>|]/g, "_").replace(/[\u0000-\u001f\u007f]/g, "").trim();
   name = name.replace(/\.[^.]*$/, "").replace(/[. ]+$/g, "").slice(0, 100);
   if (!name) name = "image";
   return name + "." + extension;
+}
+function validateSvgUpload(text) {
+  const svg = String(text || "").trim();
+  if (!svg || svg.length > 1024 * 1024) throw new Error("SVG 파일은 1MB 이하만 지원합니다.");
+  if (!/^<svg(?:\s|>)/i.test(svg.replace(/^<\?xml[^>]*>\s*/i, ""))) throw new Error("올바른 SVG 파일이 아닙니다.");
+  if (/<!DOCTYPE|<!ENTITY|<\s*(?:script|foreignObject|iframe|object|embed|audio|video|use)\b|\bon[a-z]+\s*=|javascript\s*:|data\s*:\s*text\/html|url\s*\(\s*['"]?\s*(?:https?:|\/\/|javascript:)|\b(?:href|xlink:href)\s*=\s*['"]\s*(?:https?:|\/\/|javascript:|data:)/i.test(svg)) {
+    throw new Error("보안상 스크립트, 외부 리소스 또는 실행 가능한 요소가 포함된 SVG는 업로드할 수 없습니다.");
+  }
+  if (!/<\/svg\s*>\s*$/i.test(svg)) throw new Error("SVG 문서가 올바르게 닫혀 있지 않습니다.");
+  return svg;
 }
 function makeAdminToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -482,11 +492,21 @@ export default {
         const form = await request.formData();
         const file = form.get("file");
         if (!file || typeof file.arrayBuffer !== "function") return response({ error: "이미지 파일을 선택하세요." }, 400, cors);
-        const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
-        if (!allowedTypes.includes(file.type)) return response({ error: "PNG, JPG, GIF, WebP 파일만 지원합니다." }, 415, cors);
-        if (file.size < 1 || file.size > 1 * 1024 * 1024) return response({ error: "D1 저장 방식은 이미지 1MB 이하만 지원합니다." }, 413, cors);
+        const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"];
+        if (!allowedTypes.includes(file.type)) return response({ error: "PNG, JPG, GIF, WebP, SVG 파일만 지원합니다." }, 415, cors);
+        if (file.size < 1 || file.size > 1 * 1024 * 1024) return response({ error: "이미지 파일은 1MB 이하만 지원합니다." }, 413, cors);
         await ensureImageSchema(env);
-        const bytes = new Uint8Array(await file.arrayBuffer());
+        let bytes;
+        if (file.type === "image/svg+xml") {
+          try {
+            const svg = validateSvgUpload(await file.text());
+            bytes = new TextEncoder().encode(svg);
+          } catch (error) {
+            return response({ error: error.message || "SVG 파일을 확인할 수 없습니다." }, 400, cors);
+          }
+        } else {
+          bytes = new Uint8Array(await file.arrayBuffer());
+        }
         let binary = "";
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
         const encoded = btoa(binary);
