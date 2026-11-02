@@ -1,5 +1,5 @@
 :root{font-family:Arial,"Noto Sans KR",sans-serif;color:#202122;background:#fff;font-synthesis:none;--blue:#0645ad;--line:#a2a9b1;--light-line:#eaecf0;--muted:#54595d;--panel:#f8f9fa}
-*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:72px}body{margin:0;background:#fff;color:#202122;font-size:14px;line-height:1.65}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:72px;max-width:100%;overflow-x:clip;overscroll-behavior-x:none}body{margin:0;max-width:100%;overflow-x:hidden;overscroll-behavior-x:none;background:#fff;color:#202122;font-size:14px;line-height:1.65}
 button,input,textarea{font:inherit}button{cursor:pointer}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}[hidden]{display:none!important}
 .site-header{min-height:60px;padding:8px max(18px,calc((100vw - 1320px)/2));display:flex;align-items:center;gap:28px;background:#fff;border-bottom:1px solid var(--light-line);position:sticky;top:0;z-index:20}
 .brand{display:flex;align-items:center;gap:9px;white-space:nowrap;color:#202122}.brand:hover{text-decoration:none}.brand-symbol{width:32px;height:32px;display:grid;place-items:center;border:1px solid #a2a9b1;color:#202122;font-weight:700;font-size:19px}.brand-name{font-size:21px;font-weight:700;letter-spacing:-.8px}.brand-name span{color:#176bcb}
