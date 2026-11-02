@@ -771,3 +771,15 @@ html[data-theme="dark"] .wiki-content .opennamu_not_exist_link,
 html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link:hover {
   color: #ff6b6b !important;
 }
+
+
+/* Clear, NamuWiki-style edit-protection notice. */
+.protection-notice{display:block;margin:12px 0 0;padding:11px 14px;border:1px solid #c8a75b;border-left:4px solid #b8860b;border-radius:3px;background:#fff8e1;color:#5f4b16;font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.protection-notice[hidden]{display:none!important}
+.protection-notice strong{font-weight:700}
+.protection-reason{margin-top:4px;padding-top:4px;border-top:1px solid #e8d8a8;font-size:12px}
+.protection-status{display:inline-block;padding:3px 7px;border:1px solid #b8860b;border-radius:3px;background:#fff8e1;color:#6b5010;font-size:11px;white-space:nowrap}
+html[data-theme="dark"] .protection-notice{border-color:#8f7437;border-left-color:#e4bd58;background:#302a1d;color:#f4d98b}
+html[data-theme="dark"] .protection-reason{border-top-color:#62502d}
+html[data-theme="dark"] .protection-status{border-color:#8f7437;background:#302a1d;color:#f4d98b}
+@media(max-width:600px){.article-titlebar{align-items:flex-start;flex-wrap:wrap}.title-actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}.protection-notice{padding:10px 11px;font-size:12px}}
