@@ -578,19 +578,128 @@ html[data-theme="dark"] .wiki-image figcaption {
 }
 
 
-/* Always-visible beta engine switch */
-.beta-engine-toggle {
-  border: 1px solid #4779d0;
-  border-radius: 999px;
-  background: #edf4ff;
-  color: #174ea6;
-  font-weight: 700;
-  white-space: nowrap;
+/* AonWiki visual refresh: refined surfaces, spacing and responsive navigation */
+:root {
+  color-scheme: light;
+  --blue: #315fe8;
+  --line: #dce3ed;
+  --light-line: #e9eef5;
+  --muted: #68758a;
+  --panel: #f5f7fb;
+  --ink: #172033;
+  --surface: #ffffff;
+  --surface-soft: #f6f8fc;
+  --accent-soft: #edf2ff;
 }
-.beta-engine-toggle:hover { background: #dce9ff; }
-.beta-engine-toggle.is-enabled { background: #245fba; color: #fff; border-color: #245fba; }
-html[data-theme="dark"] .beta-engine-toggle { background: #263b5a; color: #d9e7ff; border-color: #638ac5; }
-html[data-theme="dark"] .beta-engine-toggle.is-enabled { background: #4779d0; color: #fff; }
-@media (max-width: 720px) {
-  .beta-engine-toggle { padding: 7px 9px; font-size: 12px; }
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --blue: #9bb7ff;
+  --line: #344158;
+  --light-line: #283449;
+  --muted: #a7b4c9;
+  --panel: #1b2536;
+  --ink: #edf2fb;
+  --surface: #111827;
+  --surface-soft: #182235;
+  --accent-soft: #243453;
 }
+body { background:var(--surface-soft); color:var(--ink); font-size:15px; line-height:1.7; }
+.site-header { min-height:76px; padding:12px max(22px,calc((100vw - 1440px)/2)); gap:24px; background:color-mix(in srgb,var(--surface) 92%,transparent); border-bottom:1px solid var(--light-line); box-shadow:0 4px 22px rgb(25 42 75 / 5%); backdrop-filter:blur(16px); }
+.brand { gap:11px; color:var(--ink); }
+.brand-symbol { width:39px;height:39px;border:0;border-radius:13px;background:linear-gradient(145deg,#426cf4,#704de3);color:#fff;font-size:22px;box-shadow:0 5px 14px rgb(66 108 244 / 24%); }
+.brand-name { font-size:22px;letter-spacing:-.9px;color:var(--ink); }
+.brand-name span { color:var(--blue); }
+.searchbar { max-width:680px; gap:8px; }
+.searchbar input { height:42px;padding:0 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:inset 0 1px 2px rgb(25 42 75 / 2%); }
+.searchbar input:focus { outline:3px solid rgb(65 105 235 / 14%);border-color:#6f8df4; }
+.searchbar button,.button { min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease; }
+.searchbar button { background:var(--accent-soft);border-color:transparent;color:var(--blue);font-weight:700; }
+.button:hover,.searchbar button:hover { background:var(--accent-soft);border-color:#b9c8f5;transform:translateY(-1px);text-decoration:none; }
+.button-primary { background:linear-gradient(135deg,#426cf4,#5a55e8);border-color:transparent;color:white;box-shadow:0 5px 12px rgb(66 108 244 / 18%); }
+.button-primary:hover { background:linear-gradient(135deg,#315fe8,#4d47db);border-color:transparent;color:white; }
+.button-plain { background:transparent;border-color:transparent;color:var(--muted); }
+.header-actions { gap:5px; }
+.layout { width:min(1380px,100% - 48px);margin:30px auto 0;grid-template-columns:208px minmax(0,1fr);gap:34px; }
+.left-nav { top:94px;padding:14px 10px;background:var(--surface);border:1px solid var(--light-line);border-radius:18px;box-shadow:0 8px 28px rgb(25 42 75 / 4%); }
+.nav-heading { margin:4px 6px 8px;padding:8px 7px;border-bottom:1px solid var(--light-line);color:var(--muted);font-size:11px;letter-spacing:.09em;text-transform:uppercase; }
+.nav-item { padding:10px 12px;margin:2px 0;border-radius:10px;color:var(--muted);font-weight:500; }
+.nav-item:hover { background:var(--surface-soft);color:var(--blue);text-decoration:none; }
+.nav-item.active { background:var(--accent-soft);color:var(--blue);font-weight:700; }
+.nav-separator { margin:17px 6px; background:var(--light-line); }
+.nav-caption { margin:20px 10px 6px;color:var(--muted); }
+.main { min-width:0; }
+.home-view { max-width:1040px; }
+.home-heading { padding:45px 42px 36px;margin-bottom:22px;border:1px solid var(--light-line);border-radius:22px;background:radial-gradient(ellipse at 90% 0%,rgb(112 77 227 / 10%),transparent 42%),linear-gradient(125deg,var(--surface),var(--surface-soft));box-shadow:0 10px 32px rgb(25 42 75 / 4%); }
+.home-kicker { color:var(--blue);letter-spacing:.18em;font-size:11px; }
+.home-heading h1 { font-size:clamp(32px,4vw,46px);font-weight:750;letter-spacing:-.045em;color:var(--ink); }
+.home-heading p:last-child { margin-top:11px;color:var(--muted);font-size:16px; }
+.home-search-hint,.home-notice { margin:18px 0 28px;padding:15px 18px;border:1px solid var(--light-line);border-radius:13px;background:var(--surface);color:var(--muted); }
+.home-section { margin:25px 0 28px;padding:24px 26px;border:1px solid var(--light-line);border-radius:18px;background:var(--surface);box-shadow:0 7px 24px rgb(25 42 75 / 3%); }
+.section-heading { border-bottom:1px solid var(--light-line);padding-bottom:13px;margin-bottom:8px; }
+.section-heading h2 { font-size:20px;font-weight:750;letter-spacing:-.025em;color:var(--ink); }
+.page-row { padding:12px 10px;border-bottom:1px solid var(--light-line);border-radius:8px; }
+.page-row:hover { background:var(--surface-soft); }
+.page-row a { color:var(--blue);font-weight:600; }
+.page-row time { color:var(--muted);font-size:12px; }
+.breadcrumbs { margin:4px 0 15px;color:var(--muted);font-size:13px; }
+.breadcrumbs span:last-child { color:var(--ink); }
+.article { padding:28px 34px 20px;border:1px solid var(--light-line);border-radius:20px;background:var(--surface);box-shadow:0 8px 30px rgb(25 42 75 / 4%); }
+.article-titlebar { border-bottom:1px solid var(--light-line);padding-bottom:18px; }
+.article-titlebar h1 { font-size:clamp(28px,3vw,38px);font-weight:750;letter-spacing:-.04em;color:var(--ink); }
+.title-button { padding:7px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft);color:var(--blue);font-weight:650; }
+.article-tools { height:48px;gap:22px;border-bottom:1px solid var(--light-line);color:var(--muted); }
+.article-tools button { color:var(--blue); }
+.current-tab { border-bottom-color:var(--blue);color:var(--ink); }
+.wiki-content { font-size:15px;line-height:1.85;padding:25px 0 38px;color:var(--ink); }
+.wiki-content h2,.wiki-content h3 { letter-spacing:-.025em; }
+.article-footer,.site-footer { color:var(--muted); }
+.editor-card { padding:30px;border:1px solid var(--light-line);border-radius:20px;background:var(--surface);box-shadow:0 8px 30px rgb(25 42 75 / 4%); }
+.editor-page-heading h1 { font-size:32px;font-weight:750;letter-spacing:-.04em; }
+.editor-field input,.editor-field textarea,.editor-field select { border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink); }
+.editor-tabs { border-bottom:1px solid var(--light-line); }
+.editor-tabs button { border-radius:8px 8px 0 0; }
+.editor-markup-toolbar button { border:1px solid var(--light-line);border-radius:8px;background:var(--surface);color:var(--ink);padding:7px 10px; }
+.editor-markup-toolbar button:hover { background:var(--accent-soft); }
+#dialog { max-width:min(620px,calc(100vw - 28px));border:1px solid var(--line);border-radius:20px;background:var(--surface);color:var(--ink);box-shadow:0 24px 80px rgb(0 0 0 / 22%); }
+#dialog::backdrop { background:rgb(12 20 35 / 48%);backdrop-filter:blur(4px); }
+.dialog-head { border-bottom:1px solid var(--light-line); }
+.dialog-close { border-radius:10px; }
+.beta-engine-toggle { border:1px solid #c7d4ff;background:#edf2ff;color:#284fc4;font-weight:750;white-space:nowrap; }
+.beta-engine-toggle:hover { background:#dfe8ff; }
+.beta-engine-toggle.is-enabled { background:linear-gradient(135deg,#426cf4,#5a55e8);color:#fff;border-color:transparent; }
+html[data-theme="dark"] body { background:var(--surface-soft);color:var(--ink); }
+html[data-theme="dark"] .site-header { background:color-mix(in srgb,var(--surface) 92%,transparent); }
+html[data-theme="dark"] .brand-symbol { color:#fff; }
+html[data-theme="dark"] .home-heading { background:radial-gradient(ellipse at 90% 0%,rgb(112 77 227 / 15%),transparent 42%),linear-gradient(125deg,var(--surface),var(--surface-soft)); }
+html[data-theme="dark"] .home-heading h1,html[data-theme="dark"] .section-heading h2,html[data-theme="dark"] .article-titlebar h1 { color:var(--ink); }
+html[data-theme="dark"] .searchbar input,html[data-theme="dark"] .searchbar button,html[data-theme="dark"] .button,html[data-theme="dark"] .title-button { background:var(--surface-soft);color:var(--ink);border-color:var(--line); }
+html[data-theme="dark"] .button-primary { background:linear-gradient(135deg,#426cf4,#5a55e8);color:#fff;border-color:transparent; }
+html[data-theme="dark"] .beta-engine-toggle { background:#263453;color:#dbe5ff;border-color:#4b6198; }
+html[data-theme="dark"] .beta-engine-toggle.is-enabled { background:linear-gradient(135deg,#426cf4,#5a55e8);color:#fff;border-color:transparent; }
+@media (max-width:1000px) {
+  .site-header { flex-wrap:wrap;gap:10px 16px;padding:12px 18px; }
+  .searchbar { order:3;flex-basis:100%;max-width:none; }
+  .header-actions { margin-left:auto;flex-wrap:wrap;justify-content:flex-end; }
+  .layout { grid-template-columns:1fr;width:min(900px,100% - 28px);margin-top:18px;gap:18px; }
+  .left-nav { position:static;display:flex;align-items:center;gap:5px;overflow-x:auto;padding:8px;border-radius:13px; }
+  .left-nav .nav-heading,.left-nav .nav-separator,.left-nav .nav-caption { display:none; }
+  .nav-item { width:auto;flex:0 0 auto;margin:0;padding:8px 12px; }
+}
+@media (max-width:600px) {
+  .site-header { padding:10px 12px;gap:10px; }
+  .brand-symbol { width:34px;height:34px;border-radius:11px;font-size:19px; }
+  .brand-name { font-size:19px; }
+  .header-actions { gap:3px; }
+  .header-actions .button { min-height:34px;padding:0 8px;font-size:12px;border-radius:9px; }
+  .layout { width:calc(100% - 20px);margin-top:12px; }
+  .left-nav { margin:0 -2px; }
+  .nav-item { font-size:12px;padding:7px 10px; }
+  .home-heading { padding:30px 23px 26px;border-radius:17px; }
+  .home-heading h1 { font-size:32px; }
+  .home-section { padding:19px 16px;border-radius:15px; }
+  .article { padding:20px 17px 12px;border-radius:16px; }
+  .article-titlebar h1 { font-size:27px; }
+  .wiki-content { font-size:14px; }
+  .editor-card { padding:20px 15px;border-radius:16px; }
+}
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important;transition:none!important; } }
