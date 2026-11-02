@@ -894,54 +894,225 @@ async function loadBacklinks(title,pushRoute=true){
  }catch(error){addText(article,"p",error.message).className="empty-list"}
 }
 
-async function loadCategoryIndex(pushRoute=true){
- if(pushRoute)history.pushState(null,"","#/categories");
- currentTitle="분류 목록";currentContent="";
- $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
- document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");
- $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
- $("title").textContent="분류 목록";$("crumb").textContent="분류 목록";$("message").textContent="";
- const article=$("article");article.replaceChildren();
- try{
-  const data=await api("/api/categories");
-  const categories=data.categories||[];
-  const intro=addText(article,"p","AonWiki에 등록된 분류 목록입니다. 각 분류를 선택하면 해당 문서들을 볼 수 있습니다.");intro.className="category-index-intro";
-  if(!categories.length){addText(article,"p","아직 등록된 분류가 없습니다. 문서 끝에 [[분류:분류명]]을 추가해 보세요.").className="empty-list";return}
-  const list=document.createElement("div");list.className="category-index-list";
-  categories.forEach(category=>{const row=document.createElement("div");row.className="category-index-row";const link=document.createElement("a");link.href=routeFor("분류:"+category.name);link.textContent=category.name;link.onclick=e=>{e.preventDefault();openPage("분류:"+category.name)};const count=addText(row,"span",category.count+"개 문서");row.append(link,count);list.append(row)});article.append(list);
- }catch(error){addText(article,"p",error.message).className="empty-list"}
+const CATEGORY_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+function categoryInitial(value) {
+  const first = Array.from(String(value || "").trim())[0] || "#";
+  const code = first.codePointAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) return CATEGORY_INITIALS[Math.floor((code - 0xac00) / 588)] || "#";
+  if (/[a-z]/i.test(first)) return first.toLocaleUpperCase("en");
+  if (/[0-9]/.test(first)) return "0–9";
+  return "#";
+}
+function compareCategoryInitial(a, b) {
+  const rank = value => {
+    const hangul = CATEGORY_INITIALS.indexOf(value);
+    if (hangul >= 0) return hangul;
+    if (/^[A-Z]$/.test(value)) return 100 + value.charCodeAt(0);
+    if (value === "0–9") return 200;
+    return 300;
+  };
+  return rank(a) - rank(b) || a.localeCompare(b, "ko");
+}
+function renderCategoryGroups(host, items, options = {}) {
+  const { getName = item => item.name || item.title || "", getTitle = item => item.title || ("분류:" + getName(item)), getCount = item => item.count, emptyText = "표시할 항목이 없습니다." } = options;
+  host.replaceChildren();
+  if (!items.length) {
+    addText(host, "p", emptyText).className = "empty-list";
+    return;
+  }
+  const groups = new Map();
+  for (const item of items) {
+    const name = String(getName(item) || "").trim();
+    if (!name) continue;
+    const initial = categoryInitial(name);
+    if (!groups.has(initial)) groups.set(initial, []);
+    groups.get(initial).push(item);
+  }
+  const grid = document.createElement("div");
+  grid.className = "category-groups";
+  [...groups.entries()].sort((a, b) => compareCategoryInitial(a[0], b[0])).forEach(([initial, entries]) => {
+    const section = document.createElement("section");
+    section.className = "category-group";
+    const heading = addText(section, "h3", initial);
+    heading.className = "category-group-heading";
+    const list = document.createElement("ul");
+    list.className = "category-group-items";
+    entries.sort((a, b) => String(getName(a)).localeCompare(String(getName(b)), "ko"));
+    entries.forEach(item => {
+      const row = document.createElement("li");
+      row.className = "category-entry";
+      const link = document.createElement("a");
+      const title = String(getTitle(item));
+      link.href = routeFor(title);
+      link.textContent = getName(item);
+      link.addEventListener("click", event => {
+        event.preventDefault();
+        openPage(title);
+      });
+      row.append(link);
+      const count = getCount(item);
+      if (count !== undefined && count !== null) {
+        const countLabel = addText(row, "span", Number(count).toLocaleString("ko-KR") + "개");
+        countLabel.className = "category-entry-count";
+      }
+      list.append(row);
+    });
+    section.append(list);
+    grid.append(section);
+  });
+  host.append(grid);
+}
+async function loadCategoryIndex(pushRoute = true) {
+  if (pushRoute) history.pushState(null, "", "#/categories");
+  currentTitle = "분류 목록";
+  currentContent = "";
+  $("home-view").hidden = true;
+  $("document-view").hidden = false;
+  $("editor-view").hidden = true;
+  document.body.classList.remove("editor-active");
+  $("home").classList.remove("active");
+  $("new").classList.remove("active");
+  $("edit").hidden = true;
+  $("history").hidden = true;
+  $("upload").hidden = true;
+  $("delete-page").hidden = true;
+  $("heading-edit").hidden = true;
+  $("backlinks-tab").hidden = true;
+  $("title").textContent = "분류 목록";
+  $("crumb").textContent = "분류 목록";
+  $("message").textContent = "";
+  const article = $("article");
+  article.replaceChildren();
+  try {
+    const data = await api("/api/categories");
+    const categories = data.categories || [];
+    const intro = document.createElement("div");
+    intro.className = "category-index-heading";
+    addText(intro, "p", "분류 찾아보기").className = "category-eyebrow";
+    addText(intro, "p", "문서의 주제와 성격에 따라 분류를 모아 놓은 목록입니다.").className = "category-index-intro";
+    article.append(intro);
+    const summary = document.createElement("div");
+    summary.className = "category-summary-line";
+    addText(summary, "strong", Number(data.total ?? categories.length).toLocaleString("ko-KR") + "개 분류");
+    addText(summary, "span", "이름의 첫 글자 순으로 정렬");
+    article.append(summary);
+    const list = document.createElement("div");
+    list.className = "category-index-list";
+    article.append(list);
+    renderCategoryGroups(list, categories, {
+      getName: category => category.name,
+      getTitle: category => "분류:" + category.name,
+      getCount: category => category.count,
+      emptyText: "아직 등록된 분류가 없습니다. 문서에 [[분류:분류명]]을 추가하면 여기에 나타납니다."
+    });
+  } catch (error) {
+    addText(article, "p", error.message).className = "empty-list";
+  }
 }
 function openRandomPage(){api("/api/pages").then(data=>{const pages=(data.pages||[]).filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title));if(!pages.length)throw Error("이동할 문서가 없습니다.");openPage(pages[Math.floor(Math.random()*pages.length)].title)}).catch(error=>{$("message").textContent=error.message})}
 
-async function renderCategoryPage(name) {
-  const data = await api("/api/category?name=" + encodeURIComponent(name));
+async function renderCategoryPage(name, offset = 0) {
+  const pageSize = 100;
+  const data = await api("/api/category?name=" + encodeURIComponent(name) + "&limit=" + pageSize + "&offset=" + Math.max(0, Number(offset) || 0));
   const article = $("article");
   article.replaceChildren();
-  const intro = document.createElement("p");
-  intro.textContent = "‘" + name + "’ 분류에 속하는 문서 목록입니다.";
-  article.append(intro);
-  const pages = data.pages || [];
-  if (!pages.length) {
-    const empty = document.createElement("p");
-    empty.className = "empty-list";
-    empty.textContent = "이 분류에 등록된 문서가 없습니다.";
-    article.append(empty);
-    return;
+
+  const meta = document.createElement("div");
+  meta.className = "category-page-meta";
+  addText(meta, "span", "분류 문서").className = "category-eyebrow";
+  if (data.categoryUpdatedAt) {
+    const updated = addText(meta, "time", "최근 수정 " + new Date(data.categoryUpdatedAt).toLocaleDateString("ko-KR"));
+    updated.dateTime = data.categoryUpdatedAt;
   }
-  const list = document.createElement("ul");
-  pages.forEach(page => {
-    const item = document.createElement("li");
-    const link = document.createElement("a");
-    link.href = routeFor(page.title);
-    link.textContent = page.title;
-    link.addEventListener("click", event => {
-      event.preventDefault();
-      openPage(page.title);
+  article.append(meta);
+
+  const parents = Array.isArray(data.parentCategories) ? data.parentCategories : [];
+  if (parents.length) {
+    const parentBar = document.createElement("div");
+    parentBar.className = "category-parent-line";
+    addText(parentBar, "span", "상위 분류");
+    const parentLinks = document.createElement("div");
+    parentLinks.className = "category-parent-links";
+    parents.forEach(parent => {
+      const link = document.createElement("a");
+      link.href = routeFor("분류:" + parent);
+      link.textContent = parent;
+      link.addEventListener("click", event => {
+        event.preventDefault();
+        openPage("분류:" + parent);
+      });
+      parentLinks.append(link);
     });
-    item.append(link);
-    list.append(item);
+    parentBar.append(parentLinks);
+    article.append(parentBar);
+  }
+
+  const description = String(data.description || "").trim();
+  if (description) {
+    const descriptionHost = document.createElement("div");
+    descriptionHost.className = "category-description wiki-content";
+    article.append(descriptionHost);
+    await renderNamuMarkup(description, descriptionHost, "분류:" + name);
+  }
+
+  const subcategories = Array.isArray(data.subcategories) ? data.subcategories : [];
+  const subheading = document.createElement("div");
+  subheading.className = "category-section-heading";
+  addText(subheading, "h2", "하위 분류");
+  addText(subheading, "span", subcategories.length.toLocaleString("ko-KR") + "개 분류");
+  article.append(subheading);
+  const subHost = document.createElement("div");
+  subHost.className = "category-subcategories";
+  article.append(subHost);
+  renderCategoryGroups(subHost, subcategories, {
+    getName: item => item.name,
+    getTitle: item => item.title,
+    emptyText: "하위 분류가 없습니다."
   });
-  article.append(list);
+
+  const pages = Array.isArray(data.pages) ? data.pages : [];
+  const total = Number(data.total) || 0;
+  const pageHeading = document.createElement("div");
+  pageHeading.className = "category-section-heading category-document-heading";
+  addText(pageHeading, "h2", "이 분류에 속하는 문서");
+  addText(pageHeading, "span", total.toLocaleString("ko-KR") + "개 문서");
+  article.append(pageHeading);
+
+  if (!pages.length) {
+    addText(article, "p", "이 분류에 등록된 문서가 없습니다.").className = "empty-list";
+  } else {
+    const pageHost = document.createElement("div");
+    pageHost.className = "category-document-list";
+    article.append(pageHost);
+    renderCategoryGroups(pageHost, pages, {
+      getName: item => item.title,
+      getTitle: item => item.title,
+      emptyText: "문서가 없습니다."
+    });
+  }
+
+  if (total > pageSize) {
+    const pagination = document.createElement("nav");
+    pagination.className = "category-pagination";
+    pagination.setAttribute("aria-label", "분류 문서 페이지");
+    const previous = document.createElement("button");
+    previous.type = "button";
+    previous.className = "button";
+    previous.textContent = "이전";
+    previous.disabled = offset <= 0;
+    previous.addEventListener("click", () => renderCategoryPage(name, Math.max(0, offset - pageSize))
+      .catch(error => { $("message").textContent = error.message; }));
+    const range = addText(pagination, "span", (offset + 1).toLocaleString("ko-KR") + "–" + Math.min(offset + pages.length, total).toLocaleString("ko-KR") + " / " + total.toLocaleString("ko-KR"));
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "button";
+    next.textContent = "다음";
+    next.disabled = offset + pages.length >= total;
+    next.addEventListener("click", () => renderCategoryPage(name, offset + pageSize)
+      .catch(error => { $("message").textContent = error.message; }));
+    pagination.append(previous, range, next);
+    article.append(pagination);
+  }
 }
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
