@@ -626,8 +626,9 @@ export default {
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
         headers.set("Cache-Control", "public, max-age=86400");
-        headers.set("ETag", '"'+match[1]+"."+match[2]+'"');
-        if (request.headers.get("If-None-Match") === '"'+key+'"') return new Response(null, { status: 304, headers });
+        const etag = '"'+match[1]+"."+match[2]+'"';
+        headers.set("ETag", etag);
+        if (request.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers });
         headers.set("X-Content-Type-Options", "nosniff");
         if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
         return new Response(bytes, { headers });
