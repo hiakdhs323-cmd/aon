@@ -22,7 +22,7 @@ $("theme-toggle").addEventListener("click", () => {
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
-let currentTitle="",currentContent="",loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+let currentTitle="",currentContent="",currentProtection={level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){return "#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
@@ -919,7 +919,15 @@ async function loadPage(title,pushRoute=true,anchor=""){
   }
   const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
-  currentContent=data.page.content||"";$("message").textContent="";
+  currentContent=data.page.content||"";
+  currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
+  const protectionStatus=$("protection-status");
+  if(currentProtection.level==="admin"){protectionStatus.hidden=false;protectionStatus.textContent="관리자 편집 보호";protectionStatus.title=currentProtection.reason||"관리자만 편집할 수 있습니다."}
+  else if(currentProtection.level==="registered"){protectionStatus.hidden=false;protectionStatus.textContent="회원 편집 보호";protectionStatus.title=currentProtection.reason||"로그인한 회원만 편집할 수 있습니다."}
+  else{protectionStatus.hidden=true;protectionStatus.textContent="";protectionStatus.title=""}
+  $("page-protection").hidden=!isWikiAdmin;
+  $("heading-edit").hidden=(currentProtection.level==="admin"&&!isWikiAdmin)||(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING))||(currentProtection.level==="registered"&&!loggedInName&&!isWikiAdmin);
+  $("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";await renderNamuMarkup(currentContent, $("article"), title);
@@ -1072,6 +1080,23 @@ $("admin-token-rotate").onclick=async()=>{
   copy.onclick=async()=>{try{await navigator.clipboard.writeText(data.token);copy.textContent="복사 완료"}catch{ $("generated-admin-token").focus();$("generated-admin-token").select();copy.textContent="토큰을 선택했습니다." }};
   $("dialog-body").append(copy);
  }catch(error){$("dialog-status").textContent=error.message}
+};
+$("page-protection").onclick=()=>{
+ if(!isWikiAdmin||!currentTitle)return;
+ showDialog("문서 편집 보호",[
+  {id:"protection-level",label:"편집 보호 수준",value:currentProtection.level||"none"},
+  {id:"protection-reason",label:"보호 사유 (선택)",value:currentProtection.reason||"",placeholder:"예: 반복적인 문서 훼손"}
+ ],async()=>{
+  const level=$("protection-level").value;
+  const result=await api("/api/page/protection",{method:"PUT",body:JSON.stringify({title:currentTitle,level,reason:$("protection-reason").value})});
+  currentProtection={level:result.protection.level,reason:result.protection.reason||""};
+  $("dialog").close();await loadPage(currentTitle,false);
+ },"적용");
+ const select=document.createElement("select");select.id="protection-level";
+ [["none","보호 안 함"],["registered","로그인 회원만 편집"],["admin","관리자만 편집"]].forEach(([value,label])=>{const option=document.createElement("option");option.value=value;option.textContent=label;select.append(option)});
+ select.value=currentProtection.level||"none";
+ const label=[...$("dialog-body").querySelectorAll("label")].find(node=>node.textContent==="편집 보호 수준");
+ if(label)label.after(select);
 };
 $("delete-page").onclick=async()=>{
  if(!isWikiAdmin||!currentTitle)return;
