@@ -10,7 +10,7 @@ function getCors(request, env) {
   return {
     "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : allowed[0],
     "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
     "X-Content-Type-Options": "nosniff",
@@ -197,7 +197,8 @@ export default {
         if (alreadyGranted) return response({ error: "최초 관리자 등록은 이미 완료되었습니다." }, 409, cors);
         const body = await request.json();
         const username = String(body.username || "").trim();
-        const target = await env.DB.prepare("SELECT id, username FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        if (username.toLocaleLowerCase() !== "아온") return response({ error: "최초 관리자 등록 대상은 아온 계정으로 제한됩니다." }, 403, cors);
+        const target = await env.DB.prepare("SELECT id, username FROM users WHERE username = ? COLLATE NOCASE").bind("아온").first();
         if (!target) return response({ error: "해당 계정이 없습니다. 먼저 계정을 만든 뒤 다시 시도하세요." }, 404, cors);
         const now = new Date().toISOString();
         const result = await env.DB.prepare("INSERT INTO wiki_admins (user_id, granted_at, granted_by) SELECT ?, ?, 'one-time-bootstrap' WHERE NOT EXISTS (SELECT 1 FROM wiki_admins)").bind(target.id, now).run();
