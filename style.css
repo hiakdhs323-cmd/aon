@@ -783,3 +783,6 @@ html[data-theme="dark"] .protection-notice{border-color:#8f7437;border-left-colo
 html[data-theme="dark"] .protection-reason{border-top-color:#62502d}
 html[data-theme="dark"] .protection-status{border-color:#8f7437;background:#302a1d;color:#f4d98b}
 @media(max-width:600px){.article-titlebar{align-items:flex-start;flex-wrap:wrap}.title-actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}.protection-notice{padding:10px 11px;font-size:12px}}
+
+/* Keep images inline inside wiki tables. */
+.wiki-content .table_safe img { display: inline-block; }
