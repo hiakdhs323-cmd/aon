@@ -113,20 +113,37 @@ async function currentUser(request, env) {
   if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   return null;
 }
+let pageProtectionSchemaPromise = null;
+let pageAliasSchemaPromise = null;
+let imageSchemaPromise = null;
 async function ensurePageProtectionSchema(env) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS page_protections (title TEXT PRIMARY KEY NOT NULL, level TEXT NOT NULL CHECK(level IN ('registered','admin')), reason TEXT NOT NULL DEFAULT '', protected_by TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+  if (!pageProtectionSchemaPromise) {
+    pageProtectionSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS page_protections (title TEXT PRIMARY KEY NOT NULL, level TEXT NOT NULL CHECK(level IN ('registered','admin')), reason TEXT NOT NULL DEFAULT '', protected_by TEXT NOT NULL, updated_at TEXT NOT NULL)").run()
+      .catch(error => { pageProtectionSchemaPromise = null; throw error; });
+  }
+  await pageProtectionSchemaPromise;
 }
 async function ensurePageAliasSchema(env) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS page_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, title TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_page_aliases_title ON page_aliases(title)").run();
+  if (!pageAliasSchemaPromise) {
+    pageAliasSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS page_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, title TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_page_aliases_title ON page_aliases(title)").run();
+    })().catch(error => { pageAliasSchemaPromise = null; throw error; });
+  }
+  await pageAliasSchemaPromise;
 }
 async function ensureImageSchema(env) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL, owner TEXT NOT NULL DEFAULT '')").run();
-  const columns = await env.DB.prepare("PRAGMA table_info(images)").all();
-  if (!(columns.results || []).some(column => column.name === "owner")) {
-    await env.DB.prepare("ALTER TABLE images ADD COLUMN owner TEXT NOT NULL DEFAULT ''").run();
+  if (!imageSchemaPromise) {
+    imageSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS images (id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL, data_base64 TEXT NOT NULL, filename TEXT NOT NULL, created_at TEXT NOT NULL, owner TEXT NOT NULL DEFAULT '')").run();
+      const columns = await env.DB.prepare("PRAGMA table_info(images)").all();
+      if (!(columns.results || []).some(column => column.name === "owner")) {
+        await env.DB.prepare("ALTER TABLE images ADD COLUMN owner TEXT NOT NULL DEFAULT ''").run();
+      }
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS image_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, image_id TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+    })().catch(error => { imageSchemaPromise = null; throw error; });
   }
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS image_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, image_id TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+  await imageSchemaPromise;
 }
 function cleanImageName(value, contentType) {
   const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" })[contentType] || "img";
@@ -352,6 +369,10 @@ export default {
         const expires = new Date(Date.now()+7*24*60*60*1000).toISOString();
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
         return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
+      }
+      if (url.pathname === "/api/page-index" && request.method === "GET") {
+        const result = await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
+        return response({ pages: result.results || [] }, 200, cors);
       }
       if (url.pathname === "/api/pages" && request.method === "GET") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
