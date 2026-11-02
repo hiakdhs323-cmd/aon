@@ -243,7 +243,7 @@ function renderTable(rows,target,state){
  rows.forEach((row,rowIndex)=>{
   const tr=document.createElement("tr");
   splitTableCells(row).forEach((raw,cellIndex)=>{
-   const parsed=tableCellSpec(raw),cell=document.createElement("td"),spec=parsed.spec;
+   const parsed=tableCellSpec(raw),isHeader=/^\s*\|\|\s*\^/.test(raw),cell=document.createElement(isHeader||rowIndex===0?"th":"td"),spec=parsed.spec;
    const attrs=spec.split("&").map(v=>v.trim());
    attrs.forEach(attr=>{
     if(attr===":")cell.style.textAlign="center";
@@ -268,7 +268,7 @@ function renderTable(rows,target,state){
  if(tableWidth)table.style.width=/^\d+$/.test(tableWidth)?tableWidth+"px":cleanStyleValue(tableWidth);
  if(tableAlign==="center")table.style.marginLeft=table.style.marginRight="auto";
  else if(tableAlign==="right")table.style.marginLeft="auto";
- target.append(table)
+ const scroller=document.createElement("div");scroller.className="wiki-table-scroll";scroller.setAttribute("role","region");scroller.setAttribute("aria-label","표. 좌우로 이동할 수 있습니다");scroller.tabIndex=0;scroller.append(table);target.append(scroller)
 }
 function appendListLine(target,stack,line,state){
  const match=line.match(/^([ \t]*)([*#]+|\d+\.|[A-Za-z]\.)\s*(.*)$/);if(!match)return false;
