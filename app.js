@@ -929,7 +929,7 @@ $("labs").onclick=()=>{
   const body=$("dialog-body"); body.replaceChildren();
   const card=document.createElement("section"); card.className="labs-feature";
   const heading=addText(card,"h3","새 나무마크 엔진 (베타)");
-  const desc=addText(card,"p","uiovasot/namumark의 WebAssembly 엔진을 문서 렌더링에 사용합니다. 문법 호환성이 완전하지 않을 수 있으며, 문제가 있으면 끄고 기존 엔진으로 돌아갈 수 있습니다.");
+  const desc=addText(card,"p","새 나무마크 렌더링 엔진을 시험합니다. 일부 문법이 다르게 표시될 수 있으며, 문제가 있으면 언제든 기존 엔진으로 돌아갈 수 있습니다.");
   const label=document.createElement("label"); label.className="labs-toggle";
   const input=document.createElement("input"); input.type="checkbox"; input.checked=namumarkBetaEnabled();
   const textLabel=document.createElement("span"); textLabel.textContent="새 나무마크 엔진 사용";
@@ -946,7 +946,6 @@ $("labs").onclick=()=>{
       renderNamuMarkup($("editor-content").value,$("editor-preview"),$("editor-title").value.trim()||editorOriginalTitle).catch(error=>console.error(error));
     }
   });
-  const credit=addText(card,"p","엔진 출처: uiovasot/namumark · WASM 파일은 원본 GitHub Pages에서 로드됩니다."); credit.className="labs-credit";
   body.append(card);
 };
 async function editHomepage(){
