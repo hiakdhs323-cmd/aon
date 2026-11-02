@@ -717,9 +717,7 @@ function enhanceFootnoteHover(root) {
       if (document.activeElement !== link && !window.matchMedia("(max-width: 560px)").matches) hide();
     });
     link.addEventListener("focus", show);
-    link.addEventListener("blur", () => {
-      if (!tooltip.classList.contains("visible")) hide();
-    });
+    link.addEventListener("blur", hide);
     // On touch screens, handle the press before the browser can apply any anchor behavior.
     link.addEventListener("pointerdown", event => {
       if (event.pointerType !== "touch") return;
@@ -1539,6 +1537,7 @@ $("editor-form").onsubmit = async event => {
       method: "PUT",
       body: JSON.stringify({ title, originalTitle: editorIsNew ? "" : editorOriginalTitle, content, summary, createOnly: editorIsNew })
     });
+    invalidateNamuDatabaseCache();
     sessionStorage.removeItem("aonwiki-draft");
     document.body.classList.remove("editor-active");
     history.replaceState(null, "", routeFor(title));
