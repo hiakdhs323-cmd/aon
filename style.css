@@ -636,3 +636,10 @@ html[data-theme="dark"] .backlink-row,html[data-theme="dark"] .history-version-r
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+.page-card-arrow{flex:0 0 auto;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:17px;transition:background .15s,color .15s,transform .15s}
+.page-row.page-card:hover .page-card-arrow{background:var(--accent);color:#fff;transform:translateX(2px)}
+html[data-theme="dark"] .page-card-arrow{background:var(--surface-2);color:var(--muted)}
+html[data-theme="dark"] .page-row.page-card:hover .page-card-arrow{background:var(--accent);color:#122039}
+html[data-theme="dark"] pre code.hljs{color:#d8e3f3}
+html[data-theme="dark"] .hljs{background:transparent;color:#d8e3f3}
+
