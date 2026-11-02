@@ -937,7 +937,14 @@ $("labs").onclick=()=>{
   const state=addText(card,"p",input.checked?"현재 켜짐 · 문서를 다시 열면 적용됩니다.":"현재 꺼짐 · 기존 렌더러를 사용합니다."); state.className="labs-state";
   input.addEventListener("change",()=>{
     localStorage.setItem(NAMUMARK_BETA_SETTING,input.checked?"1":"0");
-    state.textContent=input.checked?"켜짐 · 문서를 다시 열면 적용됩니다.":"꺼짐 · 기존 렌더러를 사용합니다.";
+    state.textContent=input.checked?"켜짐 · 현재 문서에 바로 적용합니다.":"꺼짐 · 기존 렌더러로 돌아갑니다.";
+    if (!$("document-view").hidden && currentTitle && currentContent) {
+      renderNamuMarkup(currentContent,$("article"),currentTitle).catch(error=>console.error(error));
+    } else if (!$("home-view").hidden) {
+      loadHome();
+    } else if (!$("editor-preview").hidden) {
+      renderNamuMarkup($("editor-content").value,$("editor-preview"),$("editor-title").value.trim()||editorOriginalTitle).catch(error=>console.error(error));
+    }
   });
   const credit=addText(card,"p","엔진 출처: uiovasot/namumark · WASM 파일은 원본 GitHub Pages에서 로드됩니다."); credit.className="labs-credit";
   body.append(card);
