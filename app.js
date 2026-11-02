@@ -99,35 +99,65 @@ function showHome(push=true){
  $("new").classList.remove("active");loadHome()
 }
 async function loadHome(){
- const list=$("page-list");list.replaceChildren();$("page-count").textContent="";
- try{
-  const [data,homeData]=await Promise.all([
-   api("/api/pages"),
-   api("/api/home").catch(()=>({settings:{}}))
-  ]);
-  const settings=homeData.settings||{};
-  $("home-title").textContent=settings.title||"AonWiki";
-  $("home-tagline").textContent=settings.tagline||"함께 만드는 지식 백과사전";
-  const hint=$("home-search-hint");hint.textContent=settings.searchHint||"검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.";
-  $("home-list-title").textContent=settings.listTitle||"최근 수정된 문서";
-  $("home-bottom-title").textContent=settings.bottomTitle||"문서가 없나요?";
-  $("home-bottom-text").textContent=settings.bottomText||"로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.";
-  const notice=$("home-notice");notice.textContent=settings.notice||"";notice.hidden=!settings.notice;
-  const content=settings.content||"";
-  if(content)await renderNamuMarkup(content,$("home-content"),"대문");
-  else $("home-content").replaceChildren();
-  $("home-admin-tools").hidden=!isWikiAdmin;
-  const pages=(data.pages||[]).filter(p=>p.title!=="대문");
-  $("page-count").textContent=pages.length+"개 문서";
-  if(!pages.length){addText(list,"p","아직 등록된 문서가 없습니다. 로그인 후 첫 문서를 만들어 보세요.").className="empty-list";return}
-  pages.forEach(page=>{
-   const row=document.createElement("div");row.className="page-row";
-   const a=document.createElement("a");a.href=routeFor(page.title);a.textContent=page.title;
-   a.onclick=e=>{e.preventDefault();openPage(page.title)};
-   const time=document.createElement("time");time.textContent=page.updated_at?new Date(page.updated_at).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}):"";
-   row.append(a,time);list.append(row)
-  });
- }catch(error){addText(list,"p",error.message).className="empty-list"}
+  const list=$("page-list"),categoryHost=$("home-category-list");
+  list.replaceChildren();categoryHost?.replaceChildren();$("page-count").textContent="";
+  try{
+   const [data,homeData,categoryData]=await Promise.all([
+    api("/api/pages"),
+    api("/api/home").catch(()=>({settings:{}})),
+    api("/api/categories").catch(()=>({categories:[]}))
+   ]);
+   const settings=homeData.settings||{};
+   $("home-title").textContent=settings.title||"AonWiki";
+   $("home-tagline").textContent=settings.tagline||"함께 만드는 지식 백과사전";
+   const hint=$("home-search-hint");hint.textContent=settings.searchHint||"찾으려는 문서가 있나요? 제목으로 검색하거나 주제별 분류를 살펴보세요.";
+   $("home-list-title").textContent=settings.listTitle||"최근 수정된 문서";
+   $("home-bottom-title").textContent=settings.bottomTitle||"새로운 지식을 함께 기록해 보세요.";
+   $("home-bottom-text").textContent=settings.bottomText||"로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.";
+   const notice=$("home-notice");notice.textContent=settings.notice||"";notice.hidden=!settings.notice;
+   const content=settings.content||"";
+   if(content)await renderNamuMarkup(content,$("home-content"),"대문");
+   else $("home-content").replaceChildren();
+   $("home-admin-tools").hidden=!isWikiAdmin;
+   const pages=(data.pages||[]).filter(p=>p.title!=="대문"&&!/^(?:분류|category):/i.test(p.title||""));
+   const categories=(categoryData.categories||[]).filter(item=>item&&item.name);
+   $("page-count").textContent=pages.length+"개 문서";
+   $("home-stat").textContent=pages.length.toLocaleString("ko-KR")+"개 문서  ·  "+categories.length.toLocaleString("ko-KR")+"개 분류";
+   $("home-category-count").textContent=categories.length+"개 분류";
+   if(!categories.length){
+    addText(categoryHost,"p","아직 등록된 분류가 없습니다. 문서에 [[분류:분류명]]을 추가하면 주제별 탐색에 표시됩니다.").className="empty-list";
+   }else{
+    categories.slice().sort((a,b)=>(Number(b.count)||0)-(Number(a.count)||0)||String(a.name).localeCompare(String(b.name),"ko")).slice(0,8).forEach(category=>{
+     const card=document.createElement("a");card.className="home-category-card";card.href=routeFor("분류:"+category.name);
+     card.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+category.name)});
+     const icon=addText(card,"span",String(category.name).trim().charAt(0)||"분");icon.className="home-category-icon";
+     const body=document.createElement("span");body.className="home-category-copy";
+     addText(body,"strong",category.name);
+     addText(body,"small",(Number(category.count)||0).toLocaleString("ko-KR")+"개 문서");
+     card.append(body);categoryHost.append(card);
+    });
+    if(categories.length>8){
+     const more=document.createElement("a");more.className="home-category-more";more.href="#/categories";more.textContent="모든 분류 보기";
+     more.addEventListener("click",event=>{event.preventDefault();loadCategoryIndex(true)});
+     categoryHost.append(more);
+    }
+   }
+   if(!pages.length){addText(list,"p","아직 등록된 문서가 없습니다. 로그인 후 첫 문서를 만들어 보세요.").className="empty-list";return}
+   pages.forEach(page=>{
+    const row=document.createElement("div");row.className="page-row page-card";
+    row.dataset.search=String(page.title||"").toLocaleLowerCase();
+    const icon=addText(row,"span","문서");icon.className="page-card-icon";
+    const body=document.createElement("div");body.className="page-card-copy";
+    const a=document.createElement("a");a.className="page-card-title";a.href=routeFor(page.title);a.textContent=page.title;
+    a.addEventListener("click",event=>{event.preventDefault();openPage(page.title)});
+    const sub=addText(body,"span","문서 열기");sub.className="page-card-description";
+    body.prepend(a);
+    const time=document.createElement("time");time.className="page-card-time";
+    time.textContent=page.updated_at?new Date(page.updated_at).toLocaleDateString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"}):"";
+    row.append(icon,body,time);list.append(row);
+   });
+   const filter=$("home-filter");if(filter)filter.value="";
+  }catch(error){addText(list,"p",error.message).className="empty-list"}
 }
 function openPage(title,anchor=""){title=String(title||"").trim();if(!title||title==="대문"){showHome(true);return}history.pushState(null,"",routeFor(title,anchor));loadPage(title,false,anchor)}
 function readRoute(){
@@ -1879,6 +1909,14 @@ $("file").onchange=async()=>{
  },"업로드");
  addText($("dialog-body"),"p","PNG, JPG, GIF, WebP, SVG를 지원합니다. 원본 최대 3MB, 일반 이미지는 900KB 초과 시 WebP로 압축하며 SVG는 벡터 형식을 유지합니다.").className="dialog-help";
 };
+$("home-browse").onclick=()=>loadCategoryIndex(true);
+$("home-create").onclick=()=>$("new").click();
+$("home-filter").addEventListener("input",()=>{
+ const query=$("home-filter").value.trim().toLocaleLowerCase();
+ $("page-list").querySelectorAll(".page-card").forEach(card=>{
+  card.hidden=Boolean(query)&&!card.dataset.search.includes(query);
+ });
+});
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
 readRoute();
