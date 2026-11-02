@@ -1081,9 +1081,10 @@ async function loadCategoryIndex(pushRoute = true) {
 }
 function openRandomPage(){api("/api/pages").then(data=>{const pages=(data.pages||[]).filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title));if(!pages.length)throw Error("이동할 문서가 없습니다.");openPage(pages[Math.floor(Math.random()*pages.length)].title)}).catch(error=>{$("message").textContent=error.message})}
 
-async function renderCategoryPage(name, offset = 0, articleHost = $("article")) {
+async function renderCategoryPage(name, offset = 0, articleHost = $("article"), requestId = pageNavigationSequence) {
   const pageSize = 100;
   const data = await api("/api/category?name=" + encodeURIComponent(name) + "&limit=" + pageSize + "&offset=" + Math.max(0, Number(offset) || 0));
+  if (requestId !== pageNavigationSequence) return;
   const article = articleHost;
   article.replaceChildren();
 
@@ -1198,7 +1199,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    const name=title.replace(/^(?:category|분류):/i,"");
    $("message").textContent="";
    const staging=document.createElement("article");
-   await renderCategoryPage(name,0,staging);
+   await renderCategoryPage(name,0,staging,requestId);
    if(requestId!==pageNavigationSequence)return;
    $("article").replaceChildren(...staging.childNodes);
    $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
