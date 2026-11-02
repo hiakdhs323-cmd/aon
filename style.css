@@ -750,4 +750,6 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link:hover{color:#ff7
   border-radius:8px;background:var(--surface);color:var(--text);font:inherit
 }
 html[data-theme="dark"] .protection-notice{background:#222b38;border-color:#465264;border-left-color:#e16d79}
+/* The native hidden state must win over the protection notice layout rule. */
+.protection-notice[hidden]{display:none!important}
 
