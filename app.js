@@ -631,6 +631,30 @@ function enhanceFootnoteHover(root) {
 
 const NAMUMARK_BETA_SETTING = "aonwiki-beta-namumark";
 const namumarkBetaEnabled = () => localStorage.getItem(NAMUMARK_BETA_SETTING) === "1";
+function syncNamumarkBetaButton() {
+  const button = $("namumark-beta-toggle");
+  if (!button) return;
+  const enabled = namumarkBetaEnabled();
+  button.textContent = enabled ? "베타 엔진 끄기" : "베타 엔진 켜기";
+  button.setAttribute("aria-pressed", enabled ? "true" : "false");
+  button.classList.toggle("is-enabled", enabled);
+}
+function toggleNamumarkBeta() {
+  const enabled = !namumarkBetaEnabled();
+  localStorage.setItem(NAMUMARK_BETA_SETTING, enabled ? "1" : "0");
+  syncNamumarkBetaButton();
+  const state = document.querySelector(".labs-state");
+  if (state) state.textContent = enabled ? "켜짐 · 현재 문서에 바로 적용합니다." : "꺼짐 · 기존 렌더러로 돌아갑니다.";
+  if (!$("document-view").hidden && currentTitle && currentContent) {
+    renderNamuMarkup(currentContent, $("article"), currentTitle).catch(error => console.error(error));
+  } else if (!$("home-view").hidden) {
+    loadHome();
+  } else if (!$("editor-preview").hidden) {
+    renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle).catch(error => console.error(error));
+  }
+}
+$("namumark-beta-toggle")?.addEventListener("click", toggleNamumarkBeta);
+syncNamumarkBetaButton();
 let namumarkBetaModulePromise = null;
 async function renderWithNamumarkBeta(source, target, docTitle) {
   if (!namumarkBetaModulePromise) {
@@ -937,6 +961,7 @@ $("labs").onclick=()=>{
   const state=addText(card,"p",input.checked?"현재 켜짐 · 문서를 다시 열면 적용됩니다.":"현재 꺼짐 · 기존 렌더러를 사용합니다."); state.className="labs-state";
   input.addEventListener("change",()=>{
     localStorage.setItem(NAMUMARK_BETA_SETTING,input.checked?"1":"0");
+    syncNamumarkBetaButton();
     state.textContent=input.checked?"켜짐 · 현재 문서에 바로 적용합니다.":"꺼짐 · 기존 렌더러로 돌아갑니다.";
     if (!$("document-view").hidden && currentTitle && currentContent) {
       renderNamuMarkup(currentContent,$("article"),currentTitle).catch(error=>console.error(error));
