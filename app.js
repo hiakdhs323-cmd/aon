@@ -687,18 +687,18 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
   // Source text is preserved; conversion is rendering-time, not destructive.
   const original = String(source || "");
   const legacySyntax = [
-    /\\[\\[[\\s\\S]*?\\]\\]/,                 // internal/interwiki links, categories, files
-    /'''[\\s\\S]*?'''|''[\\s\\S]*?''|__(?:[\\s\\S]*?)__|~~[\\s\\S]*?~~/,
-    /(?:^|\\n)\\s*={2,}[^\\n]+={2,}\\s*(?:$|\\n)/, // headings
-    /(?:^|\\n)\\s*\\|\\|[\\s\\S]*?\\|\\|\\s*(?:$|\\n)/, // tables
-    /\\[\\*[^\\]]*\\]/,                         // footnotes
-    /\\{\\{\\{[\\s\\S]*?\\}\\}\\}/,             // code, folding, style, wiki blocks
-    /\\[(?:목차|br|clearfix|date|datetime|pagecount|ruby|anchor|각주|tableofcontents)(?:\\([^\\]]*\\))?\\]/i,
-    /\\[https?:\\/\\/[^\\]]+\\]/i,                // external links
-    /(?:^|\\n)\\s*(?:\\*+|#+|[0-9]+\\.)\\s+/,          // lists
-    /\\[\\[분류:[^\\]]+\\]\\]/i,
-    /\\[\\[파일:[^\\]]+\\]\\]/i,
-    /\\$\\$[\\s\\S]+?\\$\\$|\\\\\\([\\s\\S]+?\\\\\\)/ // math
+    /\[\[[\s\S]*?\]\]/,                 // internal/interwiki links, categories, files
+    /'''[\s\S]*?'''|''[\s\S]*?''|__(?:[\s\S]*?)__|~~[\s\S]*?~~/,
+    /(?:^|\n)\s*={2,}[^\n]+={2,}\s*(?:$|\n)/, // headings
+    /(?:^|\n)\s*\|\|[\s\S]*?\|\|\s*(?:$|\n)/, // tables
+    /\[\*[^\]]*\]/,                         // footnotes
+    /\{\{\{[\s\S]*?\}\}\}/,             // code, folding, style, wiki blocks
+    /\[(?:목차|br|clearfix|date|datetime|pagecount|ruby|anchor|각주|tableofcontents)(?:\([^\]]*\))?\]/i,
+    /\[https?:\/\/[^\]]+\]/i,                // external links
+    /(?:^|\n)\s*(?:\*+|#+|[0-9]+\.)\s+/,          // lists
+    /\[\[분류:[^\]]+\]\]/i,
+    /\[\[파일:[^\]]+\]\]/i,
+    /\$\$[\s\S]+?\$\$|\\\([\s\S]+?\\\)/ // math
   ];
   if (legacySyntax.some(pattern => pattern.test(original))) {
     const database = await getNamuDatabase(original, docTitle);
