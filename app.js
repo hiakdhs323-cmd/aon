@@ -1596,6 +1596,7 @@ async function decodeImageFile(file){
  catch(error){URL.revokeObjectURL(url);throw error}
 }
 async function compressImageForUpload(file){
+ if(file.type==="image/svg+xml"||/\.svg$/i.test(file.name))return {blob:new Blob([await file.text()],{type:"image/svg+xml"}),filename:file.name.replace(/\.svg$/i,"")+".svg",compressed:false,animatedGif:false,originalSize:file.size,isSvg:true};
  if(file.size<=MAX_STORED_IMAGE_BYTES)return {blob:file,filename:file.name,compressed:false,animatedGif:false,originalSize:file.size};
  const decoded=await decodeImageFile(file);
  try{
@@ -1646,7 +1647,7 @@ $("file").onchange=async()=>{
   const data=await api("/api/upload",{method:"POST",body:form});
   namuDatabaseCache.expires=0;
   const markup="[[파일:"+data.filename+"|width=500]]";
-  const compressionNote=compressed.compressed?"원본 "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+"로 자동 압축했습니다.":"원본 파일을 그대로 업로드했습니다.";
+  const compressionNote=compressed.isSvg?"SVG 벡터 이미지를 원본 형식으로 업로드했습니다.":compressed.compressed?"원본 "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+"로 자동 압축했습니다.":"원본 파일을 그대로 업로드했습니다.";
   if(!$("editor-view").hidden){
    const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
    $("editor-status").textContent=compressionNote;
@@ -1663,7 +1664,7 @@ $("file").onchange=async()=>{
   }
   $("dialog").close()
  },"업로드");
- addText($("dialog-body"),"p","원본 이미지 최대 3MB까지 선택할 수 있습니다. 900KB를 넘으면 WebP로 자동 압축합니다.").className="dialog-help";
+ addText($("dialog-body"),"p","PNG, JPG, GIF, WebP, SVG를 지원합니다. 원본 최대 3MB, 일반 이미지는 900KB 초과 시 WebP로 압축하며 SVG는 벡터 형식을 유지합니다.").className="dialog-help";
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
