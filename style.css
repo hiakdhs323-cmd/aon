@@ -763,3 +763,11 @@ html[data-theme="dark"] .wiki-content .wiki-fold-content{border-left-color:#536a
   overflow-wrap:anywhere;
   word-break:normal;
 }
+
+
+/* Keep missing-page links visibly red in both themes. */
+html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,
+html[data-theme="dark"] .wiki-content .opennamu_not_exist_link,
+html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link:hover {
+  color: #ff6b6b !important;
+}
