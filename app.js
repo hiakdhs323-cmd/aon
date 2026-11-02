@@ -191,8 +191,10 @@ async function resolveWikiFile(filename){
 function createImage(parent,fileSpec,state,markdownAlt=""){
  const parts=String(fileSpec||"").split("|"),filename=parts.shift().trim(),params={};
  parts.join("|").split("&").forEach(pair=>{const at=pair.indexOf("=");if(at>0)params[pair.slice(0,at).trim().toLowerCase()]=pair.slice(at+1).trim();else if(pair.trim())params[pair.trim().toLowerCase()]="true"});
- const align=(params.align||"center").toLowerCase();
+ const inTable=!!parent.closest("td,th");
+ const align=(params.align||(inTable?"left":"center")).toLowerCase();
  const figure=document.createElement("figure");figure.className="wiki-image"+(align==="right"?" align-right":align==="left"?" align-left":"");
+ if(inTable){figure.style.display="inline-block";figure.style.verticalAlign="top";figure.style.maxWidth="100%";figure.style.margin="0 4px 4px 0"}
  const img=document.createElement("img");img.alt=params.alt||markdownAlt||filename;img.loading="lazy";img.decoding="async";
  let width=params.width||params["width"];if(width){width=width.replace(/px$/i,"");if(/^\d+(\.\d+)?$/.test(width))width+="px";if(/^\d+(\.\d+)?(px|%)$/.test(width))figure.style.width=width}
  let height=params.height;if(height){height=height.replace(/px$/i,"");if(/^\d+(\.\d+)?$/.test(height))height+="px";if(/^\d+(\.\d+)?px$/.test(height))img.style.height=height}
