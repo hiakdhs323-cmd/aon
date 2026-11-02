@@ -218,6 +218,27 @@ export default {
           .bind(title, level, reason, user.username, now).run();
         return response({ ok: true, title, protection: { level, reason, protectedBy: user.username, updatedAt: now } }, 200, cors);
       }
+      if (url.pathname === "/api/page/protection" && request.method === "PUT") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "편집 보호를 설정하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        const body = await request.json();
+        const title = cleanTitle(body.title);
+        const level = String(body.level || "none");
+        const reason = String(body.reason || "").trim().slice(0, 300);
+        if (!title || title === "대문") return response({ error: "보호할 수 없는 문서입니다." }, 400, cors);
+        if (!["none", "registered", "admin"].includes(level)) return response({ error: "올바른 보호 수준을 선택하세요." }, 400, cors);
+        const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "문서를 찾을 수 없습니다." }, 404, cors);
+        await ensurePageProtectionSchema(env);
+        if (level === "none") {
+          await env.DB.prepare("DELETE FROM page_protections WHERE title = ?").bind(title).run();
+          return response({ ok: true, title, protection: { level: "none", reason: "" } }, 200, cors);
+        }
+        const now = new Date().toISOString();
+        await env.DB.prepare("INSERT INTO page_protections (title, level, reason, protected_by, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET level = excluded.level, reason = excluded.reason, protected_by = excluded.protected_by, updated_at = excluded.updated_at")
+          .bind(title, level, reason, user.username, now).run();
+        return response({ ok: true, title, protection: { level, reason, updatedAt: now } }, 200, cors);
+      }
       if (url.pathname === "/api/page" && request.method === "DELETE") {
         const user = await currentUser(request, env);
         if (!user?.isAdmin) return response({ error: "문서를 삭제하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
