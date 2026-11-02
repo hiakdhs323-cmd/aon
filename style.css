@@ -1604,3 +1604,172 @@ html[data-theme="dark"] .nav-bottom-rule{background:#303840}
 html[data-theme="dark"] .searchbar button:hover,html[data-theme="dark"] .button:hover{background:#303840}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
 
+/* 2026-11-02: full-height canvas and larger desktop reading scale */
+html{
+  min-height:100%;
+  background:#fff;
+}
+html[data-theme="dark"]{
+  min-height:100%;
+  background:#171a1d;
+}
+body{
+  min-height:100vh;
+  background:#fff;
+  font-size:16px;
+}
+html[data-theme="dark"] body{
+  min-height:100vh;
+  background:#171a1d;
+  color:#e6e9ec;
+}
+
+/* Use more of a wide monitor instead of leaving the wiki in a narrow column. */
+.site-header{
+  padding-left:max(22px,calc((100vw - 1600px)/2));
+  padding-right:max(22px,calc((100vw - 1600px)/2));
+  gap:30px;
+}
+.searchbar{max-width:760px;height:42px}
+.searchbar input{font-size:15px}
+.searchbar button{height:32px;min-height:32px;font-size:13px;padding:0 14px}
+.brand-symbol{width:36px;height:36px;flex-basis:36px;font-size:21px}
+.brand-name{font-size:23px}
+.brand-caption{font-size:9px}
+.header-actions{gap:5px}
+.header-actions .button{min-height:36px;padding:0 11px;font-size:13px}
+
+.app-shell,.layout{
+  width:min(1600px,calc(100% - 64px));
+  margin:24px auto 0;
+  grid-template-columns:220px minmax(0,1fr);
+  gap:38px;
+}
+.left-nav{top:88px;gap:16px}
+.nav-topline{font-size:11px;padding:7px 11px 11px}
+.nav-heading{font-size:13px;padding:7px 11px}
+.nav-item{min-height:38px;padding:8px 11px;font-size:14px;gap:10px}
+.nav-glyph{width:18px;height:18px;flex-basis:18px;font-size:16px}
+.nav-bottom{padding:10px 11px 0}
+.nav-bottom-label{font-size:10px}
+.nav-bottom p{font-size:12px}
+.main{width:100%;max-width:none;min-width:0;padding-bottom:48px}
+.home-view,.document-view,.editor-view{max-width:none}
+.breadcrumbs{font-size:13px;margin-bottom:11px}
+.article-titlebar h1{font-size:34px}
+.title-button{min-height:32px;padding:0 11px;font-size:13px}
+.article-tools{height:44px;font-size:14px;gap:20px}
+.article-tools button{font-size:14px}
+.article-language{font-size:12px}
+.wiki-content{min-height:260px;padding:22px 0 38px;font-size:16px;line-height:1.82}
+.wiki-content p{line-height:1.82;margin-bottom:14px}
+.wiki-content h2{font-size:25px;margin:28px 0 13px}
+.wiki-content h3{font-size:20px;margin:23px 0 9px}
+.wiki-content h4,.wiki-content h5,.wiki-content h6{font-size:17px;margin:19px 0 8px}
+.wiki-content table{font-size:15px}
+.wiki-content th,.wiki-content td{padding:7px 10px}
+.article-footer,.site-footer{font-size:12px}
+.category-index-intro{font-size:14px}
+.category-summary-line{font-size:13px}
+.category-summary-line strong{font-size:15px}
+.category-group-heading{font-size:18px}
+.category-entry{font-size:14px;line-height:1.7;padding:5px 0}
+.category-entry-count{font-size:12px}
+.category-section-heading h2{font-size:21px}
+.category-section-heading>span,.category-pagination>span{font-size:12px}
+
+/* Keep the enlarged layout usable on tablets. */
+@media(max-width:1050px){
+  .site-header{
+    grid-template-columns:190px minmax(220px,1fr);
+    grid-template-areas:"brand actions" "search search";
+    gap:9px 16px;padding:10px 18px
+  }
+  .brand{grid-area:brand}
+  .searchbar{grid-area:search;max-width:none}
+  .header-actions{grid-area:actions}
+  .app-shell,.layout{
+    width:calc(100% - 32px);
+    grid-template-columns:175px minmax(0,1fr);
+    gap:22px;margin-top:18px
+  }
+  .main{max-width:none}
+  .left-nav{gap:10px}
+  .nav-item{font-size:13px}
+  .wiki-content{font-size:15px}
+}
+
+/* Mobile keeps the horizontal wiki navigation and a single content column. */
+@media(max-width:720px){
+  .site-header{
+    position:relative;min-height:0;display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"brand actions" "search search";
+    gap:10px 8px;padding:10px 12px
+  }
+  .brand{grid-area:brand;gap:8px}
+  .brand-symbol{width:30px;height:30px;flex-basis:30px;font-size:17px}
+  .brand-name{font-size:18px}
+  .brand-caption{display:block;font-size:7px}
+  .header-actions{grid-area:actions;max-width:60vw;gap:1px;overflow-x:auto;justify-content:flex-end}
+  .header-actions .button{min-height:30px;padding:0 7px;font-size:11px}
+  .header-action-divider{height:17px;margin:0 3px}
+  .searchbar{grid-area:search;height:38px;max-width:none}
+  .searchbar input{font-size:13px}
+  .searchbar button{height:28px;min-height:28px;padding:0 10px;font-size:12px}
+  .app-shell,.layout{
+    display:flex;flex-direction:column;gap:10px;
+    width:100%;margin:0;padding:0
+  }
+  .left-nav{
+    position:sticky;top:0;z-index:30;
+    display:flex;flex-direction:row;align-items:center;gap:0;
+    width:100%;min-height:45px;margin:0;padding:5px 8px;
+    overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+    border:0;border-bottom:1px solid #c8ccd1;border-radius:0;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);
+    scrollbar-width:none
+  }
+  .left-nav::-webkit-scrollbar{display:none}
+  .nav-topline,.nav-bottom,.nav-heading,.nav-separator{display:none!important}
+  .nav-group{display:contents}
+  .nav-item{
+    display:inline-flex;flex:0 0 auto;width:auto;min-height:34px;
+    gap:5px;margin:0 2px;padding:5px 8px;border:1px solid transparent;
+    border-radius:2px;font-size:12px;white-space:nowrap
+  }
+  .nav-glyph{width:14px;height:14px;flex-basis:14px;font-size:13px}
+  .nav-item.active{border-color:#eaecf0;background:#f8f9fa}
+  .main{width:100%;max-width:none;margin:0;padding:0 13px 25px}
+  .breadcrumbs{margin:10px 0 7px;padding:0 1px;font-size:11px}
+  .article-titlebar h1{font-size:26px}
+  .article-tools{height:38px;gap:14px;font-size:12px}
+  .article-tools button{font-size:12px}
+  .wiki-content{padding:16px 0 27px;font-size:14px;line-height:1.78}
+  .wiki-content h2{font-size:20px;margin-top:22px}
+  .wiki-content h3{font-size:17px;margin-top:19px}
+  .wiki-content table{max-width:100%;font-size:12px}
+  .wiki-content th,.wiki-content td{padding:5px 7px}
+  .category-groups{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:15px;row-gap:17px}
+  .category-entry{font-size:12px}
+  .category-group-heading{font-size:15px}
+  .article-footer{align-items:flex-start;flex-direction:column;gap:4px}
+}
+@media(max-width:430px){
+  .site-header{padding:9px 9px;gap:8px 5px}
+  .brand{gap:6px}
+  .brand-symbol{width:28px;height:28px;flex-basis:28px}
+  .brand-name{font-size:17px}
+  .brand-caption{display:none}
+  .header-actions{max-width:58vw}
+  .header-actions .button{min-height:29px;padding:0 5px;font-size:10px}
+  .app-shell,.layout{width:100%}
+  .left-nav{min-height:42px;padding:4px 5px}
+  .nav-item{min-height:30px;padding:4px 7px;font-size:10px}
+  .main{padding:0 10px 22px}
+  .article-titlebar h1{font-size:23px}
+  .wiki-content{font-size:13px}
+  .category-groups{grid-template-columns:1fr;row-gap:15px}
+  .category-entry{font-size:12px}
+}
+
