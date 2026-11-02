@@ -179,8 +179,9 @@ async function resolveWikiFile(filename){
  if(wikiFileLookupPending.has(key))return wikiFileLookupPending.get(key);
  const pending=api("/api/file?name="+encodeURIComponent(filename)).then(data=>{
   if(!data.image||!data.image.url)throw new Error("파일을 찾을 수 없습니다.");
-  wikiFileLookupCache.set(key,{url:data.image.url,expires:Date.now()+5*60*1000});
-  return {url:data.image.url};
+  const mediaUrl=new URL(data.image.url,apiBase()).href;
+  wikiFileLookupCache.set(key,{url:mediaUrl,expires:Date.now()+5*60*1000});
+  return {url:mediaUrl};
  }).catch(error=>{
   wikiFileLookupCache.set(key,{url:"",expires:Date.now()+20*1000});
   throw error;
@@ -219,10 +220,11 @@ function createImage(parent,fileSpec,state,markdownAlt=""){
  figure.append(link);
  if(params.caption)addText(figure,"figcaption",params.caption);
  parent.append(figure);
- const fail=()=>{const broken=document.createElement("span");broken.className="broken-image";broken.textContent="[이미지 파일을 찾을 수 없음: "+filename+"]";figure.replaceWith(broken)};
- if(/^https?:\/\//i.test(filename)||filename.startsWith("/"))img.src=filename;else if(/^[a-f0-9-]{36}$/i.test(filename))img.src=apiBase()+"/media/"+filename;
- else resolveWikiFile(filename).then(file=>{img.src=file.url}).catch(fail);
- img.addEventListener("error",fail);
+ let imageFailed=false;
+ const fail=()=>{if(imageFailed)return;imageFailed=true;const broken=document.createElement("span");broken.className="broken-image";broken.textContent="[이미지 파일을 불러오지 못함: "+filename+"]";figure.replaceWith(broken)};
+ img.addEventListener("error",fail,{once:true});
+ if(/^https?:\/\//i.test(filename))img.src=filename;else if(filename.startsWith("/"))img.src=new URL(filename,apiBase()).href;else if(/^[a-f0-9-]{36}$/i.test(filename))img.src=apiBase()+"/media/"+filename;
+ else resolveWikiFile(filename).then(file=>{if(!imageFailed)img.src=file.url}).catch(fail);
 }
 function footnoteReference(raw,state,parent){
  let key="",content="",named=false;const value=String(raw||"");
