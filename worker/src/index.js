@@ -395,21 +395,67 @@ export default {
         return response({ title, backlinks }, 200, cors);
       }
       if (url.pathname === "/api/categories" && request.method === "GET") {
-        const result = await env.DB.prepare("SELECT title, content FROM pages ORDER BY updated_at DESC LIMIT 5000").all();
+        const result = await env.DB.prepare("SELECT title, content FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
         const categories = new Map();
         for (const page of (result.results || [])) {
           const content = String(page.content || "");
+          const isCategoryPage = /^(?:분류|category):/i.test(String(page.title || ""));
           const matches = content.matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:\|[^\]]*)?\]\]/gi);
           for (const match of matches) {
             const name = String(match[1] || "").trim();
             if (!name) continue;
             const key = name.toLocaleLowerCase();
-            const item = categories.get(key) || { name, count: 0 };
-            item.count++;
+            const item = categories.get(key) || { name, count: 0, subcategoryCount: 0 };
+            if (isCategoryPage) item.subcategoryCount++;
+            else if (page.title !== "대문") item.count++;
             categories.set(key, item);
           }
         }
-        return response({ categories: [...categories.values()].sort((a, b) => a.name.localeCompare(b.name, "ko")) }, 200, cors);
+        const values = [...categories.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+        return response({ categories: values, total: values.length }, 200, cors);
+      }
+      if (url.pathname === "/api/category" && request.method === "GET") {
+        const name = String(url.searchParams.get("name") || "").trim().replace(/^(?:분류|category):/i, "").slice(0, 120);
+        if (!name) return response({ error: "분류 이름을 입력하세요." }, 400, cors);
+        const limit = Math.min(100, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "100", 10) || 100));
+        const offset = Math.min(1000000, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+        const markers = [
+          "[[분류:" + name + "]]",
+          "[[분류:" + name + "|",
+          "[[category:" + name + "]]",
+          "[[category:" + name + "|"
+        ];
+        const membershipSql = "instr(lower(content), lower(?)) > 0 OR instr(lower(content), lower(?)) > 0 OR instr(lower(content), lower(?)) > 0 OR instr(lower(content), lower(?)) > 0";
+        const [categoryPage, subcategories, countRow, pages] = await Promise.all([
+          env.DB.prepare("SELECT title, content, updated_at FROM pages WHERE title = ? COLLATE NOCASE OR title = ? COLLATE NOCASE LIMIT 1")
+            .bind("분류:" + name, "category:" + name).first(),
+          env.DB.prepare("SELECT title, updated_at FROM pages WHERE (" + membershipSql + ") AND (lower(title) LIKE '분류:%' OR lower(title) LIKE 'category:%') ORDER BY title COLLATE NOCASE ASC LIMIT 1000")
+            .bind(...markers).all(),
+          env.DB.prepare("SELECT COUNT(*) AS total FROM pages WHERE (" + membershipSql + ") AND title <> '대문' AND lower(title) NOT LIKE '분류:%' AND lower(title) NOT LIKE 'category:%'")
+            .bind(...markers).first(),
+          env.DB.prepare("SELECT title, updated_at FROM pages WHERE (" + membershipSql + ") AND title <> '대문' AND lower(title) NOT LIKE '분류:%' AND lower(title) NOT LIKE 'category:%' ORDER BY title COLLATE NOCASE ASC LIMIT ? OFFSET ?")
+            .bind(...markers, limit, offset).all()
+        ]);
+        const source = String(categoryPage?.content || "");
+        const parentCategories = [...source.matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:\|[^\]]*)?\]\]/gi)]
+          .map(match => String(match[1] || "").trim()).filter(Boolean);
+        const description = source.replace(/^\s*\[\[(?:분류|category):[^\]]+\]\]\s*$/gim, "").trim();
+        const childItems = (subcategories.results || []).map(page => ({
+          title: page.title,
+          name: String(page.title || "").replace(/^(?:분류|category):/i, ""),
+          updated_at: page.updated_at
+        }));
+        return response({
+          name,
+          description,
+          categoryUpdatedAt: categoryPage?.updated_at || "",
+          parentCategories: [...new Set(parentCategories)],
+          subcategories: childItems,
+          pages: pages.results || [],
+          total: Number(countRow?.total || 0),
+          limit,
+          offset
+        }, 200, cors);
       }
       if (url.pathname === "/api/category" && request.method === "GET") {
         const name = String(url.searchParams.get("name") || "").trim().slice(0, 160);
