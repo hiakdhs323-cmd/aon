@@ -12,26 +12,51 @@
 </head>
 <body>
 <header class="site-header">
-  <a class="brand" href="#/" aria-label="AonWiki 대문"><span class="brand-symbol">A</span><span class="brand-name">Aon<span>Wiki</span></span></a>
-  <form id="search" class="searchbar" role="search"><input id="query" placeholder="AonWiki에서 검색" aria-label="문서 검색" autocomplete="off"><button type="submit">검색</button></form>
-  <nav class="header-actions"><span id="role-label" class="role-label" hidden></span><button id="change-password" class="button button-plain" type="button" hidden>비밀번호 변경</button><button id="login" class="button button-plain" type="button">로그인</button><button id="settings" class="button button-plain" type="button" title="API 설정">설정</button><button id="labs" class="button button-plain" type="button" title="베타 기능 설정">실험실</button><button id="namumark-beta-toggle" class="button beta-engine-toggle" type="button" aria-pressed="false">베타 엔진 켜기</button><button id="theme-toggle" class="button button-plain" type="button">다크 모드</button></nav>
+  <a class="brand" href="#/" aria-label="AonWiki 대문">
+    <span class="brand-symbol">A</span>
+    <span class="brand-lockup"><span class="brand-name">Aon<span>Wiki</span></span><span class="brand-caption">COMMUNITY KNOWLEDGE</span></span>
+  </a>
+  <form id="search" class="searchbar" role="search">
+    <span class="search-icon" aria-hidden="true">⌕</span>
+    <input id="query" placeholder="문서 제목이나 내용을 검색" aria-label="문서 검색" autocomplete="off">
+    <kbd class="search-shortcut">검색</kbd>
+    <button type="submit">찾기</button>
+  </form>
+  <nav class="header-actions" aria-label="계정 및 환경 설정">
+    <span id="role-label" class="role-label" hidden></span>
+    <button id="change-password" class="button button-plain" type="button" hidden>비밀번호 변경</button>
+    <button id="login" class="button button-plain" type="button">로그인</button>
+    <span class="header-action-divider" aria-hidden="true"></span>
+    <button id="settings" class="button button-plain" type="button" title="API 설정">설정</button>
+    <button id="labs" class="button button-plain" type="button" title="베타 기능 설정">실험실</button>
+    <button id="namumark-beta-toggle" class="button beta-engine-toggle" type="button" aria-pressed="false">베타 엔진</button>
+    <button id="theme-toggle" class="button button-plain" type="button">다크 모드</button>
+  </nav>
 </header>
-<div class="layout">
+<div class="layout app-shell">
   <aside class="left-nav" aria-label="위키 메뉴">
-    <div class="nav-heading">AonWiki</div>
-    <button id="home" class="nav-item active" type="button">대문</button>
-    <button id="new" class="nav-item" type="button">새 문서 만들기</button>
-    <button id="categories" class="nav-item" type="button">분류 목록</button>
-    <button id="recent-changes" class="nav-item" type="button">최근 변경</button>
-    <button id="random-page" class="nav-item" type="button">임의 문서</button>
-    <div class="nav-separator"></div>
-    <div class="nav-heading">문서 도구</div>
-    <button id="edit" class="nav-item" type="button" hidden>문서 편집</button>
-    <button id="history" class="nav-item" type="button" hidden>문서 역사</button>
-    <button id="upload" class="nav-item" type="button" hidden>이미지 올리기</button>
-    <button id="file-manager" class="nav-item" type="button" hidden>파일 관리</button>
-    <button id="delete-page" class="nav-item danger-link" type="button" hidden>문서 삭제</button>
-    <p class="nav-caption">AonWiki<br>함께 만드는 지식 백과사전</p>
+    <div class="nav-topline"><span class="nav-status-dot"></span><span>WORKSPACE</span></div>
+    <div class="nav-group">
+      <div class="nav-heading">둘러보기</div>
+      <button id="home" class="nav-item active" type="button"><span class="nav-glyph">⌂</span><span>대문</span></button>
+      <button id="categories" class="nav-item" type="button"><span class="nav-glyph">▦</span><span>분류</span></button>
+      <button id="recent-changes" class="nav-item" type="button"><span class="nav-glyph">↻</span><span>최근 변경</span></button>
+      <button id="random-page" class="nav-item" type="button"><span class="nav-glyph">⤨</span><span>임의 문서</span></button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-heading">작성 및 관리</div>
+      <button id="new" class="nav-item" type="button"><span class="nav-glyph">＋</span><span>새 문서 만들기</span></button>
+      <button id="edit" class="nav-item" type="button" hidden><span class="nav-glyph">✎</span><span>문서 편집</span></button>
+      <button id="history" class="nav-item" type="button" hidden><span class="nav-glyph">◷</span><span>문서 역사</span></button>
+      <button id="upload" class="nav-item" type="button" hidden><span class="nav-glyph">↑</span><span>이미지 올리기</span></button>
+      <button id="file-manager" class="nav-item" type="button" hidden><span class="nav-glyph">▤</span><span>파일 관리</span></button>
+      <button id="delete-page" class="nav-item danger-link" type="button" hidden><span class="nav-glyph">⌫</span><span>문서 삭제</span></button>
+    </div>
+    <div class="nav-bottom">
+      <span class="nav-bottom-rule"></span>
+      <span class="nav-bottom-label">AONWIKI / KNOWLEDGE BASE</span>
+      <p>모두가 함께 기록하고<br>정리하는 지식 아카이브.</p>
+    </div>
   </aside>
   <main class="main">
     <section id="home-view" class="home-view">
