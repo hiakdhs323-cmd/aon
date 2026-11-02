@@ -921,10 +921,28 @@ async function loadPage(title,pushRoute=true,anchor=""){
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
-  const protectionStatus=$("protection-status");
-  if(currentProtection.level==="admin"){protectionStatus.hidden=false;protectionStatus.textContent="관리자 편집 보호";protectionStatus.title=currentProtection.reason||"관리자만 편집할 수 있습니다."}
-  else if(currentProtection.level==="registered"){protectionStatus.hidden=false;protectionStatus.textContent="회원 편집 보호";protectionStatus.title=currentProtection.reason||"로그인한 회원만 편집할 수 있습니다."}
-  else{protectionStatus.hidden=true;protectionStatus.textContent="";protectionStatus.title=""}
+  const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
+  if(currentProtection.level==="admin"){
+   protectionStatus.hidden=false;protectionStatus.textContent="관리자 편집 보호";protectionStatus.title=currentProtection.reason||"관리자만 편집할 수 있습니다.";
+   protectionNotice.hidden=false;protectionNotice.replaceChildren();
+   const strong=document.createElement("strong");strong.textContent="이 문서는 관리자 편집 보호 상태입니다.";
+   const detail=document.createElement("span");detail.textContent=" 문서 편집은 관리자만 할 수 있습니다.";
+   protectionNotice.append(strong,detail);
+  }else if(currentProtection.level==="registered"){
+   protectionStatus.hidden=false;protectionStatus.textContent="회원 편집 보호";protectionStatus.title=currentProtection.reason||"로그인한 회원만 편집할 수 있습니다.";
+   protectionNotice.hidden=false;protectionNotice.replaceChildren();
+   const strong=document.createElement("strong");strong.textContent="이 문서는 회원 편집 보호 상태입니다.";
+   const detail=document.createElement("span");detail.textContent=" 문서 편집은 로그인한 회원만 할 수 있습니다.";
+   protectionNotice.append(strong,detail);
+  }else{
+   protectionStatus.hidden=true;protectionStatus.textContent="";protectionStatus.title="";
+   protectionNotice.hidden=true;protectionNotice.replaceChildren();
+  }
+  if(currentProtection.level!=="none"&&currentProtection.reason){
+   const reason=document.createElement("div");reason.className="protection-reason";
+   const label=document.createElement("strong");label.textContent="보호 사유: ";
+   reason.append(label,document.createTextNode(currentProtection.reason));protectionNotice.append(reason);
+  }
   $("page-protection").hidden=!isWikiAdmin;
   $("heading-edit").hidden=(currentProtection.level==="admin"&&!isWikiAdmin)||(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING))||(currentProtection.level==="registered"&&!loggedInName&&!isWikiAdmin);
   $("message").textContent="";
