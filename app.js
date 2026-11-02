@@ -90,7 +90,9 @@ function startLivePageWatcher(){
  checkForNewPages();
  window.aonWikiLiveTimer=window.setInterval(checkForNewPages,10000);
 }
+let pageNavigationSequence = 0;
 function showHome(push=true){
+ pageNavigationSequence++;
  if(push)history.pushState(null,"","#/");
  currentTitle="";currentContent="";
  $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
@@ -399,24 +401,62 @@ function renderContent(source,target=$("article"),options={}){
  return state
 }
 
-let namuDatabaseCache = { expires: 0, records: [] };
+let namuDatabaseCache = {
+  pageExpires: 0, pageRecords: [],
+  fileExpires: 0, fileRecords: []
+};
+let pageIndexPromise = null;
+let fileIndexPromise = null;
+function invalidateNamuDatabaseCache() {
+  namuDatabaseCache.pageExpires = 0;
+  namuDatabaseCache.fileExpires = 0;
+}
 async function getNamuDatabase(source, docTitle) {
-  if (Date.now() > namuDatabaseCache.expires) {
-    const [pageData, fileData] = await Promise.all([
-      api("/api/pages"),
-      api("/api/files").catch(() => ({ files: [] }))
-    ]);
-    const records = (pageData.pages || []).map(page => ({ title: page.title, data: "" }));
-    (fileData.files || []).forEach(file => records.push({ title: "file:" + file.filename, data: "" }));
-    (fileData.aliases || []).forEach(alias => records.push({ title: "file:" + alias.alias, data: "" }));
-    namuDatabaseCache = { expires: Date.now() + 30000, records };
+  const textSource = String(source || "");
+  const needsPageIndex = /\[\[|\[include\s*\(|\[pagecount\]/i.test(textSource);
+  const needsFileIndex = /\[\[\s*:?(?:파일|file):/i.test(textSource);
+  const records = [];
+
+  // Documents without wiki links/includes need no global title index.
+  if (needsPageIndex) {
+    if (Date.now() > namuDatabaseCache.pageExpires) {
+      if (!pageIndexPromise) {
+        pageIndexPromise = api("/api/page-index")
+          .then(data => {
+            namuDatabaseCache.pageRecords = (data.pages || []).map(page => ({ title: page.title, data: "" }));
+            namuDatabaseCache.pageExpires = Date.now() + 5 * 60 * 1000;
+          })
+          .finally(() => { pageIndexPromise = null; });
+      }
+      await pageIndexPromise;
+    }
+    records.push(...namuDatabaseCache.pageRecords.map(item => ({ ...item })));
   }
-  const records = namuDatabaseCache.records.map(item => ({ ...item }));
+
+  // Do not query the image registry unless this document uses file markup.
+  if (needsFileIndex) {
+    if (Date.now() > namuDatabaseCache.fileExpires) {
+      if (!fileIndexPromise) {
+        fileIndexPromise = api("/api/files")
+          .then(data => {
+            const fileRecords = (data.files || []).map(file => ({ title: "file:" + file.filename, data: "" }));
+            (data.aliases || []).forEach(alias => fileRecords.push({ title: "file:" + alias.alias, data: "" }));
+            namuDatabaseCache.fileRecords = fileRecords;
+            namuDatabaseCache.fileExpires = Date.now() + 5 * 60 * 1000;
+          })
+          .finally(() => { fileIndexPromise = null; });
+      }
+      await fileIndexPromise;
+    }
+    records.push(...namuDatabaseCache.fileRecords.map(item => ({ ...item })));
+  }
+
   const current = records.find(item => item.title === docTitle);
-  if (current) current.data = source;
-  else records.push({ title: docTitle, data: source });
+  if (current) current.data = textSource;
+  else records.push({ title: docTitle, data: textSource });
+
   const visited = new Set([docTitle]);
-  let pending = [...String(source).matchAll(/\[include\(\s*([^,\])]+)/gi)].map(match => match[1].trim()).filter(Boolean);
+  let pending = [...textSource.matchAll(/\[include\(\s*([^,\])]+)/gi)].map(match => match[1].trim()).filter(Boolean);
   let fetched = 0;
   for (let depth = 0; depth < 4 && pending.length && fetched < 50; depth++) {
     const batch = [...new Set(pending)].filter(name => !visited.has(name)).slice(0, 20);
@@ -426,7 +466,7 @@ async function getNamuDatabase(source, docTitle) {
     const results = await Promise.all(batch.map(async name => {
       try {
         const result = await api("/api/page?title=" + encodeURIComponent(name));
-        return result.page ? { title: name, data: result.page.content || "" } : null;
+        return result.page ? { title: result.page.title || name, data: result.page.content || "" } : null;
       } catch { return null; }
     }));
     for (const item of results) {
@@ -582,8 +622,8 @@ function sanitizeNamuOutput(root, docTitle) {
           history.replaceState(null, "", routeFor(docTitle, anchor));
           scrollToAnchor(anchor);
         });
-      } else if (href.startsWith("/w/")) {
-        const path = href.slice(3).split("#");
+      } else if (href.startsWith("/w/") || href.startsWith("/wiki/")) {
+        const path = href.slice(href.startsWith("/w/") ? 3 : 6).split("#");
         let page = path[0], anchor = path[1] || "";
         try { page = decodeURIComponent(page); anchor = decodeURIComponent(anchor); } catch {}
         node.setAttribute("href", routeFor(page, anchor));
@@ -891,6 +931,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
 }
 
 async function loadRecentChanges(pushRoute=true){
+ pageNavigationSequence++;
  if(pushRoute)history.pushState(null,"","#/recent");
  currentTitle="최근 변경";currentContent="";
  $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
@@ -906,6 +947,7 @@ async function loadRecentChanges(pushRoute=true){
  }catch(error){addText(article,"p",error.message).className="empty-list"}
 }
 async function loadBacklinks(title,pushRoute=true){
+ pageNavigationSequence++;
  title=String(title||"").trim();if(!title)return;
  if(pushRoute)history.pushState(null,"","#/backlinks/"+encodeURIComponent(title));
  currentTitle=title;currentContent="";
@@ -992,6 +1034,7 @@ function renderCategoryGroups(host, items, options = {}) {
   host.append(grid);
 }
 async function loadCategoryIndex(pushRoute = true) {
+  pageNavigationSequence++;
   if (pushRoute) history.pushState(null, "", "#/categories");
   currentTitle = "분류 목록";
   currentContent = "";
@@ -1040,10 +1083,10 @@ async function loadCategoryIndex(pushRoute = true) {
 }
 function openRandomPage(){api("/api/pages").then(data=>{const pages=(data.pages||[]).filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title));if(!pages.length)throw Error("이동할 문서가 없습니다.");openPage(pages[Math.floor(Math.random()*pages.length)].title)}).catch(error=>{$("message").textContent=error.message})}
 
-async function renderCategoryPage(name, offset = 0) {
+async function renderCategoryPage(name, offset = 0, articleHost = $("article")) {
   const pageSize = 100;
   const data = await api("/api/category?name=" + encodeURIComponent(name) + "&limit=" + pageSize + "&offset=" + Math.max(0, Number(offset) || 0));
-  const article = $("article");
+  const article = articleHost;
   article.replaceChildren();
 
   const meta = document.createElement("div");
@@ -1145,20 +1188,27 @@ async function renderCategoryPage(name, offset = 0) {
 }
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
+ const requestId=++pageNavigationSequence;
  if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();
  $("heading-edit").hidden=false;
+ window.scrollTo({top:0,behavior:"auto"});
  try{
   if (/^(?:category|분류):/i.test(title)) {
    const name=title.replace(/^(?:category|분류):/i,"");
    $("message").textContent="";
-   await renderCategoryPage(name);
+   const staging=document.createElement("article");
+   await renderCategoryPage(name,0,staging);
+   if(requestId!==pageNavigationSequence)return;
+   $("article").replaceChildren(...staging.childNodes);
    $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
-  const data=await api("/api/page?title="+encodeURIComponent(title));if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
+  const data=await api("/api/page?title="+encodeURIComponent(title));
+  if(requestId!==pageNavigationSequence)return;
+  if(!data.page){currentContent="";$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
@@ -1189,9 +1239,22 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
-  $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";await renderNamuMarkup(currentContent, $("article"), title);
-  if(anchor)requestAnimationFrame(()=>scrollToAnchor(anchor))
- }catch(error){$("message").textContent=error.message;$("article").replaceChildren()}
+  $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
+  const staging=document.createElement("article");
+  await renderNamuMarkup(currentContent,staging,title);
+  if(requestId!==pageNavigationSequence)return;
+  const article=$("article");
+  article.replaceChildren(...staging.childNodes);
+  for(const className of ["namumark-rendered","namumark-beta-active"])article.classList.toggle(className,staging.classList.contains(className));
+  requestAnimationFrame(()=>{
+   if(requestId!==pageNavigationSequence)return;
+   if(anchor)scrollToAnchor(anchor);
+   else window.scrollTo({top:0,behavior:"auto"});
+  });
+ }catch(error){
+  if(requestId!==pageNavigationSequence)return;
+  $("message").textContent=error.message;$("article").replaceChildren()
+ }
 }
 $("cancel").addEventListener("click",()=>{if($("dialog").open)$("dialog").close()});
 $("dialog").addEventListener("click",event=>{if(event.target===$("dialog"))$("dialog").close()});
@@ -1800,7 +1863,7 @@ async function openFileManager(){
      const newName=$("rename-file-name").value.trim();
      if(!newName)throw Error("파일 이름을 입력하세요.");
      await api("/api/file",{method:"PATCH",body:JSON.stringify({id:file.id,filename:newName})});
-     namuDatabaseCache.expires=0;
+     invalidateNamuDatabaseCache();
      $("dialog").close();await openFileManager()
     },"변경");
    };
@@ -1887,7 +1950,7 @@ $("file").onchange=async()=>{
   }else{$("dialog-status").textContent="업로드 중…"}
   const form=new FormData();form.append("file",compressed.blob,compressed.filename);form.append("filename",$("upload-filename").value.trim());
   const data=await api("/api/upload",{method:"POST",body:form});
-  namuDatabaseCache.expires=0;
+  invalidateNamuDatabaseCache();
   const markup="[[파일:"+data.filename+"|width=500]]";
   const compressionNote=compressed.isSvg?"SVG 벡터 이미지를 원본 형식으로 업로드했습니다.":compressed.compressed?"원본 "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+"로 자동 압축했습니다.":"원본 파일을 그대로 업로드했습니다.";
   if(!$("editor-view").hidden){
