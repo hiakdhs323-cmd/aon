@@ -94,6 +94,9 @@ async function currentUser(request, env) {
   if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   return null;
 }
+async function ensurePageProtectionSchema(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS page_protections (title TEXT PRIMARY KEY NOT NULL, level TEXT NOT NULL CHECK(level IN ('registered','admin')), reason TEXT NOT NULL DEFAULT '', protected_by TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+}
 async function ensurePageAliasSchema(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS page_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, title TEXT NOT NULL, created_at TEXT NOT NULL)").run();
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_page_aliases_title ON page_aliases(title)").run();
@@ -190,6 +193,27 @@ export default {
             .bind(key, value, now, user.username).run();
         }
         return response({ ok: true, updated_at: now }, 200, cors);
+      }
+      if (url.pathname === "/api/page/protection" && request.method === "PUT") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "편집 보호를 설정하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        const body = await request.json();
+        const title = cleanTitle(body.title);
+        const level = String(body.level || "none");
+        const reason = String(body.reason || "").trim().slice(0, 300);
+        if (!title || title === "대문") return response({ error: "보호할 수 없는 문서입니다." }, 400, cors);
+        if (!["none", "registered", "admin"].includes(level)) return response({ error: "올바른 보호 수준을 선택하세요." }, 400, cors);
+        const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "문서를 찾을 수 없습니다." }, 404, cors);
+        await ensurePageProtectionSchema(env);
+        if (level === "none") {
+          await env.DB.prepare("DELETE FROM page_protections WHERE title = ?").bind(title).run();
+          return response({ ok: true, title, protection: { level: "none", reason: "", protectedBy: user.username } }, 200, cors);
+        }
+        const now = new Date().toISOString();
+        await env.DB.prepare("INSERT INTO page_protections (title, level, reason, protected_by, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET level = excluded.level, reason = excluded.reason, protected_by = excluded.protected_by, updated_at = excluded.updated_at")
+          .bind(title, level, reason, user.username, now).run();
+        return response({ ok: true, title, protection: { level, reason, protectedBy: user.username, updatedAt: now } }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "DELETE") {
         const user = await currentUser(request, env);
@@ -350,7 +374,9 @@ export default {
           const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
           if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
         }
-        return response({ page: page || null }, 200, cors);
+        await ensurePageProtectionSchema(env);
+        const protection = page ? await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first() : null;
+        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "" } : null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
@@ -378,6 +404,11 @@ export default {
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        await ensurePageProtectionSchema(env);
+        const protectionTitle = cleanTitle(body.originalTitle || title);
+        const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
+        if (protection?.level === "admin" && !user.isAdmin) return response({ error: "이 문서는 관리자만 편집할 수 있도록 보호되어 있습니다." }, 403, cors);
+        if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") return response({ error: "이 문서는 로그인한 회원만 편집할 수 있도록 보호되어 있습니다." }, 403, cors);
         if (title === "대문") return response({ error: "대문은 문서 목록 시작 화면이므로 편집할 수 없습니다." }, 403, cors);
         if (content.length > 200000) return response({ error: "문서는 200,000자 이하로 작성해 주세요." }, 413, cors);
         const now = new Date().toISOString();
