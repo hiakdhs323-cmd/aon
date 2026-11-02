@@ -17,7 +17,6 @@ function getCors(request, env) {
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Cross-Origin-Resource-Policy": "same-site"
   };
 }
 function cleanTitle(value) {
@@ -602,6 +601,7 @@ export default {
         headers.set("Content-Type", image.content_type);
         headers.set("Cache-Control", "public, max-age=3600");
         headers.set("X-Content-Type-Options", "nosniff");
+        if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
         return new Response(bytes, { headers });
       }
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
@@ -616,12 +616,13 @@ export default {
         headers.set("Content-Type", image.content_type);
         headers.set("Cache-Control", "public, max-age=3600");
         headers.set("X-Content-Type-Options", "nosniff");
+        if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
         return new Response(bytes, { headers });
       }
       return response({ error: "요청한 경로를 찾을 수 없습니다." }, 404, cors);
     } catch (error) {
       console.error("AonWiki API error", error);
-      return response({ error: "서버 내부 오류", detail: String(error?.message || error).slice(0, 300) }, 500, cors);
+      return response({ error: "서버 내부 오류" }, 500, cors);
     }
   }
 };
