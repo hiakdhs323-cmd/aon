@@ -52,8 +52,8 @@ async function refreshIdentity(){
  $("upload").hidden=!loggedInName;
  $("delete-page").hidden=!isWikiAdmin||!currentTitle;
   const protectionButton=$("page-protection");
-  if(protectionButton)protectionButton.hidden=!isWikiAdmin||!currentTitle||isHomeRoute()||/^(?:분류|category):/i.test(currentTitle);
-}
+  const isArticleView=!$("document-view").hidden&&!$("backlinks-tab").hidden&&!/^(?:분류|category):/i.test(currentTitle)&&!$("message").textContent.includes("이 문서는 아직 존재하지 않습니다");
+  if(protectionButton)protectionButton.hidden=!isWikiAdmin||!currentTitle||isHomeRoute()||!isArticleView;}
 
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
 const liveWatchStartedAt=new Date().toISOString();
@@ -828,6 +828,7 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
     legacyHolder.innerHTML = legacyResult[0] || "";
     sanitizeNamuOutput(legacyHolder, docTitle);
     target.replaceChildren(...legacyHolder.childNodes);
+    moveWikiTocToTop(target);
     target.classList.add("namumark-rendered");
     target.classList.remove("namumark-beta-active");
     enhanceFootnoteHover(target);
