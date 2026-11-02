@@ -197,7 +197,23 @@ function createImage(parent,fileSpec,state,markdownAlt=""){
  let width=params.width||params["width"];if(width){width=width.replace(/px$/i,"");if(/^\d+(\.\d+)?$/.test(width))width+="px";if(/^\d+(\.\d+)?(px|%)$/.test(width))figure.style.width=width}
  let height=params.height;if(height){height=height.replace(/px$/i,"");if(/^\d+(\.\d+)?$/.test(height))height+="px";if(/^\d+(\.\d+)?px$/.test(height))img.style.height=height}
  if(width)img.style.width=width;if(params.border==="true")img.style.border="1px solid #a2a9b1";
- const link=document.createElement("a");link.href="#";link.append(img);link.onclick=e=>{e.preventDefault();window.open(img.src,"_blank","noopener")};
+ const link=document.createElement("a");
+ const imageLink=params.link||params["링크"]||"";
+ link.append(img);
+ if(imageLink){
+  if(/^https?:\/\//i.test(imageLink)){
+   link.href=imageLink;link.target="_blank";link.rel="noopener noreferrer";
+  }else if(imageLink.startsWith("#")){
+   link.href=imageLink;
+  }else{
+   link.href=routeFor(imageLink.split("#")[0],imageLink.includes("#")?imageLink.split("#").slice(1).join("#"):"");
+   link.onclick=e=>{e.preventDefault();navigateInternal(imageLink)};
+  }
+ }else{
+  link.href="#";
+  link.setAttribute("aria-label",img.alt+" 원본 파일 열기");
+  link.onclick=e=>{e.preventDefault();if(img.src)window.open(img.src,"_blank","noopener,noreferrer")};
+ }
  figure.append(link);
  if(params.caption)addText(figure,"figcaption",params.caption);
  parent.append(figure);
