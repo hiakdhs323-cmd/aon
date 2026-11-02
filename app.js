@@ -630,12 +630,12 @@ function enhanceFootnoteHover(root) {
 }
 
 const NAMUMARK_BETA_SETTING = "aonwiki-beta-namumark";
-const namumarkBetaEnabled = () => localStorage.getItem(NAMUMARK_BETA_SETTING) === "1";
+const namumarkBetaEnabled = () => localStorage.getItem(NAMUMARK_BETA_SETTING) !== "0";
 function syncNamumarkBetaButton() {
   const button = $("namumark-beta-toggle");
   if (!button) return;
   const enabled = namumarkBetaEnabled();
-  button.textContent = enabled ? "베타 엔진 끄기" : "베타 엔진 켜기";
+  button.textContent = enabled ? "기본 엔진: 외부 엔진" : "기본 엔진: 호환 엔진";
   button.setAttribute("aria-pressed", enabled ? "true" : "false");
   button.classList.toggle("is-enabled", enabled);
 }
@@ -644,7 +644,7 @@ function toggleNamumarkBeta() {
   localStorage.setItem(NAMUMARK_BETA_SETTING, enabled ? "1" : "0");
   syncNamumarkBetaButton();
   const state = document.querySelector(".labs-state");
-  if (state) state.textContent = enabled ? "켜짐 · 현재 문서에 바로 적용합니다." : "꺼짐 · 기존 렌더러로 돌아갑니다.";
+  if (state) state.textContent = enabled ? "외부 엔진 우선 · 미지원 문법은 자동으로 호환 렌더러가 처리합니다." : "호환 엔진 우선 · 기존 렌더러를 사용합니다.";
   if (!$("document-view").hidden && currentTitle && currentContent) {
     renderNamuMarkup(currentContent, $("article"), currentTitle).catch(error => console.error(error));
   } else if (!$("home-view").hidden) {
@@ -670,9 +670,10 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
   sanitizeNamuOutput(holder, docTitle);
   normalizeBetaLinks(holder, docTitle);
 
-  // Keep the beta renderer for plain/simple content, but route advanced
-  // NamuMark syntax through the complete bundled parser. The WASM beta parser
-  // is a separate, smaller implementation and cannot guarantee full parity.
+  // Prefer the supplied WASM engine. Since it does not implement every
+  // legacy NamuMark feature, detect syntax that requires the bundled parser
+  // and automatically render those documents with the compatibility parser.
+  // Source text is preserved; conversion is rendering-time, not destructive.
   const original = String(source || "");
   const legacySyntax = [
     /\\[\\[[\\s\\S]*?\\]\\]/,                 // internal/interwiki links, categories, files
