@@ -1630,8 +1630,8 @@ function formatImageSize(bytes){return bytes>=1024*1024?(bytes/1024/1024).toFixe
 $("file").onchange=async()=>{
  const file=$("file").files[0];$("file").value="";
  if(!file)return;
- if(file.size>MAX_RAW_IMAGE_BYTES){
-  const message="이미지는 원본 3MB 이하만 업로드할 수 있습니다.";
+ if(file.size>MAX_RAW_IMAGE_BYTES||((file.type==="image/svg+xml"||/\.svg$/i.test(file.name))&&file.size>1024*1024)){
+  const message=(file.type==="image/svg+xml"||/\.svg$/i.test(file.name))?"SVG 파일은 1MB 이하만 업로드할 수 있습니다.":"이미지는 원본 3MB 이하만 업로드할 수 있습니다.";
   if(!$("editor-view").hidden)$("editor-status").textContent=message;else $("message").textContent=message;
   return
  }
