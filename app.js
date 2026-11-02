@@ -196,7 +196,7 @@ function footnoteReference(raw,state,parent){
 }
 function inlineRender(parent,source,state){
  const text=String(source||"");
- const token=/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[\[파일:([^\]]+)\]\]|\[\[([^\]]+)\]\]|\[\*([^\]]*)\]|\[(목차|tableofcontents)(?:\((hide)\))?\]|\[(각주|footnote)\]|\[br\]|\[clearfix\]|\[(https?:\/\/[^\s\]\|]+)(?:[\s|]+([^\]]+))?\]|'''([\s\S]+?)'''|''([\s\S]+?)''|__([\s\S]+?)__|~~([\s\S]+?)~~|--([\s\S]+?)--|\^\^([\s\S]+?)\^\^|,,([\s\S]+?),,|\{\{\{([\s\S]+?)\}\}\}|\[(date|datetime)\]/gi;
+ const token=/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[\[파일:([^\]]+)\]\]|\[\[([^\]]+)\]\]|\[\*([^\]]*)\]|\[(목차|tableofcontents)(?:\((hide)\))?\]|\[(각주|footnote)\]|\[br\]|\[clearfix\]|\[(https?:\/\/[^\s\]\|]+)(?:[\s|]+([^\]]+))?\]|'''([\s\S]+?)'''|''([\s\S]+?)''|__([\s\S]+?)__|~~([\s\S]+?)~~|--([\s\S]+?)--|\^\^([\s\S]+?)\^\^|,,([\s\S]+?),,|\{\{\{([\s\S]+?)\}\}\})|\[(date|datetime)\]/gi;
  let pos=0,m;
  while((m=token.exec(text))){
   parent.append(document.createTextNode(text.slice(pos,m.index)));
