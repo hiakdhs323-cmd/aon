@@ -974,6 +974,7 @@ function openLogin(){
 }
 $("login").onclick=async()=>{
  if(loggedInName){
+  try{await api("/api/logout",{method:"POST"})}catch{}
   sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem(NAME_SETTING);loggedInName="";isWikiAdmin=false;currentRole="anonymous";
   await refreshIdentity();readRoute();return
  }
