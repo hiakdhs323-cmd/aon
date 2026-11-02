@@ -670,19 +670,47 @@ async function renderWithNamumarkBeta(source, target, docTitle) {
   sanitizeNamuOutput(holder, docTitle);
   normalizeBetaLinks(holder, docTitle);
 
-  // Compatibility guard: if the beta parser leaves common AonWiki/NamuMark
-  // syntax visibly unparsed, let the existing renderer handle this document.
-  const renderedText = holder.textContent || "";
-  const unparsedPatterns = [
-    /\\[\\[[^\\]]+\\]\\]/,             // [[문서]]
-    /'''[^'\\n]+'''/,                    // '''굵게'''
-    /\\{\\{\\{[\\s\\S]*?\\}\\}\\}/, // {{{코드/블록}}}
-    /\\[\\*\\s*[^\\]]+\\]/,         // [* 각주]
-    /(?:^|\\n)={2,}[^\\n]+={2,}(?:$|\\n)/, // == 제목 ==
-    /(?:^|\\n)\\|\\|[^\\n]*\\|\\|(?:$|\\n)/ // || 표 ||
+  // Keep the beta renderer for plain/simple content, but route advanced
+  // NamuMark syntax through the complete bundled parser. The WASM beta parser
+  // is a separate, smaller implementation and cannot guarantee full parity.
+  const original = String(source || "");
+  const legacySyntax = [
+    /\\[\\[[\\s\\S]*?\\]\\]/,                 // internal/interwiki links, categories, files
+    /'''[\\s\\S]*?'''|''[\\s\\S]*?''|__(?:[\\s\\S]*?)__|~~[\\s\\S]*?~~/,
+    /(?:^|\\n)\\s*={2,}[^\\n]+={2,}\\s*(?:$|\\n)/, // headings
+    /(?:^|\\n)\\s*\\|\\|[\\s\\S]*?\\|\\|\\s*(?:$|\\n)/, // tables
+    /\\[\\*[^\\]]*\\]/,                         // footnotes
+    /\\{\\{\\{[\\s\\S]*?\\}\\}\\}/,             // code, folding, style, wiki blocks
+    /\\[(?:목차|br|clearfix|date|datetime|pagecount|ruby|anchor|각주|tableofcontents)(?:\\([^\\]]*\\))?\\]/i,
+    /\\[https?:\\/\\/[^\\]]+\\]/i,                // external links
+    /(?:^|\\n)\\s*(?:\\*+|#+|[0-9]+\\.)\\s+/,          // lists
+    /\\[\\[분류:[^\\]]+\\]\\]/i,
+    /\\[\\[파일:[^\\]]+\\]\\]/i,
+    /\\$\\$[\\s\\S]+?\\$\\$|\\\\\\([\\s\\S]+?\\\\\\)/ // math
   ];
-  if (unparsedPatterns.some(pattern => pattern.test(renderedText))) {
-    throw new Error("기존 나무마크 문법이 베타 엔진에서 변환되지 않아 호환 렌더러를 사용합니다.");
+  if (legacySyntax.some(pattern => pattern.test(original))) {
+    const database = await getNamuDatabase(original, docTitle);
+    const parser = new window.NamuMarkBundle.NamuMark(
+      original,
+      { docName: docTitle, useTocSet: "default" },
+      database
+    );
+    const legacyResult = parser.parse();
+    const legacyHolder = document.createElement("div");
+    legacyHolder.innerHTML = legacyResult[0] || "";
+    sanitizeNamuOutput(legacyHolder, docTitle);
+    target.replaceChildren(...legacyHolder.childNodes);
+    target.classList.add("namumark-rendered");
+    target.classList.remove("namumark-beta-active");
+    enhanceFootnoteHover(target);
+    if (window.katex) {
+      target.querySelectorAll('span[id*="opennamu_math_"]').forEach(element => {
+        try { window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" }); }
+        catch (error) { console.warn("KaTeX rendering skipped", error); }
+      });
+    }
+    if (window.hljs) target.querySelectorAll("pre code").forEach(code => window.hljs.highlightElement(code));
+    return;
   }
 
   target.replaceChildren(...holder.childNodes);
