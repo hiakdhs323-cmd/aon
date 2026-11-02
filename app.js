@@ -167,6 +167,27 @@ function applyWikiStyles(element,raw){
   if(map[key])element.style[map[key]]=value;
  }
 }
+const wikiFileLookupCache=new Map();
+const wikiFileLookupPending=new Map();
+async function resolveWikiFile(filename){
+ const key=apiBase()+"|"+String(filename||"").trim().toLocaleLowerCase();
+ const cached=wikiFileLookupCache.get(key);
+ if(cached&&cached.expires>Date.now()){
+  if(cached.url)return {url:cached.url};
+  throw new Error("파일을 찾을 수 없습니다.");
+ }
+ if(wikiFileLookupPending.has(key))return wikiFileLookupPending.get(key);
+ const pending=api("/api/file?name="+encodeURIComponent(filename)).then(data=>{
+  if(!data.image||!data.image.url)throw new Error("파일을 찾을 수 없습니다.");
+  wikiFileLookupCache.set(key,{url:data.image.url,expires:Date.now()+5*60*1000});
+  return {url:data.image.url};
+ }).catch(error=>{
+  wikiFileLookupCache.set(key,{url:"",expires:Date.now()+20*1000});
+  throw error;
+ }).finally(()=>wikiFileLookupPending.delete(key));
+ wikiFileLookupPending.set(key,pending);
+ return pending;
+}
 function createImage(parent,fileSpec,state,markdownAlt=""){
  const parts=String(fileSpec||"").split("|"),filename=parts.shift().trim(),params={};
  parts.join("|").split("&").forEach(pair=>{const at=pair.indexOf("=");if(at>0)params[pair.slice(0,at).trim().toLowerCase()]=pair.slice(at+1).trim();else if(pair.trim())params[pair.trim().toLowerCase()]="true"});
@@ -182,7 +203,7 @@ function createImage(parent,fileSpec,state,markdownAlt=""){
  parent.append(figure);
  const fail=()=>{const broken=document.createElement("span");broken.className="broken-image";broken.textContent="[이미지 파일을 찾을 수 없음: "+filename+"]";figure.replaceWith(broken)};
  if(/^https?:\/\//i.test(filename)||filename.startsWith("/"))img.src=filename;else if(/^[a-f0-9-]{36}$/i.test(filename))img.src=apiBase()+"/media/"+filename;
- else api("/api/file?name="+encodeURIComponent(filename)).then(d=>{if(d.image&&d.image.url)img.src=d.image.url;else fail()}).catch(fail);
+ else resolveWikiFile(filename).then(file=>{img.src=file.url}).catch(fail);
  img.addEventListener("error",fail);
 }
 function footnoteReference(raw,state,parent){
@@ -205,7 +226,7 @@ function inlineRender(parent,source,state){
   else if(m[4]!==undefined){
    const raw=m[4],bar=raw.indexOf("|"),target=(bar>=0?raw.slice(0,bar):raw).trim(),label=bar>=0?raw.slice(bar+1):target;
    if(target.startsWith("분류:")){const category=target.slice(3).trim();if(category&&!state.categories.includes(category))state.categories.push(category)}
-   else if(target.startsWith(":파일:")){const a=document.createElement("a");a.href=apiBase()+"/api/file?name="+encodeURIComponent(target.slice(4));a.target="_blank";a.rel="noopener";a.textContent=label;parent.append(a)}
+   else if(target.startsWith(":파일:")){const a=document.createElement("a");a.href=apiBase()+"/api/file?name="+encodeURIComponent(target.slice(4));a.target="_blank";a.rel="noopener noreferrer";a.textContent=label;parent.append(a)}
    else{const a=document.createElement("a");a.href=target.startsWith("#")?"#"+target.slice(1):routeFor(target.split("#")[0],target.includes("#")?target.split("#").slice(1).join("#"):"");a.textContent=label;a.onclick=e=>{e.preventDefault();navigateInternal(target)};parent.append(a)}
   }
   else if(m[5]!==undefined)footnoteReference(m[5],state,parent);
