@@ -730,3 +730,36 @@ html[data-theme="dark"] .wiki-content .wiki-table th,html[data-theme="dark"] .wi
 html[data-theme="dark"] .wiki-content .wiki-fold>summary{background:#202c3d;color:#a9c7ff;border-color:#536a91}
 html[data-theme="dark"] .wiki-content .wiki-fold-content{border-left-color:#536a91}
 @media(max-width:600px){.wiki-content{font-size:15px;line-height:1.8}.wiki-content .wiki-table-scroll{margin:10px -2px 16px;width:calc(100% + 4px)}.wiki-content .wiki-table th,.wiki-content .wiki-table td{padding:7px 9px;min-width:64px;max-width:72vw;font-size:13px}.wiki-content .wiki-fold-content{padding:9px 8px}.article{min-width:0}.article-tools{gap:14px;overflow-x:auto}.header-actions{max-width:100%}}
+
+
+/* Prevent wide wiki tables from overlapping adjacent paragraphs or headings. */
+.wiki-content .wiki-table-scroll{
+  position:relative;
+  display:flow-root;
+  clear:both;
+  box-sizing:border-box;
+  height:auto;
+  min-height:0;
+  contain:layout;
+  isolation:isolate;
+}
+.wiki-content .wiki-table-scroll > table.wiki-table{
+  position:static;
+  float:none;
+  box-sizing:border-box;
+}
+.wiki-content .wiki-table-scroll + p,
+.wiki-content .wiki-table-scroll + h2,
+.wiki-content .wiki-table-scroll + h3,
+.wiki-content .wiki-table-scroll + h4,
+.wiki-content .wiki-table-scroll + h5,
+.wiki-content .wiki-table-scroll + h6{
+  clear:both;
+}
+.wiki-content .wiki-table-scroll td,
+.wiki-content .wiki-table-scroll th{
+  box-sizing:border-box;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
