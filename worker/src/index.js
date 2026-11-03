@@ -226,82 +226,116 @@ function collectCategoryTargets(source) {
   }
   return targets;
 }
-let namuPageTitleIndexCache = { expiresAt: 0, rows: [] };
-let namuPageTitleIndexPromise = null;
-function invalidateNamuServerIndexes() {
-  namuPageTitleIndexCache.expiresAt = 0;
-  namuPageTitleIndexCache.rows = [];
-  namuRenderCache.clear();
-  namuRenderPending.clear();
-  clearNamuPageResponseCache();
-}
-async function getNamuPageTitleIndex(env) {
-  if (Date.now() < namuPageTitleIndexCache.expiresAt) return namuPageTitleIndexCache.rows;
-  if (!namuPageTitleIndexPromise) {
-    namuPageTitleIndexPromise = env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 20000").all()
-      .then(result => {
-        namuPageTitleIndexCache.rows = result.results || [];
-        namuPageTitleIndexCache.expiresAt = Date.now() + 10 * 60 * 1000;
-        return namuPageTitleIndexCache.rows;
-      })
-      .finally(() => { namuPageTitleIndexPromise = null; });
+function collectWikiLinkTargets(source) {
+  const targets = new Set();
+  for (const match of String(source || "").matchAll(/\\[\\[([^\\]]+)\\]\\]/g)) {
+    let target = String(match[1] || "").split("|")[0].trim();
+    if (!target || target.startsWith("#") || /^https?:\\/\\//i.test(target)) continue;
+    const hash = target.indexOf("#");
+    if (hash >= 0) target = target.slice(0, hash).trim();
+    if (!target) continue;
+    if (/^(?:분류|category):/i.test(target)) {
+      targets.add("category:" + target.replace(/^(?:분류|category):/i, ""));
+    } else if (/^(?:파일|file):/i.test(target)) {
+      targets.add("file:" + target.replace(/^(?:파일|file):/i, ""));
+    } else {
+      targets.add(target);
+    }
   }
-  return await namuPageTitleIndexPromise;
+  return [...targets];
 }
+
+// Only load records actually referenced by this document and its transclusions.
+// The parser uses database.data.length for the page-count magic word, and lookup
+// for existence checks, so a sparse array preserves the count without loading
+// every page title into memory on each Worker isolate.
 async function buildNamuServerDatabase(env, title, content) {
-  const pageRows=await getNamuPageTitleIndex(env);
-  const records=new Map(pageRows.map(row=>[row.title,{title:row.title,data:""}]));
-  records.set(title,{title,data:String(content||"")});
+  const records = new Map([[title, { title, data: String(content || "") }]]);
+  const visitedIncludes = new Set([title]);
+  let pendingIncludes = collectIncludeTargets(content);
+  let includedCount = 0;
+  const maxIncludes = 50;
 
-  let pending=collectIncludeTargets(content);
-  let fetched=0;
-  const visited=new Set([title]);
-  for(let depth=0;depth<4&&pending.length&&fetched<50;depth++){
-    const batch=[...new Set(pending)].filter(name=>!visited.has(name)).slice(0,40);
-    pending=[];
-    if(!batch.length)break;
-    batch.forEach(name=>visited.add(name));
-    const placeholders=batch.map(()=>"?").join(",");
-    const included=await env.DB.prepare("SELECT title, content FROM pages WHERE title IN ("+placeholders+")").bind(...batch).all();
-    for(const page of included.results||[]){
-      const item={title:page.title,data:String(page.content||"")};
-      records.set(page.title,item);
-      fetched++;
-      pending.push(...collectIncludeTargets(item.data));
-      if(fetched>=50)break;
+  for (let depth = 0; depth < 4 && pendingIncludes.length && includedCount < maxIncludes; depth++) {
+    const batch = [...new Set(pendingIncludes)]
+      .filter(name => name && !visitedIncludes.has(name))
+      .slice(0, Math.min(40, maxIncludes - includedCount));
+    pendingIncludes = [];
+    if (!batch.length) break;
+    batch.forEach(name => visitedIncludes.add(name));
+    const placeholders = batch.map(() => "?").join(",");
+    const result = await env.DB.prepare(
+      "SELECT title, content FROM pages WHERE title IN (" + placeholders + ")"
+    ).bind(...batch).all();
+
+    for (const page of result.results || []) {
+      const item = { title: page.title, data: String(page.content || "") };
+      records.set(page.title, item);
+      includedCount++;
+      pendingIncludes.push(...collectIncludeTargets(item.data));
+      if (includedCount >= maxIncludes) break;
     }
   }
 
-  const allMarkup=[String(content||""),...[...records.values()].map(item=>item.data||"")].join("\n");
-  const categoryAliases = new Set();
-  for(const row of pageRows){
-    const rowTitle=String(row.title||"");
-    if(/^분류:/i.test(rowTitle))categoryAliases.add("category:"+rowTitle.replace(/^분류:/i,""));
-    else if(/^category:/i.test(rowTitle))categoryAliases.add(rowTitle);
-  }
-  for(const category of collectCategoryTargets(allMarkup)){
-    categoryAliases.add("category:"+category);
+  const allMarkup = [String(content || ""), ...[...records.values()].map(item => item.data || "")].join("\\n");
+  const linkTargets = new Set(collectWikiLinkTargets(allMarkup));
+  const categoryAliases = new Set(
+    collectCategoryTargets(allMarkup).map(name => "category:" + name)
+  );
+  for (const alias of categoryAliases) linkTargets.delete(alias);
+
+  const documentTargets = [...linkTargets].filter(name => !name.startsWith("file:") && !records.has(name));
+  const documentQueries = [];
+  for (let index = 0; index < documentTargets.length; index += 90) {
+    const batch = documentTargets.slice(index, index + 90);
+    const placeholders = batch.map(() => "?").join(",");
+    documentQueries.push(
+      env.DB.prepare("SELECT title FROM pages WHERE title IN (" + placeholders + ")")
+        .bind(...batch).all()
+    );
   }
 
-  if(/\[\[(?:파일|file):/i.test(allMarkup)){
+  const fileNames = [...linkTargets]
+    .filter(name => name.startsWith("file:"))
+    .map(name => name.slice(5))
+    .filter(Boolean);
+  let imageQueries = [];
+  if (fileNames.length) {
     await ensureImageSchema(env);
-    const [images,aliases]=await Promise.all([
-      env.DB.prepare("SELECT filename FROM images").all(),
-      env.DB.prepare("SELECT alias FROM image_aliases").all()
-    ]);
-    for(const row of images.results||[]){
-      const name=String(row.filename||"");
-      if(name)records.set("file:"+name,{title:"file:"+name,data:""});
-    }
-    for(const row of aliases.results||[]){
-      const name=String(row.alias||"");
-      if(name)records.set("file:"+name,{title:"file:"+name,data:""});
+    for (let index = 0; index < fileNames.length; index += 90) {
+      const batch = fileNames.slice(index, index + 90);
+      const placeholders = batch.map(() => "?").join(",");
+      imageQueries.push(
+        env.DB.prepare("SELECT filename FROM images WHERE filename IN (" + placeholders + ")")
+          .bind(...batch).all(),
+        env.DB.prepare("SELECT alias FROM image_aliases WHERE alias IN (" + placeholders + ")")
+          .bind(...batch).all()
+      );
     }
   }
-  const data=[...records.values()];
-  const lookup=new Map(data.map(item=>[item.title,item]));
-  for(const categoryTitle of categoryAliases)lookup.set(categoryTitle,{title:categoryTitle,data:""});
-  return {data,lookup};
+
+  const [pageCount, ...lookups] = await Promise.all([
+    env.DB.prepare("SELECT COUNT(*) AS total FROM pages").first(),
+    ...documentQueries,
+    ...imageQueries
+  ]);
+
+  for (const result of lookups) {
+    for (const row of result.results || []) {
+      const name = row.title || row.filename || row.alias;
+      if (!name) continue;
+      const key = row.title || ("file:" + (row.filename || row.alias));
+      records.set(key, { title: key, data: "" });
+    }
+  }
+  for (const categoryTitle of categoryAliases) {
+    records.set(categoryTitle, { title: categoryTitle, data: "" });
+  }
+
+  return {
+    data: new Array(Math.max(0, Number(pageCount?.total) || 0)),
+    lookup: new Map(records)
+  };
 }
 async function sanitizeServerWikiHtml(markup) {
   const input=new Response(String(markup||""),{headers:{"Content-Type":"text/html; charset=utf-8"}});
@@ -358,17 +392,56 @@ async function sanitizeServerWikiHtml(markup) {
 }
 const namuRenderCache = new Map();
 const namuRenderPending = new Map();
+// A small D1 cache makes parsed HTML reusable even after a Worker isolate is recycled.
+let namuRenderCacheSchemaPromise = null;
+async function ensureNamuRenderCacheSchema(env) {
+  if (!namuRenderCacheSchemaPromise) {
+    namuRenderCacheSchemaPromise = env.DB.prepare(
+      "CREATE TABLE IF NOT EXISTS namu_render_cache (title TEXT PRIMARY KEY NOT NULL, source_hash TEXT NOT NULL, html TEXT NOT NULL, metadata_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL)"
+    ).run().catch(error => { namuRenderCacheSchemaPromise = null; throw error; });
+  }
+  await namuRenderCacheSchemaPromise;
+}
+async function clearPersistentNamuRenderCache(env) {
+  try {
+    await ensureNamuRenderCacheSchema(env);
+    await env.DB.prepare("DELETE FROM namu_render_cache").run();
+  } catch (error) {
+    console.warn("AonWiki persistent render cache clear failed:", error);
+  }
+}
 // Cache complete document API payloads, not only parsed HTML, to avoid repeat D1 reads.
 const namuPageResponseCache = new Map();
 const namuPageResponsePending = new Map();
 function clearNamuPageResponseCache(){namuPageResponseCache.clear();namuPageResponsePending.clear();}
+function invalidateNamuServerIndexes() {
+  namuRenderCache.clear();
+  namuRenderPending.clear();
+  clearNamuPageResponseCache();
+}
 async function renderNamuMarkupOnWorker(env, title, source) {
   const text = String(source || "");
-  const cacheKey = String(title) + ":" + namuFileHash(text);
+  const cacheKey = "targeted-db-v3:" + String(title) + ":" + namuFileHash(text);
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
   const pending = (async () => {
+    try {
+      await ensureNamuRenderCacheSchema(env);
+      const stored = await env.DB.prepare(
+        "SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?"
+      ).bind(title).first();
+      if (stored && stored.source_hash === cacheKey) {
+        let metadata = {};
+        try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
+        const value = { html: String(stored.html || ""), metadata };
+        namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
+        return value;
+      }
+    } catch (error) {
+      console.warn("AonWiki persistent render cache read failed:", error);
+    }
+
     const database = await buildNamuServerDatabase(env, title, text);
     const parser = new NamuMarkBundle.NamuMark(
       text,
@@ -381,6 +454,21 @@ async function renderNamuMarkupOnWorker(env, title, source) {
     if (namuRenderCache.size > 100) {
       const oldest = namuRenderCache.keys().next().value;
       if (oldest) namuRenderCache.delete(oldest);
+    }
+    if (value.html.length <= 250000) {
+      try {
+        await ensureNamuRenderCacheSchema(env);
+        await env.DB.prepare(
+          "INSERT INTO namu_render_cache (title, source_hash, html, metadata_json, updated_at) VALUES (?, ?, ?, ?, datetime('now')) ON CONFLICT(title) DO UPDATE SET source_hash = excluded.source_hash, html = excluded.html, metadata_json = excluded.metadata_json, updated_at = excluded.updated_at"
+        ).bind(title, cacheKey, value.html, JSON.stringify(value.metadata || {})).run();
+      } catch (error) {
+        console.warn("AonWiki persistent render cache write failed:", error);
+      }
+    } else {
+      try {
+        await ensureNamuRenderCacheSchema(env);
+        await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(title).run();
+      } catch {}
     }
     return value;
   })().finally(() => namuRenderPending.delete(cacheKey));
@@ -813,29 +901,34 @@ export default {
           return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "COALESCED" });
         }
         const pending = (async () => {
-          let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
+          await ensurePageProtectionSchema(env);
+          const selectPage = async pageTitle => env.DB.prepare(
+            "SELECT p.title, p.content, p.created_at, p.updated_at, pp.level AS protectionLevel, pp.reason AS protectionReason, pp.protected_by AS protectedBy, pp.updated_at AS protectionUpdatedAt FROM pages p LEFT JOIN page_protections pp ON pp.title = p.title WHERE p.title = ?"
+          ).bind(pageTitle).first();
+          let page = await selectPage(title);
           if (!page) {
             await ensurePageAliasSchema(env);
             const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
-            if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
+            if (alias) page = await selectPage(alias.title);
           }
           if (!page) return { page: null, html: "", engine: "namumark-worker" };
-          await ensurePageProtectionSchema(env);
-          const protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first();
           const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
           return {
             page: {
-              ...page,
-              protectionLevel: protection?.level || "none",
-              protectionReason: protection?.reason || "",
-              protectedBy: protection?.protected_by || "",
-              protectionUpdatedAt: protection?.updated_at || ""
+              title: page.title,
+              content: page.content || "",
+              created_at: page.created_at,
+              updated_at: page.updated_at,
+              protectionLevel: page.protectionLevel || "none",
+              protectionReason: page.protectionReason || "",
+              protectedBy: page.protectedBy || "",
+              protectionUpdatedAt: page.protectionUpdatedAt || ""
             },
             html: rendered.html,
             engine: "namumark-worker"
           };
         })().then(value => {
-          namuPageResponseCache.set(title, { value, expiresAt: Date.now() + 2 * 60 * 1000 });
+          namuPageResponseCache.set(title, { value, expiresAt: Date.now() + 30 * 1000 });
           if (namuPageResponseCache.size > 100) namuPageResponseCache.delete(namuPageResponseCache.keys().next().value);
           return value;
         }).finally(() => namuPageResponsePending.delete(title));
