@@ -703,6 +703,20 @@ export default {
           engine: "worker-ssr"
         }, 200, { ...cors, "X-AonWiki-Render": "worker-ssr" });
       }
+      if (url.pathname === "/api/render" && request.method === "POST") {
+        if (await authRateLimited(request, env, "namumark-preview", 90, 60 * 1000)) {
+          return response({ error: "미리보기 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
+        }
+        const body = await request.json();
+        const title = cleanTitle(body.title || "미리보기") || "미리보기";
+        const content = String(body.content || "");
+        if (content.length > 200000) return response({ error: "미리보기 문서는 200,000자 이하만 지원합니다." }, 413, cors);
+        const rendered = await renderNamuMarkupOnWorker(env, title, content);
+        return response({ html: rendered.html, engine: "worker-ssr", title }, 200, {
+          ...cors,
+          "X-AonWiki-Render": "worker-ssr"
+        });
+      }
       if (url.pathname === "/api/page" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
