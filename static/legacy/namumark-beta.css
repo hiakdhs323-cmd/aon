@@ -1,8 +1,0 @@
-.namumark-beta-active .wiki-content,.namumark-beta-active{overflow-wrap:anywhere}
-.namumark-beta-active h1,.namumark-beta-active h2,.namumark-beta-active h3,.namumark-beta-active h4,.namumark-beta-active h5,.namumark-beta-active h6{scroll-margin-top:76px}
-.namumark-beta-active .footnotes,.namumark-beta-active .toc{margin:16px 0;padding:12px;border:1px solid var(--line,#a2a9b1);background:var(--panel,#f8f9fa)}
-.namumark-beta-active table{border-collapse:collapse;max-width:100%;width:auto}
-.namumark-beta-active th,.namumark-beta-active td{border:1px solid var(--line,#a2a9b1);padding:5px 9px}
-.namumark-beta-active pre{max-width:100%;overflow:auto;white-space:pre-wrap}
-.namumark-beta-active img{max-width:100%;height:auto}
-.labs-feature h3{margin:0 0 8px;font-size:17px}.labs-feature p{line-height:1.65}.labs-toggle{display:flex!important;align-items:center;gap:10px;margin:16px 0!important;padding:12px;border:1px solid var(--line,#a2a9b1);background:var(--panel,#f8f9fa);font-weight:700}.labs-toggle input{width:18px;height:18px;flex:0 0 auto}.labs-state,.labs-credit{font-size:12px;color:var(--muted,#54595d)}.namumark-beta-warning{padding:10px;border:1px solid #c62828;color:#b71c1c;background:#fff5f5}
