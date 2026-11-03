@@ -770,89 +770,17 @@ const namumarkBetaEnabled = () => localStorage.getItem(NAMUMARK_BETA_SETTING) ==
 function syncNamumarkBetaButton() {
   const button = $("namumark-beta-toggle");
   if (!button) return;
-  const enabled = namumarkBetaEnabled();
-  button.textContent = enabled ? "베타 엔진 끄기" : "베타 엔진 켜기";
-  button.setAttribute("aria-pressed", enabled ? "true" : "false");
-  button.classList.toggle("is-enabled", enabled);
+  button.textContent = "서버 렌더링";
+  button.setAttribute("aria-pressed", "true");
+  button.setAttribute("title", "모든 나무마크 문서는 Cloudflare Worker에서 파싱됩니다.");
+  button.disabled = true;
+  button.classList.add("is-enabled");
 }
 function toggleNamumarkBeta() {
-  const enabled = !namumarkBetaEnabled();
-  localStorage.setItem(NAMUMARK_BETA_SETTING, enabled ? "1" : "0");
   syncNamumarkBetaButton();
-  const state = document.querySelector(".labs-state");
-  if (state) state.textContent = enabled ? "켜짐 · 현재 문서에 바로 적용합니다." : "꺼짐 · 기존 렌더러로 돌아갑니다.";
-  if (!$("document-view").hidden && currentTitle && currentContent) {
-    loadPage(currentTitle, false);
-  } else if (!$("home-view").hidden) {
-    loadHome();
-  } else if (!$("editor-preview").hidden) {
-    renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle).catch(error => console.error(error));
-  }
 }
-$("namumark-beta-toggle")?.addEventListener("click", toggleNamumarkBeta);
 syncNamumarkBetaButton();
 let namumarkBetaModulePromise = null;
-async function renderWithNamumarkBeta(source, target, docTitle) {
-  // Check compatibility syntax before loading the WASM module. This keeps
-  // ordinary NamuWiki documents on the bundled parser without a cold download.
-  const original = String(source || "");
-  const legacySyntax = [
-    /\[\[[\s\S]*?\]\]/,                 // internal/interwiki links, categories, files
-    /'''[\s\S]*?'''|''[\s\S]*?''|__(?:[\s\S]*?)__|~~[\s\S]*?~~/,
-    /(?:^|\n)\s*={2,}[^\n]+={2,}\s*(?:$|\n)/, // headings
-    /(?:^|\n)\s*\|\|[\s\S]*?\|\|\s*(?:$|\n)/, // tables
-    /\[\*[^\]]*\]/,                         // footnotes
-    /\{\{\{[\s\S]*?\}\}\}/,             // code, folding, style, wiki blocks
-    /\[(?:목차|br|clearfix|date|datetime|pagecount|ruby|anchor|각주|tableofcontents)(?:\([^\]]*\))?\]/i,
-    /\[https?:\/\/[^\]]+\]/i,                // external links
-    /(?:^|\n)\s*(?:\*+|#+|[0-9]+\.)\s+/,          // lists
-    /\[\[분류:[^\]]+\]\]/i,
-    /\[\[파일:[^\]]+\]\]/i,
-    /\$\$[\s\S]+?\$\$|\\\([\s\S]+?\\\)/ // math
-  ];
-  if (legacySyntax.some(pattern => pattern.test(original))) {
-    const database = await getNamuDatabase(original, docTitle);
-    const parser = new window.NamuMarkBundle.NamuMark(
-      original,
-      { docName: docTitle, useTocSet: "default" },
-      database
-    );
-    const legacyResult = parser.parse();
-    const legacyHolder = document.createElement("div");
-    legacyHolder.innerHTML = legacyResult[0] || "";
-    sanitizeNamuOutput(legacyHolder, docTitle);
-    target.replaceChildren(...legacyHolder.childNodes);
-    moveWikiTocToTop(target);
-    target.classList.add("namumark-rendered");
-    target.classList.remove("namumark-beta-active");
-    enhanceFootnoteHover(target);
-    if (window.katex) {
-      target.querySelectorAll('span[id*="opennamu_math_"]').forEach(element => {
-        try { window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" }); }
-        catch (error) { console.warn("KaTeX rendering skipped", error); }
-      });
-    }
-    if (window.hljs) target.querySelectorAll("pre code").forEach(code => window.hljs.highlightElement(code));
-    return;
-  }
-
-  if (!namumarkBetaModulePromise) {
-    namumarkBetaModulePromise = import("./namumark-beta.js?v=20261102-r1")
-      .then(async module => { await module.initWasm(); return module; })
-      .catch(error => { namumarkBetaModulePromise = null; throw error; });
-  }
-  const module = await namumarkBetaModulePromise;
-  const html = module.render(original);
-  const holder = document.createElement("div");
-  holder.className = "namumark-beta-scope";
-  holder.innerHTML = html;
-  sanitizeNamuOutput(holder, docTitle);
-  normalizeBetaLinks(holder, docTitle);
-  target.replaceChildren(...holder.childNodes);
-  moveWikiTocToTop(target);
-  target.classList.add("namumark-rendered", "namumark-beta-active");
-  enhanceFootnoteHover(target);
-}
 function moveWikiTocToTop(root) {
   if (!root || !root.querySelector) return;
   const folded = root.querySelector(".opennamu_TOC_fold");
@@ -917,65 +845,36 @@ function prepareServerRenderedMarkup(root,docTitle){
     });
   }
 }
+const serverRenderVersions = new WeakMap();
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
-  if (namumarkBetaEnabled()) {
-    try {
-      await renderWithNamumarkBeta(source, target, docTitle);
-      return;
-    } catch (error) {
-      console.error("나무마크 베타 엔진 오류:", error);
-      target.classList.remove("namumark-beta-active");
-      target.replaceChildren();
-      const warning = document.createElement("p");
-      warning.className = "namumark-beta-warning";
-      warning.textContent = "실험실 나무마크 엔진을 불러오지 못했습니다. 기존 엔진으로 표시합니다.";
-      target.append(warning);
-    }
-  }
-  if (!window.NamuMarkBundle || !window.NamuMarkBundle.NamuMark) {
-    renderContent(source, target);
-    return;
-  }
+  if (!target || !(target instanceof Element)) throw new TypeError("SSR 대상 요소가 필요합니다.");
+  const version = (serverRenderVersions.get(target) || 0) + 1;
+  serverRenderVersions.set(target, version);
+  target.setAttribute("aria-busy", "true");
   try {
-    const database = await getNamuDatabase(source, docTitle);
-    const parser = new window.NamuMarkBundle.NamuMark(
-      String(source || ""),
-      { docName: docTitle, useTocSet: "default" },
-      database
-    );
-    const result = parser.parse();
-    const holder = document.createElement("div");
-    holder.innerHTML = result[0] || "";
-    sanitizeNamuOutput(holder, docTitle);
-    target.replaceChildren(...holder.childNodes);
-    moveWikiTocToTop(target);
-    target.classList.add("namumark-rendered");
-    enhanceFootnoteHover(target);
-    if (window.katex) {
-      target.querySelectorAll('span[id*="opennamu_math_"]').forEach(element => {
-        try { window.katex.render(element.textContent || "", element, { throwOnError: false, strict: "ignore" }); }
-        catch (error) { console.warn("KaTeX rendering skipped", error); }
-      });
-      target.querySelectorAll(".namu-latex-block").forEach(element => {
-        try { window.katex.render(element.textContent || "", element, { displayMode: true, throwOnError: false, strict: "ignore" }); }
-        catch (error) { console.warn("LaTeX block rendering skipped", error); }
-      });
-    }
-    if (window.hljs) {
-      target.querySelectorAll("pre code").forEach(code => {
-        const language = (code.className || "").trim().split(/\\s+/)[0];
-        if (language && !language.startsWith("language-")) code.classList.add("language-" + language);
-        window.hljs.highlightElement(code);
-      });
-      if (typeof window.hljs.initLineNumbersOnLoad === "function") window.hljs.initLineNumbersOnLoad();
-    }
+    const data = await api("/api/render", {
+      method: "POST",
+      body: JSON.stringify({
+        title: String(docTitle || "미리보기").slice(0, 120),
+        content: String(source || "")
+      })
+    });
+    if (serverRenderVersions.get(target) !== version) return;
+    target.innerHTML = String(data.html || "");
+    prepareServerRenderedMarkup(target, docTitle);
+    target.dataset.renderEngine = data.engine || "worker-ssr";
   } catch (error) {
-    console.error("NamuMark parse failed", error);
-    target.classList.remove("namumark-rendered");
-    renderContent(source, target);
+    if (serverRenderVersions.get(target) !== version) return;
+    target.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "namumark-beta-warning";
+    message.textContent = "서버 문서 렌더링에 실패했습니다: " + String(error.message || error);
+    target.append(message);
+    throw error;
+  } finally {
+    if (serverRenderVersions.get(target) === version) target.removeAttribute("aria-busy");
   }
 }
-
 async function loadRecentChanges(pushRoute=true){
  const requestId=++pageNavigationSequence;
  if(pushRoute)history.pushState(null,"","#/recent");
@@ -1548,13 +1447,25 @@ $("editor-tab-write").onclick = () => {
   $("editor-tab-write").classList.add("active");
   $("editor-tab-preview").classList.remove("active");
 };
+let editorPreviewTimer = null;
+function scheduleServerEditorPreview() {
+  clearTimeout(editorPreviewTimer);
+  editorPreviewTimer = setTimeout(() => {
+    if ($("editor-preview").hidden) return;
+    renderNamuMarkup(
+      $("editor-content").value,
+      $("editor-preview"),
+      $("editor-title").value.trim() || editorOriginalTitle
+    ).catch(error => console.error("Worker SSR preview failed", error));
+  }, 350);
+}
 $("editor-tab-preview").onclick = () => {
   $("editor-code-wrap").hidden = true;
   $("editor-content").hidden = true;
   $("editor-preview").hidden = false;
   $("editor-tab-preview").classList.add("active");
   $("editor-tab-write").classList.remove("active");
-  renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle);
+  renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle).catch(error => console.error("Worker SSR preview failed", error));
 };
 $("editor-content").addEventListener("keydown", event => {
   if (event.key === "Tab") {
@@ -1611,9 +1522,7 @@ function saveEditorDraft() {
 }
 $("editor-title").addEventListener("input", () => {
   saveEditorDraft();
-  if (!$("editor-preview").hidden) {
-    renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle);
-  }
+  if (!$("editor-preview").hidden) scheduleServerEditorPreview();
 });
 $("editor-content").addEventListener("input", () => {
   const content=$("editor-content").value;
@@ -1621,6 +1530,7 @@ $("editor-content").addEventListener("input", () => {
   $("editor-status").textContent=content.length>200000?"문서가 200,000자를 초과했습니다.":"";
   saveEditorDraft();
   updateEditorHighlight();
+  if (!$("editor-preview").hidden) scheduleServerEditorPreview();
 });
 
 function escapeHighlightText(value) {
