@@ -20,6 +20,8 @@ jobs:
           node-version: 22
       - name: Bundle parser for browser
         run: npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=iife --global-name=NamuMarkBundle --target=es2020 --outfile=namumark-parser.js
+      - name: Bundle parser for Cloudflare Worker
+        run: npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=esm --target=es2020 --outfile=worker/src/namumark-parser.js
       - name: Commit browser bundle
         run: |
           git config user.name "github-actions[bot]"
