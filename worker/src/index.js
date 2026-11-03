@@ -267,7 +267,7 @@ function buildAdminLinkColorMarkup(html, colors) {
   // Explicit NamuMark text colors take precedence over page-wide link colors,
   // including configured visited and hover states.
   rules.push('.aonwiki-page-content span[style*="color"] a, .aonwiki-page-content span[style*="color"] a:visited, .aonwiki-page-content span[style*="color"] a:hover{color:inherit !important}');
-  rules.push('html[data-theme="light"] .aonwiki-page-content table td a, html[data-theme="light"] .aonwiki-page-content table td a:visited, html[data-theme="light"] .aonwiki-page-content table td a:hover, html[data-theme="dark"] .aonwiki-page-content table td a, html[data-theme="dark"] .aonwiki-page-content table td a:visited, html[data-theme="dark"] .aonwiki-page-content table td a:hover{color:inherit !important}');
+  rules.push('html[data-theme="light"] .aonwiki-page-content table td a, html[data-theme="light"] .aonwiki-page-content table td a:visited, html[data-theme="light"] .aonwiki-page-content table td a:hover, html[data-theme="light"] .aonwiki-page-content table th a, html[data-theme="light"] .aonwiki-page-content table th a:visited, html[data-theme="light"] .aonwiki-page-content table th a:hover, html[data-theme="dark"] .aonwiki-page-content table td a, html[data-theme="dark"] .aonwiki-page-content table td a:visited, html[data-theme="dark"] .aonwiki-page-content table td a:hover, html[data-theme="dark"] .aonwiki-page-content table th a, html[data-theme="dark"] .aonwiki-page-content table th a:visited, html[data-theme="dark"] .aonwiki-page-content table th a:hover{color:inherit !important}');
   return "<style>" + rules.join("\n") + "</style><div class=\"aonwiki-page-content\">" + String(html || "") + "</div>";
 }
 async function getPageLinkColors(env, title) {
