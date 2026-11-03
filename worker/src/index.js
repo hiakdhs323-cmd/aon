@@ -228,9 +228,9 @@ function collectCategoryTargets(source) {
 }
 function collectWikiLinkTargets(source) {
   const targets = new Set();
-  for (const match of String(source || "").matchAll(/\\[\\[([^\\]]+)\\]\\]/g)) {
+  for (const match of String(source || "").matchAll(/\[\[([^\]]+)\]\]/g)) {
     let target = String(match[1] || "").split("|")[0].trim();
-    if (!target || target.startsWith("#") || /^https?:\\/\\//i.test(target)) continue;
+    if (!target || target.startsWith("#") || /^https?:\/\//i.test(target)) continue;
     const hash = target.indexOf("#");
     if (hash >= 0) target = target.slice(0, hash).trim();
     if (!target) continue;
@@ -277,7 +277,7 @@ async function buildNamuServerDatabase(env, title, content) {
     }
   }
 
-  const allMarkup = [String(content || ""), ...[...records.values()].map(item => item.data || "")].join("\\n");
+  const allMarkup = [String(content || ""), ...[...records.values()].map(item => item.data || "")].join("\n");
   const linkTargets = new Set(collectWikiLinkTargets(allMarkup));
   const categoryAliases = new Set(
     collectCategoryTargets(allMarkup).map(name => "category:" + name)
@@ -299,7 +299,7 @@ async function buildNamuServerDatabase(env, title, content) {
     .filter(name => name.startsWith("file:"))
     .map(name => name.slice(5))
     .filter(Boolean);
-  let imageQueries = [];
+  const imageQueries = [];
   if (fileNames.length) {
     await ensureImageSchema(env);
     for (let index = 0; index < fileNames.length; index += 90) {
@@ -322,10 +322,8 @@ async function buildNamuServerDatabase(env, title, content) {
 
   for (const result of lookups) {
     for (const row of result.results || []) {
-      const name = row.title || row.filename || row.alias;
-      if (!name) continue;
       const key = row.title || ("file:" + (row.filename || row.alias));
-      records.set(key, { title: key, data: "" });
+      if (key) records.set(key, { title: key, data: "" });
     }
   }
   for (const categoryTitle of categoryAliases) {
