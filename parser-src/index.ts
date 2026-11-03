@@ -1386,8 +1386,10 @@ try {
         const listDataStr = listData.replace(listSubRegex, intToMatch());
 
         const listEnd = (listDataMatch.index || 0) + listDataMatch[0].length;
-        const hasFollowingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim().length > 0;
-        const listEndDivider = listDataMatch[3] && hasFollowingContent ? "<hr>" : "";
+        const isUnorderedList = /(?:^|\\n)\\s*\\*/.test(listData);
+        const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
+        const hasFollowingContent = followingContent.length > 0;
+        const listEndDivider = isUnorderedList && hasFollowingContent ? "<hr>" : "";
         this.renderData = this.renderData.replace(listRegex, "\n<front_br><ul>" + listDataStr + "</ul>" + listEndDivider + "<back_br>\n");
       }
 
