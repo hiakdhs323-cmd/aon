@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-const api = (process.env.AON_API_ORIGIN || "https://aon.hiakdhs323.workers.dev").replace(/\\/$/, "");
+const api = (process.env.AON_API_ORIGIN || "https://aon.hiakdhs323.workers.dev").replace(/\/$/, "");
 const wasmBytes = await readFile(".cache/namumark.wasm");
 const module = await WebAssembly.compile(wasmBytes);
 const response = await fetch(api + "/api/page-index");
