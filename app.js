@@ -579,13 +579,35 @@ function moveWikiTocToTop(root) {
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
   root.querySelectorAll("table").forEach(table=>{
-    const floatValue=(table.style.float||"").toLowerCase();
-    if((floatValue==="left"||floatValue==="right")&&!table.nextElementSibling?.classList.contains("wiki-float-clear")){
-      const clear=document.createElement("div");
-      clear.className="wiki-float-clear";
-      clear.setAttribute("aria-hidden","true");
-      table.after(clear);
+    // A nested table is part of its cell; do not create a block wrapper inside a cell.
+    if(table.closest("td,th"))return;
+    let floatHost=(table.style.float==="left"||table.style.float==="right")?table:null;
+    if(!floatHost){
+      for(let parent=table.parentElement;parent&&parent!==root;parent=parent.parentElement){
+        const direction=(parent.style.float||"").toLowerCase();
+        if(direction==="left"||direction==="right"){floatHost=parent;break}
+        if(parent.matches(".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap"))break;
+      }
     }
+    if(floatHost){
+      floatHost.classList.add(floatHost===table?"wiki-float-table":"wiki-float-host");
+      if(!floatHost.nextElementSibling?.classList.contains("wiki-float-clear")){
+        const clear=document.createElement("div");
+        clear.className="wiki-float-clear";
+        clear.setAttribute("aria-hidden","true");
+        floatHost.after(clear);
+      }
+      return;
+    }
+    const parent=table.parentElement;
+    if(parent?.matches(".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap")){
+      parent.classList.add("wiki-table-wrap");
+      return;
+    }
+    const wrapper=document.createElement("div");
+    wrapper.className="wiki-table-wrap";
+    table.before(wrapper);
+    wrapper.append(table);
   });
   moveWikiTocToTop(root);
   root.classList.add("namumark-rendered");
