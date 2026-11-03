@@ -1063,6 +1063,38 @@ $("admin-token-rotate").onclick=async()=>{
   $("dialog-body").append(copy);
  }catch(error){$("dialog-status").textContent=error.message}
 };
+$("namumark-migrate").onclick=async()=>{
+ if(!isWikiAdmin){$("dialog-status").textContent="위키 관리자 권한이 필요합니다.";return}
+ if(!confirm("기존 문서 문법을 새 uiovasot NamuMark 엔진 문법으로 검사하고 변환할까요? 먼저 미리보기 검사를 수행합니다. 변환 전 원본은 별도 백업과 문서 역사에 보존됩니다."))return;
+ try{
+  $("message").textContent="문서 문법을 검사하는 중입니다…";
+  const preview=await api("/api/admin/migrate-namumark",{method:"POST",body:JSON.stringify({apply:false,limit:500})});
+  const counts=preview.counts||{};
+  const ready=Number(counts.ready||0);
+  const manual=Number(counts["manual-review-required"]||0);
+  const already=Number(counts["already-compatible"]||0);
+  if(!ready){
+   $("message").textContent="검사 완료 · 자동 변환 가능 "+ready+"개 · 수동 검토 "+manual+"개 · 이미 호환 "+already+"개";
+   showDialog("NamuMark 문서 검사 결과",[],async()=>{$("dialog").close()}, "닫기");
+   const list=$("dialog-body");
+   addText(list,"p","자동 변환 가능: "+ready+"개").className="compare-summary";
+   addText(list,"p","수동 검토 필요: "+manual+"개").className="dialog-help";
+   addText(list,"p","이미 새 엔진과 호환: "+already+"개").className="dialog-help";
+   (preview.report||[]).filter(item=>item.status==="manual-review-required").slice(0,30).forEach(item=>addText(list,"p",item.title+" — "+(item.unresolved||[]).join(", ")));
+   return;
+  }
+  if(!confirm("검사 결과 자동 변환 가능한 문서가 "+ready+"개입니다. 원본 백업을 생성한 뒤 해당 문서만 실제로 수정할까요? 수동 검토 대상 "+manual+"개는 건드리지 않습니다."))return;
+  const applied=await api("/api/admin/migrate-namumark",{method:"POST",body:JSON.stringify({apply:true,limit:500})});
+  const done=Number(applied.counts?.migrated||0);
+  const failed=Number(applied.counts?.["manual-review-required"]||0)+Number(applied.counts?.error||0);
+  $("message").textContent="마이그레이션 완료 · 수정 "+done+"개 · 수동 검토/오류 "+failed+"개";
+  showDialog("NamuMark 마이그레이션 완료",[],async()=>{$("dialog").close();if(currentTitle)await loadPage(currentTitle,false);else await loadHome()}, "닫기");
+  const list=$("dialog-body");
+  addText(list,"p","새 엔진으로 변환된 문서: "+done+"개").className="compare-summary";
+  addText(list,"p","수동 검토 또는 오류: "+failed+"개").className="dialog-help";
+  (applied.report||[]).filter(item=>item.status==="manual-review-required"||item.status==="error").slice(0,40).forEach(item=>addText(list,"p",item.title+" — "+(item.error||(item.unresolved||[]).join(", "))));
+ }catch(error){$("message").textContent="마이그레이션 실패: "+error.message}
+};
 $("page-protection").onclick=()=>{
  if(!isWikiAdmin||!currentTitle)return;
  showDialog("문서 편집 보호",[
