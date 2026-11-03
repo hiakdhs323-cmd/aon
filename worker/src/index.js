@@ -429,11 +429,11 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + '</span>')
     .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
     .replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + '</article>')
-    .replace('id="edit" class="nav-item" type="button" hidden', 'id="edit" class="nav-item" type="button"' + (found ? "" : ' hidden'))
+    .replace('id="edit" class="nav-item" type="button" hidden', 'id="edit" class="nav-item" type="button"')
     .replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
-  if (!found) html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
+  if (!found) { html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden'); html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>'); }
   html = html.replace('<script defer src="' + origin + '/app.js', '<script>window.__AONWIKI_SSR__=' + safeJsonForHtml(state) + ';</script>' + "\n" + '<script defer src="' + origin + '/app.js');
   return new Response(html, {
     status: found ? 200 : 404,
@@ -459,7 +459,7 @@ export default {
         try { title = decodeURIComponent(url.pathname.slice(3)); }
         catch { return new Response("잘못된 문서 주소입니다.", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
         title = cleanTitle(title);
-        if (!title || title.includes("/") || title.includes(String.fromCharCode(92))) return new Response("잘못된 문서 주소입니다.", { status: 400 });
+        if (!title) return new Response("잘못된 문서 주소입니다.", { status: 400 });
         return await renderFullWikiDocument(request, env, title);
       }
       if (request.method === "GET" && url.pathname === "/") {
