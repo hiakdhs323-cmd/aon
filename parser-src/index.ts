@@ -1386,10 +1386,12 @@ try {
         const listDataStr = listData.replace(listSubRegex, intToMatch());
 
         const listEnd = (listDataMatch.index || 0) + listDataMatch[0].length;
-        const isUnorderedList = listData.split("\n").some(line => /^\s*\*/.test(line));
+        const isUnorderedList = /^\s*\*/m.test(listData);
         const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
         const hasFollowingContent = followingContent.length > 0;
-        const listEndDivider = isUnorderedList && hasFollowingContent ? "<hr>" : "";
+        const listEndDivider = isUnorderedList && hasFollowingContent
+          ? '<div class="wiki-list-end-divider" aria-hidden="true"></div>'
+          : "";
         this.renderData = this.renderData.replace(listRegex, "\n<front_br><ul>" + listDataStr + "</ul>" + listEndDivider + "<back_br>\n");
       }
 
