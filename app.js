@@ -22,7 +22,8 @@ $("theme-toggle").addEventListener("click", () => {
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
-let currentTitle="",currentContent="",currentProtection={level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+const initialSsrState=window.__AONWIKI_SSR__||null;
+let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){return "#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
@@ -156,7 +157,7 @@ async function loadHome(){
     addText(list,"p",error.message).className="empty-list";
   }
 }
-function openPage(title,anchor=""){title=String(title||"").trim();if(!title||title==="대문"){showHome(true);return}history.pushState(null,"",routeFor(title,anchor));loadPage(title,false,anchor)}
+function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){location.assign("/");return}const target="/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"");location.assign(target)}
 function readRoute(){
  const hash=location.hash||"#/";
  if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
@@ -579,7 +580,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     if (serverRenderVersions.get(target) !== version) return;
     target.innerHTML = String(data.html || "");
     prepareServerRenderedMarkup(target, docTitle);
-    target.dataset.renderEngine = data.engine || "worker-ssr";
+    target.dataset.renderEngine = data.engine || "namumark-worker";
   } catch (error) {
     if (serverRenderVersions.get(target) !== version) return;
     target.replaceChildren();
@@ -1004,16 +1005,16 @@ $("settings").onclick=()=>{
  $("dialog-body").append(note);
 };
 $("labs").onclick=()=>{
-  showDialog("실험실 · 렌더링",[],async()=>{$("dialog").close()},"닫기");
+  showDialog("정식 나무마크 엔진",[],async()=>{$("dialog").close()},"닫기");
   const body=$("dialog-body");body.replaceChildren();
   const card=document.createElement("section");card.className="labs-feature";
-  addText(card,"h3","서버 측 나무마크 렌더링");
-  addText(card,"p","문서 본문, 대문, 분류 설명, 편집 미리보기의 나무마크 파싱은 Cloudflare Worker에서 처리합니다. 브라우저는 서버가 생성한 HTML을 표시하고 각주·접기·문서 이동 같은 화면 상호작용만 연결합니다.");
+  addText(card,"h3","Worker 정식 렌더링 엔진");
+  addText(card,"p","문서 주소(/w/문서명)를 열면 Cloudflare Worker가 D1에서 문서를 조회하고 정식 나무마크 엔진으로 파싱·정화한 뒤, 공통 HTML 셸과 문서 본문을 합친 완전한 HTML 문서를 응답합니다. 브라우저는 전달받은 문서에 각주·접기 등의 상호작용만 연결합니다. 편집기 미리보기는 별도의 JSON 렌더링 API를 사용합니다.");
   const label=document.createElement("label");label.className="labs-toggle";
   const input=document.createElement("input");input.type="checkbox";input.checked=true;input.disabled=true;
-  const textLabel=document.createElement("span");textLabel.textContent="Worker SSR 사용 중";
+  const textLabel=document.createElement("span");textLabel.textContent="서버에서 완성한 전체 문서 HTML 응답";
   label.append(input,textLabel);card.append(label);
-  const state=addText(card,"p","활성화됨 · 브라우저에서 나무마크를 파싱하지 않습니다.");state.className="labs-state";
+  const state=addText(card,"p","정식 엔진 활성화됨 · 문서 첫 화면을 브라우저에서 다시 파싱하거나 재구성하지 않습니다.");state.className="labs-state";
   body.append(card);
 };
 async function editHomepage(){
@@ -1385,7 +1386,7 @@ $("categories").onclick=()=>loadCategoryIndex(true);
 $("random-page").onclick=()=>openRandomPage();
 $("new").onclick=()=>editPage("","");
 $("home-new").onclick=()=>editPage("","");
-$("edit").onclick=()=>editPage();
+$("edit").onclick=()=>editPage(initialSsrState&&!initialSsrState.exists?"":currentTitle,initialSsrState&&!initialSsrState.exists?"":currentContent);
 $("heading-edit").onclick=()=>editPage();
 async function searchFor(query){
  const q=String(query||"").trim();if(!q)return;
@@ -1641,7 +1642,8 @@ $("file").onchange=async()=>{
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
-readRoute();
+if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){prepareServerRenderedMarkup($("article"),currentTitle);if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));}
+if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity();
 startLivePageWatcher();
 

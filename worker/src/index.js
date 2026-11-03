@@ -369,6 +369,84 @@ async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+function safeJsonForHtml(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+}
+function rewriteFrontendAssets(html, frontendOrigin) {
+  const base = frontendOrigin.replace(/\/$/, "") + "/";
+  return html.replace(/((?:href|src)=["'])(style\.css|namumark-beta\.css|app\.js)([^"']*)(["'])/g,
+    (_, prefix, file, query, suffix) => prefix + base + file + query + suffix);
+}
+async function loadFrontendShell(env) {
+  const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+  const shellResponse = await fetch(origin + "/", { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } });
+  if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
+  const shell = await shellResponse.text();
+  if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
+  return { shell: rewriteFrontendAssets(shell, origin), origin };
+}
+async function findWikiPage(env, title) {
+  let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
+  if (!page) {
+    await ensurePageAliasSchema(env);
+    const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+    if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
+  }
+  return page;
+}
+async function renderFullWikiDocument(request, env, title) {
+  const { shell, origin } = await loadFrontendShell(env);
+  const page = await findWikiPage(env, title);
+  const found = Boolean(page);
+  const actualTitle = found ? page.title : title;
+  const rendered = found ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "") : { html: "" };
+  let protection = null;
+  if (found) {
+    await ensurePageProtectionSchema(env);
+    protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(actualTitle).first();
+  }
+  const titleText = found ? actualTitle : actualTitle + " (문서 없음)";
+  const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "아직 작성되지 않은 문서입니다.";
+  const state = {
+    title: actualTitle,
+    content: found ? String(page.content || "") : "",
+    protection: { level: protection?.level || "none", reason: protection?.reason || "" },
+    exists: found
+  };
+  const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
+  const protectionMessage = protectionLabel
+    ? (protection?.reason || (protection.level === "admin" ? "이 문서는 관리자만 편집할 수 있습니다." : "이 문서는 로그인한 회원만 편집할 수 있습니다."))
+    : "";
+  let html = shell
+    .replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
+    .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#ffffff">' + "\n" + '<meta name="description" content="' + escapeHtml(description) + '">' + "\n" + '<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">' + "\n" + '<meta property="og:description" content="' + escapeHtml(description) + '">' + "\n" + '<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">')
+    .replace("<body>", '<body data-ssr-page="true">')
+    .replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>')
+    .replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">')
+    .replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + '</h1>')
+    .replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + '</span>')
+    .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
+    .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
+    .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
+    .replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + '</article>')
+    .replace('id="edit" class="nav-item" type="button" hidden', 'id="edit" class="nav-item" type="button"')
+    .replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : ' hidden'))
+    .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
+    .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
+  if (!found) { html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden'); html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>'); }
+  html = html.replace('<script defer src="' + origin + '/app.js', '<script>window.__AONWIKI_SSR__=' + safeJsonForHtml(state) + ';</script>' + "\n" + '<script defer src="' + origin + '/app.js');
+  return new Response(html, {
+    status: found ? 200 : 404,
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=30, s-maxage=120", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-AonWiki-Render": "full-document" }
+  });
+}
+
 async function passwordHash(password, salt) {
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: 100000, hash: "SHA-256" }, material, 256);
@@ -382,6 +460,18 @@ export default {
     const declaredLength = Number(request.headers.get("Content-Length") || 0);
     if (declaredLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     try {
+      if (request.method === "GET" && url.pathname.startsWith("/w/")) {
+        let title = "";
+        try { title = decodeURIComponent(url.pathname.slice(3)); }
+        catch { return new Response("잘못된 문서 주소입니다.", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
+        title = cleanTitle(title);
+        if (!title) return new Response("잘못된 문서 주소입니다.", { status: 400 });
+        return await renderFullWikiDocument(request, env, title);
+      }
+      if (request.method === "GET" && url.pathname === "/") {
+        const { shell } = await loadFrontendShell(env);
+        return new Response(shell, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60", "X-AonWiki-Render": "shell" } });
+      }
       if (url.pathname === "/api/logout" && request.method === "POST") {
         const authorization = request.headers.get("Authorization") || "";
         if (authorization.startsWith("Bearer ")) {
@@ -689,7 +779,7 @@ export default {
           const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
           if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
         }
-        if (!page) return response({ page: null, html: "", engine: "worker-ssr" }, 200, cors);
+        if (!page) return response({ page: null, html: "", engine: "namumark-worker" }, 200, cors);
         await ensurePageProtectionSchema(env);
         const protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first();
         const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
@@ -702,8 +792,8 @@ export default {
             protectionUpdatedAt: protection?.updated_at || ""
           },
           html: rendered.html,
-          engine: "worker-ssr"
-        }, 200, { ...cors, "X-AonWiki-Render": "worker-ssr" });
+          engine: "namumark-worker"
+        }, 200, { ...cors, "X-AonWiki-Render": "namumark-worker" });
       }
       if (url.pathname === "/api/render" && request.method === "POST") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
@@ -714,9 +804,9 @@ export default {
         const content = String(body.content || "");
         if (content.length > 200000) return response({ error: "미리보기 문서는 200,000자 이하만 지원합니다." }, 413, cors);
         const rendered = await renderNamuMarkupOnWorker(env, title, content);
-        return response({ html: rendered.html, engine: "worker-ssr", title }, 200, {
+        return response({ html: rendered.html, engine: "namumark-worker", title }, 200, {
           ...cors,
-          "X-AonWiki-Render": "worker-ssr"
+          "X-AonWiki-Render": "namumark-worker"
         });
       }
       if (url.pathname === "/api/page" && request.method === "GET") {
