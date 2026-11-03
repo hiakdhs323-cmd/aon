@@ -8,6 +8,7 @@
 <svelte:head>
   <title>{documentTitle}</title>
   <meta name="aonwiki-ssr" content={JSON.stringify(ssrState)} />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="https://uiovasot.github.io/namumark/namumark.css" />
   <link rel="stylesheet" href="/legacy/style.css?v=sveltekit-1" />
   <link rel="stylesheet" href="/legacy/namumark-beta.css" />
