@@ -637,40 +637,57 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 /* NamuWiki-inspired article chrome and navigation */
 .document-view{background:var(--wiki-panel);border:1px solid var(--wiki-border);border-radius:3px;padding:18px 22px;box-shadow:0 1px 2px rgba(0,0,0,.035)}
 .document-view>.document-toolbar,.document-view>.document-tabs{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:0 0 10px;margin:0 0 14px;border-bottom:1px solid var(--wiki-border)}
-.document-view .breadcrumbs{margin-bottom:12px}
-.document-view #title{font-size:27px;font-weight:600;line-height:1.35;letter-spacing:-.45px}
-.wiki-content{font-size:15px;line-height:1.65}
-.wiki-content a{color:var(--wiki-link);text-decoration:none}
-.wiki-content a:hover{text-decoration:underline}
-.wiki-content table{border-collapse:collapse;max-width:100%;font-size:14px}
-.wiki-content th{background:var(--wiki-panel-soft);font-weight:700}
-.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:7px 10px}
-.wiki-content .wiki-table-wrap{max-width:100%;overflow-x:auto}
-/* Document typography and stable table layout */
-.wiki-content{font-size:16px;line-height:1.75}
-.wiki-content p{line-height:1.75}
-.wiki-content table{display:table;width:max-content;min-width:100%;max-width:none;table-layout:auto;border-collapse:collapse}
-.wiki-content th,.wiki-content td{white-space:normal;overflow-wrap:anywhere;word-break:normal;vertical-align:top}
-@media(max-width:700px){
- .document-view{padding:13px 12px;border-left:0;border-right:0;border-radius:0}
- .document-view #title{font-size:23px}
- .wiki-content{font-size:15.5px;line-height:1.75;max-width:100%;overflow-x:auto}
- .wiki-content table{display:table;width:max-content;min-width:100%;max-width:none;font-size:13px}
- .wiki-content th,.wiki-content td{padding:6px 8px}
- .site-header{gap:8px;padding-left:10px;padding-right:10px;flex-wrap:wrap}
- .searchbar{order:3;flex-basis:100%;max-width:none;margin:0}
- .header-actions{margin-left:auto}
-}
-
-
-/* Clickable document breadcrumb trail and safe floated infobox layout */
-.document-view .breadcrumbs{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:20px}
+.document-view .breadcrumbs{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:20px;margin-bottom:12px}
 .document-view .breadcrumbs a{color:var(--wiki-link);text-decoration:none}
 .document-view .breadcrumbs a:hover{text-decoration:underline}
 .document-view .breadcrumbs span{color:var(--wiki-muted)}
 .document-view .breadcrumbs span:last-child{color:var(--wiki-text);font-weight:600}
-.wiki-content .wiki-float-clear{display:block;clear:both;width:100%;height:0;margin:0;padding:0}
-.wiki-content table{width:auto;min-width:0;max-width:100%;table-layout:auto;overflow-wrap:anywhere}
-.wiki-content th,.wiki-content td{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
-.wiki-content .table_safe,.wiki-content .wiki-table-scroll,.wiki-content .wiki-table,.wiki-content .wiki-table-wrap{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden}
-@media(max-width:700px){.wiki-content table{width:auto;min-width:0;max-width:100%;font-size:13px}}
+.document-view #title{font-size:27px;font-weight:600;line-height:1.35;letter-spacing:-.45px}
+.wiki-content{font-size:16px;line-height:1.75;max-width:100%;overflow-wrap:anywhere}
+.wiki-content p{line-height:1.75}
+.wiki-content a{color:var(--wiki-link);text-decoration:none}
+.wiki-content a:hover{text-decoration:underline}
+
+/* Normal tables get their own scroll container; they never sit over prose. */
+.wiki-content .wiki-table-wrap,
+.wiki-content .table_safe,
+.wiki-content .wiki-table-scroll,
+.wiki-content .wiki-table{
+ display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+ margin:12px 0;clear:both;overscroll-behavior-x:contain;
+}
+.wiki-content .wiki-table-wrap table,
+.wiki-content .table_safe table,
+.wiki-content .wiki-table-scroll table,
+.wiki-content .wiki-table table{
+ display:table;width:max-content;min-width:100%;max-width:none;
+ margin:0;border-collapse:collapse;table-layout:auto;font-size:14px;
+}
+.wiki-content table{border-collapse:collapse;width:auto;min-width:0;max-width:100%;margin:12px 0;font-size:14px;table-layout:auto}
+.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:7px 10px;vertical-align:top;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+.wiki-content th{background:var(--wiki-panel-soft);font-weight:700}
+
+/* Floated infoboxes stay on the side on desktop, then following prose is cleared below them. */
+.wiki-content .wiki-float-table{float:right;width:auto;min-width:0;max-width:48%;margin:0 0 12px 16px;table-layout:fixed}
+.wiki-content .wiki-float-host{display:block;float:right;width:auto;min-width:0;max-width:48%;margin:0 0 12px 16px;overflow:visible}
+.wiki-content .wiki-float-host table{width:100%;min-width:0;max-width:100%;margin:0;table-layout:fixed}
+.wiki-content .wiki-float-clear{display:block;clear:both;width:100%;height:0;margin:0;padding:0;border:0}
+.wiki-content img{max-width:100%;height:auto;object-fit:contain}
+.wiki-image{max-width:100%;margin:12px auto;text-align:center;clear:both}
+.wiki-image.align-right{float:right;clear:right;margin:5px 0 12px 16px}
+.wiki-image.align-left{float:left;clear:left;margin:5px 16px 12px 0}
+.wiki-image figcaption{margin-top:4px;color:var(--wiki-muted);font-size:12px}
+.wiki-image a{display:inline-block;max-width:100%}
+.wiki-content .broken-image{display:inline-block;padding:5px;border:1px solid var(--wiki-border-strong);color:var(--wiki-danger)}
+@media(max-width:700px){
+ .document-view{padding:13px 12px;border-left:0;border-right:0;border-radius:0}
+ .document-view #title{font-size:23px}
+ .wiki-content{font-size:15.5px;line-height:1.75}
+ .wiki-content .wiki-float-table,.wiki-content .wiki-float-host{float:none!important;display:block;width:100%;max-width:100%;min-width:0;clear:both;margin:12px 0;overflow-x:auto}
+ .wiki-content .wiki-float-table{display:table;table-layout:auto}
+ .wiki-content .wiki-float-host table{width:100%;max-width:100%;table-layout:fixed}
+ .wiki-content th,.wiki-content td{padding:6px 8px;font-size:13px}
+ .site-header{gap:8px;padding-left:10px;padding-right:10px;flex-wrap:wrap}
+ .searchbar{order:3;flex-basis:100%;max-width:none;margin:0}
+ .header-actions{margin-left:auto}
+}
