@@ -303,7 +303,7 @@ async function sanitizeServerWikiHtml(markup) {
   const rewritten=new HTMLRewriter().on("*",{
     element(element){
       const tag=String(element.tagName||"").toUpperCase();
-      if(["SCRIPT","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)){
+      if(["SCRIPT","STYLE","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)){
         element.remove();return;
       }
       if(!SERVER_WIKI_TAGS.has(tag)){
