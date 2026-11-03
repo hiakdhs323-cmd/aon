@@ -74,7 +74,7 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
     allowedAttributes: {
       "*": ["class", "id", "title", "lang", "dir", "role", "aria-label", "aria-hidden", "colspan", "rowspan", "align", "valign", "width", "height", "open", "start", "loading", "decoding", "style"],
       "a": ["href", "name", "target", "rel"],
-      "img": ["src", "alt", "width", "height", "loading", "decoding"],
+      "img": ["src", "alt", "width", "height", "loading", "decoding", "style"],
       "iframe": ["src", "width", "height", "allow", "allowfullscreen", "frameborder", "loading", "referrerpolicy"],
       "video": ["src", "controls", "width", "height", "poster", "loop", "muted"],
       "audio": ["src", "controls", "loop", "muted"],
