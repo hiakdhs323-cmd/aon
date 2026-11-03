@@ -716,3 +716,14 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 .wiki-content span[style*="color"] a:hover{
   color:inherit;
 }
+
+/* Keep wiki lists close to the article's left edge instead of over-indenting them. */
+.document-view .wiki-content ul,
+.document-view .wiki-content ol{
+  margin-left:0;
+  padding-left:18px;
+}
+.document-view .wiki-content li > ul,
+.document-view .wiki-content li > ol{
+  padding-left:18px;
+}
