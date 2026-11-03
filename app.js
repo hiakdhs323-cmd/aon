@@ -95,6 +95,19 @@ function startLivePageWatcher(){
 }
 let pageNavigationSequence = 0;
 let breadcrumbTrail = [];
+function ensureDocumentViewTargets(){
+ const view=$("document-view");
+ if(!view)throw new Error("문서 화면 컨테이너(#document-view)를 찾을 수 없습니다.");
+ let title=$("title");
+ if(!title){const bar=view.querySelector(".article-titlebar")||view;title=document.createElement("h1");title.id="title";title.className="article-title";bar.prepend(title)}
+ let crumb=$("crumb");
+ if(!crumb){let nav=view.querySelector(".breadcrumbs");if(!nav){nav=document.createElement("nav");nav.className="breadcrumbs";view.prepend(nav)}crumb=document.createElement("span");crumb.id="crumb";nav.append(crumb)}
+ let message=$("message");
+ if(!message){message=document.createElement("div");message.id="message";message.className="notice";message.setAttribute("role","status");view.append(message)}
+ let article=$("article");
+ if(!article){article=document.createElement("article");article.id="article";article.className="wiki-content";view.append(article)}
+ return {title,crumb,message,article,protection:$("page-protection"),headingEdit:$("heading-edit")};
+}
 function renderBreadcrumbTrail(){
  const host=document.querySelector("#document-view .breadcrumbs");
  if(!host)return;
@@ -901,8 +914,10 @@ async function loadPage(title,pushRoute=true,anchor=""){
  renderBreadcrumbTrail();
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
- $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();$("page-protection").hidden=true;
- $("heading-edit").hidden=false;
+ const targets=ensureDocumentViewTargets();
+ targets.title.textContent=displayTitle;targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();
+ if(targets.protection)targets.protection.hidden=true;
+ if(targets.headingEdit)targets.headingEdit.hidden=false;
  window.scrollTo({top:0,behavior:"auto"});
  try{
   if (/^(?:category|분류):/i.test(title)) {
