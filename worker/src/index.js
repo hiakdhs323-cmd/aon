@@ -116,6 +116,7 @@ async function currentUser(request, env) {
 }
 let pageProtectionSchemaPromise = null;
 let pageAliasSchemaPromise = null;
+let pageLinkColorsSchemaPromise = null;
 let imageSchemaPromise = null;
 async function ensurePageProtectionSchema(env) {
   if (!pageProtectionSchemaPromise) {
@@ -132,6 +133,13 @@ async function ensurePageAliasSchema(env) {
     })().catch(error => { pageAliasSchemaPromise = null; throw error; });
   }
   await pageAliasSchemaPromise;
+}
+async function ensurePageLinkColorsSchema(env) {
+  if (!pageLinkColorsSchemaPromise) {
+    pageLinkColorsSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS page_link_colors (title TEXT PRIMARY KEY NOT NULL, config_json TEXT NOT NULL, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL DEFAULT '')").run()
+      .catch(error => { pageLinkColorsSchemaPromise = null; throw error; });
+  }
+  await pageLinkColorsSchemaPromise;
 }
 async function ensureImageSchema(env) {
   if (!imageSchemaPromise) {
@@ -209,6 +217,73 @@ function sanitizeServerWikiStylesheet(raw) {
     if(valid.length)safe.push(valid.map(selector=>".wiki-content "+selector).join(",")+"{"+declarations+"}");
   }
   return safe.join("\n");
+}
+const ADMIN_LINK_COLOR_KEYS = new Set(["light", "dark", "visited-light", "visited-dark", "hover-light", "hover-dark"]);
+function normalizeAdminLinkColor(value) {
+  const color = String(value || "").trim();
+  if (/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(color)) return color.toLowerCase();
+  if (/^[a-z]{1,20}$/i.test(color) && !/^(?:inherit|initial|unset|revert|revert-layer|currentcolor)$/i.test(color)) return color.toLowerCase();
+  if (/^rgba?\(\s*\d{1,3}(?:\.\d+)?%?(?:\s*,\s*|\s+)\d{1,3}(?:\.\d+)?%?(?:\s*,\s*|\s+)\d{1,3}(?:\.\d+)?%?(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i.test(color)) return color;
+  if (/^hsla?\(\s*-?\d+(?:\.\d+)?(?:deg|rad|turn)?(?:\s*,\s*|\s+)\d{1,3}(?:\.\d+)?%(?:\s*,\s*|\s+)\d{1,3}(?:\.\d+)?%(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i.test(color)) return color;
+  return "";
+}
+function extractAdminLinkColors(source) {
+  const colors = {}, errors = [];
+  let found = false;
+  const input = String(source || "");
+  const content = input.replace(/^\{\{\{#!linkcolor[ \t]*\r?\n([\s\S]*?)^\}\}\}[ \t]*(?:\r?\n|$)/gim, (_block, body) => {
+    found = true;
+    for (const [index, rawLine] of String(body || "").split(/\r?\n/).entries()) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const separator = line.indexOf(":");
+      if (separator < 1) { errors.push("링크 색상 설정 " + (index + 1) + "번째 줄은 key: color 형식이어야 합니다."); continue; }
+      const key = line.slice(0, separator).trim().toLowerCase();
+      if (!ADMIN_LINK_COLOR_KEYS.has(key)) { errors.push("지원하지 않는 링크 색상 항목입니다: " + key); continue; }
+      const normalized = normalizeAdminLinkColor(line.slice(separator + 1).trim());
+      if (!normalized) { errors.push("올바르지 않은 색상 값입니다: " + key); continue; }
+      colors[key] = normalized;
+    }
+    return "";
+  });
+  if (/\{\{\{#!linkcolor\b/i.test(input) && !found) errors.push("링크 색상 설정 블록을 }}} 로 닫아야 합니다.");
+  return { content, colors, found, errors };
+}
+function buildAdminLinkColorMarkup(html, colors) {
+  const selectors = {
+    light: 'html[data-theme="light"] .aonwiki-page-content a',
+    dark: 'html[data-theme="dark"] .aonwiki-page-content a',
+    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:visited',
+    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:visited',
+    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:hover',
+    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:hover'
+  };
+  const rules = [];
+  for (const [key, selector] of Object.entries(selectors)) {
+    const color = normalizeAdminLinkColor(colors?.[key]);
+    if (color) rules.push(selector + "{color:" + color + " !important}");
+  }
+  if (!rules.length) return String(html || "");
+  return "<style>" + rules.join("\n") + "</style><div class=\"aonwiki-page-content\">" + String(html || "") + "</div>";
+}
+async function getPageLinkColors(env, title) {
+  await ensurePageLinkColorsSchema(env);
+  const row = await env.DB.prepare("SELECT config_json FROM page_link_colors WHERE title = ?").bind(title).first();
+  if (!row) return {};
+  try {
+    const saved = JSON.parse(row.config_json || "{}"), colors = {};
+    for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(saved?.[key]); if (color) colors[key] = color; }
+    return colors;
+  } catch { return {}; }
+}
+async function savePageLinkColors(env, title, extracted, editor) {
+  await ensurePageLinkColorsSchema(env);
+  if (!extracted?.found || !Object.keys(extracted.colors || {}).length) {
+    await env.DB.prepare("DELETE FROM page_link_colors WHERE title = ?").bind(title).run();
+    return;
+  }
+  await env.DB.prepare("INSERT INTO page_link_colors (title, config_json, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET config_json = excluded.config_json, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+    .bind(title, JSON.stringify(extracted.colors), new Date().toISOString(), String(editor || "")).run();
 }
 function collectIncludeTargets(source) {
   const targets=[];
@@ -410,18 +485,19 @@ function invalidateNamuServerIndexes() {
   namuRenderPending.clear();
   clearNamuPageResponseCache();
 }
-async function renderNamuMarkupOnWorker(env, title, source) {
-  const text = String(source || "");
-  const cacheKey = "targeted-db-v4-nested-images:" + String(title) + ":" + namuFileHash(text);
+async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
+  const extracted = extractAdminLinkColors(source);
+  const text = extracted.content;
+  const colors = {};
+  for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
+  const cacheKey = "targeted-db-v5-page-link-colors:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
   const pending = (async () => {
     try {
       await ensureNamuRenderCacheSchema(env);
-      const stored = await env.DB.prepare(
-        "SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?"
-      ).bind(title).first();
+      const stored = await env.DB.prepare("SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?").bind(title).first();
       if (stored && stored.source_hash === cacheKey) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
@@ -429,37 +505,21 @@ async function renderNamuMarkupOnWorker(env, title, source) {
         namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
         return value;
       }
-    } catch (error) {
-      console.warn("AonWiki persistent render cache read failed:", error);
-    }
-
+    } catch (error) { console.warn("AonWiki persistent render cache read failed:", error); }
     const database = await buildNamuServerDatabase(env, title, text);
-    const parser = new NamuMarkBundle.NamuMark(
-      text,
-      { docName: title, useTocSet: "default", docType: "view" },
-      database
-    );
+    const parser = new NamuMarkBundle.NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
-    const value = { html: await sanitizeServerWikiHtml(parsed[0] || ""), metadata: parsed[2] || {} };
+    const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
+    const value = { html: buildAdminLinkColorMarkup(cleanHtml, colors), metadata: parsed[2] || {} };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
-    if (namuRenderCache.size > 100) {
-      const oldest = namuRenderCache.keys().next().value;
-      if (oldest) namuRenderCache.delete(oldest);
-    }
+    if (namuRenderCache.size > 100) { const oldest = namuRenderCache.keys().next().value; if (oldest) namuRenderCache.delete(oldest); }
     if (value.html.length <= 250000) {
       try {
         await ensureNamuRenderCacheSchema(env);
-        await env.DB.prepare(
-          "INSERT INTO namu_render_cache (title, source_hash, html, metadata_json, updated_at) VALUES (?, ?, ?, ?, datetime('now')) ON CONFLICT(title) DO UPDATE SET source_hash = excluded.source_hash, html = excluded.html, metadata_json = excluded.metadata_json, updated_at = excluded.updated_at"
-        ).bind(title, cacheKey, value.html, JSON.stringify(value.metadata || {})).run();
-      } catch (error) {
-        console.warn("AonWiki persistent render cache write failed:", error);
-      }
+        await env.DB.prepare("INSERT INTO namu_render_cache (title, source_hash, html, metadata_json, updated_at) VALUES (?, ?, ?, ?, datetime('now')) ON CONFLICT(title) DO UPDATE SET source_hash = excluded.source_hash, html = excluded.html, metadata_json = excluded.metadata_json, updated_at = excluded.updated_at").bind(title, cacheKey, value.html, JSON.stringify(value.metadata || {})).run();
+      } catch (error) { console.warn("AonWiki persistent render cache write failed:", error); }
     } else {
-      try {
-        await ensureNamuRenderCacheSchema(env);
-        await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(title).run();
-      } catch {}
+      try { await ensureNamuRenderCacheSchema(env); await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(title).run(); } catch {}
     }
     return value;
   })().finally(() => namuRenderPending.delete(cacheKey));
@@ -516,7 +576,8 @@ async function renderFullWikiDocument(request, env, title) {
   const page = await findWikiPage(env, title);
   const found = Boolean(page);
   const actualTitle = found ? page.title : title;
-  const rendered = found ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "") : { html: "" };
+  const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
+  const rendered = found ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "", linkColors) : { html: "" };
   let protection = null;
   if (found) {
     await ensurePageProtectionSchema(env);
@@ -683,6 +744,8 @@ export default {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title || title === "대문") return response({ error: "삭제할 수 없는 문서입니다." }, 400, cors);
         await env.DB.prepare("DELETE FROM pages WHERE title = ?").bind(title).run();
+        await ensurePageLinkColorsSchema(env);
+        await env.DB.prepare("DELETE FROM page_link_colors WHERE title = ?").bind(title).run();
         invalidateNamuServerIndexes();
         await clearPersistentNamuRenderCache(env);
         await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
@@ -904,7 +967,8 @@ export default {
             if (alias) page = await selectPage(alias.title);
           }
           if (!page) return { page: null, html: "", engine: "namumark-worker" };
-          const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
+          const linkColors = await getPageLinkColors(env, page.title);
+          const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
           return {
             page: {
               title: page.title,
@@ -936,7 +1000,17 @@ export default {
         const title = cleanTitle(body.title || "미리보기") || "미리보기";
         const content = String(body.content || "");
         if (content.length > 200000) return response({ error: "미리보기 문서는 200,000자 이하만 지원합니다." }, 413, cors);
-        const rendered = await renderNamuMarkupOnWorker(env, title, content);
+        const previewUser = await currentUser(request, env);
+        let linkColors = {};
+        if (previewUser?.isAdmin) {
+          const extractedColors = extractAdminLinkColors(content);
+          if (extractedColors.errors.length) return response({ error: extractedColors.errors[0] }, 400, cors);
+          linkColors = extractedColors.colors;
+        } else {
+          const existingPage = await findWikiPage(env, title);
+          if (existingPage) linkColors = await getPageLinkColors(env, existingPage.title);
+        }
+        const rendered = await renderNamuMarkupOnWorker(env, title, content, linkColors);
         return response({ html: rendered.html, engine: "namumark-worker", title }, 200, {
           ...cors,
           "X-AonWiki-Render": "namumark-worker"
@@ -990,6 +1064,8 @@ export default {
         if (content.length > 200000) return response({ error: "문서는 200,000자 이하로 작성해 주세요." }, 413, cors);
         const now = new Date().toISOString();
         const summary = String(body.summary || "").trim().slice(0, 200);
+        const extractedLinkColors = extractAdminLinkColors(content);
+        if (user.isAdmin && extractedLinkColors.errors.length) return response({ error: extractedLinkColors.errors[0] }, 400, cors);
         const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
         if (!(columns.results || []).some(column => column.name === "summary")) {
           await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
@@ -1018,6 +1094,8 @@ export default {
           await env.DB.prepare("UPDATE page_aliases SET title = ? WHERE title = ?").bind(title, originalTitle).run();
           await env.DB.prepare("INSERT INTO page_aliases (alias, title, created_at) VALUES (?, ?, ?) ON CONFLICT(alias) DO UPDATE SET title = excluded.title, created_at = excluded.created_at")
             .bind(originalTitle, title, now).run();
+          await ensurePageLinkColorsSchema(env);
+          await env.DB.prepare("UPDATE page_link_colors SET title = ? WHERE title = ?").bind(title, originalTitle).run();
         } else {
           previous = await env.DB.prepare("SELECT created_at FROM pages WHERE title = ?").bind(title).first();
           if (!previous) return response({ error: "수정할 문서를 찾을 수 없습니다." }, 404, cors);
@@ -1029,6 +1107,7 @@ export default {
         await clearPersistentNamuRenderCache(env);
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, summary).run();
+        if (user.isAdmin) await savePageLinkColors(env, title, extractedLinkColors, user.username);
         return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
