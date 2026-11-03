@@ -93,7 +93,7 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
         "max-width": [/^\d+(?:\.\d+)?(?:px|%)$/i],
         "margin": [/^[\d.\s%pxemauto-]+$/i],
         "padding": [/^[\d.\s%pxem-]+$/i],
-        "border": [/^[\w\s#().,%/-]+$/i],
+        "border": [/^[\w\s#().,% -]+$/i],
         "border-radius": [/^\d+(?:\.\d+)?(?:px|%)$/i]
       }
     },
