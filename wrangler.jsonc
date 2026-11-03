@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aonwiki-sveltekit",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2026-11-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": { "directory": ".svelte-kit/cloudflare", "binding": "ASSETS" },
+  "vars": { "API_ORIGIN": "https://aon.hiakdhs323.workers.dev" },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "aonwiki",
+    "database_id": "db0fb2f9-141d-428e-8d61-0252075a1dc6"
+  }],
+  "observability": { "enabled": true }
+}

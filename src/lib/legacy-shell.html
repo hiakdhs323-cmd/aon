@@ -1,0 +1,76 @@
+<header class="site-header">
+  <a class="brand" href="#/" aria-label="AonWiki 대문"><span class="brand-symbol">A</span><span class="brand-name">Aon<span>Wiki</span></span></a>
+  <form id="search" class="searchbar" role="search"><input id="query" placeholder="AonWiki에서 검색" aria-label="문서 검색" autocomplete="off"><button type="submit">검색</button></form>
+  <nav class="header-actions"><span id="role-label" class="role-label" hidden></span><button id="change-password" class="button button-plain" type="button" hidden>비밀번호 변경</button><button id="login" class="button button-plain" type="button">로그인</button><button id="settings" class="button button-plain" type="button" title="API 설정">설정</button><button id="labs" class="button button-plain" type="button" title="나무마크 엔진 정보">엔진 정보</button><button id="theme-toggle" class="button button-plain" type="button">다크 모드</button></nav>
+</header>
+<div class="layout">
+  <aside class="left-nav" aria-label="위키 메뉴">
+    <div class="nav-heading">AonWiki</div>
+    <button id="home" class="nav-item active" type="button">대문</button>
+    <button id="new" class="nav-item" type="button">새 문서 만들기</button>
+    <button id="categories" class="nav-item" type="button">분류 목록</button>
+    <button id="recent-changes" class="nav-item" type="button">최근 변경</button>
+    <button id="random-page" class="nav-item" type="button">임의 문서</button>
+    <div class="nav-separator"></div>
+    <div class="nav-heading">문서 도구</div>
+    <button id="edit" class="nav-item" type="button" hidden>문서 편집</button>
+    <button id="history" class="nav-item" type="button" hidden>문서 역사</button>
+    <button id="upload" class="nav-item" type="button" hidden>이미지 올리기</button>
+    <button id="file-manager" class="nav-item" type="button" hidden>파일 관리</button>
+    <button id="delete-page" class="nav-item danger-link" type="button" hidden>문서 삭제</button>
+    <p class="nav-caption">AonWiki<br>함께 만드는 지식 백과사전</p>
+  </aside>
+  <main class="main">
+    <section id="home-view" class="home-view">
+      <div class="home-heading"><p class="home-kicker">AONWIKI</p><h1 id="home-title">AonWiki</h1><p id="home-tagline">함께 만드는 지식 백과사전</p></div>
+      <div id="home-notice" class="home-notice" hidden></div>
+      <article id="home-content" class="wiki-content home-content"></article>
+      <div id="home-admin-tools" class="home-admin-tools" hidden><span class="admin-label">관리자 도구</span><button id="home-edit" class="button" type="button">대문 편집</button><button id="admin-token-rotate" class="button" type="button">초기 키 폐기 · 랜덤 토큰 발급</button></div>
+      <div id="home-search-hint" class="home-search-hint">검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.</div>
+      <section class="home-section"><div class="section-heading"><h2 id="home-list-title">최근 수정된 문서</h2><span id="page-count"></span></div><div id="page-list" class="page-list"><p class="loading">문서 목록을 불러오는 중입니다…</p></div></section>
+      <section class="home-section"><div class="section-heading"><h2 id="home-bottom-title">문서가 없나요?</h2></div><p id="home-bottom-text" class="home-help">로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.</p><button id="home-new" class="button button-primary" type="button">새 문서 만들기</button></section>
+    </section>
+    <section id="document-view" class="document-view" hidden>
+      <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>
+      <section class="article">
+        <div class="article-titlebar"><h1 id="title"></h1><div class="title-actions"><span id="protection-status" class="protection-status" hidden></span><button id="page-protection" class="title-button admin-protection-button" type="button" hidden>편집 보호</button><button id="heading-edit" class="title-button" type="button">편집</button></div></div><div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>
+        <div class="article-tools"><span class="current-tab">문서</span><button id="history-tab" type="button">역사</button><button id="backlinks-tab" type="button" hidden>역링크</button><span class="tool-spacer"></span><span class="article-language">한국어</span></div>
+        <div id="message" class="notice" role="status"></div>
+        <article id="article" class="wiki-content"></article>
+        <footer class="article-footer"><span>AonWiki</span><span>최근 수정 내역은 문서 역사에서 확인할 수 있습니다.</span></footer>
+      </section>
+      <footer class="site-footer">AonWiki · 문서 내용은 이용자가 작성합니다.</footer>
+    </section>
+    <section id="editor-view" class="editor-view" hidden>
+      <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="editor-breadcrumb">새 문서 작성</span></div>
+      <section class="editor-card">
+        <div class="editor-page-heading"><div><p class="editor-kicker">AONWIKI EDITOR</p><h1 id="editor-heading">새 문서 작성</h1></div><button id="editor-help-toggle" class="button" type="button">문법 도움말</button></div>
+        <form id="editor-form">
+          <div id="editor-title-wrap" class="editor-field"><label for="editor-title">문서 제목</label><input id="editor-title" maxlength="120" placeholder="문서 제목을 입력하세요." autocomplete="off"></div>
+          <p id="editor-title-help" class="editor-field-help" hidden>제목을 바꾸면 기존 제목으로 접속해도 새 문서로 연결됩니다.</p>
+          <div class="editor-field"><label for="editor-content">문서 내용</label><div class="editor-tabs"><button id="editor-tab-write" class="active" type="button">편집</button><button id="editor-tab-preview" type="button">미리보기</button><span>나무마크</span><button id="editor-image" type="button">이미지 업로드</button></div><div class="editor-markup-toolbar" role="toolbar" aria-label="문법 빠른 삽입"><button type="button" data-markup="heading">문단 제목</button><button type="button" data-markup="bold"><strong>B</strong></button><button type="button" data-markup="italic"><em>I</em></button><button type="button" data-markup="link">링크</button><button type="button" data-markup="list">목록</button><button type="button" data-markup="footnote">각주</button><button type="button" data-markup="category">분류</button><button type="button" data-markup="external">외부 링크</button><button type="button" data-markup="table">표</button><button type="button" data-markup="hr">구분선</button></div><div id="editor-counter" class="editor-counter">0 / 200,000자</div><div id="editor-code-wrap" class="editor-code-wrap"><pre id="editor-highlight" class="editor-highlight" aria-hidden="true"><code id="editor-highlight-code"></code></pre><textarea id="editor-content" spellcheck="false" placeholder="문서 내용을 입력하세요."></textarea></div><article id="editor-preview" class="wiki-content editor-preview" hidden></article></div>
+          <div class="editor-field"><label for="editor-summary">편집 요약 <span class="optional-label">(선택)</span></label><input id="editor-summary" maxlength="200" placeholder="수정한 내용을 간단히 적어 주세요."></div>
+          <div id="editor-help" class="editor-help" hidden><h2>나무마크 문법 도움말</h2>
+<p><code>== 문단 ==</code> 문단 제목 · <code>[[문서]]</code> 문서 링크 · <code>[[문서#s-1]]</code> 문단 링크 · <code>[anchor(이름)]</code> 앵커</p>
+<p><code>'''굵게'''</code> 굵게 · <code>''기울임''</code> 기울임 · <code>__밑줄__</code> 밑줄 · <code>~~취소선~~</code> 취소선</p>
+<p><code>^^위첨자^^</code> 위첨자 · <code>,,아래첨자,,</code> 아래첨자 · <code>{{{+1 큰 글씨}}}</code> 글자 크기 · <code>{{{#red 색상}}}</code> 글자 색</p>
+<p><code>|| 표 || 표 ||</code> 표 · <code>||&lt;tablewidth=600&gt;&lt;:&gt; 가운데 ||</code> 표 옵션 · <code>* 목록</code> 목록 · <code>1. 번호</code> 번호 목록</p>
+<p><code>[목차]</code> 목차 · <code>[목차(hide)]</code> 접는 목차 · <code>[* 각주]</code> 각주 · <code>[br]</code> 줄바꿈 · <code>[clearfix]</code> 정렬 초기화</p>
+<p><code>[[파일:이름.png|width=300&amp;align=right]]</code> 이미지 옵션 · <code>[ruby(漢字,ruby=かんじ)]</code> 루비 문자 · <code>[date]</code> 날짜</p>
+<p><code>{{{#!folding 제목</code> 접기 · <code>{{{#!wiki style="..."</code> 스타일 영역 · <code>{{{#!style</code> CSS 스타일 시트</p>
+<p><code>{{{#!latex</code> LaTeX 수식 · <code>{{{#!syntax python</code> 코드 강조 · <code>{{{#!if docName == "문서명"</code> 조건부 본문</p>
+<p><code>[https://example.com 표시]</code> 또는 <code>[https://example.com|표시]</code> 외부 링크 · <code>[[inter:wikipedia:문서명]]</code> 인터위키 · <code>[[분류:분류명]]</code> 분류 등록 · <code>[datetime]</code> 날짜와 시간 · <code>[pagecount]</code> 문서 데이터 수</p>
+<p>편집기에서 <strong>미리보기</strong>를 눌러 실제 렌더링 결과를 확인할 수 있습니다.</p></div>
+          <p id="editor-status" class="editor-status" role="status"></p>
+          <div class="editor-actions"><button id="editor-cancel" class="button" type="button">취소</button><button id="editor-save" class="button button-primary" type="submit">저장</button></div>
+        </form>
+      </section>
+    </section>
+  </main>
+</div>
+<dialog id="dialog">
+  <div class="dialog-head"><h2 id="dialog-title">설정</h2><button id="cancel" class="dialog-close" type="button" aria-label="닫기">×</button></div>
+  <div id="dialog-body"></div><p id="dialog-status" class="dialog-status" role="status"></p>
+  <div class="dialog-actions"><button id="save" class="button button-primary" type="button">저장</button></div>
+</dialog>
+<input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>

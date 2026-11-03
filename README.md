@@ -1,68 +1,34 @@
 # AonWiki
 
-AonWiki serves complete article HTML documents from Cloudflare Workers. The Worker loads the shared HTML shell, reads the requested article from D1, parses and sanitizes the markup on the server, and returns a complete HTML document for direct `/w/<encoded-title>` requests. GitHub Pages remains the static asset origin; D1 stores article text and revision metadata.
+AonWiki is migrating to Svelte and SvelteKit with server-side rendering on Cloudflare Workers.
 
 ## Architecture
 
-- **Frontend:** HTML, CSS, JavaScript in this repository; deployed with GitHub Actions to GitHub Pages.
-- **API:** Cloudflare Worker in `worker/src/index.js`.
-- **Database:** Cloudflare D1. Article content and revision metadata are stored in D1.
-- **Images:** Cloudflare R2. The Worker validates uploads and serves stored images.
-- **Editor access:** one administrator token stored as a Cloudflare Worker secret. Readers can browse; only token holders can save pages or upload images.
+- UI and routing: Svelte 5 + SvelteKit.
+- Rendering: SvelteKit server routes render article HTML before the response is sent.
+- NamuMark engine: pinned WebAssembly build from https://uiovasot.github.io/namumark/.
+- Compatibility: constructs requiring existing D1-backed page or image context use the existing Worker renderer as a compatibility fallback.
+- API and database: the existing Cloudflare Worker API and D1 database remain in place. SvelteKit proxies API requests and reads existing article data through the current API.
+- Static assets: existing CSS and browser interaction code are served from SvelteKit's static asset directory during the transition.
 
-This is an independent wiki implementation. Its production NamuMark engine runs in the Cloudflare Worker; the browser-side beta engine switch is no longer part of the user interface.
+## Existing D1 documents
 
-## Deploy the GitHub Pages frontend
+No content migration or destructive SQL is performed. SvelteKit reads the current /api/page response and renders the original source. CI downloads the pinned upstream WASM and runs a read-only compatibility scan against every title returned by /api/page-index. Constructs requiring D1 context (file references, includes, custom wiki/style/code macros, redirects) use the legacy renderer so image aliases, includes, and existing behavior remain available.
 
-1. Open this repository's **Settings → Pages**.
-2. Set the build/deployment source to **GitHub Actions**.
-3. Pushes to `main` run `.github/workflows/pages.yml`.
-4. The site URL should be `https://hiakdhs323-cmd.github.io/aon/` after the workflow succeeds.
+The compatibility scan is read-only. It does not write to D1 or rewrite article content.
 
-## Set up the Cloudflare API
+## Development
 
-Requirements: Node.js LTS and Wrangler CLI.
+Run npm install, npm run prepare:wasm, and npm run dev.
 
-```bash
-npm install -g wrangler
-wrangler login
-wrangler d1 create aonwiki
-wrangler r2 bucket create aonwiki-images
-```
+## Validation
 
-Copy the D1 database ID printed by the first command into `wrangler.toml`, replacing `REPLACE_WITH_D1_DATABASE_ID`. Then initialize the database and set an administrator token:
+Run npm run check, npm run build, and npm run test:live-compat.
 
-```bash
-wrangler d1 execute aonwiki --remote --file=worker/schema.sql
-wrangler secret put ADMIN_TOKEN
-wrangler deploy
-```
+The live compatibility check fails if the API is unavailable, if the index hits its 10,000-title cap, or if an existing page cannot be fetched/rendered.
 
-Use a long, random token. Do not put it in source files, commit it to GitHub, or share it publicly. The token is an administrator credential.
+## Cloudflare deployment
 
-After deployment, open the site, choose **설정**, and enter the Worker URL (usually `https://aonwiki-api.<your-account>.workers.dev`) and the token. The token is kept in the current browser session only.
+The SvelteKit Worker is configured in wrangler.jsonc as aonwiki-sveltekit. It uses the existing API Worker at https://aon.hiakdhs323.workers.dev and retains the existing D1 binding. The current API Worker configuration is preserved in worker/wrangler.toml.
 
-## Current starter features
-
-- Article list/search and article reading
-- Article creation/editing and revision history
-- Wiki-style links: `[[문서 제목]]` or `[[문서 제목|표시 문구]]`
-- Section headings: `== 문단 제목 ==`
-- Image uploads for PNG, JPEG, GIF, and WebP, up to 5 MiB per file
-- Image storage in R2; article text and revision metadata in D1
-- Responsive layout for desktop and mobile
-
-## Security and limits
-
-- Public visitors can read articles. Only the administrator token can write articles or upload images.
-- This starter does **not** yet provide individual member accounts, per-user permissions, moderation queues, or a complete NamuMark implementation.
-- The Worker checks file type and size, but file extensions alone are not a guarantee that an uploaded file is safe. Only upload images you have permission to publish.
-- Cloudflare free plans have storage, request, and runtime limits; they are not unlimited. Check the current Cloudflare dashboard for actual quotas.
-- Configure `ALLOWED_ORIGIN` in `wrangler.toml` to match the exact origin of your GitHub Pages site if you move the repository to another owner/name.
-
-
-## Full-document rendering deployment
-
-The Worker must receive the site hostname requests, not only API requests. In Cloudflare, attach the hostname used by the wiki (for example, `aon69446.p-e.kr`) to this Worker as a Custom Domain or route the hostname's traffic to the Worker. Keep the GitHub Pages URL as the asset origin. Set the Worker variable `FRONTEND_ORIGIN` to `https://hiakdhs323-cmd.github.io/aon` if the default differs.
-
-Direct article URLs use `/w/<URL-encoded-title>`. The Worker returns the complete HTML document, including the page shell, article title, metadata, and parsed article body. The old JSON `/api/render` endpoint remains for editor previews and API compatibility; it is not the article page delivery path.
+Deploy only after the GitHub Actions build and live compatibility scan pass. The initial deployment uses its workers.dev address. Do not switch aon69446.p-e.kr until the Cloudflare zone is Active and the new Worker has passed production smoke tests.

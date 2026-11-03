@@ -1,5 +1,5 @@
 name = "aon"
-main = "worker/src/index.js"
+main = "src/index.js"
 compatibility_date = "2026-10-31"
 workers_dev = true
 
@@ -11,4 +11,3 @@ FRONTEND_ORIGIN = "https://hiakdhs323-cmd.github.io/aon"
 binding = "DB"
 database_name = "aonwiki"
 database_id = "db0fb2f9-141d-428e-8d61-0252075a1dc6"
-migrations_dir = "worker"
