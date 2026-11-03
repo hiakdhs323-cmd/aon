@@ -1310,7 +1310,7 @@ try {
           if (listStyle[styleLevel]) {
             listStyleData = listStyle[styleLevel];
           }
-          return '<li style="margin-left: ' + listLen * 20 + 'px;" class="' + listStyleData + '">' + listData + "</li>";
+          return '<li class="' + listStyleData + '" data-list-level="' + listLen + '">' + listData + "</li>";
         } else {
           let listType = groups[1];
 
