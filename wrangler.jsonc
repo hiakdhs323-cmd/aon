@@ -5,7 +5,11 @@
   "compatibility_date": "2026-11-03",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  "assets": { "directory": ".svelte-kit/cloudflare", "binding": "ASSETS" },
+  "assets": {
+    "directory": ".svelte-kit/cloudflare",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
   "vars": { "API_ORIGIN": "https://aon.hiakdhs323.workers.dev" },
   "d1_databases": [{
     "binding": "DB",
