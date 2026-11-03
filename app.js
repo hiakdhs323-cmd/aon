@@ -1386,7 +1386,7 @@ $("categories").onclick=()=>loadCategoryIndex(true);
 $("random-page").onclick=()=>openRandomPage();
 $("new").onclick=()=>editPage("","");
 $("home-new").onclick=()=>editPage("","");
-$("edit").onclick=()=>editPage();
+$("edit").onclick=()=>editPage(initialSsrState&&!initialSsrState.exists?"":currentTitle,initialSsrState&&!initialSsrState.exists?"":currentContent);
 $("heading-edit").onclick=()=>editPage();
 async function searchFor(query){
  const q=String(query||"").trim();if(!q)return;
