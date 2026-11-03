@@ -1641,7 +1641,8 @@ $("file").onchange=async()=>{
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
-if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){prepareServerRenderedMarkup($("article"),currentTitle);if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));}\nif(document.body.dataset.ssrPage!=="true")readRoute();
+if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){prepareServerRenderedMarkup($("article"),currentTitle);if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));}
+if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity();
 startLivePageWatcher();
 
