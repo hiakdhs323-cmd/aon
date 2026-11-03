@@ -16,7 +16,7 @@
   --wiki-warning-border:#e0c46a;
   --wiki-danger:#c62828;
   --wiki-font:Arial,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
-  --wiki-article-size:15px;
+  --wiki-article-size:14px;
   font-family:var(--wiki-font);
   color:var(--wiki-text);
   background:var(--wiki-bg);
@@ -208,12 +208,12 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
   color:var(--wiki-text);font-family:inherit;overflow-wrap:anywhere;
   scroll-margin-top:78px;line-height:1.4
 }
-.wiki-content h1{margin:30px 0 15px;padding:0 0 8px;border-bottom:2px solid var(--wiki-text);font-size:27px;font-weight:600}
-.wiki-content h2{margin:28px 0 13px;padding:0 0 6px;border-bottom:1px solid var(--wiki-border-strong);font-size:22px;font-weight:600}
-.wiki-content h3{margin:23px 0 10px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:19px;font-weight:600}
-.wiki-content h4{margin:19px 0 8px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:16px;font-weight:600}
-.wiki-content h5{margin:17px 0 7px;font-size:15px;font-weight:700}
-.wiki-content h6{margin:15px 0 6px;font-size:14px;font-weight:700}
+.wiki-content h1{margin:30px 0 15px;padding:0 0 8px;border-bottom:2px solid var(--wiki-text);font-size:30px;font-weight:600}
+.wiki-content h2{margin:28px 0 13px;padding:0 0 6px;border-bottom:1px solid var(--wiki-border-strong);font-size:25px;font-weight:600}
+.wiki-content h3{margin:23px 0 10px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:22px;font-weight:600}
+.wiki-content h4{margin:19px 0 8px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:19px;font-weight:600}
+.wiki-content h5{margin:17px 0 7px;font-size:17px;font-weight:700}
+.wiki-content h6{margin:15px 0 6px;font-size:16px;font-weight:700}
 .wiki-content h1 sub,.wiki-content h2 sub,.wiki-content h3 sub,.wiki-content h4 sub,.wiki-content h5 sub,.wiki-content h6 sub{font-size:11px;font-weight:400;vertical-align:middle;color:var(--wiki-muted)}
 .wiki-content h1 sub a,.wiki-content h2 sub a,.wiki-content h3 sub a,.wiki-content h4 sub a,.wiki-content h5 sub a,.wiki-content h6 sub a{color:var(--wiki-muted)}
 .wiki-content ul,.wiki-content ol{margin:7px 0 14px;padding-left:28px}
