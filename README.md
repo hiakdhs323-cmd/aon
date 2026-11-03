@@ -10,7 +10,7 @@ AonWiki serves complete article HTML documents from Cloudflare Workers. The Work
 - **Images:** Cloudflare R2. The Worker validates uploads and serves stored images.
 - **Editor access:** one administrator token stored as a Cloudflare Worker secret. Readers can browse; only token holders can save pages or upload images.
 
-This is an original starter implementation inspired by wiki-style navigation; it is not the official Namuwiki service and does not include the complete NamuMark parser.
+This is an independent wiki implementation. Its production NamuMark engine runs in the Cloudflare Worker; the browser-side beta engine switch is no longer part of the user interface.
 
 ## Deploy the GitHub Pages frontend
 
@@ -59,4 +59,10 @@ After deployment, open the site, choose **설정**, and enter the Worker URL (us
 - The Worker checks file type and size, but file extensions alone are not a guarantee that an uploaded file is safe. Only upload images you have permission to publish.
 - Cloudflare free plans have storage, request, and runtime limits; they are not unlimited. Check the current Cloudflare dashboard for actual quotas.
 - Configure `ALLOWED_ORIGIN` in `wrangler.toml` to match the exact origin of your GitHub Pages site if you move the repository to another owner/name.
-\n\n## Full-document rendering deployment\n\nThe Worker must receive the site hostname requests, not only API requests. In Cloudflare, attach the hostname used by the wiki (for example, `aon69446.p-e.kr`) to this Worker as a Custom Domain or route the hostname's traffic to the Worker. Keep the GitHub Pages URL as the asset origin. Set the Worker variable `FRONTEND_ORIGIN` to `https://hiakdhs323-cmd.github.io/aon` if the default differs.\n\nDirect article URLs use `/w/<URL-encoded-title>`. The Worker returns the complete HTML document, including the page shell, article title, metadata, and parsed article body. The old JSON `/api/render` endpoint remains for editor previews and API compatibility; it is not the article page delivery path.\n
+
+
+## Full-document rendering deployment
+
+The Worker must receive the site hostname requests, not only API requests. In Cloudflare, attach the hostname used by the wiki (for example, `aon69446.p-e.kr`) to this Worker as a Custom Domain or route the hostname's traffic to the Worker. Keep the GitHub Pages URL as the asset origin. Set the Worker variable `FRONTEND_ORIGIN` to `https://hiakdhs323-cmd.github.io/aon` if the default differs.
+
+Direct article URLs use `/w/<URL-encoded-title>`. The Worker returns the complete HTML document, including the page shell, article title, metadata, and parsed article body. The old JSON `/api/render` endpoint remains for editor previews and API compatibility; it is not the article page delivery path.
