@@ -10,7 +10,7 @@ export const GET: RequestHandler = async (event) => {
   const data = await pageResponse.json() as { page?: Record<string, unknown> | null };
   if (!data.page) return json({ page: null, html: "", engine: "uiovasot-namumark-wasm" });
   const page = data.page as { title: string; content: string };
-  const rendered = await renderWikiMarkup(event, page.title, page.content || "", { path: "/api/render?title=" + encodeURIComponent(page.title) });
+  const rendered = await renderWikiMarkup(event, page.content || "");
   return json({ page, html: rendered.html, engine: rendered.engine });
 };
 export const POST: RequestHandler = async (event) => {
@@ -18,9 +18,6 @@ export const POST: RequestHandler = async (event) => {
   const title = String(body.title || "미리보기").trim().slice(0, 120) || "미리보기";
   const content = String(body.content || "");
   if (content.length > 200000) return json({ error: "미리보기 문서는 200,000자 이하만 지원합니다." }, { status: 413 });
-  const rendered = await renderWikiMarkup(event, title, content, {
-    path: "/api/render",
-    init: { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) }
-  });
+  const rendered = await renderWikiMarkup(event, content);
   return json({ html: rendered.html, engine: rendered.engine, title });
 };
