@@ -488,12 +488,82 @@ function invalidateNamuServerIndexes() {
   namuRenderPending.clear();
   clearNamuPageResponseCache();
 }
+function parseTableColorValue(value) {
+  const input = String(value || "").trim().toLowerCase();
+  const named = {
+    black:"#000000", white:"#ffffff", red:"#ff0000", green:"#008000", blue:"#0000ff",
+    yellow:"#ffff00", orange:"#ffa500", purple:"#800080", gray:"#808080", grey:"#808080",
+    silver:"#c0c0c0", maroon:"#800000", navy:"#000080", teal:"#008080", lime:"#00ff00",
+    aqua:"#00ffff", cyan:"#00ffff", fuchsia:"#ff00ff", magenta:"#ff00ff", olive:"#808000"
+  };
+  const color = named[input] || input;
+  let r, g, b;
+  let match = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (match) {
+    const hex = match[1].length === 3 ? match[1].split("").map(char => char + char).join("") : match[1];
+    r = parseInt(hex.slice(0, 2), 16); g = parseInt(hex.slice(2, 4), 16); b = parseInt(hex.slice(4, 6), 16);
+  } else {
+    match = color.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/);
+    if (match) { r = Number(match[1]); g = Number(match[2]); b = Number(match[3]); }
+  }
+  if (![r, g, b].every(Number.isFinite) || [r, g, b].some(channel => channel < 0 || channel > 255)) return null;
+  const linear = channel => { const value = channel / 255; return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4; };
+  const luminance = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+  const whiteContrast = 1.05 / (luminance + 0.05);
+  const blackContrast = (luminance + 0.05) / 0.05;
+  return blackContrast >= whiteContrast ? "#000000" : "#ffffff";
+}
+function getInlineStyleProperties(element) {
+  const properties = {};
+  const style = element.getAttribute("style") || "";
+  for (const declaration of style.split(";")) {
+    const separator = declaration.indexOf(":");
+    if (separator < 1) continue;
+    const name = declaration.slice(0, separator).trim().toLowerCase();
+    const value = declaration.slice(separator + 1).trim();
+    if (name && value) properties[name] = value;
+  }
+  return properties;
+}
+async function applyTableTextContrast(markup) {
+  const tableStack = [];
+  const rowStack = [];
+  const rewriter = new HTMLRewriter()
+    .on("table", {
+      element(element) { tableStack.push(getInlineStyleProperties(element)); },
+      endTag() { tableStack.pop(); }
+    })
+    .on("tr", {
+      element(element) { rowStack.push(getInlineStyleProperties(element)); },
+      endTag() { rowStack.pop(); }
+    })
+    .on("td, th", {
+      element(element) {
+        const cell = getInlineStyleProperties(element);
+        const row = rowStack[rowStack.length - 1] || {};
+        const table = tableStack[tableStack.length - 1] || {};
+        // Explicit foreground colors at any level are intentional and must win.
+        if (cell.color || row.color || table.color) return;
+        const background = cell["background-color"] || cell.background ||
+          row["background-color"] || row.background ||
+          table["background-color"] || table.background;
+        const contrastColor = parseTableColorValue(background);
+        if (!contrastColor) return;
+        const currentStyle = element.getAttribute("style") || "";
+        element.setAttribute("style", (currentStyle.trim() ? currentStyle.trim().replace(/;?$/, ";") : "") + "color:" + contrastColor + ";");
+      }
+    });
+  return await rewriter.transform(new Response(String(markup || ""), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  })).text();
+}
+
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const extracted = extractAdminLinkColors(source);
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v5-page-link-colors:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v6-table-text-contrast:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -513,7 +583,8 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const parser = new NamuMarkBundle.NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
-    const value = { html: buildAdminLinkColorMarkup(cleanHtml, colors), metadata: parsed[2] || {} };
+    const contrastedHtml = await applyTableTextContrast(cleanHtml);
+    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
     if (namuRenderCache.size > 100) { const oldest = namuRenderCache.keys().next().value; if (oldest) namuRenderCache.delete(oldest); }
     if (value.html.length <= 250000) {
