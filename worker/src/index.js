@@ -235,40 +235,6 @@ export default {
           .bind(await sha256(token), new Date().toISOString()).run();
         return response({ ok: true, token, message: "새 관리자 토큰이 발급되었습니다. 이 값은 다시 표시되지 않습니다." }, 200, cors);
       }
-      if (url.pathname === "/api/admin/migrate-page" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user?.isAdmin) return response({ error: "문서 마이그레이션에는 위키 관리자 권한이 필요합니다." }, 403, cors);
-        const body = await request.json().catch(() => ({}));
-        const title = cleanTitle(body.title);
-        const expectedUpdatedAt = String(body.expectedUpdatedAt || "");
-        const content = String(body.content || "");
-        if (!title || !expectedUpdatedAt) return response({ error: "문서 제목과 기준 수정 시각이 필요합니다." }, 400, cors);
-        if (content.length > 200000) return response({ error: "변환된 문서가 200,000자를 초과합니다." }, 413, cors);
-        const current = await env.DB.prepare("SELECT content, updated_at FROM pages WHERE title = ?").bind(title).first();
-        if (!current) return response({ error: "마이그레이션 대상 문서를 찾을 수 없습니다." }, 404, cors);
-        if (String(current.updated_at || "") !== expectedUpdatedAt) return response({ error: "문서가 검사 이후 수정되었습니다. 다시 검사한 뒤 실행하세요." }, 409, cors);
-        if (String(current.content || "") === content) return response({ ok: true, unchanged: true, title }, 200, cors);
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_migration_backups (id TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, original_content TEXT NOT NULL, migrated_content TEXT NOT NULL, created_at TEXT NOT NULL, created_by TEXT NOT NULL, engine_version TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        const revisionColumns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
-        if (!(revisionColumns.results || []).some(column => column.name === "summary")) {
-          await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
-        }
-        const now = new Date().toISOString();
-        const backupId = crypto.randomUUID();
-        const batch = await env.DB.batch([
-          env.DB.prepare("INSERT INTO wiki_migration_backups (id, title, original_content, migrated_content, created_at, created_by, engine_version) SELECT ?, title, content, ?, ?, ?, 'uiovasot-namumark-wasm' FROM pages WHERE title = ? AND updated_at = ?")
-            .bind(backupId, content, now, user.username, title, expectedUpdatedAt),
-          env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ? AND updated_at = ?")
-            .bind(content, now, title, expectedUpdatedAt),
-          env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) SELECT title, content, ?, ?, ? FROM pages WHERE title = ? AND updated_at = ?")
-            .bind(user.username, now, "NamuMark WASM 자동 문법 마이그레이션", title, now)
-        ]);
-        const changed = Number(batch?.[1]?.meta?.changes || 0);
-        if (changed !== 1) return response({ error: "문서가 동시에 변경되어 반영하지 않았습니다. 다시 시도하세요." }, 409, cors);
-        invalidateNamuServerIndexes();
-        return response({ ok: true, title, backupId, updated_at: now }, 200, cors);
-      }
       if (url.pathname === "/api/home" && request.method === "GET") {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, updated_at TEXT NOT NULL, editor TEXT NOT NULL DEFAULT '')").run();
         const result = await env.DB.prepare("SELECT key, value FROM wiki_settings WHERE key IN ('home_title','home_tagline','home_notice','home_content','home_search_hint','home_list_title','home_bottom_title','home_bottom_text')").all();
