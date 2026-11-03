@@ -1108,7 +1108,8 @@ try {
           const listData = listDataMatch[1];
           const listSubRegex = /\n( *)(?:(1|a|A|I|i)\.(?:#([0-9]*))?|(\*)) ?([^\n]*)/g;
           const listDataStr = listData.replace(listSubRegex, intToMatch());
-          this.renderData = this.renderData.replace(listRegex, "\n<front_br><ul>" + listDataStr + "</ul><back_br>\n");
+          const listEndDivider = listDataMatch[3] ? "<hr>" : "";
+          this.renderData = this.renderData.replace(listRegex, "\n<front_br><ul>" + listDataStr + "</ul>" + listEndDivider + "<back_br>\n");
         }
         listCountMax -= 1;
       }
