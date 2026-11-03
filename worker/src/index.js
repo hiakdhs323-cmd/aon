@@ -419,6 +419,10 @@ async function renderFullWikiDocument(request, env, title) {
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     exists: found
   };
+  const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
+  const protectionMessage = protectionLabel
+    ? (protection?.reason || (protection.level === "admin" ? "이 문서는 관리자만 편집할 수 있습니다." : "이 문서는 로그인한 회원만 편집할 수 있습니다."))
+    : "";
   let html = shell
     .replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
     .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#ffffff">' + "\n" + '<meta name="description" content="' + escapeHtml(description) + '">' + "\n" + '<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">' + "\n" + '<meta property="og:description" content="' + escapeHtml(description) + '">' + "\n" + '<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">')
@@ -427,6 +431,8 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">')
     .replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + '</h1>')
     .replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + '</span>')
+    .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
+    .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
     .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
     .replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + '</article>')
     .replace('id="edit" class="nav-item" type="button" hidden', 'id="edit" class="nav-item" type="button"')
