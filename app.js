@@ -94,6 +94,25 @@ function startLivePageWatcher(){
  window.aonWikiLiveTimer=window.setInterval(checkForNewPages,60000);
 }
 let pageNavigationSequence = 0;
+let breadcrumbTrail = [];
+function renderBreadcrumbTrail(){
+ const host=document.querySelector("#document-view .breadcrumbs");
+ if(!host)return;
+ host.replaceChildren();
+ const home=document.createElement("a");home.href="/w/대문#/";home.textContent="AonWiki";
+ home.addEventListener("click",event=>{event.preventDefault();breadcrumbTrail=[];showHome(true)});
+ host.append(home);
+ breadcrumbTrail.forEach((title,index)=>{
+  const sep=document.createElement("span");sep.textContent="›";sep.setAttribute("aria-hidden","true");host.append(sep);
+  const label=document.createElement(index===breadcrumbTrail.length-1?"span":"a");
+  label.textContent=title;
+  if(index!==breadcrumbTrail.length-1){
+   label.href=routeFor(title);
+   label.addEventListener("click",event=>{event.preventDefault();breadcrumbTrail=breadcrumbTrail.slice(0,index+1);loadPage(title,true)});
+  }
+  host.append(label);
+ });
+}
 function showHome(push=true){
  pageNavigationSequence++;
  if(push)history.pushState(null,"","#/");
@@ -545,6 +564,15 @@ function moveWikiTocToTop(root) {
 }
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
+  root.querySelectorAll("table").forEach(table=>{
+    const floatValue=(table.style.float||"").toLowerCase();
+    if((floatValue==="left"||floatValue==="right")&&!table.nextElementSibling?.classList.contains("wiki-float-clear")){
+      const clear=document.createElement("div");
+      clear.className="wiki-float-clear";
+      clear.setAttribute("aria-hidden","true");
+      table.after(clear);
+    }
+  });
   moveWikiTocToTop(root);
   root.classList.add("namumark-rendered");
   root.classList.remove("namumark-beta-active");
@@ -859,7 +887,17 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
 async function loadPage(title,pushRoute=true,anchor=""){
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  const requestId=++pageNavigationSequence;
- if(pushRoute)history.pushState(null,"",routeFor(title,anchor));
+ if(pushRoute){
+  const existing=breadcrumbTrail.lastIndexOf(title);
+  if(existing>=0)breadcrumbTrail=breadcrumbTrail.slice(0,existing+1);
+  else breadcrumbTrail.push(title);
+  history.pushState(null,"",routeFor(title,anchor));
+ }else if(!breadcrumbTrail.length||breadcrumbTrail[breadcrumbTrail.length-1]!==title){
+  const existing=breadcrumbTrail.lastIndexOf(title);
+  if(existing>=0)breadcrumbTrail=breadcrumbTrail.slice(0,existing+1);
+  else breadcrumbTrail=[title];
+ }
+ renderBreadcrumbTrail();
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  $("title").textContent=displayTitle;$("crumb").textContent=displayTitle;$("message").textContent="문서를 불러오는 중입니다…";$("article").replaceChildren();$("page-protection").hidden=true;
