@@ -693,6 +693,7 @@ export default {
         if (!title || title === "대문") return response({ error: "삭제할 수 없는 문서입니다." }, 400, cors);
         await env.DB.prepare("DELETE FROM pages WHERE title = ?").bind(title).run();
         invalidateNamuServerIndexes();
+        await clearPersistentNamuRenderCache(env);
         await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
         return response({ ok: true, title }, 200, cors);
       }
@@ -1034,6 +1035,7 @@ export default {
         }
 
         invalidateNamuServerIndexes();
+        await clearPersistentNamuRenderCache(env);
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, summary).run();
         return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
