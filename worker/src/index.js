@@ -1,3 +1,4 @@
+import { NamuMarkBundle } from "./namumark-parser.js";
 function response(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -174,6 +175,172 @@ function imageNameMatches(filename, hash, extension) {
   const base = dot > 0 ? value.slice(0, dot) : value;
   const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
   return namuFileHash(base).toLowerCase() === hash.toLowerCase() && ext === String(extension || "").toLowerCase();
+}
+
+
+const SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE".split(" "));
+const SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
+function sanitizeServerWikiStyle(raw) {
+  const allowed = new Set(["color","background","background-color","font-size","font-weight","font-style","text-align","text-decoration","text-transform","line-height","letter-spacing","word-spacing","width","max-width","min-width","height","max-height","min-height","margin","margin-left","margin-right","margin-top","margin-bottom","padding","border","border-color","border-width","border-style","border-radius","border-collapse","float","clear","display","vertical-align","white-space","list-style-type","image-rendering","object-fit","overflow","overflow-wrap","box-shadow","opacity"]);
+  const output=[];
+  String(raw||"").split(";").forEach(entry=>{
+    const at=entry.indexOf(":");if(at<1)return;
+    const key=entry.slice(0,at).trim().toLowerCase();
+    const value=entry.slice(at+1).trim();
+    if(!allowed.has(key)||!value||/url\s*\(|expression|javascript|@import|[<>{}]/i.test(value))return;
+    output.push(key+":"+value);
+  });
+  return output.join(";");
+}
+function sanitizeServerWikiStylesheet(raw) {
+  const allowedSelectorPart=/^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
+  const rules=String(raw||"").replace(/\/\*[\s\S]*?\*\//g,"").match(/[^{}]+\{[^{}]*\}/g)||[];
+  const safe=[];
+  for(const rule of rules){
+    const brace=rule.indexOf("{");
+    const declarations=sanitizeServerWikiStyle(rule.slice(brace+1,rule.lastIndexOf("}")));
+    if(!declarations)continue;
+    const selectors=rule.slice(0,brace).trim().split(",").map(value=>value.trim());
+    if(!selectors.length||selectors.length>20)continue;
+    const valid=selectors.filter(selector=>{
+      const parts=selector.split(/\s*>\s*|\s+/).filter(Boolean);
+      return parts.length>0&&parts.length<=8&&parts.every(part=>allowedSelectorPart.test(part));
+    });
+    if(valid.length)safe.push(valid.map(selector=>".wiki-content "+selector).join(",")+"{"+declarations+"}");
+  }
+  return safe.join("\n");
+}
+function collectIncludeTargets(source) {
+  const targets=[];
+  for(const match of String(source||"").matchAll(/\[include\(((?:(?!\[include\(|\)\]).)+)\)\]/gi)){
+    const first=String(match[1]||"").split(",")[0].trim();
+    if(first&&!first.includes("="))targets.push(first);
+  }
+  return targets;
+}
+function collectCategoryTargets(source) {
+  const targets=[];
+  for(const match of String(source||"").matchAll(/\[\[(?:분류|category):([^\]|]+)(?:\|[^\]]*)?\]\]/gi)){
+    const name=String(match[1]||"").trim();
+    if(name)targets.push(name);
+  }
+  return targets;
+}
+async function buildNamuServerDatabase(env, title, content) {
+  const pageIndex=await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 20000").all();
+  const records=new Map((pageIndex.results||[]).map(row=>[row.title,{title:row.title,data:""}]));
+  records.set(title,{title,data:String(content||"")});
+
+  let pending=collectIncludeTargets(content);
+  let fetched=0;
+  const visited=new Set([title]);
+  for(let depth=0;depth<4&&pending.length&&fetched<50;depth++){
+    const batch=[...new Set(pending)].filter(name=>!visited.has(name)).slice(0,40);
+    pending=[];
+    if(!batch.length)break;
+    batch.forEach(name=>visited.add(name));
+    const placeholders=batch.map(()=>"?").join(",");
+    const included=await env.DB.prepare("SELECT title, content FROM pages WHERE title IN ("+placeholders+")").bind(...batch).all();
+    for(const page of included.results||[]){
+      const item={title:page.title,data:String(page.content||"")};
+      records.set(page.title,item);
+      fetched++;
+      pending.push(...collectIncludeTargets(item.data));
+      if(fetched>=50)break;
+    }
+  }
+
+  const allMarkup=[String(content||""),...[...records.values()].map(item=>item.data||"")].join("\n");
+  for(const row of pageIndex.results||[]){
+    if(/^분류:/i.test(row.title)){
+      const name=row.title.replace(/^분류:/i,"");
+      records.set("category:"+name,{title:"category:"+name,data:""});
+    }
+  }
+  for(const category of collectCategoryTargets(allMarkup)){
+    records.set("category:"+category,{title:"category:"+category,data:""});
+  }
+
+  if(/\[\[(?:파일|file):/i.test(allMarkup)){
+    await ensureImageSchema(env);
+    const [images,aliases]=await Promise.all([
+      env.DB.prepare("SELECT filename FROM images").all(),
+      env.DB.prepare("SELECT alias FROM image_aliases").all()
+    ]);
+    for(const row of images.results||[]){
+      const name=String(row.filename||"");
+      if(name)records.set("file:"+name,{title:"file:"+name,data:""});
+    }
+    for(const row of aliases.results||[]){
+      const name=String(row.alias||"");
+      if(name)records.set("file:"+name,{title:"file:"+name,data:""});
+    }
+  }
+  return {data:[...records.values()]};
+}
+async function sanitizeServerWikiHtml(markup) {
+  const input=new Response(String(markup||""),{headers:{"Content-Type":"text/html; charset=utf-8"}});
+  const rewritten=new HTMLRewriter().on("*",{
+    element(element){
+      const tag=String(element.tagName||"").toUpperCase();
+      if(["SCRIPT","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)){
+        element.remove();return;
+      }
+      if(!SERVER_WIKI_TAGS.has(tag)){
+        element.removeAndKeepContent();return;
+      }
+      for(const [rawName,rawValue] of [...element.attributes]){
+        const name=String(rawName).toLowerCase(),value=String(rawValue||"");
+        if(name==="onclick"){
+          if(tag==="A"&&value.includes("opennamu_heading_folding"))element.setAttribute("data-opennamu-action",value);
+          element.removeAttribute(rawName);continue;
+        }
+        if(name.startsWith("on")||!SERVER_WIKI_ATTRS.has(name)){
+          element.removeAttribute(rawName);continue;
+        }
+        if(name==="style"){
+          const safe=sanitizeServerWikiStyle(value);
+          if(safe)element.setAttribute("style",safe);else element.removeAttribute("style");
+          continue;
+        }
+        if(["href","src","poster"].includes(name)&&/^\s*(?:javascript|data|vbscript):/i.test(value)){
+          element.removeAttribute(rawName);continue;
+        }
+        if(name==="href"&&/^\s*\/\//.test(value))element.removeAttribute(rawName);
+      }
+      if(tag==="A"){
+        const href=element.getAttribute("href")||"";
+        if(/^https?:\/\//i.test(href)){
+          element.setAttribute("target","_blank");
+          element.setAttribute("rel","noopener noreferrer");
+        }
+      }
+      if(tag==="IFRAME"){
+        const src=element.getAttribute("src")||"";
+        const allowedHosts=new Set(["www.youtube.com","youtube.com","www.instagram.com","www.facebook.com","www.tiktok.com","twitframe.com","tv.kakao.com","tv.naver.com","embed.nicovideo.jp","player.vimeo.com"]);
+        try{
+          const parsed=new URL(src);
+          if(parsed.protocol!=="https:"||!allowedHosts.has(parsed.hostname)){element.remove();return}
+          element.setAttribute("src",parsed.href);
+          element.setAttribute("loading","lazy");
+          element.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
+          element.setAttribute("allowfullscreen","");
+        }catch{element.remove();return}
+      }
+    }
+  }).transform(input);
+  return await rewritten.text();
+}
+async function renderNamuMarkupOnWorker(env, title, source) {
+  const database=await buildNamuServerDatabase(env,title,source);
+  const parser=new NamuMarkBundle.NamuMark(
+    String(source||""),
+    {docName:title,useTocSet:"default",docType:"view"},
+    database
+  );
+  const parsed=parser.parse();
+  const html=await sanitizeServerWikiHtml(parsed[0]||"");
+  return {html,metadata:parsed[2]||{}};
 }
 
 async function sha256(value) {
@@ -489,6 +656,31 @@ export default {
         ];
         const result = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE content LIKE ? OR content LIKE ? OR content LIKE ? OR content LIKE ? ORDER BY updated_at DESC LIMIT 500").bind(...patterns).all();
         return response({ name, pages: result.results || [] }, 200, cors);
+      }
+      if (url.pathname === "/api/render" && request.method === "GET") {
+        const title = cleanTitle(url.searchParams.get("title"));
+        if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
+        if (!page) {
+          await ensurePageAliasSchema(env);
+          const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+          if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
+        }
+        if (!page) return response({ page: null, html: "", engine: "worker-ssr" }, 200, cors);
+        await ensurePageProtectionSchema(env);
+        const protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first();
+        const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
+        return response({
+          page: {
+            ...page,
+            protectionLevel: protection?.level || "none",
+            protectionReason: protection?.reason || "",
+            protectedBy: protection?.protected_by || "",
+            protectionUpdatedAt: protection?.updated_at || ""
+          },
+          html: rendered.html,
+          engine: "worker-ssr"
+        }, 200, cors, { "X-AonWiki-Render": "worker-ssr" });
       }
       if (url.pathname === "/api/page" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
