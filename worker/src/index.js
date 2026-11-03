@@ -553,6 +553,13 @@ async function applyTableTextContrast(markup) {
         const currentStyle = element.getAttribute("style") || "";
         element.setAttribute("style", (currentStyle.trim() ? currentStyle.trim().replace(/;?$/, ";") : "") + "color:" + contrastColor + ";");
       }
+    })
+    .on("ul.wiki-list-has-following-content", {
+      element(element) {
+        element.onEndTag(endTag => {
+          endTag.after('<hr class="wiki-list-end-divider">', { html: true });
+        });
+      }
     });
   return await rewriter.transform(new Response(String(markup || ""), {
     headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -564,7 +571,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v7-list-divider:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v8-final-list-layout:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
