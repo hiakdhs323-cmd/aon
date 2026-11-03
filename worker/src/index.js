@@ -641,7 +641,17 @@ export default {
         return await renderFullWikiDocument(request, env, title);
       }
       if (request.method === "GET" && url.pathname === "/") {
-        return Response.redirect(new URL("/w/대문#/", url.origin).toString(), 302);
+        const { shell } = await loadFrontendShell(env);
+        return new Response(shell, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "X-AonWiki-Render": "home-shell"
+          }
+        });
       }
       if (url.pathname === "/api/logout" && request.method === "POST") {
         const authorization = request.headers.get("Authorization") || "";
