@@ -230,9 +230,28 @@ function applyWikiStyles(element,raw){
 }
 const wikiFileLookupCache=new Map();
 const wikiFileLookupPending=new Map();
+const renderedDocumentCache=new Map();
+const renderedDocumentPending=new Map();
+async function getRenderedDocument(title){
+ const key=String(title||"").trim();
+ const cached=renderedDocumentCache.get(key);
+ if(cached&&cached.expiresAt>Date.now())return cached.value;
+ if(renderedDocumentPending.has(key))return renderedDocumentPending.get(key);
+ const pending=api("/api/render?title="+encodeURIComponent(key)).then(data=>{
+  if(data.page&&String(data.html||"").length<=300000){
+   renderedDocumentCache.set(key,{value:data,expiresAt:Date.now()+45*1000});
+   if(renderedDocumentCache.size>12)renderedDocumentCache.delete(renderedDocumentCache.keys().next().value);
+  }
+  return data;
+ }).finally(()=>renderedDocumentPending.delete(key));
+ renderedDocumentPending.set(key,pending);
+ return pending;
+}
 function invalidateNamuDatabaseCache(){
  wikiFileLookupCache.clear();
  wikiFileLookupPending.clear();
+ renderedDocumentCache.clear();
+ renderedDocumentPending.clear();
 }
 async function resolveWikiFile(filename){
  const key=apiBase()+"|"+String(filename||"").trim().toLocaleLowerCase();
@@ -952,7 +971,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("page-protection").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
-  const data=await api("/api/render?title="+encodeURIComponent(title));
+  const data=await getRenderedDocument(title);
   if(requestId!==pageNavigationSequence)return;
   if(!data.page){
    currentContent="";currentProtection={level:"none",reason:""};
