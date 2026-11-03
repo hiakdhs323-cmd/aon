@@ -1,8 +1,7 @@
 import sanitizeHtml from "sanitize-html";
 import type { RequestEvent } from "@sveltejs/kit";
-import { apiOrigin, fetchApi } from "./api";
+import { apiOrigin } from "./api";
 
-const UPSTREAM_WASM = "https://raw.githubusercontent.com/uiovasot/namumark/6d8bd559734c173ae1b728f858a7c9f15e6a77f7/namumark.wasm";
 let modulePromise: Promise<WebAssembly.Module> | undefined;
 
 type NamuExports = WebAssembly.Exports & {
@@ -13,15 +12,17 @@ type NamuExports = WebAssembly.Exports & {
   get_buffer_len(): number;
 };
 
-export function requiresLegacyCompatibility(source: string): boolean {
-  return /\[\[(?:파일|file):|\[include\(|\{\{\{#!|^\s*#redirect\b/im.test(source);
-}
+type StaticAssets = { fetch(input: Request): Promise<Response> };
 
-async function getWasmModule(): Promise<WebAssembly.Module> {
+async function getWasmModule(event: RequestEvent): Promise<WebAssembly.Module> {
   if (!modulePromise) {
     modulePromise = (async () => {
-      const response = await fetch(UPSTREAM_WASM, { headers: { "Accept": "application/wasm, application/octet-stream" } });
-      if (!response.ok) throw new Error("상위 NamuMark WASM을 불러오지 못했습니다: " + response.status);
+      const assets = (event.platform?.env as { ASSETS?: StaticAssets } | undefined)?.ASSETS;
+      const request = new Request(new URL("/namumark.wasm", event.url.origin));
+      const response = assets
+        ? await assets.fetch(request)
+        : await fetch(request);
+      if (!response.ok) throw new Error("NamuMark WASM asset load failed: " + response.status);
       return WebAssembly.compile(await response.arrayBuffer());
     })().catch(error => {
       modulePromise = undefined;
@@ -31,8 +32,8 @@ async function getWasmModule(): Promise<WebAssembly.Module> {
   return modulePromise;
 }
 
-async function renderWithUpstreamWasm(source: string): Promise<string> {
-  const module = await getWasmModule();
+async function renderWithWasm(event: RequestEvent, source: string): Promise<string> {
+  const module = await getWasmModule(event);
   const instance = await WebAssembly.instantiate(module);
   const wasm = instance.exports as NamuExports;
   const input = new TextEncoder().encode(source);
@@ -42,9 +43,11 @@ async function renderWithUpstreamWasm(source: string): Promise<string> {
     const outputPointer = wasm.render_html(pointer, input.length);
     const outputLength = wasm.get_buffer_len();
     if (!Number.isInteger(outputLength) || outputLength < 0 || outputLength > 8000000) {
-      throw new Error("잘못된 WASM 출력 길이");
+      throw new Error("Invalid NamuMark WASM output length: " + outputLength);
     }
-    return new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, outputPointer, outputLength).slice());
+    return new TextDecoder().decode(
+      new Uint8Array(wasm.memory.buffer, outputPointer, outputLength).slice()
+    );
   } finally {
     wasm.dealloc(pointer, input.length);
   }
@@ -68,7 +71,7 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
     transformTags: {
       "a": (_tag, attribs) => {
         const href = String(attribs.href || "");
-        return /^https?:\/\//i.test(href)
+        return /^https?:\\/\\//i.test(href)
           ? { tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } }
           : { tagName: "a", attribs };
       },
@@ -83,25 +86,11 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
 
 export async function renderWikiMarkup(
   event: RequestEvent,
-  title: string,
-  source: string,
-  legacy: { path: string; init?: RequestInit }
-): Promise<{ html: string; engine: string }> {
-  const content = String(source || "");
-  const fallback = async () => {
-    const response = await fetchApi(event, legacy.path, legacy.init || {});
-    if (!response.ok) throw new Error("기존 렌더러 호환 요청 실패: " + response.status);
-    const data = await response.json() as { html?: string };
-    return { html: String(data.html || ""), engine: "legacy-compatibility" };
+  source: string
+): Promise<{ html: string; engine: "uiovasot-namumark-wasm" }> {
+  const html = await renderWithWasm(event, String(source || ""));
+  return {
+    html: sanitizeWikiHtml(html, apiOrigin(event)),
+    engine: "uiovasot-namumark-wasm"
   };
-
-  if (requiresLegacyCompatibility(content)) return fallback();
-
-  try {
-    const html = await renderWithUpstreamWasm(content);
-    return { html: sanitizeWikiHtml(html, apiOrigin(event)), engine: "uiovasot-namumark-wasm" };
-  } catch (error) {
-    console.error("Upstream NamuMark WASM failed; using legacy compatibility renderer", error);
-    return fallback();
-  }
 }

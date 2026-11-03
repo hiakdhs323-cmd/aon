@@ -28,7 +28,7 @@ export const load: PageServerLoad = async (event) => {
   let rendered = "";
   let engine = "empty";
   if (exists) {
-    const result = await renderWikiMarkup(event, title, content, { path: "/api/render?title=" + encodeURIComponent(title) });
+    const result = await renderWikiMarkup(event, content);
     rendered = result.html;
     engine = result.engine;
   }
