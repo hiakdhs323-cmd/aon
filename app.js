@@ -91,7 +91,7 @@ async function checkForNewPages(){
 function startLivePageWatcher(){
  if(window.aonWikiLiveTimer)return;
  checkForNewPages();
- window.aonWikiLiveTimer=window.setInterval(checkForNewPages,10000);
+ window.aonWikiLiveTimer=window.setInterval(checkForNewPages,60000);
 }
 let pageNavigationSequence = 0;
 function showHome(push=true){
@@ -157,7 +157,7 @@ async function loadHome(){
     addText(list,"p",error.message).className="empty-list";
   }
 }
-function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){location.assign("/");return}const target="/w/대문#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"");location.assign(target)}
+function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){showHome(true);return}if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}loadPage(title,true,anchor)}
 function readRoute(){
  const hash=location.hash||"#/";
  if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
@@ -1216,12 +1216,6 @@ $("editor-form").onsubmit = async event => {
   saveButton.disabled = true;
   saveButton.textContent = "저장 중…";
   try {
-    if (editorIsNew) {
-      const data = await api("/api/pages?q=" + encodeURIComponent(title));
-      if ((data.pages || []).some(page => page.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
-        throw new Error("같은 제목의 문서가 이미 있습니다.");
-      }
-    }
     await api("/api/page", {
       method: "PUT",
       body: JSON.stringify({ title, originalTitle: editorIsNew ? "" : editorOriginalTitle, content, summary, createOnly: editorIsNew })
