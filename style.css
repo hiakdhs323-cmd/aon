@@ -632,3 +632,26 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 .missing-page-create{min-height:38px;padding:8px 15px;border:1px solid var(--wiki-primary-dark);border-radius:4px;background:var(--wiki-primary);color:#fff;font-weight:700;cursor:pointer}
 .missing-page-create:hover{filter:brightness(.96)}
 @media(max-width:640px){.missing-page-panel{margin:12px 0;padding:14px}.missing-page-create{width:100%;min-height:42px}}
+
+
+/* NamuWiki-inspired article chrome and navigation */
+.document-view{background:var(--wiki-panel);border:1px solid var(--wiki-border);border-radius:3px;padding:18px 22px;box-shadow:0 1px 2px rgba(0,0,0,.035)}
+.document-view>.document-toolbar,.document-view>.document-tabs{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:0 0 10px;margin:0 0 14px;border-bottom:1px solid var(--wiki-border)}
+.document-view .breadcrumbs{margin-bottom:12px}
+.document-view #title{font-size:27px;font-weight:600;line-height:1.35;letter-spacing:-.45px}
+.wiki-content{font-size:15px;line-height:1.65}
+.wiki-content a{color:var(--wiki-link);text-decoration:none}
+.wiki-content a:hover{text-decoration:underline}
+.wiki-content table{border-collapse:collapse;max-width:100%;font-size:14px}
+.wiki-content th{background:var(--wiki-panel-soft);font-weight:700}
+.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:7px 10px}
+.wiki-content .wiki-table-wrap{max-width:100%;overflow-x:auto}
+@media(max-width:700px){
+ .document-view{padding:13px 12px;border-left:0;border-right:0;border-radius:0}
+ .document-view #title{font-size:23px}
+ .wiki-content{font-size:14px;line-height:1.7}
+ .wiki-content table{display:block;overflow-x:auto;white-space:normal}
+ .site-header{gap:8px;padding-left:10px;padding-right:10px;flex-wrap:wrap}
+ .searchbar{order:3;flex-basis:100%;max-width:none;margin:0}
+ .header-actions{margin-left:auto}
+}
