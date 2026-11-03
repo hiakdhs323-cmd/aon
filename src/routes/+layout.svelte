@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
-  let { children } = $props();
   import legacyShell from "$lib/legacy-shell.html?raw";
+  let { children } = $props();
   const shell = $derived(page.data.shellHtml ?? legacyShell);
   const ssrState = $derived(page.data.ssrState ?? null);
   const documentTitle = $derived(page.data.documentTitle ?? "AonWiki");
