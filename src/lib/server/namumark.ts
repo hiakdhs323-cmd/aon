@@ -71,7 +71,7 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
     transformTags: {
       "a": (_tag, attribs) => {
         const href = String(attribs.href || "");
-        return /^https?:\\/\\//i.test(href)
+        return /^https?:[/][/]/i.test(href)
           ? { tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } }
           : { tagName: "a", attribs };
       },
