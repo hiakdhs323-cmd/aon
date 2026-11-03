@@ -114,6 +114,7 @@ function renderBreadcrumbTrail(){
  });
 }
 function showHome(push=true){
+ breadcrumbTrail=[];
  pageNavigationSequence++;
  if(push)history.pushState(null,"","#/");
  currentTitle="";currentContent="";
