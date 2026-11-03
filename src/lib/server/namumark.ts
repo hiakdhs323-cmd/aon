@@ -54,7 +54,7 @@ async function renderWithWasm(event: RequestEvent, source: string): Promise<stri
 }
 
 async function resolveWikiFileUrls(event: RequestEvent, markup: string): Promise<string> {
-  const paths = new Set([...markup.matchAll(/src=["']\\/files\\/([^"']+)["']/gi)].map(match => String(match[1] || "")));
+  const paths = new Set([...markup.matchAll(/src=["'][/]files[/]([^"']+)["']/gi)].map(match => String(match[1] || "")));
   let output = markup;
   for (const encodedName of paths) {
     let filename = encodedName;
