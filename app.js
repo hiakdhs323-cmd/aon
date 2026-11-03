@@ -886,10 +886,10 @@ async function loadPage(title,pushRoute=true,anchor=""){
    const title=document.createElement("strong");title.textContent="아직 작성되지 않은 문서입니다.";
    const detail=document.createElement("p");detail.textContent="이 문서를 직접 만들거나, 로그인 후 내용을 추가할 수 있습니다.";
    const create=document.createElement("button");create.type="button";create.className="primary-button missing-page-create";create.textContent="이 문서 지금 만들기";
-   create.addEventListener("click",()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}editPage(currentTitle,"");});
+   create.addEventListener("click",()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;});
    notice.append(title,detail,create);$("message").append(notice);
    $("edit").textContent="문서 만들기";
-   $("edit").onclick=()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}editPage(currentTitle,"");};
+   $("edit").onclick=()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;};
    $("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
