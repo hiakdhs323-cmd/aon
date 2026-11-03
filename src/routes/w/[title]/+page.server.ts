@@ -3,7 +3,15 @@ import { error, redirect } from "@sveltejs/kit";
 import legacyShell from "$lib/legacy-shell.html?raw";
 import { fetchApi } from "$lib/server/api";
 import { renderWikiMarkup } from "$lib/server/namumark";
-const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
+const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => {
+  switch (c) {
+    case "&": return "&amp;";
+    case "<": return "&lt;";
+    case ">": return "&gt;";
+    case '"': return "&quot;";
+    default: return "&#39;";
+  }
+});
 export const load: PageServerLoad = async (event) => {
   const title = String(event.params.title || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
   if (!title) throw error(400, "잘못된 문서 제목입니다.");

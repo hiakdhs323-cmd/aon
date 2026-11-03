@@ -2,7 +2,15 @@ import type { PageServerLoad } from "./$types";
 import legacyShell from "$lib/legacy-shell.html?raw";
 import { fetchApi } from "$lib/server/api";
 import { renderWikiMarkup } from "$lib/server/namumark";
-const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
+const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => {
+  switch (c) {
+    case "&": return "&amp;";
+    case "<": return "&lt;";
+    case ">": return "&gt;";
+    case '"': return "&quot;";
+    default: return "&#39;";
+  }
+});
 export const load: PageServerLoad = async (event) => {
   const [pagesResponse, homeResponse] = await Promise.all([
     fetchApi(event, "/api/pages"),
