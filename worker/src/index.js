@@ -706,7 +706,7 @@ export default {
         }, 200, { ...cors, "X-AonWiki-Render": "worker-ssr" });
       }
       if (url.pathname === "/api/render" && request.method === "POST") {
-        if (await authRateLimited(request, env, "namumark-preview", 90, 60 * 1000)) {
+        if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
           return response({ error: "미리보기 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         }
         const body = await request.json();
