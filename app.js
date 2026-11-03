@@ -25,8 +25,12 @@ const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
 const initialSsrState=window.__AONWIKI_SSR__||null;
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
-const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
-function routeFor(title,anchor=""){return "/w/대문#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
+const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
+function routeFor(title,anchor=""){
+ const name=String(title||"").trim();
+ if(!name||name==="대문")return "/";
+ return "/w/"+encodeURIComponent(name)+(anchor?"#"+encodeURIComponent(anchor):"");
+}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 let isWikiAdmin=false;
 let currentRole="anonymous";
@@ -113,7 +117,7 @@ function renderBreadcrumbTrail(){
  const host=document.querySelector("#document-view .breadcrumbs");
  if(!host)return;
  host.replaceChildren();
- const home=document.createElement("a");home.href="/w/대문#/";home.textContent="AonWiki";
+ const home=document.createElement("a");home.href="/";home.textContent="AonWiki";
  home.addEventListener("click",event=>{event.preventDefault();breadcrumbTrail=[];showHome(true)});
  host.append(home);
  breadcrumbTrail.forEach((title,index)=>{
@@ -130,7 +134,7 @@ function renderBreadcrumbTrail(){
 function showHome(push=true){
  breadcrumbTrail=[];
  pageNavigationSequence++;
- if(push)history.pushState(null,"","#/");
+ if(push)history.pushState(null,"","/");
  currentTitle="";currentContent="";
  $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
  document.body.classList.remove("editor-active");
@@ -197,16 +201,42 @@ async function loadHome(){
 }
 function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){showHome(true);return}if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}loadPage(title,true,anchor)}
 function readRoute(){
- const hash=location.hash||"#/";
- if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
- if(hash==="#/categories"){loadCategoryIndex(false);return}
- if(hash==="#/recent"){loadRecentChanges(false);return}
- if(hash.startsWith("#/backlinks/")){let target=hash.slice("#/backlinks/".length);try{target=decodeURIComponent(target)}catch{}loadBacklinks(target,false);return}
- let title="",anchor="";
- if(hash.startsWith("#/w/")){const rest=hash.slice(4),parts=rest.split("#");try{title=decodeURIComponent(parts[0]);anchor=parts[1]?decodeURIComponent(parts[1]):""}catch{title=parts[0]}}
- else if(hash.startsWith("#/")){try{title=decodeURIComponent(hash.slice(2))}catch{title=hash.slice(2)}}
- if(!title||title==="대문"){showHome(false);return}
- loadPage(title,false,anchor)
+ const hash=location.hash||"";
+ // Legacy hash-based URLs remain readable, but all new links use /w/<title>.
+ if(hash.startsWith("#/")){
+  if(hash==="#"||hash==="#/"||hash==="#/home"){history.replaceState(null,"","/");showHome(false);return}
+  if(hash==="#/categories"){loadCategoryIndex(false);return}
+  if(hash==="#/recent"){loadRecentChanges(false);return}
+  if(hash.startsWith("#/backlinks/")){let target=hash.slice("#/backlinks/".length);try{target=decodeURIComponent(target)}catch{}loadBacklinks(target,false);return}
+  let title="",anchor="";
+  if(hash.startsWith("#/w/")){
+   const parts=hash.slice(4).split("#");
+   try{title=decodeURIComponent(parts[0]);anchor=parts[1]?decodeURIComponent(parts[1]):""}
+   catch{title=parts[0];anchor=parts[1]||""}
+  }else{
+   try{title=decodeURIComponent(hash.slice(2))}
+   catch{title=hash.slice(2)}
+  }
+  if(!title||title==="대문"){history.replaceState(null,"","/");showHome(false);return}
+  history.replaceState(null,"",routeFor(title,anchor));
+  if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}
+  loadPage(title,false,anchor);
+  return;
+ }
+ if(location.pathname==="/"||location.pathname==="/index.html"){showHome(false);return}
+ if(location.pathname.startsWith("/w/")){
+  let title="";
+  try{title=decodeURIComponent(location.pathname.slice(3))}
+  catch{title=location.pathname.slice(3)}
+  title=title.trim();
+  if(!title||title==="대문"){showHome(false);return}
+  let anchor="";
+  if(hash)try{anchor=decodeURIComponent(hash.slice(1))}catch{anchor=hash.slice(1)}
+  if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}
+  loadPage(title,false,anchor);
+  return;
+ }
+ showHome(false);
 }
 function navigateInternal(target){
  const raw=String(target||"").trim();
@@ -1830,7 +1860,11 @@ $("file").onchange=async()=>{
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
-if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){prepareServerRenderedMarkup($("article"),currentTitle);if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));}
+if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){
+ prepareServerRenderedMarkup($("article"),currentTitle);
+ if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
+ else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
+}
 if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity();
 startLivePageWatcher();
