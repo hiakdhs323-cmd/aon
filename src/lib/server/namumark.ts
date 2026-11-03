@@ -1,6 +1,6 @@
 import sanitizeHtml from "sanitize-html";
 import type { RequestEvent } from "@sveltejs/kit";
-import { apiOrigin } from "./api";
+import { apiOrigin, fetchApi } from "./api";
 
 let modulePromise: Promise<WebAssembly.Module> | undefined;
 
@@ -53,6 +53,21 @@ async function renderWithWasm(event: RequestEvent, source: string): Promise<stri
   }
 }
 
+async function resolveWikiFileUrls(event: RequestEvent, markup: string): Promise<string> {
+  const paths = new Set([...markup.matchAll(/src=["']\\/files\\/([^"']+)["']/gi)].map(match => String(match[1] || "")));
+  let output = markup;
+  for (const encodedName of paths) {
+    let filename = encodedName;
+    try { filename = decodeURIComponent(encodedName); } catch {}
+    const response = await fetchApi(event, "/api/file?name=" + encodeURIComponent(filename)).catch(() => null);
+    if (!response?.ok) continue;
+    const data = await response.json().catch(() => ({})) as { image?: { key?: string } };
+    if (!data.image?.key) continue;
+    output = output.replaceAll("/files/" + encodedName, "/media/" + data.image.key);
+  }
+  return output;
+}
+
 function sanitizeWikiHtml(markup: string, origin: string): string {
   return sanitizeHtml(markup, {
     allowedTags: [...sanitizeHtml.defaults.allowedTags, "article", "section", "figure", "figcaption", "details", "summary", "ruby", "rt", "rp", "iframe", "video", "audio", "source", "center", "font", "del", "ins", "sub", "sup", "hr"],
@@ -88,7 +103,8 @@ export async function renderWikiMarkup(
   event: RequestEvent,
   source: string
 ): Promise<{ html: string; engine: "uiovasot-namumark-wasm" }> {
-  const html = await renderWithWasm(event, String(source || ""));
+  const rawHtml = await renderWithWasm(event, String(source || ""));
+  const html = await resolveWikiFileUrls(event, rawHtml);
   return {
     html: sanitizeWikiHtml(html, apiOrigin(event)),
     engine: "uiovasot-namumark-wasm"
