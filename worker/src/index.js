@@ -680,7 +680,7 @@ export default {
           },
           html: rendered.html,
           engine: "worker-ssr"
-        }, 200, cors, { "X-AonWiki-Render": "worker-ssr" });
+        }, 200, { ...cors, "X-AonWiki-Render": "worker-ssr" });
       }
       if (url.pathname === "/api/page" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
