@@ -1386,10 +1386,13 @@ try {
         const isUnorderedList = /^\s*\*/m.test(listData);
         const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
         const hasFollowingContent = followingContent.length > 0;
-        const listClass = isUnorderedList && hasFollowingContent
-          ? ' class="wiki-list-has-following-content"'
+        const listEndDivider = isUnorderedList && hasFollowingContent
+          ? '<hr class="wiki-list-end-divider">'
           : "";
-        this.renderData = this.renderData.replace(listRegex, "\n<front_br><ul" + listClass + ">" + listDataStr + "</ul><back_br>\n");
+        this.renderData = this.renderData.replace(
+          listRegex,
+          "\n<front_br><ul>" + listDataStr + "</ul>" + listEndDivider + "<back_br>\n"
+        );
       }
 
       listCountMax -= 1;
