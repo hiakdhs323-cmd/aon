@@ -421,7 +421,7 @@ async function renderFullWikiDocument(request, env, title) {
   };
   let html = shell
     .replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
-    .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#ffffff">\\n<meta name="description" content="' + escapeHtml(description) + '">\\n<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">\\n<meta property="og:description" content="' + escapeHtml(description) + '">\\n<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">')
+    .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#ffffff">' + "\n" + '<meta name="description" content="' + escapeHtml(description) + '">' + "\n" + '<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">' + "\n" + '<meta property="og:description" content="' + escapeHtml(description) + '">' + "\n" + '<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">')
     .replace("<body>", '<body data-ssr-page="true">')
     .replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>')
     .replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">')
@@ -434,7 +434,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
   if (!found) html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
-  html = html.replace('<script defer src="' + origin + '/app.js', '<script>window.__AONWIKI_SSR__=' + safeJsonForHtml(state) + ';</script>\\n<script defer src="' + origin + '/app.js');
+  html = html.replace('<script defer src="' + origin + '/app.js', '<script>window.__AONWIKI_SSR__=' + safeJsonForHtml(state) + ';</script>' + "\n" + '<script defer src="' + origin + '/app.js');
   return new Response(html, {
     status: found ? 200 : 404,
     headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=30, s-maxage=120", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-AonWiki-Render": "full-document" }
@@ -458,7 +458,7 @@ export default {
         try { title = decodeURIComponent(url.pathname.slice(3)); }
         catch { return new Response("잘못된 문서 주소입니다.", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
         title = cleanTitle(title);
-        if (!title || title.includes("/") || title.includes("\\\\")) return new Response("잘못된 문서 주소입니다.", { status: 400 });
+        if (!title || title.includes("/") || title.includes(String.fromCharCode(92))) return new Response("잘못된 문서 주소입니다.", { status: 400 });
         return await renderFullWikiDocument(request, env, title);
       }
       if (request.method === "GET" && url.pathname === "/") {
