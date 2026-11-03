@@ -1106,17 +1106,13 @@ try {
           const listData = listDataMatch[1];
           const listSubRegex = /\n( *)(?:(1|a|A|I|i)\.(?:#([0-9]*))?|(\*)) ?([^\n]*)/g;
           const listDataStr = listData.replace(listSubRegex, intToMatch());
-                    const listEnd = (listDataMatch.index || 0) + listDataMatch[0].length;
-        const isUnorderedList = /^\s*\*/m.test(listData);
-        const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
-        const hasFollowingContent = followingContent.length > 0;
-        const listEndDivider = isUnorderedList && hasFollowingContent
-          ? '<hr class="wiki-list-end-divider">'
-          : "";
-        this.renderData = this.renderData.replace(
-          listRegex,
-          "\n<front_br><ul>" + listDataStr + "</ul>" + listEndDivider + "<back_br>\n"
-        );
+          const listEnd = (listDataMatch.index || 0) + listDataMatch[0].length;
+          const isUnorderedList = /(?:^|\n)\s*\*/.test(listData);
+          const followingSource = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
+          const hasFollowingContent = followingSource.length > 0;
+          const listEndDivider = isUnorderedList && hasFollowingContent ? '<hr class="wiki-list-end-divider" role="separator">' : "";
+          const replacement = '\n<front_br><ul class="' + (isUnorderedList ? "wiki-unordered-list" : "wiki-numbered-list") + '">' + listDataStr + "</ul>" + listEndDivider + "<back_br>\n";
+          this.renderData = this.renderData.slice(0, listDataMatch.index || 0) + replacement + this.renderData.slice(listEnd);
         }
         listCountMax -= 1;
       }
@@ -1925,16 +1921,13 @@ try {
         const headingRestoreRegex = new RegExp("<heading_" + index + ">", "g");
         this.renderData = this.renderData.replace(headingRestoreRegex, "=".repeat(index));
       }
-            let tocData = "";
+      let tocData = "";
       if (tocList.length !== 0) {
         tocData = '<div class="opennamu_TOC" id="toc"><span class="opennamu_TOC_title">\uBAA9\uCC28</span>';
       }
       for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
         const element = tocList[tocIndex];
-        tocData += (tocIndex === 0 ? "" : "<br>") +
-          '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) +
-          '<span class="opennamu_TOC_list"><a href="#s-' + element[0] + '">' +
-          element[0] + ". </a><toc_inside>" + element[1] + "</toc_inside></span>";
+        tocData += (tocIndex === 0 ? "" : "<br>") + '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) + '<span class="opennamu_TOC_list"><a href="#s-' + element[0] + '">' + element[0] + ". </a><toc_inside>" + element[1] + "</toc_inside></span>";
       }
       if (tocData !== "") {
         tocData += "</div>";
@@ -2062,6 +2055,7 @@ try {
       this.renderDataJS += `document.querySelectorAll('details').forEach((el) => {new Accordion(el);});if(window.location.hash !== '' && document.getElementById(window.location.hash.replace(/^#/, ''))) {document.getElementById(window.location.hash.replace(/^#/, '')).focus();}
 opennamu_do_ip_render();
 `;
+      this.renderData = '<div style="font-size:16px !important; line-height:1.7 !important;">' + this.renderData + "</div>";
     }
     manageAfterwork() {
     }
