@@ -1,0 +1,29 @@
+name: SvelteKit build and live document compatibility
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Download pinned upstream NamuMark WASM
+        run: npm run prepare:wasm
+      - name: Svelte and TypeScript checks
+        run: npm run check
+      - name: Production build
+        run: npm run build
+      - name: Test every existing D1 document
+        run: npm run test:live-compat

@@ -1,0 +1,29 @@
+{
+  "name": "aonwiki",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare:wasm": "node scripts/download-namumark.mjs",
+    "dev": "vite dev",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "build": "vite build",
+    "preview": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "test:live-compat": "node scripts/check-live-docs.mjs"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-cloudflare": "^7.0.0",
+    "@sveltejs/kit": "^2.50.0",
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@types/sanitize-html": "^2.16.0",
+    "svelte": "^5.45.0",
+    "svelte-check": "^4.3.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "wrangler": "^4.45.0"
+  },
+  "dependencies": {
+    "sanitize-html": "^2.17.0"
+  }
+}
