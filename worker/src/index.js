@@ -226,9 +226,28 @@ function collectCategoryTargets(source) {
   }
   return targets;
 }
+let namuPageTitleIndexCache = { expiresAt: 0, rows: [] };
+let namuPageTitleIndexPromise = null;
+function invalidateNamuServerIndexes() {
+  namuPageTitleIndexCache.expiresAt = 0;
+  namuPageTitleIndexCache.rows = [];
+}
+async function getNamuPageTitleIndex(env) {
+  if (Date.now() < namuPageTitleIndexCache.expiresAt) return namuPageTitleIndexCache.rows;
+  if (!namuPageTitleIndexPromise) {
+    namuPageTitleIndexPromise = env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 20000").all()
+      .then(result => {
+        namuPageTitleIndexCache.rows = result.results || [];
+        namuPageTitleIndexCache.expiresAt = Date.now() + 60 * 1000;
+        return namuPageTitleIndexCache.rows;
+      })
+      .finally(() => { namuPageTitleIndexPromise = null; });
+  }
+  return await namuPageTitleIndexPromise;
+}
 async function buildNamuServerDatabase(env, title, content) {
-  const pageIndex=await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 20000").all();
-  const records=new Map((pageIndex.results||[]).map(row=>[row.title,{title:row.title,data:""}]));
+  const pageRows=await getNamuPageTitleIndex(env);
+  const records=new Map(pageRows.map(row=>[row.title,{title:row.title,data:""}]));
   records.set(title,{title,data:String(content||"")});
 
   let pending=collectIncludeTargets(content);
@@ -251,7 +270,7 @@ async function buildNamuServerDatabase(env, title, content) {
   }
 
   const allMarkup=[String(content||""),...[...records.values()].map(item=>item.data||"")].join("\n");
-  for(const row of pageIndex.results||[]){
+  for(const row of pageRows){
     if(/^분류:/i.test(row.title)){
       const name=row.title.replace(/^분류:/i,"");
       records.set("category:"+name,{title:"category:"+name,data:""});
@@ -276,7 +295,8 @@ async function buildNamuServerDatabase(env, title, content) {
       if(name)records.set("file:"+name,{title:"file:"+name,data:""});
     }
   }
-  return {data:[...records.values()]};
+  const data=[...records.values()];
+  return {data,lookup:new Map(data.map(item=>[item.title,item]))};
 }
 async function sanitizeServerWikiHtml(markup) {
   const input=new Response(String(markup||""),{headers:{"Content-Type":"text/html; charset=utf-8"}});
@@ -461,6 +481,7 @@ export default {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title || title === "대문") return response({ error: "삭제할 수 없는 문서입니다." }, 400, cors);
         await env.DB.prepare("DELETE FROM pages WHERE title = ?").bind(title).run();
+        invalidateNamuServerIndexes();
         await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
         return response({ ok: true, title }, 200, cors);
       }
@@ -765,6 +786,7 @@ export default {
             .bind(content, now, title).run();
         }
 
+        invalidateNamuServerIndexes();
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, summary).run();
         return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
