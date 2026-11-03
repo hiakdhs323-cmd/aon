@@ -1005,16 +1005,16 @@ $("settings").onclick=()=>{
  $("dialog-body").append(note);
 };
 $("labs").onclick=()=>{
-  showDialog("실험실 · 렌더링",[],async()=>{$("dialog").close()},"닫기");
+  showDialog("정식 나무마크 엔진",[],async()=>{$("dialog").close()},"닫기");
   const body=$("dialog-body");body.replaceChildren();
   const card=document.createElement("section");card.className="labs-feature";
-  addText(card,"h3","서버 측 나무마크 렌더링");
-  addText(card,"p","문서 본문, 대문, 분류 설명, 편집 미리보기의 나무마크 파싱은 Cloudflare Worker에서 처리합니다. 브라우저는 서버가 생성한 HTML을 표시하고 각주·접기·문서 이동 같은 화면 상호작용만 연결합니다.");
+  addText(card,"h3","Worker 정식 렌더링 엔진");
+  addText(card,"p","문서 주소(/w/문서명)를 열면 Cloudflare Worker가 D1에서 문서를 조회하고 정식 나무마크 엔진으로 파싱·정화한 뒤, 공통 HTML 셸과 문서 본문을 합친 완전한 HTML 문서를 응답합니다. 브라우저는 전달받은 문서에 각주·접기 등의 상호작용만 연결합니다. 편집기 미리보기는 별도의 JSON 렌더링 API를 사용합니다.");
   const label=document.createElement("label");label.className="labs-toggle";
   const input=document.createElement("input");input.type="checkbox";input.checked=true;input.disabled=true;
-  const textLabel=document.createElement("span");textLabel.textContent="Worker SSR 사용 중";
+  const textLabel=document.createElement("span");textLabel.textContent="서버에서 완성한 전체 문서 HTML 응답";
   label.append(input,textLabel);card.append(label);
-  const state=addText(card,"p","활성화됨 · 브라우저에서 나무마크를 파싱하지 않습니다.");state.className="labs-state";
+  const state=addText(card,"p","정식 엔진 활성화됨 · 문서 첫 화면을 브라우저에서 다시 파싱하거나 재구성하지 않습니다.");state.className="labs-state";
   body.append(card);
 };
 async function editHomepage(){
