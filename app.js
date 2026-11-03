@@ -156,7 +156,7 @@ async function loadHome(){
     addText(list,"p",error.message).className="empty-list";
   }
 }
-function openPage(title,anchor=""){title=String(title||"").trim();if(!title||title==="대문"){showHome(true);return}history.pushState(null,"",routeFor(title,anchor));loadPage(title,false,anchor)}
+function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){location.assign("/");return}const target="/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"");location.assign(target)}
 function readRoute(){
  const hash=location.hash||"#/";
  if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
@@ -579,7 +579,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     if (serverRenderVersions.get(target) !== version) return;
     target.innerHTML = String(data.html || "");
     prepareServerRenderedMarkup(target, docTitle);
-    target.dataset.renderEngine = data.engine || "worker-ssr";
+    target.dataset.renderEngine = data.engine || "namumark-worker";
   } catch (error) {
     if (serverRenderVersions.get(target) !== version) return;
     target.replaceChildren();
@@ -1641,7 +1641,7 @@ $("file").onchange=async()=>{
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
-if(document.body.dataset.ssrPage!=="true")readRoute();
+if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){prepareServerRenderedMarkup($("article"),currentTitle);if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));}\nif(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity();
 startLivePageWatcher();
 
