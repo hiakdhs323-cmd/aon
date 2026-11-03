@@ -24,10 +24,7 @@ export const load: PageServerLoad = async (event) => {
   const homeContent = String(settings.content || "");
   let rendered = "";
   if (homeContent) {
-    const result = await renderWikiMarkup(event, "대문", homeContent, {
-      path: "/api/render",
-      init: { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "대문", content: homeContent }) }
-    });
+    const result = await renderWikiMarkup(event, homeContent);
     rendered = result.html;
   }
   const pageRows = (pagesData.pages || []).filter(item => item.title !== "대문" && !/^(?:분류|category):/i.test(item.title || ""));
