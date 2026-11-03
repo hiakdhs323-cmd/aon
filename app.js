@@ -382,7 +382,7 @@ function refreshWikiTableContrast(root=document){
  if(root.querySelectorAll)tables.push(...root.querySelectorAll("table"));
  for(const table of tables){
   const textElements=[...table.querySelectorAll("td,th,td *,th *")].filter(element=>
-   [...element.childNodes].some(node=>node.nodeType===Node.TEXT_NODE&&node.nodeValue.trim())
+   !element.closest("a")&&[...element.childNodes].some(node=>node.nodeType===Node.TEXT_NODE&&node.nodeValue.trim())
   );
   for(const element of textElements){
    if(element.dataset.wikiContrastSaved!=="1"){
@@ -405,7 +405,7 @@ function refreshWikiTableContrast(root=document){
  }
 }
 function sanitizeNamuStylesheet(raw) {
-  const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
+  const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|visited|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
   const allowedThemeRoot = /^html\[data-theme=(?:"(?:light|dark)"|'(?:light|dark)'|(?:light|dark))\]$/i;
   const rules = String(raw || "").replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [];
   const safeRules = [];
