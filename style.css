@@ -646,11 +646,17 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 .wiki-content th{background:var(--wiki-panel-soft);font-weight:700}
 .wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:7px 10px}
 .wiki-content .wiki-table-wrap{max-width:100%;overflow-x:auto}
+/* Document typography and stable table layout */
+.wiki-content{font-size:16px;line-height:1.75}
+.wiki-content p{line-height:1.75}
+.wiki-content table{display:table;width:max-content;min-width:100%;max-width:none;table-layout:auto;border-collapse:collapse}
+.wiki-content th,.wiki-content td{white-space:normal;overflow-wrap:anywhere;word-break:normal;vertical-align:top}
 @media(max-width:700px){
  .document-view{padding:13px 12px;border-left:0;border-right:0;border-radius:0}
  .document-view #title{font-size:23px}
- .wiki-content{font-size:14px;line-height:1.7}
- .wiki-content table{display:block;overflow-x:auto;white-space:normal}
+ .wiki-content{font-size:15.5px;line-height:1.75;max-width:100%;overflow-x:auto}
+ .wiki-content table{display:table;width:max-content;min-width:100%;max-width:none;font-size:13px}
+ .wiki-content th,.wiki-content td{padding:6px 8px}
  .site-header{gap:8px;padding-left:10px;padding-right:10px;flex-wrap:wrap}
  .searchbar{order:3;flex-basis:100%;max-width:none;margin:0}
  .header-actions{margin-left:auto}
