@@ -5,6 +5,9 @@ import { renderWikiMarkup } from "$lib/server/namumark";
 
 type WikiPage = { title: string; content: string; updated_at?: string };
 type ImageFile = { id: string; filename: string };
+type D1Result = { meta?: { changes?: number } };
+type D1Statement = { bind(...values: unknown[]): D1Statement; first<T = unknown>(): Promise<T | null>; run(): Promise<D1Result> };
+type D1Database = { prepare(sql: string): D1Statement; batch(statements: D1Statement[]): Promise<D1Result[]> };
 
 const legacyPattern = /\[\[(?:파일|file):|\[include\(|\{\{\{#!(?:folding|wiki|syntax)\b/i;
 
@@ -102,7 +105,7 @@ export const POST: RequestHandler = async (event) => {
   if (!authorization.startsWith("Bearer ")) return json({ error: "관리자 로그인이 필요합니다." }, { status: 401 });
   const meResponse = await fetchApi(event, "/api/me", { headers: { Authorization: authorization } });
   if (!meResponse.ok) return json({ error: "관리자 권한을 확인하지 못했습니다." }, { status: 401 });
-  const me = await meResponse.json() as { isAdmin?: boolean };
+  const me = await meResponse.json() as { isAdmin?: boolean; username?: string };
   if (!me.isAdmin) return json({ error: "위키 관리자 권한이 필요합니다." }, { status: 403 });
 
   const body = await event.request.json().catch(() => ({})) as { apply?: boolean; limit?: number };
@@ -152,15 +155,30 @@ export const POST: RequestHandler = async (event) => {
         report.push({ title, status: "ready", changes, unresolved });
         continue;
       }
-      const saveResponse = await fetchApi(event, "/api/admin/migrate-page", {
-        method: "POST",
-        headers: { Authorization: authorization, "Content-Type": "application/json" },
-        body: JSON.stringify({ title, expectedUpdatedAt: String(data.page.updated_at || ""), content: migrated })
-      });
-      if (!saveResponse.ok) {
-        const errorData = await saveResponse.json().catch(() => ({})) as { error?: string };
-        throw new Error(errorData.error || "문서 저장 HTTP " + saveResponse.status);
+      const db = (event.platform?.env as { DB?: D1Database } | undefined)?.DB;
+      if (!db) throw new Error("D1 데이터베이스 바인딩을 사용할 수 없습니다.");
+      const expectedUpdatedAt = String(data.page.updated_at || "");
+      const current = await db.prepare("SELECT content, updated_at FROM pages WHERE title = ?").bind(title).first<{ content: string; updated_at: string }>();
+      if (!current || String(current.updated_at || "") !== expectedUpdatedAt || String(current.content || "") !== original) {
+        throw new Error("검사 이후 문서가 변경되었습니다. 다시 검사하세요.");
       }
+      await db.prepare("CREATE TABLE IF NOT EXISTS wiki_migration_backups (id TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, original_content TEXT NOT NULL, migrated_content TEXT NOT NULL, created_at TEXT NOT NULL, created_by TEXT NOT NULL, engine_version TEXT NOT NULL)").run();
+      await db.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+      const revisionColumns = await db.prepare("PRAGMA table_info(revisions)").all();
+      if (!((revisionColumns as { results?: Array<{ name: string }> }).results || []).some(column => column.name === "summary")) {
+        await db.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+      }
+      const now = new Date().toISOString();
+      const backupId = crypto.randomUUID();
+      const batch = await db.batch([
+        db.prepare("INSERT INTO wiki_migration_backups (id, title, original_content, migrated_content, created_at, created_by, engine_version) SELECT ?, title, content, ?, ?, ?, 'uiovasot-namumark-wasm' FROM pages WHERE title = ? AND updated_at = ?")
+          .bind(backupId, migrated, now, String(me.username || "wiki-admin"), title, expectedUpdatedAt),
+        db.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ? AND updated_at = ?")
+          .bind(migrated, now, title, expectedUpdatedAt),
+        db.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) SELECT title, content, ?, ?, ? FROM pages WHERE title = ? AND updated_at = ?")
+          .bind(String(me.username || "wiki-admin"), now, "NamuMark WASM 자동 문법 마이그레이션", title, now)
+      ]);
+      if (Number(batch?.[1]?.meta?.changes || 0) !== 1) throw new Error("동시 수정이 감지되어 반영하지 않았습니다.");
       report.push({ title, status: "migrated", changes, unresolved });
     } catch (error) {
       report.push({ title, status: "error", error: error instanceof Error ? error.message : String(error) });
