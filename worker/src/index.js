@@ -233,6 +233,7 @@ function invalidateNamuServerIndexes() {
   namuPageTitleIndexCache.rows = [];
   namuRenderCache.clear();
   namuRenderPending.clear();
+  clearNamuPageResponseCache();
 }
 async function getNamuPageTitleIndex(env) {
   if (Date.now() < namuPageTitleIndexCache.expiresAt) return namuPageTitleIndexCache.rows;
@@ -240,7 +241,7 @@ async function getNamuPageTitleIndex(env) {
     namuPageTitleIndexPromise = env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 20000").all()
       .then(result => {
         namuPageTitleIndexCache.rows = result.results || [];
-        namuPageTitleIndexCache.expiresAt = Date.now() + 60 * 1000;
+        namuPageTitleIndexCache.expiresAt = Date.now() + 10 * 60 * 1000;
         return namuPageTitleIndexCache.rows;
       })
       .finally(() => { namuPageTitleIndexPromise = null; });
@@ -357,6 +358,10 @@ async function sanitizeServerWikiHtml(markup) {
 }
 const namuRenderCache = new Map();
 const namuRenderPending = new Map();
+// Cache complete document API payloads, not only parsed HTML, to avoid repeat D1 reads.
+const namuPageResponseCache = new Map();
+const namuPageResponsePending = new Map();
+function clearNamuPageResponseCache(){namuPageResponseCache.clear();namuPageResponsePending.clear();}
 async function renderNamuMarkupOnWorker(env, title, source) {
   const text = String(source || "");
   const cacheKey = String(title) + ":" + namuFileHash(text);
@@ -799,27 +804,44 @@ export default {
       if (url.pathname === "/api/render" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
-        let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
-        if (!page) {
-          await ensurePageAliasSchema(env);
-          const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
-          if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
+        const cached = namuPageResponseCache.get(title);
+        if (cached && cached.expiresAt > Date.now()) {
+          return response(cached.value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "HIT" });
         }
-        if (!page) return response({ page: null, html: "", engine: "namumark-worker" }, 200, cors);
-        await ensurePageProtectionSchema(env);
-        const protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first();
-        const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
-        return response({
-          page: {
-            ...page,
-            protectionLevel: protection?.level || "none",
-            protectionReason: protection?.reason || "",
-            protectedBy: protection?.protected_by || "",
-            protectionUpdatedAt: protection?.updated_at || ""
-          },
-          html: rendered.html,
-          engine: "namumark-worker"
-        }, 200, { ...cors, "X-AonWiki-Render": "namumark-worker" });
+        if (namuPageResponsePending.has(title)) {
+          const value = await namuPageResponsePending.get(title);
+          return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "COALESCED" });
+        }
+        const pending = (async () => {
+          let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
+          if (!page) {
+            await ensurePageAliasSchema(env);
+            const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+            if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
+          }
+          if (!page) return { page: null, html: "", engine: "namumark-worker" };
+          await ensurePageProtectionSchema(env);
+          const protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first();
+          const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
+          return {
+            page: {
+              ...page,
+              protectionLevel: protection?.level || "none",
+              protectionReason: protection?.reason || "",
+              protectedBy: protection?.protected_by || "",
+              protectionUpdatedAt: protection?.updated_at || ""
+            },
+            html: rendered.html,
+            engine: "namumark-worker"
+          };
+        })().then(value => {
+          namuPageResponseCache.set(title, { value, expiresAt: Date.now() + 2 * 60 * 1000 });
+          if (namuPageResponseCache.size > 100) namuPageResponseCache.delete(namuPageResponseCache.keys().next().value);
+          return value;
+        }).finally(() => namuPageResponsePending.delete(title));
+        namuPageResponsePending.set(title, pending);
+        const value = await pending;
+        return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "MISS" });
       }
       if (url.pathname === "/api/render" && request.method === "POST") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
