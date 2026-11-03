@@ -231,6 +231,8 @@ let namuPageTitleIndexPromise = null;
 function invalidateNamuServerIndexes() {
   namuPageTitleIndexCache.expiresAt = 0;
   namuPageTitleIndexCache.rows = [];
+  namuRenderCache.clear();
+  namuRenderPending.clear();
 }
 async function getNamuPageTitleIndex(env) {
   if (Date.now() < namuPageTitleIndexCache.expiresAt) return namuPageTitleIndexCache.rows;
@@ -353,16 +355,32 @@ async function sanitizeServerWikiHtml(markup) {
   }).transform(input);
   return await rewritten.text();
 }
+const namuRenderCache = new Map();
+const namuRenderPending = new Map();
 async function renderNamuMarkupOnWorker(env, title, source) {
-  const database=await buildNamuServerDatabase(env,title,source);
-  const parser=new NamuMarkBundle.NamuMark(
-    String(source||""),
-    {docName:title,useTocSet:"default",docType:"view"},
-    database
-  );
-  const parsed=parser.parse();
-  const html=await sanitizeServerWikiHtml(parsed[0]||"");
-  return {html,metadata:parsed[2]||{}};
+  const text = String(source || "");
+  const cacheKey = String(title) + ":" + namuFileHash(text);
+  const cached = namuRenderCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
+  const pending = (async () => {
+    const database = await buildNamuServerDatabase(env, title, text);
+    const parser = new NamuMarkBundle.NamuMark(
+      text,
+      { docName: title, useTocSet: "default", docType: "view" },
+      database
+    );
+    const parsed = parser.parse();
+    const value = { html: await sanitizeServerWikiHtml(parsed[0] || ""), metadata: parsed[2] || {} };
+    namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
+    if (namuRenderCache.size > 100) {
+      const oldest = namuRenderCache.keys().next().value;
+      if (oldest) namuRenderCache.delete(oldest);
+    }
+    return value;
+  })().finally(() => namuRenderPending.delete(cacheKey));
+  namuRenderPending.set(cacheKey, pending);
+  return pending;
 }
 
 async function sha256(value) {
@@ -383,13 +401,22 @@ function rewriteFrontendAssets(html, frontendOrigin) {
   return html.replace(/((?:href|src)=["'])(style\.css|namumark-beta\.css|app\.js)([^"']*)(["'])/g,
     (_, prefix, file, query, suffix) => prefix + base + file + query + suffix);
 }
+let frontendShellCache = { value: null, expiresAt: 0 };
+let frontendShellPending = null;
 async function loadFrontendShell(env) {
-  const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-  const shellResponse = await fetch(origin + "/", { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } });
-  if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
-  const shell = await shellResponse.text();
-  if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
-  return { shell: rewriteFrontendAssets(shell, origin), origin };
+  if (frontendShellCache.value && frontendShellCache.expiresAt > Date.now()) return frontendShellCache.value;
+  if (frontendShellPending) return frontendShellPending;
+  frontendShellPending = (async () => {
+    const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+    const shellResponse = await fetch(origin + "/", { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } });
+    if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
+    const shell = await shellResponse.text();
+    if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
+    const value = { shell: rewriteFrontendAssets(shell, origin), origin };
+    frontendShellCache = { value, expiresAt: Date.now() + 5 * 60 * 1000 };
+    return value;
+  })().finally(() => { frontendShellPending = null; });
+  return frontendShellPending;
 }
 async function findWikiPage(env, title) {
   let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
@@ -469,8 +496,7 @@ export default {
         return await renderFullWikiDocument(request, env, title);
       }
       if (request.method === "GET" && url.pathname === "/") {
-        const { shell } = await loadFrontendShell(env);
-        return new Response(shell, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60", "X-AonWiki-Render": "shell" } });
+        return Response.redirect(new URL("/w/RPG%20%EB%8C%80%EB%AC%B8", url.origin).toString(), 302);
       }
       if (url.pathname === "/api/logout" && request.method === "POST") {
         const authorization = request.headers.get("Authorization") || "";
