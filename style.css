@@ -700,6 +700,16 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 html[data-theme="dark"] .wiki-content table{border-color:var(--wiki-border-strong)}
 html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 
+/* Table links follow the cell's automatically selected high-contrast text color. */
+.wiki-content table td a,
+.wiki-content table td a:visited,
+.wiki-content table td a:hover,
+.wiki-content table th a,
+.wiki-content table th a:visited,
+.wiki-content table th a:hover{
+  color:inherit;
+}
+
 /* Allow links inside an explicitly colored NamuMark span to inherit that color. */
 .wiki-content span[style*="color"] a,
 .wiki-content span[style*="color"] a:visited,
