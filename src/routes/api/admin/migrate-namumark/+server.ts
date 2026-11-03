@@ -6,10 +6,10 @@ import { renderWikiMarkup } from "$lib/server/namumark";
 type WikiPage = { title: string; content: string; updated_at?: string };
 type ImageFile = { id: string; filename: string };
 type D1Result = { meta?: { changes?: number } };
-type D1Statement = { bind(...values: unknown[]): D1Statement; first<T = unknown>(): Promise<T | null>; run(): Promise<D1Result> };
+type D1Statement = { bind(...values: unknown[]): D1Statement; first<T = unknown>(): Promise<T | null>; all<T = unknown>(): Promise<{ results?: T[] }>; run(): Promise<D1Result> };
 type D1Database = { prepare(sql: string): D1Statement; batch(statements: D1Statement[]): Promise<D1Result[]> };
 
-const legacyPattern = /\[\[(?:파일|file):|\[include\(|\{\{\{#!(?:folding|wiki|syntax)\b/i;
+const legacyPattern = /\[\[(?:파일|file):|\[include\(|\{\{\{#!/i;
 
 function safeStyle(raw: string): string {
   const allowed = new Set(["color", "background-color", "font-size", "font-weight", "font-style", "text-align", "text-decoration", "width", "max-width", "margin", "padding", "border", "border-radius"]);
@@ -139,7 +139,7 @@ export const POST: RequestHandler = async (event) => {
         continue;
       }
       const rendered = await renderWikiMarkup(event, migrated);
-      const stillLegacy = /\[include\(|\{\{\{#!(?:folding|wiki|syntax)|\[\[파일:/i.test(rendered.html);
+      const stillLegacy = /\[include\(|\{\{\{#!|\[\[파일:/i.test(rendered.html);
       if (!rendered.html.trim() || stillLegacy || unresolved.length) {
         report.push({ title, status: "manual-review-required", unresolved: [...unresolved, ...(stillLegacy ? ["새 엔진 출력에 기존 문법이 남아 있음"] : []), ...(!rendered.html.trim() ? ["새 엔진 렌더링 결과가 비어 있음"] : [])] });
         continue;
