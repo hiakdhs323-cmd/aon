@@ -264,6 +264,9 @@ function buildAdminLinkColorMarkup(html, colors) {
     if (color) rules.push(selector + "{color:" + color + " !important}");
   }
   if (!rules.length) return String(html || "");
+  // Explicit NamuMark text colors take precedence over page-wide link colors,
+  // including configured visited and hover states.
+  rules.push('.aonwiki-page-content span[style*="color"] a, .aonwiki-page-content span[style*="color"] a:visited, .aonwiki-page-content span[style*="color"] a:hover{color:inherit !important}');
   return "<style>" + rules.join("\n") + "</style><div class=\"aonwiki-page-content\">" + String(html || "") + "</div>";
 }
 async function getPageLinkColors(env, title) {
