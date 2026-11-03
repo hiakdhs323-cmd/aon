@@ -496,7 +496,7 @@ export default {
         return await renderFullWikiDocument(request, env, title);
       }
       if (request.method === "GET" && url.pathname === "/") {
-        return Response.redirect(new URL("/w/RPG%20%EB%8C%80%EB%AC%B8", url.origin).toString(), 302);
+        return Response.redirect(new URL("/w/대문#/", url.origin).toString(), 302);
       }
       if (url.pathname === "/api/logout" && request.method === "POST") {
         const authorization = request.headers.get("Authorization") || "";
