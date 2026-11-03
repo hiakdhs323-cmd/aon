@@ -727,3 +727,14 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 .document-view .wiki-content li > ol{
   padding-left:18px;
 }
+
+/* Final article typography and list alignment overrides. */
+.document-view .wiki-content{font-size:14px;line-height:1.72}
+.document-view .wiki-content ul,
+.document-view .wiki-content ol{margin-left:0;padding-left:1.15em}
+.document-view .wiki-content li>ul,
+.document-view .wiki-content li>ol{padding-left:1.15em}
+.document-view .wiki-content .wiki-list-end-divider{
+  display:block;width:100%;height:0;margin:18px 0;
+  border-top:1px solid var(--wiki-border-strong);
+}
