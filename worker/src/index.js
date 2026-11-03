@@ -295,23 +295,16 @@ async function buildNamuServerDatabase(env, title, content) {
     );
   }
 
-  const fileNames = [...linkTargets]
-    .filter(name => name.startsWith("file:"))
-    .map(name => name.slice(5))
-    .filter(Boolean);
+  // NamuMark supports nested file links inside link labels and templates.
+  // A flat [[...]] scan can swallow nested [[파일:...]] markup, so index all
+  // image names when the document contains any file syntax.
   const imageQueries = [];
-  if (fileNames.length) {
+  if (/\\[\\[(?:파일|file):/i.test(allMarkup)) {
     await ensureImageSchema(env);
-    for (let index = 0; index < fileNames.length; index += 90) {
-      const batch = fileNames.slice(index, index + 90);
-      const placeholders = batch.map(() => "?").join(",");
-      imageQueries.push(
-        env.DB.prepare("SELECT filename FROM images WHERE filename IN (" + placeholders + ")")
-          .bind(...batch).all(),
-        env.DB.prepare("SELECT alias FROM image_aliases WHERE alias IN (" + placeholders + ")")
-          .bind(...batch).all()
-      );
-    }
+    imageQueries.push(
+      env.DB.prepare("SELECT filename FROM images").all(),
+      env.DB.prepare("SELECT alias FROM image_aliases").all()
+    );
   }
 
   const [pageCount, ...lookups] = await Promise.all([
@@ -419,7 +412,7 @@ function invalidateNamuServerIndexes() {
 }
 async function renderNamuMarkupOnWorker(env, title, source) {
   const text = String(source || "");
-  const cacheKey = "targeted-db-v3:" + String(title) + ":" + namuFileHash(text);
+  const cacheKey = "targeted-db-v4-nested-images:" + String(title) + ":" + namuFileHash(text);
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
