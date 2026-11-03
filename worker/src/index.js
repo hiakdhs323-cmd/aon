@@ -270,14 +270,14 @@ async function buildNamuServerDatabase(env, title, content) {
   }
 
   const allMarkup=[String(content||""),...[...records.values()].map(item=>item.data||"")].join("\n");
+  const categoryAliases = new Set();
   for(const row of pageRows){
-    if(/^분류:/i.test(row.title)){
-      const name=row.title.replace(/^분류:/i,"");
-      records.set("category:"+name,{title:"category:"+name,data:""});
-    }
+    const rowTitle=String(row.title||"");
+    if(/^분류:/i.test(rowTitle))categoryAliases.add("category:"+rowTitle.replace(/^분류:/i,""));
+    else if(/^category:/i.test(rowTitle))categoryAliases.add(rowTitle);
   }
   for(const category of collectCategoryTargets(allMarkup)){
-    records.set("category:"+category,{title:"category:"+category,data:""});
+    categoryAliases.add("category:"+category);
   }
 
   if(/\[\[(?:파일|file):/i.test(allMarkup)){
@@ -296,7 +296,9 @@ async function buildNamuServerDatabase(env, title, content) {
     }
   }
   const data=[...records.values()];
-  return {data,lookup:new Map(data.map(item=>[item.title,item]))};
+  const lookup=new Map(data.map(item=>[item.title,item]));
+  for(const categoryTitle of categoryAliases)lookup.set(categoryTitle,{title:categoryTitle,data:""});
+  return {data,lookup};
 }
 async function sanitizeServerWikiHtml(markup) {
   const input=new Response(String(markup||""),{headers:{"Content-Type":"text/html; charset=utf-8"}});
