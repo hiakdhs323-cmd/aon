@@ -84,17 +84,17 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
       "*": {
         "color": [/^#[0-9a-f]{3,8}$/i, /^[a-z]{1,24}$/i],
         "background-color": [/^#[0-9a-f]{3,8}$/i, /^[a-z]{1,24}$/i],
-        "font-size": [/^\\d+(?:\\.\\d+)?(?:px|em|rem|%)$/i],
+        "font-size": [/^\d+(?:\.\d+)?(?:px|em|rem|%)$/i],
         "font-weight": [/^(?:normal|bold|[1-9]00)$/i],
         "font-style": [/^(?:normal|italic|oblique)$/i],
         "text-align": [/^(?:left|right|center|justify)$/i],
         "text-decoration": [/^(?:none|underline|line-through)$/i],
-        "width": [/^\\d+(?:\\.\\d+)?(?:px|%)$/i],
-        "max-width": [/^\\d+(?:\\.\\d+)?(?:px|%)$/i],
-        "margin": [/^[\\d.\\s%pxemauto-]+$/i],
-        "padding": [/^[\\d.\\s%pxem-]+$/i],
-        "border": [/^[\\w\\s#().,%/-]+$/i],
-        "border-radius": [/^\\d+(?:\\.\\d+)?(?:px|%)$/i]
+        "width": [/^\d+(?:\.\d+)?(?:px|%)$/i],
+        "max-width": [/^\d+(?:\.\d+)?(?:px|%)$/i],
+        "margin": [/^[\d.\s%pxemauto-]+$/i],
+        "padding": [/^[\d.\s%pxem-]+$/i],
+        "border": [/^[\w\s#().,%/-]+$/i],
+        "border-radius": [/^\d+(?:\.\d+)?(?:px|%)$/i]
       }
     },
     allowedSchemes: ["http", "https", "mailto"],
