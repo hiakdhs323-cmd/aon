@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://uiovasot.github.io/namumark/namumark.css" />
   <link rel="stylesheet" href="/legacy/style.css?v=sveltekit-1" />
   <link rel="stylesheet" href="/legacy/namumark-beta.css" />
+  <link rel="stylesheet" href="/legacy/namuwiki-reading.css?v=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" crossorigin="anonymous" />
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
