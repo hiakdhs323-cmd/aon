@@ -623,3 +623,12 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
   html{scroll-behavior:auto}
   *,*::before,*::after{transition:none!important;animation:none!important}
 }
+
+
+/* Missing-document inline creation */
+.missing-page-panel{display:block;margin:16px 0;padding:18px 20px;border:1px solid var(--wiki-border);border-left:4px solid var(--wiki-primary);border-radius:4px;background:var(--wiki-panel);color:var(--wiki-text)}
+.missing-page-panel strong{display:block;font-size:16px;font-weight:700}
+.missing-page-panel p{margin:8px 0 14px;color:var(--wiki-muted);line-height:1.65}
+.missing-page-create{min-height:38px;padding:8px 15px;border:1px solid var(--wiki-primary-dark);border-radius:4px;background:var(--wiki-primary);color:#fff;font-weight:700;cursor:pointer}
+.missing-page-create:hover{filter:brightness(.96)}
+@media(max-width:640px){.missing-page-panel{margin:12px 0;padding:14px}.missing-page-create{width:100%;min-height:42px}}
