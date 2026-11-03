@@ -772,7 +772,7 @@ export default {
           const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
           if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
         }
-        if (!page) return response({ page: null, html: "", engine: "worker-ssr" }, 200, cors);
+        if (!page) return response({ page: null, html: "", engine: "namumark-worker" }, 200, cors);
         await ensurePageProtectionSchema(env);
         const protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first();
         const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "");
@@ -785,8 +785,8 @@ export default {
             protectionUpdatedAt: protection?.updated_at || ""
           },
           html: rendered.html,
-          engine: "worker-ssr"
-        }, 200, { ...cors, "X-AonWiki-Render": "worker-ssr" });
+          engine: "namumark-worker"
+        }, 200, { ...cors, "X-AonWiki-Render": "namumark-worker" });
       }
       if (url.pathname === "/api/render" && request.method === "POST") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
@@ -797,9 +797,9 @@ export default {
         const content = String(body.content || "");
         if (content.length > 200000) return response({ error: "미리보기 문서는 200,000자 이하만 지원합니다." }, 413, cors);
         const rendered = await renderNamuMarkupOnWorker(env, title, content);
-        return response({ html: rendered.html, engine: "worker-ssr", title }, 200, {
+        return response({ html: rendered.html, engine: "namumark-worker", title }, 200, {
           ...cors,
-          "X-AonWiki-Render": "worker-ssr"
+          "X-AonWiki-Render": "namumark-worker"
         });
       }
       if (url.pathname === "/api/page" && request.method === "GET") {
