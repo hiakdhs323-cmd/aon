@@ -86,9 +86,19 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
     transformTags: {
       "a": (_tag, attribs) => {
         const href = String(attribs.href || "");
-        return /^https?:[/][/]/i.test(href)
-          ? { tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } }
-          : { tagName: "a", attribs };
+        if (/^https?:[/][/]/i.test(href)) {
+          return { tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } };
+        }
+        if (href.startsWith("/wiki/")) {
+          try {
+            const parsed = new URL(href, "https://aonwiki.invalid");
+            const title = decodeURIComponent(parsed.pathname.slice(6));
+            return { tagName: "a", attribs: { ...attribs, href: "/w/" + encodeURIComponent(title) + parsed.search + parsed.hash } };
+          } catch {
+            return { tagName: "a", attribs: { ...attribs, href: "#" } };
+          }
+        }
+        return { tagName: "a", attribs };
       },
       "img": (_tag, attribs) => {
         let src = String(attribs.src || "");
