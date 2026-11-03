@@ -49,6 +49,11 @@ var NamuMarkBundle = (() => {
     return html.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'");
   }
   var globalRegExp = (regexp) => new RegExp(regexp, "g");
+  function findDatabaseRecord(database, title) {
+    if (database && database.lookup instanceof Map) return database.lookup.get(title);
+    return (database && database.data || []).find(value => value.title === title);
+  }
+
 
   // parser-src/index.ts
   var v4 = () => crypto.randomUUID();
@@ -435,7 +440,7 @@ var NamuMarkBundle = (() => {
           this.dataBacklink[includeName] = {};
         }
         this.dataBacklink[includeName]["include"] = "";
-        const result = this.database.data.find((v) => v.title === includeName);
+        const result = findDatabaseRecord(this.database, includeName);
         let dataName;
         if (result) {
           let includeLink = "";
@@ -1427,7 +1432,7 @@ try {
             if (!this.dataBacklink[`file:${linkMain}`]) {
               this.dataBacklink[`file:${linkMain}`] = {};
             }
-            const dbData = this.database.data.find((value) => value.title === `file:${linkMain}`)?.title;
+            const dbData = findDatabaseRecord(this.database, `file:${linkMain}`)?.title;
             if (dbData) {
               linkExist = "";
             } else {
@@ -1530,7 +1535,7 @@ try {
           if (!this.dataCategoryList.includes(linkMain)) {
             this.dataCategoryList.push(linkMain);
             if (!this.dataBacklink["category:" + linkMain]) this.dataBacklink["category:" + linkMain] = {};
-            const dbData = this.database.data.find((value) => value.title === "category:" + linkMain)?.title;
+            const dbData = findDatabaseRecord(this.database, "category:" + linkMain)?.title;
             let linkExist;
             if (dbData) {
               linkExist = "";
@@ -1626,7 +1631,7 @@ try {
           const linkTitle = escapeHtml(linkMain + linkDataSharp);
           let linkExist = "";
           if (linkMain !== "") {
-            const dbData = this.database.data.find((value) => value.title === linkMain)?.title;
+            const dbData = findDatabaseRecord(this.database, linkMain)?.title;
             if (!dbData) {
               if (!this.dataBacklink[linkMain]) {
                 this.dataBacklink[linkMain] = {};
