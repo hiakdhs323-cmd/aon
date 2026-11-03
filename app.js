@@ -22,7 +22,7 @@ $("theme-toggle").addEventListener("click", () => {
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
-let currentTitle="",currentContent="",currentProtection={level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+const initialSsrState=window.__AONWIKI_SSR__||null;\nlet currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){return "#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
@@ -1641,7 +1641,7 @@ $("file").onchange=async()=>{
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
-readRoute();
+if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity();
 startLivePageWatcher();
 
