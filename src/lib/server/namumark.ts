@@ -72,13 +72,30 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
   return sanitizeHtml(markup, {
     allowedTags: [...sanitizeHtml.defaults.allowedTags, "article", "section", "figure", "figcaption", "details", "summary", "ruby", "rt", "rp", "iframe", "video", "audio", "source", "center", "font", "del", "ins", "sub", "sup", "hr"],
     allowedAttributes: {
-      "*": ["class", "id", "title", "lang", "dir", "role", "aria-label", "aria-hidden", "colspan", "rowspan", "align", "valign", "width", "height", "open", "start", "loading", "decoding"],
+      "*": ["class", "id", "title", "lang", "dir", "role", "aria-label", "aria-hidden", "colspan", "rowspan", "align", "valign", "width", "height", "open", "start", "loading", "decoding", "style"],
       "a": ["href", "name", "target", "rel"],
-      "img": ["src", "alt", "width", "height", "loading", "decoding"],
+      "img": ["src", "alt", "width", "height", "loading", "decoding", "style"],
       "iframe": ["src", "width", "height", "allow", "allowfullscreen", "frameborder", "loading", "referrerpolicy"],
       "video": ["src", "controls", "width", "height", "poster", "loop", "muted"],
       "audio": ["src", "controls", "loop", "muted"],
       "source": ["src", "type"]
+    },
+    allowedStyles: {
+      "*": {
+        "color": [/^#[0-9a-f]{3,8}$/i, /^[a-z]{1,24}$/i],
+        "background-color": [/^#[0-9a-f]{3,8}$/i, /^[a-z]{1,24}$/i],
+        "font-size": [/^\d+(?:\.\d+)?(?:px|em|rem|%)$/i],
+        "font-weight": [/^(?:normal|bold|[1-9]00)$/i],
+        "font-style": [/^(?:normal|italic|oblique)$/i],
+        "text-align": [/^(?:left|right|center|justify)$/i],
+        "text-decoration": [/^(?:none|underline|line-through)$/i],
+        "width": [/^\d+(?:\.\d+)?(?:px|%)$/i],
+        "max-width": [/^\d+(?:\.\d+)?(?:px|%)$/i],
+        "margin": [/^[\d.\s%pxemauto-]+$/i],
+        "padding": [/^[\d.\s%pxem-]+$/i],
+        "border": [/^[\w\s#().,% -]+$/i],
+        "border-radius": [/^\d+(?:\.\d+)?(?:px|%)$/i]
+      }
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowProtocolRelative: false,
@@ -86,9 +103,19 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
     transformTags: {
       "a": (_tag, attribs) => {
         const href = String(attribs.href || "");
-        return /^https?:[/][/]/i.test(href)
-          ? { tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } }
-          : { tagName: "a", attribs };
+        if (/^https?:[/][/]/i.test(href)) {
+          return { tagName: "a", attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" } };
+        }
+        if (href.startsWith("/wiki/")) {
+          try {
+            const parsed = new URL(href, "https://aonwiki.invalid");
+            const title = decodeURIComponent(parsed.pathname.slice(6));
+            return { tagName: "a", attribs: { ...attribs, href: "/w/" + encodeURIComponent(title) + parsed.search + parsed.hash } };
+          } catch {
+            return { tagName: "a", attribs: { ...attribs, href: "#" } };
+          }
+        }
+        return { tagName: "a", attribs };
       },
       "img": (_tag, attribs) => {
         let src = String(attribs.src || "");
