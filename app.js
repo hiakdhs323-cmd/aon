@@ -25,7 +25,7 @@ const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(
 const initialSsrState=window.__AONWIKI_SSR__||null;
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
-function routeFor(title,anchor=""){return "#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
+function routeFor(title,anchor=""){return "/w/대문#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"")}
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 let isWikiAdmin=false;
 let currentRole="anonymous";
@@ -157,7 +157,7 @@ async function loadHome(){
     addText(list,"p",error.message).className="empty-list";
   }
 }
-function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){location.assign("/");return}const target="/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"");location.assign(target)}
+function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){location.assign("/");return}const target="/w/대문#/w/"+encodeURIComponent(title)+(anchor?"#"+encodeURIComponent(anchor):"");location.assign(target)}
 function readRoute(){
  const hash=location.hash||"#/";
  if(hash==="#"||hash==="#/"||hash==="#/home"){showHome(false);return}
@@ -878,7 +878,21 @@ async function loadPage(title,pushRoute=true,anchor=""){
   }
   const data=await api("/api/render?title="+encodeURIComponent(title));
   if(requestId!==pageNavigationSequence)return;
-  if(!data.page){currentContent="";currentProtection={level:"none",reason:""};$("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
+  if(!data.page){
+   currentContent="";currentProtection={level:"none",reason:""};
+   $("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;
+   $("message").replaceChildren();
+   const notice=document.createElement("div");notice.className="missing-page-panel";
+   const title=document.createElement("strong");title.textContent="아직 작성되지 않은 문서입니다.";
+   const detail=document.createElement("p");detail.textContent="이 문서를 직접 만들거나, 로그인 후 내용을 추가할 수 있습니다.";
+   const create=document.createElement("button");create.type="button";create.className="primary-button missing-page-create";create.textContent="이 문서 지금 만들기";
+   create.addEventListener("click",()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}editPage(currentTitle,"");});
+   notice.append(title,detail,create);$("message").append(notice);
+   $("edit").textContent="문서 만들기";
+   $("edit").onclick=()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}editPage(currentTitle,"");};
+   $("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("backlinks-tab").hidden=true;
+   return;
+  }
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
