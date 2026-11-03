@@ -698,13 +698,6 @@ function toggleNamumarkBeta() {
   syncNamumarkBetaButton();
 }
 syncNamumarkBetaButton();
-function moveWikiTocToTop(root) {
-  if (!root || !root.querySelector) return;
-  const folded = root.querySelector(".opennamu_TOC_fold");
-  const toc = folded || root.querySelector(".opennamu_TOC, .wiki-toc");
-  if (toc && toc.parentElement !== root) root.prepend(toc);
-  else if (toc && root.firstElementChild !== toc) root.prepend(toc);
-}
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
   root.querySelectorAll("table").forEach(table=>{
@@ -738,7 +731,6 @@ function prepareServerRenderedMarkup(root,docTitle){
     table.before(wrapper);
     wrapper.append(table);
   });
-  moveWikiTocToTop(root);
   refreshWikiTableContrast(root);
   root.classList.add("namumark-rendered");
   root.classList.remove("namumark-beta-active");
