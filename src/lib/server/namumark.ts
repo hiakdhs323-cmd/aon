@@ -1,8 +1,10 @@
 import sanitizeHtml from "sanitize-html";
 import type { RequestEvent } from "@sveltejs/kit";
 import { apiOrigin, fetchApi } from "./api";
+
 const UPSTREAM_WASM = "https://raw.githubusercontent.com/uiovasot/namumark/6d8bd559734c173ae1b728f858a7c9f15e6a77f7/namumark.wasm";
 let modulePromise: Promise<WebAssembly.Module> | undefined;
+
 type NamuExports = WebAssembly.Exports & {
   memory: WebAssembly.Memory;
   alloc(length: number): number;
@@ -10,19 +12,25 @@ type NamuExports = WebAssembly.Exports & {
   render_html(pointer: number, length: number): number;
   get_buffer_len(): number;
 };
+
 export function requiresLegacyCompatibility(source: string): boolean {
-  return /\[\[(?:파일|file):|\[include\(|\{\{\{#!(?:wiki|style|syntax|latex|if|folding)|^\s*#redirect\b/im.test(source);
+  return /\[\[(?:파일|file):|\[include\(|\{\{\{#!|^\s*#redirect\b/im.test(source);
 }
+
 async function getWasmModule(): Promise<WebAssembly.Module> {
   if (!modulePromise) {
     modulePromise = (async () => {
       const response = await fetch(UPSTREAM_WASM, { headers: { "Accept": "application/wasm, application/octet-stream" } });
       if (!response.ok) throw new Error("상위 NamuMark WASM을 불러오지 못했습니다: " + response.status);
       return WebAssembly.compile(await response.arrayBuffer());
-    })().catch(error => { modulePromise = undefined; throw error; });
+    })().catch(error => {
+      modulePromise = undefined;
+      throw error;
+    });
   }
   return modulePromise;
 }
+
 async function renderWithUpstreamWasm(source: string): Promise<string> {
   const module = await getWasmModule();
   const instance = await WebAssembly.instantiate(module);
@@ -33,12 +41,15 @@ async function renderWithUpstreamWasm(source: string): Promise<string> {
     new Uint8Array(wasm.memory.buffer, pointer, input.length).set(input);
     const outputPointer = wasm.render_html(pointer, input.length);
     const outputLength = wasm.get_buffer_len();
-    if (!Number.isInteger(outputLength) || outputLength < 0 || outputLength > 8000000) throw new Error("잘못된 WASM 출력 길이");
+    if (!Number.isInteger(outputLength) || outputLength < 0 || outputLength > 8000000) {
+      throw new Error("잘못된 WASM 출력 길이");
+    }
     return new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, outputPointer, outputLength).slice());
   } finally {
     wasm.dealloc(pointer, input.length);
   }
 }
+
 function sanitizeWikiHtml(markup: string, origin: string): string {
   return sanitizeHtml(markup, {
     allowedTags: [...sanitizeHtml.defaults.allowedTags, "article", "section", "figure", "figcaption", "details", "summary", "ruby", "rt", "rp", "iframe", "video", "audio", "source", "center", "font", "del", "ins", "sub", "sup", "hr"],
@@ -69,6 +80,7 @@ function sanitizeWikiHtml(markup: string, origin: string): string {
     }
   });
 }
+
 export async function renderWikiMarkup(
   event: RequestEvent,
   title: string,
@@ -82,7 +94,9 @@ export async function renderWikiMarkup(
     const data = await response.json() as { html?: string };
     return { html: String(data.html || ""), engine: "legacy-compatibility" };
   };
+
   if (requiresLegacyCompatibility(content)) return fallback();
+
   try {
     const html = await renderWithUpstreamWasm(content);
     return { html: sanitizeWikiHtml(html, apiOrigin(event)), engine: "uiovasot-namumark-wasm" };

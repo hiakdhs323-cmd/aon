@@ -21,7 +21,8 @@ $("theme-toggle").addEventListener("click", () => {
 
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL=location.origin;
-const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
+const LEGACY_API_URL="https://aon.hiakdhs323.workers.dev";
+const apiBase=()=>{const saved=(localStorage.getItem(API_SETTING)||"").replace(/\/$/,"");return !saved||saved===LEGACY_API_URL?DEFAULT_API_URL:saved};
 const initialSsrState=window.__AONWIKI_SSR__||(()=>{try{return JSON.parse(document.querySelector('meta[name="aonwiki-ssr"]')?.content||"null")}catch{return null}})();
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 const isHomeRoute=()=>!location.hash||location.hash==="#"||location.hash==="#/";
