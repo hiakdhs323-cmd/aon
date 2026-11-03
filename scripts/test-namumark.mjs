@@ -9,7 +9,10 @@ const samples = [
   ["wiki-style", "{{{#!wiki style=\\"color:red\\"\\n빨간 내용\\n}}}"],
   ["include", "[include(문서)]"],
   ["redirect", "#redirect [[문서]]"],
-  ["table", "|| 항목 || 값 ||\\n|| 이름 || 아온 ||"]
+  ["table", "|| 항목 || 값 ||\\n|| 이름 || 아온 ||"],
+  ["markdown-image", "![샘플](/media/00000000-0000-0000-0000-000000000000)"],
+  ["html-details", "<details><summary>펼치기</summary><p>접힌 내용</p></details>"],
+  ["html-image", "<img src=\\"/media/00000000-0000-0000-0000-000000000000\\" alt=\\"샘플\\" width=\\"320\\">"]
 ];
 
 function render(source) {
