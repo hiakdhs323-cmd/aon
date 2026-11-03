@@ -2715,6 +2715,7 @@ try {
     this.renderData = this.renderData.replace(/<a fn_target="([^"]+)"/g, handlerFootnote);
 
     this.renderDataJS += `document.querySelectorAll('details').forEach((el) => {new Accordion(el);});if(window.location.hash !== '' && document.getElementById(window.location.hash.replace(/^#/, ''))) {document.getElementById(window.location.hash.replace(/^#/, '')).focus();}\nopennamu_do_ip_render();\n`;
+    this.renderData = '<div style="font-size:16px !important; line-height:1.7 !important;">' + this.renderData + '</div>';
   }
 
   manageAfterwork() {
