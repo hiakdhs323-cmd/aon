@@ -739,21 +739,29 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
   border-top:1px solid var(--wiki-border-strong);
 }
 
-/* Final article layout fixes. The article ID selector wins over legacy page styles. */
+/* Final article layout fixes. Keep article prose compact and lists flush with prose. */
 #article.wiki-content {
-  font-size:14px !important;
+  font-size:13px !important;
   line-height:1.65 !important;
 }
 #article.wiki-content ul,
 #article.wiki-content ol {
   margin:7px 0 14px 0 !important;
-  padding-left:1.15em !important;
+  padding-left:0 !important;
+  list-style-position:inside !important;
 }
-#article.wiki-content ul.wiki-list-has-following-content {
+#article.wiki-content li {
   margin-left:0 !important;
+  padding-left:0 !important;
+}
+#article.wiki-content li > ul,
+#article.wiki-content li > ol {
+  margin-left:1em !important;
+  padding-left:0 !important;
 }
 #article.wiki-content hr.wiki-list-end-divider {
   display:block !important;
+  box-sizing:border-box !important;
   width:100% !important;
   height:0 !important;
   margin:18px 0 !important;
@@ -761,15 +769,9 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
   border:0 !important;
   border-top:1px solid var(--wiki-border-strong) !important;
 }
-#article.wiki-content .opennamu_TOC {
-  margin-bottom:12px !important;
+#article.wiki-content .opennamu_TOC,
+#article.wiki-content .opennamu_TOC_fold {
+  margin:8px 0 12px !important;
   padding:6px 12px 8px !important;
-  line-height:1.35 !important;
-}
-#article.wiki-content .opennamu_TOC_title {
-  margin-bottom:2px !important;
-  line-height:1.25 !important;
-}
-#article.wiki-content .opennamu_TOC_list {
   line-height:1.35 !important;
 }
