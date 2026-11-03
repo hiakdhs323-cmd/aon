@@ -1114,7 +1114,7 @@ try {
           const listSubRegex = /\n( *)(?:(1|a|A|I|i)\.(?:#([0-9]*))?|(\*)) ?([^\n]*)/g;
           const listDataStr = listData.replace(listSubRegex, intToMatch());
           const listEnd = (listDataMatch.index || 0) + listDataMatch[0].length;
-        const isUnorderedList = /(?:^|\\n)\\s*\\*/.test(listData);
+        const isUnorderedList = listData.split("\n").some(line => /^\s*\*/.test(line));
         const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
         const hasFollowingContent = followingContent.length > 0;
         const listEndDivider = isUnorderedList && hasFollowingContent ? "<hr>" : "";
