@@ -1112,13 +1112,16 @@ try {
           const listSubRegex = /\n( *)(?:(1|a|A|I|i)\.(?:#([0-9]*))?|(\*)) ?([^\n]*)/g;
           const listDataStr = listData.replace(listSubRegex, intToMatch());
                     const listEnd = (listDataMatch.index || 0) + listDataMatch[0].length;
-          const isUnorderedList = /^\s*\*/m.test(listData);
-          const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
-          const hasFollowingContent = followingContent.length > 0;
-          const listClass = isUnorderedList && hasFollowingContent
-            ? ' class="wiki-list-has-following-content"'
-            : "";
-          this.renderData = this.renderData.replace(listRegex, "\n<front_br><ul" + listClass + ">" + listDataStr + "</ul><back_br>\n");
+        const isUnorderedList = /^\s*\*/m.test(listData);
+        const followingContent = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
+        const hasFollowingContent = followingContent.length > 0;
+        const listEndDivider = isUnorderedList && hasFollowingContent
+          ? '<hr class="wiki-list-end-divider">'
+          : "";
+        this.renderData = this.renderData.replace(
+          listRegex,
+          "\n<front_br><ul>" + listDataStr + "</ul>" + listEndDivider + "<back_br>\n"
+        );
         }
         listCountMax -= 1;
       }
