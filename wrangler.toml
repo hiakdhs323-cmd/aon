@@ -5,6 +5,7 @@ workers_dev = true
 
 [vars]
 ALLOWED_ORIGIN = "https://hiakdhs323-cmd.github.io,https://aon69446.p-e.kr"
+FRONTEND_ORIGIN = "https://hiakdhs323-cmd.github.io/aon"
 
 [[d1_databases]]
 binding = "DB"
