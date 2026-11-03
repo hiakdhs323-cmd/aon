@@ -11,6 +11,7 @@ function applyWikiTheme(theme) {
   }
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = selected === "dark" ? "#151a23" : "#ffffff";
+  refreshWikiTableContrast(document);
 }
 applyWikiTheme(localStorage.getItem(THEME_SETTING) || "light");
 $("theme-toggle").addEventListener("click", () => {
@@ -332,6 +333,73 @@ function safeWikiStyle(raw) {
   });
   return output.join(";");
 }
+function parseWikiRgbColor(value){
+ const match=String(value||"").match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/i);
+ if(!match)return null;
+ return [Number(match[1]),Number(match[2]),Number(match[3]),match[4]===undefined?1:Number(match[4])];
+}
+function blendWikiColor(foreground,background){
+ const alpha=Math.max(0,Math.min(1,foreground[3]??1));
+ return [
+  foreground[0]*alpha+background[0]*(1-alpha),
+  foreground[1]*alpha+background[1]*(1-alpha),
+  foreground[2]*alpha+background[2]*(1-alpha),
+  1
+ ];
+}
+function wikiRelativeLuminance(rgb){
+ const channel=value=>{
+  const normalized=Math.max(0,Math.min(255,value))/255;
+  return normalized<=0.04045?normalized/12.92:Math.pow((normalized+0.055)/1.055,2.4);
+ };
+ return 0.2126*channel(rgb[0])+0.7152*channel(rgb[1])+0.0722*channel(rgb[2]);
+}
+function wikiContrastRatio(a,b){
+ const first=wikiRelativeLuminance(a),second=wikiRelativeLuminance(b);
+ return (Math.max(first,second)+0.05)/(Math.min(first,second)+0.05);
+}
+function getWikiEffectiveBackground(element){
+ const ancestry=[];
+ for(let node=element;node&&node!==document.documentElement;node=node.parentElement)ancestry.push(node);
+ ancestry.reverse();
+ let background=parseWikiRgbColor(getComputedStyle(document.body).backgroundColor);
+ if(!background)background=document.documentElement.dataset.theme==="dark"?[17,19,21,1]:[255,255,255,1];
+ for(const node of ancestry){
+  if(node===document.body)continue;
+  const layer=parseWikiRgbColor(getComputedStyle(node).backgroundColor);
+  if(layer&&layer[3]>0)background=blendWikiColor(layer,background);
+ }
+ return background;
+}
+function refreshWikiTableContrast(root=document){
+ if(!root)return;
+ const tables=[];
+ if(root instanceof Element&&root.matches("table"))tables.push(root);
+ if(root.querySelectorAll)tables.push(...root.querySelectorAll("table"));
+ for(const table of tables){
+  const textElements=[...table.querySelectorAll("td,th,td *,th *")].filter(element=>
+   [...element.childNodes].some(node=>node.nodeType===Node.TEXT_NODE&&node.nodeValue.trim())
+  );
+  for(const element of textElements){
+   if(element.dataset.wikiContrastSaved!=="1"){
+    element.dataset.wikiContrastSaved="1";
+    element.dataset.wikiContrastOriginal=element.style.getPropertyValue("color");
+    element.dataset.wikiContrastPriority=element.style.getPropertyPriority("color");
+   }else{
+    const original=element.dataset.wikiContrastOriginal||"";
+    const priority=element.dataset.wikiContrastPriority||"";
+    if(original)element.style.setProperty("color",original,priority);
+    else element.style.removeProperty("color");
+   }
+   const foreground=parseWikiRgbColor(getComputedStyle(element).color);
+   const background=getWikiEffectiveBackground(element);
+   if(!foreground||wikiContrastRatio(foreground,background)>=4.5)continue;
+   const black=[0,0,0,1],white=[255,255,255,1];
+   const best=wikiContrastRatio(black,background)>=wikiContrastRatio(white,background)?"#000000":"#ffffff";
+   element.style.setProperty("color",best,"important");
+  }
+ }
+}
 function sanitizeNamuStylesheet(raw) {
   const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
   const rules = String(raw || "").replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [];
@@ -629,6 +697,7 @@ function prepareServerRenderedMarkup(root,docTitle){
     wrapper.append(table);
   });
   moveWikiTocToTop(root);
+  refreshWikiTableContrast(root);
   root.classList.add("namumark-rendered");
   root.classList.remove("namumark-beta-active");
   enhanceFootnoteHover(root);
