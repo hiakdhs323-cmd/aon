@@ -197,6 +197,10 @@ function applyWikiStyles(element,raw){
 }
 const wikiFileLookupCache=new Map();
 const wikiFileLookupPending=new Map();
+function invalidateNamuDatabaseCache(){
+ wikiFileLookupCache.clear();
+ wikiFileLookupPending.clear();
+}
 async function resolveWikiFile(filename){
  const key=apiBase()+"|"+String(filename||"").trim().toLocaleLowerCase();
  const cached=wikiFileLookupCache.get(key);
