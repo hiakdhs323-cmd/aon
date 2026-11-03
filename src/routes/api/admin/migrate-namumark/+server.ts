@@ -6,7 +6,7 @@ import { renderWikiMarkup } from "$lib/server/namumark";
 type WikiPage = { title: string; content: string; updated_at?: string };
 type ImageFile = { id: string; filename: string };
 
-const legacyPattern = /\\[\\[(?:파일|file):|\\[include\\(|\\{\\{\\{#!(?:folding|wiki|syntax)\\b/i;
+const legacyPattern = /\[\[(?:파일|file):|\[include\(|\{\{\{#!(?:folding|wiki|syntax)\b/i;
 
 function safeStyle(raw: string): string {
   const allowed = new Set(["color", "background-color", "font-size", "font-weight", "font-style", "text-align", "text-decoration", "width", "max-width", "margin", "padding", "border", "border-radius"]);
@@ -15,7 +15,7 @@ function safeStyle(raw: string): string {
     if (index < 1) return [];
     const key = part.slice(0, index).trim().toLowerCase();
     const value = part.slice(index + 1).trim();
-    if (!allowed.has(key) || !value || /url\\s*\\(|expression|javascript|[<>{}]/i.test(value)) return [];
+    if (!allowed.has(key) || !value || /url\s*\(|expression|javascript|[<>{}]/i.test(value)) return [];
     return [key + ":" + value];
   }).join(";");
 }
@@ -30,7 +30,7 @@ async function expandIncludes(
   unresolved: string[]
 ): Promise<string> {
   if (depth > 5) return source;
-  const pattern = /\\[include\\(([^)\\n]+)\\)\\]/gi;
+  const pattern = /\[include\(([^)\n]+)\)\]/gi;
   let result = "";
   let cursor = 0;
   for (const match of source.matchAll(pattern)) {
@@ -68,27 +68,27 @@ async function expandIncludes(
 
 function transformLegacyMarkup(source: string, files: Map<string, ImageFile>, unresolved: string[]): string {
   let output = source;
-  output = output.replace(/\\{\\{\\{#!folding\\s*([^\\n]*)\\n([\\s\\S]*?)\\n\\}\\}\\}/gi, (_all, heading: string, body: string) =>
-    "<details><summary>" + String(heading || "펼치기").trim() + "</summary>\\n" + String(body || "") + "\\n</details>");
-  output = output.replace(/\\{\\{\\{#!wiki\\s+style="([^"]*)"\\s*\\n([\\s\\S]*?)\\n\\}\\}\\}/gi, (_all, style: string, body: string) => {
+  output = output.replace(/\{\{\{#!folding\s*([^\n]*)\n([\s\S]*?)\n\}\}\}/gi, (_all, heading: string, body: string) =>
+    "<details><summary>" + String(heading || "펼치기").trim() + "</summary>\n" + String(body || "") + "\n</details>");
+  output = output.replace(/\{\{\{#!wiki\s+style="([^"]*)"\s*\n([\s\S]*?)\n\}\}\}/gi, (_all, style: string, body: string) => {
     const css = safeStyle(String(style || ""));
     if (!css) {
       unresolved.push("wiki style 블록: 안전하게 변환할 수 없는 스타일");
       return _all;
     }
-    return '<div style="' + css + '">\\n' + String(body || "") + "\\n</div>";
+    return '<div style="' + css + '">\n' + String(body || "") + "\n</div>";
   });
-  output = output.replace(/\\{\\{\\{#!syntax\\s+([a-z0-9_+-]+)\\s*\\n([\\s\\S]*?)\\n\\}\\}\\}/gi, (_all, language: string, body: string) =>
-    "```" + String(language || "").toLowerCase() + "\\n" + String(body || "") + "\\n```");
-  output = output.replace(/\\[\\[(?:파일|file):([^\\]|]+)(?:\\|([^\\]]*))?\\]\\]/gi, (all, filename: string, options = "") => {
+  output = output.replace(/\{\{\{#!syntax\s+([a-z0-9_+-]+)\s*\n([\s\S]*?)\n\}\}\}/gi, (_all, language: string, body: string) =>
+    "```" + String(language || "").toLowerCase() + "\n" + String(body || "") + "\n```");
+  output = output.replace(/\[\[(?:파일|file):([^\]|]+)(?:\|([^\]]*))?\]\]/gi, (all, filename: string, options = "") => {
     const name = String(filename || "").trim();
     const file = files.get(name.toLocaleLowerCase());
     if (!file) {
       unresolved.push("이미지 파일을 찾지 못함: " + name);
       return all;
     }
-    const width = String(options).match(/(?:^|[&;,])\\s*width\\s*=\\s*(\\d{1,4})/i)?.[1];
-    const align = String(options).match(/(?:^|[&;,])\\s*align\\s*=\\s*(left|center|right)/i)?.[1];
+    const width = String(options).match(/(?:^|[&;,])\s*width\s*=\s*(\d{1,4})/i)?.[1];
+    const align = String(options).match(/(?:^|[&;,])\s*align\s*=\s*(left|center|right)/i)?.[1];
     const attrs = ['src="/media/' + file.id + '"', 'alt="' + name.replace(/["&<>]/g, "") + '"'];
     if (width) attrs.push('width="' + Math.min(2000, Number(width)) + '"');
     if (align) attrs.push('class="wiki-image-align-' + align + '"');
@@ -136,7 +136,7 @@ export const POST: RequestHandler = async (event) => {
         continue;
       }
       const rendered = await renderWikiMarkup(event, migrated);
-      const stillLegacy = /\\[include\\(|\\{\\{\\{#!(?:folding|wiki|syntax)|\\[\\[파일:/i.test(rendered.html);
+      const stillLegacy = /\[include\(|\{\{\{#!(?:folding|wiki|syntax)|\[\[파일:/i.test(rendered.html);
       if (!rendered.html.trim() || stillLegacy || unresolved.length) {
         report.push({ title, status: "manual-review-required", unresolved: [...unresolved, ...(stillLegacy ? ["새 엔진 출력에 기존 문법이 남아 있음"] : []), ...(!rendered.html.trim() ? ["새 엔진 렌더링 결과가 비어 있음"] : [])] });
         continue;
