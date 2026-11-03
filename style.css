@@ -699,3 +699,10 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 .wiki-content .wiki-table-wrap,.wiki-content .table_safe,.wiki-content .wiki-table-scroll{color:var(--wiki-text)}
 html[data-theme="dark"] .wiki-content table{border-color:var(--wiki-border-strong)}
 html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
+
+/* Allow links inside an explicitly colored NamuMark span to inherit that color. */
+.wiki-content span[style*="color"] a,
+.wiki-content span[style*="color"] a:visited,
+.wiki-content span[style*="color"] a:hover{
+  color:inherit;
+}
