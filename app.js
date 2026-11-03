@@ -559,7 +559,7 @@ function sanitizeNamuOutput(root, docTitle) {
       node.textContent = sanitizeNamuStylesheet(node.textContent || "");
       return;
     }
-    const parserAction = node.getAttribute("onclick") || "";
+    const parserAction = node.getAttribute("data-opennamu-action") || node.getAttribute("onclick") || "";
     [...node.attributes].forEach(attr => {
       const name = attr.name.toLowerCase();
       if (name.startsWith("on") || !allowedAttrs.has(name)) {
@@ -782,7 +782,7 @@ function toggleNamumarkBeta() {
   const state = document.querySelector(".labs-state");
   if (state) state.textContent = enabled ? "켜짐 · 현재 문서에 바로 적용합니다." : "꺼짐 · 기존 렌더러로 돌아갑니다.";
   if (!$("document-view").hidden && currentTitle && currentContent) {
-    renderNamuMarkup(currentContent, $("article"), currentTitle).catch(error => console.error(error));
+    loadPage(currentTitle, false);
   } else if (!$("home-view").hidden) {
     loadHome();
   } else if (!$("editor-preview").hidden) {
@@ -892,6 +892,30 @@ function normalizeBetaLinks(root, docTitle) {
     const src = img.getAttribute("src") || "";
     if (src.startsWith("/media/") || src.startsWith("/image/")) img.src = apiBase() + src;
   });
+}
+function prepareServerRenderedMarkup(root,docTitle){
+  sanitizeNamuOutput(root,docTitle);
+  moveWikiTocToTop(root);
+  root.classList.add("namumark-rendered");
+  root.classList.remove("namumark-beta-active");
+  enhanceFootnoteHover(root);
+  if(window.katex){
+    root.querySelectorAll('span[id*="opennamu_math_"]').forEach(element=>{
+      try{window.katex.render(element.textContent||"",element,{throwOnError:false,strict:"ignore"})}
+      catch(error){console.warn("KaTeX rendering skipped",error)}
+    });
+    root.querySelectorAll(".namu-latex-block").forEach(element=>{
+      try{window.katex.render(element.textContent||"",element,{displayMode:true,throwOnError:false,strict:"ignore"})}
+      catch(error){console.warn("LaTeX block rendering skipped",error)}
+    });
+  }
+  if(window.hljs){
+    root.querySelectorAll("pre code").forEach(code=>{
+      const language=(code.className||"").trim().split(/\\s+/)[0];
+      if(language&&!language.startsWith("language-"))code.classList.add("language-"+language);
+      window.hljs.highlightElement(code);
+    });
+  }
 }
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
   if (namumarkBetaEnabled()) {
@@ -1231,7 +1255,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("page-protection").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
-  const data=await api("/api/page?title="+encodeURIComponent(title));
+  const data=await api("/api/render?title="+encodeURIComponent(title));
   if(requestId!==pageNavigationSequence)return;
   if(!data.page){currentContent="";currentProtection={level:"none",reason:""};$("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;$("message").textContent="이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.";$("edit").textContent="문서 만들기";return}
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
@@ -1266,11 +1290,14 @@ async function loadPage(title,pushRoute=true,anchor=""){
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
   const staging=document.createElement("article");
-  await renderNamuMarkup(currentContent,staging,title);
+  staging.innerHTML=String(data.html||"");
+  prepareServerRenderedMarkup(staging,displayTitle);
   if(requestId!==pageNavigationSequence)return;
   const article=$("article");
   article.replaceChildren(...staging.childNodes);
-  for(const className of ["namumark-rendered","namumark-beta-active"])article.classList.toggle(className,staging.classList.contains(className));
+  article.classList.add("namumark-rendered");
+  article.classList.remove("namumark-beta-active");
+  article.dataset.renderEngine=data.engine||"worker-ssr";
   requestAnimationFrame(()=>{
    if(requestId!==pageNavigationSequence)return;
    if(anchor)scrollToAnchor(anchor);
