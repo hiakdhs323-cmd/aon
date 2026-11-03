@@ -661,3 +661,16 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
  .searchbar{order:3;flex-basis:100%;max-width:none;margin:0}
  .header-actions{margin-left:auto}
 }
+
+
+/* Clickable document breadcrumb trail and safe floated infobox layout */
+.document-view .breadcrumbs{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:20px}
+.document-view .breadcrumbs a{color:var(--wiki-link);text-decoration:none}
+.document-view .breadcrumbs a:hover{text-decoration:underline}
+.document-view .breadcrumbs span{color:var(--wiki-muted)}
+.document-view .breadcrumbs span:last-child{color:var(--wiki-text);font-weight:600}
+.wiki-content .wiki-float-clear{display:block;clear:both;width:100%;height:0;margin:0;padding:0}
+.wiki-content table{width:auto;min-width:0;max-width:100%;table-layout:auto;overflow-wrap:anywhere}
+.wiki-content th,.wiki-content td{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.wiki-content .table_safe,.wiki-content .wiki-table-scroll,.wiki-content .wiki-table,.wiki-content .wiki-table-wrap{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden}
+@media(max-width:700px){.wiki-content table{width:auto;min-width:0;max-width:100%;font-size:13px}}
