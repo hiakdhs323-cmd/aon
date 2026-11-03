@@ -571,7 +571,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v8-final-list-layout:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v9-list-divider-placement:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -625,7 +625,10 @@ function safeJsonForHtml(value) {
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/$/, "") + "/";
   return html.replace(/((?:href|src)=["'])(style\.css|namumark-beta\.css|app\.js)([^"']*)(["'])/g,
-    (_, prefix, file, query, suffix) => prefix + base + file + query + suffix);
+    (_, prefix, file, query, suffix) => {
+      const cacheBust = file === "style.css" ? (query ? "&" : "?") + "aonfix=20261104-final" : "";
+      return prefix + base + file + query + cacheBust + suffix;
+    });
 }
 let frontendShellCache = { value: null, expiresAt: 0 };
 let frontendShellPending = null;
