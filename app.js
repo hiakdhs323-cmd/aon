@@ -518,8 +518,6 @@ function enhanceFootnoteHover(root) {
   }
 }
 
-const NAMUMARK_BETA_SETTING = "aonwiki-beta-namumark";
-const namumarkBetaEnabled = () => localStorage.getItem(NAMUMARK_BETA_SETTING) === "1";
 function syncNamumarkBetaButton() {
   const button = $("namumark-beta-toggle");
   if (!button) return;
@@ -533,46 +531,12 @@ function toggleNamumarkBeta() {
   syncNamumarkBetaButton();
 }
 syncNamumarkBetaButton();
-let namumarkBetaModulePromise = null;
 function moveWikiTocToTop(root) {
   if (!root || !root.querySelector) return;
   const folded = root.querySelector(".opennamu_TOC_fold");
   const toc = folded || root.querySelector(".opennamu_TOC, .wiki-toc");
   if (toc && toc.parentElement !== root) root.prepend(toc);
   else if (toc && root.firstElementChild !== toc) root.prepend(toc);
-}
-function normalizeBetaLinks(root, docTitle) {
-  root.querySelectorAll("a[href]").forEach(link => {
-    const href = link.getAttribute("href") || "";
-    if (/^(?:https?:|mailto:|tel:)/i.test(href)) return;
-    if (href.startsWith("#")) {
-      let anchor = href.slice(1);
-      try { anchor = decodeURIComponent(anchor); } catch {}
-      link.setAttribute("href", routeFor(docTitle, anchor));
-      link.addEventListener("click", event => {
-        event.preventDefault();
-        history.replaceState(null, "", routeFor(docTitle, anchor));
-        scrollToAnchor(anchor);
-      });
-      return;
-    }
-    let title = "";
-    if (href.startsWith("/w/")) title = href.slice(3);
-    else if (href.startsWith("/wiki/")) title = href.slice(6);
-    else if (href.startsWith("?title=")) {
-      try { title = new URLSearchParams(href.slice(1)).get("title") || ""; } catch {}
-    } else if (!href.startsWith("/") && !href.startsWith("javascript:")) title = href;
-    if (!title) return;
-    try { title = decodeURIComponent(title); } catch {}
-    title = title.replace(/_/g, " ").trim();
-    if (!title || title.startsWith("http")) return;
-    link.setAttribute("href", routeFor(title));
-    link.addEventListener("click", event => { event.preventDefault(); navigateInternal(title); });
-  });
-  root.querySelectorAll("img[src]").forEach(img => {
-    const src = img.getAttribute("src") || "";
-    if (src.startsWith("/media/") || src.startsWith("/image/")) img.src = apiBase() + src;
-  });
 }
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
@@ -1040,28 +1004,16 @@ $("settings").onclick=()=>{
  $("dialog-body").append(note);
 };
 $("labs").onclick=()=>{
-  showDialog("실험실 · 베타 기능",[],async()=>{$("dialog").close()},"닫기");
-  const body=$("dialog-body"); body.replaceChildren();
-  const card=document.createElement("section"); card.className="labs-feature";
-  const heading=addText(card,"h3","새 나무마크 엔진 (베타)");
-  const desc=addText(card,"p","새 나무마크 렌더링 엔진을 시험합니다. 일부 문법이 다르게 표시될 수 있으며, 문제가 있으면 언제든 기존 엔진으로 돌아갈 수 있습니다.");
-  const label=document.createElement("label"); label.className="labs-toggle";
-  const input=document.createElement("input"); input.type="checkbox"; input.checked=namumarkBetaEnabled();
-  const textLabel=document.createElement("span"); textLabel.textContent="새 나무마크 엔진 사용";
-  label.append(input,textLabel);
-  const state=addText(card,"p",input.checked?"현재 켜짐 · 문서를 다시 열면 적용됩니다.":"현재 꺼짐 · 기존 렌더러를 사용합니다."); state.className="labs-state";
-  input.addEventListener("change",()=>{
-    localStorage.setItem(NAMUMARK_BETA_SETTING,input.checked?"1":"0");
-    syncNamumarkBetaButton();
-    state.textContent=input.checked?"켜짐 · 현재 문서에 바로 적용합니다.":"꺼짐 · 기존 렌더러로 돌아갑니다.";
-    if (!$("document-view").hidden && currentTitle && currentContent) {
-      renderNamuMarkup(currentContent,$("article"),currentTitle).catch(error=>console.error(error));
-    } else if (!$("home-view").hidden) {
-      loadHome();
-    } else if (!$("editor-preview").hidden) {
-      renderNamuMarkup($("editor-content").value,$("editor-preview"),$("editor-title").value.trim()||editorOriginalTitle).catch(error=>console.error(error));
-    }
-  });
+  showDialog("실험실 · 렌더링",[],async()=>{$("dialog").close()},"닫기");
+  const body=$("dialog-body");body.replaceChildren();
+  const card=document.createElement("section");card.className="labs-feature";
+  addText(card,"h3","서버 측 나무마크 렌더링");
+  addText(card,"p","문서 본문, 대문, 분류 설명, 편집 미리보기의 나무마크 파싱은 Cloudflare Worker에서 처리합니다. 브라우저는 서버가 생성한 HTML을 표시하고 각주·접기·문서 이동 같은 화면 상호작용만 연결합니다.");
+  const label=document.createElement("label");label.className="labs-toggle";
+  const input=document.createElement("input");input.type="checkbox";input.checked=true;input.disabled=true;
+  const textLabel=document.createElement("span");textLabel.textContent="Worker SSR 사용 중";
+  label.append(input,textLabel);card.append(label);
+  const state=addText(card,"p","활성화됨 · 브라우저에서 나무마크를 파싱하지 않습니다.");state.className="labs-state";
   body.append(card);
 };
 async function editHomepage(){
