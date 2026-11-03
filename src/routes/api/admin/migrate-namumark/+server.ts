@@ -90,9 +90,8 @@ export const POST: RequestHandler = async (event) => {
       const original = String(data.page.content || "");
       const unresolved: string[] = [];
       const migrated = await expandIncludes(event, original, new Set([title]), 0, authorization, includeCache, unresolved);
-      const hasInclude = /\[include\(/i.test(original);
       const rendered = await renderWikiMarkup(event, migrated);
-      const unresolvedEngineMarkup = /\[include\(|class=["']include["']/i.test(rendered.html);
+      const unresolvedEngineMarkup = /\[include\(|\{\{\{#!|class=["']include["']/i.test(rendered.html);
       if (!rendered.html.trim() || unresolved.length || unresolvedEngineMarkup) {
         report.push({
           title,
