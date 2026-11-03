@@ -299,7 +299,7 @@ async function buildNamuServerDatabase(env, title, content) {
   // A flat [[...]] scan can swallow nested [[파일:...]] markup, so index all
   // image names when the document contains any file syntax.
   const imageQueries = [];
-  if (/\\[\\[(?:파일|file):/i.test(allMarkup)) {
+  if (/\[\[(?:파일|file):/i.test(allMarkup)) {
     await ensureImageSchema(env);
     imageQueries.push(
       env.DB.prepare("SELECT filename FROM images").all(),
