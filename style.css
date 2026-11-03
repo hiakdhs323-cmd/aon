@@ -691,3 +691,11 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
  .searchbar{order:3;flex-basis:100%;max-width:none;margin:0}
  .header-actions{margin-left:auto}
 }
+
+
+/* Theme-aware contrast for wiki tables. Inline source colors are checked by app.js. */
+.wiki-content table{color:var(--wiki-text)}
+.wiki-content th,.wiki-content td{color:inherit}
+.wiki-content .wiki-table-wrap,.wiki-content .table_safe,.wiki-content .wiki-table-scroll{color:var(--wiki-text)}
+html[data-theme="dark"] .wiki-content table{border-color:var(--wiki-border-strong)}
+html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
