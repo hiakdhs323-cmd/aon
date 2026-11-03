@@ -161,6 +161,10 @@ async function loadHome(){
     if(content)await renderNamuMarkup(content,$("home-content"),"대문");
     else $("home-content").replaceChildren();
     $("home-admin-tools").hidden=!isWikiAdmin;
+  const linkColorHelp = $("editor-linkcolor-help");
+  const linkColorExample = $("editor-linkcolor-example");
+  if (linkColorHelp) linkColorHelp.hidden = !isWikiAdmin;
+  if (linkColorExample) linkColorExample.hidden = !isWikiAdmin;
 
     const pages=(data.pages||[]).filter(p=>p.title!=="대문"&&!/^(?:분류|category):/i.test(p.title||""));
     $("page-count").textContent=pages.length+"개 문서";
@@ -402,6 +406,7 @@ function refreshWikiTableContrast(root=document){
 }
 function sanitizeNamuStylesheet(raw) {
   const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
+  const allowedThemeRoot = /^html\[data-theme=(?:"(?:light|dark)"|'(?:light|dark)'|(?:light|dark))\]$/i;
   const rules = String(raw || "").replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [];
   const safeRules = [];
   for (const rule of rules) {
@@ -413,10 +418,17 @@ function sanitizeNamuStylesheet(raw) {
     if (!selectors.length || selectors.length > 20) continue;
     const safeSelectors = selectors.filter(selector => {
       const parts = selector.split(/\s*>\s*|\s+/).filter(Boolean);
-      return parts.length > 0 && parts.length <= 8 && parts.every(part => allowedSelectorPart.test(part));
+      return parts.length > 0 && parts.length <= 8 && parts.every((part,index) =>
+        (index === 0 && allowedThemeRoot.test(part)) || allowedSelectorPart.test(part)
+      );
     });
     if (!safeSelectors.length) continue;
-    safeRules.push(safeSelectors.map(selector => ".wiki-content " + selector).join(",") + "{" + declarations + "}");
+    safeRules.push(safeSelectors.map(selector => {
+      const parts = selector.split(/\s*>\s*|\s+/).filter(Boolean);
+      return allowedThemeRoot.test(parts[0])
+        ? parts[0] + " .wiki-content " + parts.slice(1).join(" ")
+        : ".wiki-content " + selector;
+    }).join(",") + "{" + declarations + "}");
   }
   return safeRules.join("\n");
 }
