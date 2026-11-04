@@ -4,6 +4,8 @@ import { escapeHtml, globalRegExp, sha224Replace, unescapeHtml, urlPas } from ".
 
 interface IDatabase {
   data: { data: string; title: string }[];
+  // Worker rendering may provide a sparse page-count array plus a title lookup map.
+  lookup?: Map<string, { data: string; title: string }>;
 }
 
 interface IDocSet {
@@ -217,6 +219,12 @@ export class NamuMark {
 
     this.database = database;
     this.docName = String(config.docName || "");
+  }
+
+  getToolDatabaseFind(title: string) {
+    const lookup = this.database.lookup;
+    if (lookup instanceof Map) return lookup.get(title);
+    return (this.database.data || []).find((value) => value?.title === title);
   }
 
   getToolDataStorage = (dataA = "", dataB = "", dataC = "", doType = "render") => {
@@ -524,7 +532,7 @@ export class NamuMark {
 
       this.dataBacklink[includeName]["include"] = "";
 
-      const result = this.database.data.find((v) => v.title === includeName);
+      const result = this.getToolDatabaseFind(includeName);
       let dataName!: string;
       if (result) {
         // include link func
@@ -1785,7 +1793,7 @@ try {
             this.dataBacklink[`file:${linkMain}`] = {};
           }
 
-          const dbData = this.database.data.find((value) => value.title === `file:${linkMain}`)?.title;
+          const dbData = this.getToolDatabaseFind(`file:${linkMain}`)?.title;
           if (dbData) {
             linkExist = "";
           } else {
@@ -1926,7 +1934,7 @@ try {
 
           if (!this.dataBacklink["category:" + linkMain]) this.dataBacklink["category:" + linkMain] = {};
 
-          const dbData = this.database.data.find((value) => value.title === "category:" + linkMain)?.title;
+          const dbData = this.getToolDatabaseFind("category:" + linkMain)?.title;
           let linkExist!: string;
           if (dbData) {
             linkExist = "";
@@ -2058,7 +2066,7 @@ try {
         let linkExist = "";
         if (linkMain !== "") {
           // 미구현: self.link_case_insensitive
-          const dbData = this.database.data.find((value) => value.title === linkMain)?.title;
+          const dbData = this.getToolDatabaseFind(linkMain)?.title;
           if (!dbData) {
             if (!this.dataBacklink[linkMain]) {
               this.dataBacklink[linkMain] = {};
