@@ -994,3 +994,15 @@ html[data-theme="dark"] .diff-remove{background:#4a2227;color:#ffb4b4}
  .revision-render-grid{grid-template-columns:minmax(0,1fr)}
  .revision-source-code{font-size:11px}
 }
+
+
+/* Read-only history state for visitors without page edit permission. */
+.history-permission-note{
+  margin:10px 0 0;
+  padding:9px 11px;
+  border-left:3px solid var(--wiki-border-strong);
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-muted);
+  font-size:12px;
+  line-height:1.6;
+}
