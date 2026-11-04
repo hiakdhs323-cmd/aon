@@ -800,17 +800,29 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 
 
 /* Compact, theme-aware article tables and heading scale. */
-#article.wiki-content h2{font-size:19px!important;margin:21px 0 9px!important}
-#article.wiki-content h3{font-size:16px!important;margin:17px 0 7px!important}
+#article.wiki-content h2{font-size:21px!important;margin:20px 0 9px!important}
+#article.wiki-content h3{font-size:18px!important;margin:17px 0 7px!important}
 #article.wiki-content h4{font-size:14px!important}
 #article.wiki-content table{font-size:13px!important;border-spacing:0}
 #article.wiki-content th,#article.wiki-content td{padding:4px 7px!important;font-size:12px!important;line-height:1.45!important}
 /* Keep NamuMark-authored cell colors. Only provide a soft default for label cells. */
 #article.wiki-content th{background:var(--wiki-panel-soft);color:var(--wiki-text)}
 #article.wiki-content td{color:var(--wiki-text)}
-#article.wiki-content tr > td:first-child{background:var(--wiki-panel-soft)}
-#article.wiki-content tr > td:not(:first-child){background:transparent}
-#article.wiki-content td[style*="background"],#article.wiki-content th[style*="background"]{background-color:inherit}
+/* Label/value tables: keep a clear two-column structure without overriding authored cell colors. */
+#article.wiki-content table td:first-child:not([style*="background"]){
+  width:28%;
+  min-width:112px;
+  text-align:center;
+  font-weight:600;
+  background:var(--wiki-panel-soft);
+}
+#article.wiki-content table td:not(:first-child){
+  text-align:left;
+}
+#article.wiki-content table td[style*="background"],
+#article.wiki-content table th[style*="background"]{
+  /* Inline NamuMark background colors remain authoritative. */
+}
 
 #article.wiki-content td a,#article.wiki-content th a{color:var(--wiki-link)!important}
 #article.wiki-content .wiki-table-wrap{border:1px solid var(--wiki-border);border-radius:4px;background:var(--wiki-panel);padding:2px}
