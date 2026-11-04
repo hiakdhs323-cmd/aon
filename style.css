@@ -15,7 +15,7 @@
   --wiki-warning-bg:#fff8e1;
   --wiki-warning-border:#e0c46a;
   --wiki-danger:#c62828;
-  --wiki-font:Arial,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+  --wiki-font:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
   --wiki-article-size:14px;
   font-family:var(--wiki-font);
   color:var(--wiki-text);
@@ -289,16 +289,20 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
 .wiki-content .opennamu_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
 .wiki-content .opennamu_category a{margin:0 4px}
-.wiki-fold{margin:10px 0;border:0}
+.wiki-fold{display:block;margin:12px 0;border:1px solid var(--wiki-border);border-radius:4px;background:var(--wiki-panel);overflow:hidden}
 .wiki-fold>summary{
-  display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:1px 7px;
-  border:1px solid var(--wiki-primary);border-radius:2px;background:var(--wiki-panel-soft);
-  color:var(--wiki-link);font-weight:700;line-height:1.7;cursor:pointer;list-style:none
+  display:flex;align-items:center;gap:8px;width:100%;max-width:100%;min-height:36px;padding:7px 11px;
+  border:0;border-radius:0;background:var(--wiki-panel-soft);
+  color:var(--wiki-text);font-weight:650;line-height:1.5;cursor:pointer;list-style:none
 }
 .wiki-fold>summary::-webkit-details-marker{display:none}
 .wiki-fold>summary::before{content:"▸";font-size:12px;line-height:1}
 .wiki-fold[open]>summary::before{content:"▾"}
-.wiki-fold-content{margin-top:6px;padding:10px;border-left:2px solid var(--wiki-border-strong)}
+.wiki-fold-content{margin:0;padding:11px 13px;border-top:1px solid var(--wiki-border);border-left:0;background:var(--wiki-panel);overflow-wrap:anywhere}
+.wiki-content details:not(.wiki-fold){margin:12px 0}
+.wiki-content details:not(.wiki-fold)>summary{padding:7px 11px;border:1px solid var(--wiki-border);border-radius:3px;background:var(--wiki-panel-soft);color:var(--wiki-text);font-weight:650;cursor:pointer;list-style-position:inside}
+.wiki-content details:not(.wiki-fold)[open]>summary{border-radius:3px 3px 0 0}
+.wiki-content .opennamu_folding{padding:11px 13px;border:1px solid var(--wiki-border);border-top:0;border-radius:0 0 3px 3px;background:var(--wiki-panel);overflow-wrap:anywhere}
 .wiki-spoiler{border-radius:2px;background:var(--wiki-text);color:var(--wiki-text);cursor:pointer}
 .wiki-spoiler:hover,.wiki-spoiler:focus{color:var(--wiki-panel)}
 .wiki-content sup,.wiki-content sub{line-height:0}
@@ -309,6 +313,7 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-content .wiki-stylebox{margin:8px 0}
 .wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited{color:var(--wiki-danger);text-decoration:underline;text-decoration-color:rgba(198,40,40,.35);text-underline-offset:2px}
 .wiki-content a.opennamu_not_exist_link:hover{color:var(--wiki-danger);text-decoration-thickness:2px}
+.wiki-content table a.opennamu_not_exist_link,.wiki-content table a.opennamu_not_exist_link:visited{color:var(--wiki-danger)!important;text-decoration:underline;text-decoration-color:rgba(198,40,40,.45);text-underline-offset:2px}
 
 /* Category directory, recent changes, backlinks and history */
 .category-index-heading{margin:0 0 18px}
@@ -873,3 +878,6 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content table td:not(:first-child){
   text-align:left;
 }
+
+#article.wiki-content{font-family:var(--wiki-font);font-synthesis:none;}
+#article.wiki-content :where(p,li,td,th,blockquote,summary){font-family:inherit;}
