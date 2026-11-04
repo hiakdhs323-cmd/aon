@@ -2047,11 +2047,12 @@ opennamu_do_ip_render();
     headingSizes.forEach((size, index) => {
       applyInlineFontSize(new RegExp("<h" + (index + 1) + "\\b[^>]*>", "gi"), size, 1.4);
     });
-    applyInlineFontSize(/<table\b[^>]*>/gi, 18);
-    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 18);
-    applyInlineFontSize(/<figcaption\b[^>]*>/gi, 18);
-    applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 18);
-    this.renderData = '<div style="font-size:20px !important; line-height:1.85 !important;">' + this.renderData + "</div>";
+    applyInlineFontSize(/<table\b[^>]*>/gi, 15);
+    applyInlineFontSize(/<code\b[^>]*>/gi, 15);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 15);
+    applyInlineFontSize(/<figcaption\b[^>]*>/gi, 15);
+    applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 15);
+    this.renderData = '<div style="font-size:15px !important; line-height:1.8 !important;">' + this.renderData + "</div>";
   }
   manageAfterwork() {
   }
