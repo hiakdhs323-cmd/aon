@@ -2678,7 +2678,7 @@ try {
     // add toc
     const handlerToc = (match: string, p1: string) => {
       // Remove links inside a heading before wrapping the entire TOC row in one link.
-      let data = p1.replace(/<\\/?a(?: [^<>]*)?>/gi, "");
+      let data = p1.replace(/<\/?a(?: [^<>]*)?>/gi, "");
       data = data.replace(/<([^<>]*)>/g, handlerTocFilter);
       return data;
     };
