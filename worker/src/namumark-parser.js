@@ -2057,9 +2057,45 @@ opennamu_do_ip_render();
     applyInlineFontSize(/<li\b[^>]*>/gi, 15, 1.8);
     applyInlineFontSize(/<table\b[^>]*>/gi, 15);
     applyInlineFontSize(/<code\b[^>]*>/gi, 15);
-    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 15);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 15);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:opennamu_footnote|wiki-footnotes)[^"']*["'][^>]*)>/gi, 12, 1.6);
+    applyInlineFontSize(/<footnote_title\b[^>]*>/gi, 12, 1.6);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*opennamu_category[^"']*["'][^>]*)>/gi, 12, 1.6);
     applyInlineFontSize(/<figcaption\b[^>]*>/gi, 15);
-    applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 15);
+    applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 12, 1.5);
+    const voidElements = /* @__PURE__ */ new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+    const tagStack = [];
+    this.renderData = this.renderData.replace(/<\/?([a-z][\w:-]*)\b[^>]*>/gi, (tag, rawName) => {
+      const tagName = rawName.toLowerCase();
+      if (/^<\//.test(tag)) {
+        for (let index = tagStack.length - 1; index >= 0; index--) {
+          if (tagStack[index].tag === tagName) {
+            tagStack.length = index;
+            break;
+          }
+        }
+        return tag;
+      }
+      const classMatch = tag.match(/\bclass\s*=\s*(["'])(.*?)\1/i);
+      const className = classMatch ? classMatch[2] : "";
+      const isFootnoteContainer = /(?:^|\s)(?:opennamu_footnote|wiki-footnotes)(?:\s|$)/i.test(className);
+      const insideTarget = tagStack.some((entry) => entry.target) || tagName === "table" || isFootnoteContainer;
+      const styleMatch = tag.match(/\bstyle\s*=\s*(["'])(.*?)\1/i);
+      const hasOwnColor = Boolean(styleMatch && /(?:^|;)\s*color\s*:/i.test(styleMatch[2]));
+      const hasExplicitAncestorColor = tagStack.some((entry) => entry.explicitColor);
+      if (tagName === "a" && insideTarget && !hasOwnColor && !hasExplicitAncestorColor && !/(?:^|\s)opennamu_not_exist_link(?:\s|$)/i.test(className)) {
+        if (styleMatch) {
+          const existingStyle = styleMatch[2].replace(/\s*;?\s*$/, ";");
+          tag = tag.replace(styleMatch[0], " style=" + styleMatch[1] + existingStyle + "color:var(--wiki-link) !important;" + styleMatch[1]);
+        } else {
+          tag = tag.replace(/>$/, ' style="color:var(--wiki-link) !important;">');
+        }
+      }
+      if (!voidElements.has(tagName) && !/\/\s*>$/.test(tag)) {
+        tagStack.push({ tag: tagName, target: insideTarget, explicitColor: hasOwnColor });
+      }
+      return tag;
+    });
     this.renderData = '<div style="font-size:15px !important; line-height:1.8 !important;">' + this.renderData + "</div>";
   }
   manageAfterwork() {
