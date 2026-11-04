@@ -1,0 +1,46 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><title>나무마크 문법 안내 - AonWiki</title><link rel="stylesheet" href="style.css?v=20261104-editor-parser-history-r3"><style>
+body{margin:0;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font)}.guide-header{border-bottom:1px solid var(--wiki-border);background:var(--wiki-panel)}.guide-header-inner{max-width:1120px;margin:auto;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}.guide-brand{font-weight:800;font-size:18px;color:var(--wiki-text)}.guide-brand span{color:var(--wiki-primary)}.guide-toc{padding:12px 15px;border:1px solid var(--wiki-border);background:var(--wiki-panel-soft)}.guide-toc ol{columns:2;margin:6px 0 0;padding-left:23px}.guide-toc a{color:var(--wiki-link)}.guide-tag{font-size:11px;color:var(--wiki-muted);font-weight:700}@media(max-width:650px){.guide-toc ol{columns:1}}
+</style></head><body><div class="guide-header"><div class="guide-header-inner"><a class="guide-brand" href="https://hiakdhs323-cmd.github.io/aon/">Aon<span>Wiki</span></a><a class="button" href="https://aon.hiakdhs323.workers.dev/">위키로 돌아가기</a></div></div>
+<main class="guide-page"><header><div class="guide-top"><p class="home-kicker">AONWIKI DOCUMENTATION</p><p class="guide-tag">현재 AonWiki Worker 파서 기준</p></div><h1>나무마크 문법 안내</h1><p>AonWiki에서 지원하는 나무마크 문법을 설명합니다. 편집 후 미리보기에서 Worker가 렌더링한 결과를 확인하고 저장하세요.</p><p class="guide-note">AonWiki는 나무위키 계열 문법을 기반으로 하지만 모든 나무위키 확장 문법·외부 서비스·위젯을 완전히 동일하게 지원하지는 않습니다. 아래 예제는 현재 AonWiki 파서 구현을 기준으로 합니다.</p></header>
+<nav class="guide-toc"><strong>문서 목차</strong><ol><li><a href="#heading">제목·문단</a></li><li><a href="#format">글자 꾸미기</a></li><li><a href="#links">링크</a></li><li><a href="#list">목록</a></li><li><a href="#table">표</a></li><li><a href="#fold">접기·펼치기</a></li><li><a href="#include">문서 삽입</a></li><li><a href="#media">이미지·분류</a></li><li><a href="#footnote">각주·앵커</a></li><li><a href="#macro">매크로</a></li><li><a href="#code">코드·위키 블록</a></li><li><a href="#save">저장·역사</a></li></ol></nav>
+<section id="heading"><h2>1. 제목과 문단</h2><table><thead><tr><th>문법</th><th>설명</th></tr></thead><tbody><tr><td><code>== 제목 ==</code></td><td>문단 제목과 목차 항목 생성</td></tr><tr><td><code>=== 하위 제목 ===</code></td><td>하위 문단. 등호 2~6개 지원</td></tr><tr><td><code>----</code></td><td>가로 구분선</td></tr><tr><td><code>[br]</code></td><td>줄바꿈</td></tr><tr><td><code>[clearfix]</code></td><td>떠 있는 요소 아래에서 문서 흐름 정리</td></tr></tbody></table><pre>== 운영 안내 ==
+본문 첫 문장입니다.
+
+=== 담당 업무 ===
+담당 업무를 적습니다.</pre></section>
+<section id="format"><h2>2. 글자 꾸미기</h2><table><thead><tr><th>문법</th><th>기능</th></tr></thead><tbody><tr><td><code>'''굵게'''</code></td><td>굵은 글씨</td></tr><tr><td><code>''기울임''</code></td><td>기울임</td></tr><tr><td><code>__밑줄__</code></td><td>밑줄</td></tr><tr><td><code>~~취소선~~</code></td><td>취소선</td></tr><tr><td><code>^^위첨자^^</code></td><td>위첨자</td></tr><tr><td><code>,,아래첨자,,</code></td><td>아래첨자</td></tr><tr><td><code>{{{+1 큰 글씨}}}</code></td><td>글자 크기 확대(+1~+5), 축소(-1~-5)</td></tr><tr><td><code>{{{#red 빨간 글씨}}}</code></td><td>글자색</td></tr><tr><td><code>{{{@yellow 강조 배경}}}</code></td><td>배경색</td></tr></tbody></table><pre>'''중요 공지'''
+이 문장은 ''강조''하고 __밑줄__을 표시합니다.
+{{{#red 반드시 확인}}}</pre></section>
+<section id="links"><h2>3. 내부 링크와 외부 링크</h2><table><thead><tr><th>문법</th><th>설명</th></tr></thead><tbody><tr><td><code>[[문서명]]</code></td><td>다른 문서로 이동</td></tr><tr><td><code>[[문서명|표시 문구]]</code></td><td>링크 표시명 지정</td></tr><tr><td><code>[[문서명#s-1]]</code></td><td>특정 문단으로 이동</td></tr><tr><td><code>[https://example.com|공식 사이트]</code></td><td>외부 링크</td></tr></tbody></table><p>존재하지 않는 내부 문서는 빨간색으로 표시됩니다. 표 안의 링크도 같은 원칙이 적용됩니다.</p></section>
+<section id="list"><h2>4. 목록</h2><pre>* 첫 번째 항목
+* 두 번째 항목
+** 하위 항목
+
+1. 첫 번째 순서
+2. 두 번째 순서</pre><p><code>*</code> 개수로 글머리 목록의 깊이를 나타내고 숫자와 마침표로 순서 목록을 만듭니다.</p></section>
+<section id="table"><h2>5. 표</h2><pre>|| 이름 || 담당 업무 ||
+|| 아온 || 서버 운영 ||
+|| 코지 || 운영 지원 ||</pre><table><thead><tr><th>옵션</th><th>예시</th><th>설명</th></tr></thead><tbody><tr><td>표 너비</td><td><code>&lt;tablewidth=600&gt;</code></td><td>표 너비 지정</td></tr><tr><td>표 정렬</td><td><code>&lt;tablealign=center&gt;</code></td><td>가운데·오른쪽 정렬</td></tr><tr><td>셀 정렬</td><td><code>&lt;(&gt;</code>, <code>&lt;:&gt;</code>, <code>&lt;)&gt;</code></td><td>왼쪽·가운데·오른쪽</td></tr><tr><td>배경·글자색</td><td><code>&lt;bgcolor=#eeeeee&gt;</code>, <code>&lt;color=red&gt;</code></td><td>셀 색상</td></tr><tr><td>가로 병합</td><td><code>&lt;-2&gt;</code></td><td>두 칸 병합</td></tr><tr><td>세로 병합</td><td><code>&lt;|2&gt;</code></td><td>두 행 병합</td></tr><tr><td>여백 제거</td><td><code>&lt;nopad&gt;</code></td><td>셀 안쪽 여백 제거</td></tr></tbody></table><p class="guide-note">넓은 표는 표 컨테이너 안에서 가로 스크롤됩니다. 문서나 접기 영역에 중첩 가로 스크롤이 생기지 않도록 처리합니다.</p></section>
+<section id="fold"><h2>6. 접기와 펼치기</h2><pre>{{{#!folding 접기 제목
+접었을 때 숨겨지는 본문입니다.
+이 안에도 문법과 표를 넣을 수 있습니다.
+}}}</pre><p>접기 제목을 누르면 본문이 열리고 다시 누르면 닫힙니다.</p></section>
+<section id="include"><h2>7. 문서 삽입</h2><pre>[include(문서명)]
+[include(문서명, 변수=값)]</pre><p>다른 문서의 내용을 현재 문서에 포함합니다. 존재하지 않는 대상은 빨간 링크로 표시됩니다.</p></section>
+<section id="media"><h2>8. 이미지와 분류</h2><pre>[[파일:이미지.png]]
+[[파일:이미지.png|width=300]]
+[[분류:운영]]</pre><p>이미지는 파일 이름과 선택 옵션을 지정합니다. 분류 문법은 문서의 분류 정보를 등록합니다.</p></section>
+<section id="footnote"><h2>9. 각주와 앵커</h2><pre>본문 내용[* 출처 또는 보충 설명]
+[anchor(운영정책)]
+[[운영 정책#운영정책]]</pre><p><code>[* 내용]</code>은 각주, <code>[anchor(이름)]</code>은 문서 내 이동 지점을 만듭니다.</p></section>
+<section id="macro"><h2>10. 매크로</h2><table><thead><tr><th>문법</th><th>기능</th></tr></thead><tbody><tr><td><code>[목차]</code></td><td>제목 구조를 바탕으로 접고 펼 수 있는 목차 출력</td></tr><tr><td><code>[목차(hide)]</code></td><td>목차 기본 표시 상태 옵션</td></tr><tr><td><code>[date]</code></td><td>날짜 매크로</td></tr><tr><td><code>[pagecount]</code></td><td>문서 수 관련 매크로</td></tr><tr><td><code>[br]</code></td><td>줄바꿈</td></tr><tr><td><code>[clearfix]</code></td><td>떠 있는 요소 정리</td></tr></tbody></table></section>
+<section id="code"><h2>11. 코드·위키 블록</h2><pre>{{{#!syntax python
+def hello():
+    print("Hello, AonWiki")
+}}}</pre><p>언어 이름을 지정한 코드 영역입니다.</p><pre>{{{#!wiki style="border:1px solid #888; padding:10px"
+위키 문법으로 렌더링되는 꾸밈 블록입니다.
+}}}</pre><p>위키 블록은 내부 내용을 나무마크로 렌더링합니다. HTML/CSS는 필터링되며 임의 스크립트는 실행되지 않습니다.</p><pre>{{{#!latex
+E = mc^2
+}}}</pre><p>LaTeX 블록은 수식 라이브러리가 준비된 경우 렌더링됩니다.</p></section>
+<section id="save"><h2>12. 관리자 기능과 저장 전 확인</h2><ul><li>편집 권한은 로그인과 문서 보호 설정을 따릅니다.</li><li>미리보기는 Worker가 실제 파싱한 결과를 표시합니다.</li><li>문서 역사에서 원문 차이와 렌더 결과를 비교할 수 있습니다.</li><li>이전 버전을 복원하면 복원 전 현재 문서도 새 역사 항목으로 보존됩니다.</li><li>교정 BOT은 흔한 오타를 찾아 제안하는 보조 기능이며 문맥형 맞춤법 검사기는 아닙니다. 저장 전에 확인하세요.</li></ul><p class="guide-note">지원 범위는 파서 업데이트에 따라 변경됩니다. 불확실한 문법은 실제 서버 미리보기 결과를 기준으로 판단하세요.</p><p><a href="https://aon.hiakdhs323.workers.dev/">AonWiki로 돌아가기</a></p></section>
+</main></body></html>

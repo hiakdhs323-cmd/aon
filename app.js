@@ -681,71 +681,90 @@ function hasExplicitWikiTextColor(element, root) {
 
 function applyFinalWikiTypographyAndLinkColors(root) {
   if (!root) return;
-
-  const compactNodes = root.querySelectorAll([
-    ".opennamu_footnote", ".opennamu_footnote *",
-    ".wiki-footnotes", ".wiki-footnotes *",
-    ".opennamu_spead_footnote", ".opennamu_spead_footnote *",
-    ".opennamu_popup_footnote", ".opennamu_popup_footnote *",
-    "footnote_title", ".opennamu_category", ".opennamu_category *",
-    ".wiki-footnote-tooltip"
+  const compactNodes=root.querySelectorAll([
+    ".opennamu_footnote",".opennamu_footnote *",".wiki-footnotes",".wiki-footnotes *",
+    ".opennamu_spead_footnote",".opennamu_spead_footnote *",
+    ".opennamu_popup_footnote",".opennamu_popup_footnote *",
+    "footnote_title",".opennamu_category",".opennamu_category *",".wiki-footnote-tooltip"
   ].join(","));
-
-  for (const element of compactNodes) {
-    element.style.setProperty("font-size", "12px", "important");
-    element.style.setProperty("line-height", "1.6", "important");
+  for(const element of compactNodes){
+    element.style.setProperty("font-size","12px","important");
+    element.style.setProperty("line-height","1.6","important");
   }
-
-  const hasPageLinkColorRules = [...root.querySelectorAll("style")].some(style =>
-    style.textContent.includes(".aonwiki-page-content a")
-  );
-  const links = root.querySelectorAll([
-    "table td a", "table th a",
-    ".opennamu_footnote a", ".wiki-footnotes a", "footnote_title a"
+  root.querySelectorAll(".opennamu_TOC").forEach(toc=>{
+    toc.style.setProperty("font-size","12px","important");
+    toc.style.setProperty("line-height","1.5","important");
+    const summary=toc.querySelector(":scope > summary");
+    const contents=toc.querySelector(":scope > .opennamu_TOC_contents");
+    if(summary){
+      summary.setAttribute("aria-expanded",String(toc.open));
+      if(contents){
+        if(!contents.id)contents.id="toc-contents-"+Math.random().toString(36).slice(2,9);
+        summary.setAttribute("aria-controls",contents.id);
+      }
+      const syncExpanded=()=>summary.setAttribute("aria-expanded",String(toc.open));
+      if(!toc.dataset.aonTocToggleBound){toc.addEventListener("toggle",syncExpanded);toc.dataset.aonTocToggleBound="true";}
+    }
+    toc.querySelectorAll("*").forEach(element=>{
+      element.style.setProperty("font-size","12px","important");
+      element.style.setProperty("line-height","1.5","important");
+    });
+  });
+  const hasPageLinkColorRules=[...root.querySelectorAll("style")].some(style=>style.textContent.includes(".aonwiki-page-content a"));
+  const links=root.querySelectorAll([
+    "a.opennamu_not_exist_link","table td a","table th a",
+    ".opennamu_footnote a",".wiki-footnotes a","footnote_title a"
   ].join(","));
-
-  for (const link of links) {
-    // Explicit NamuMark colors and page-level link-color configuration take precedence.
-    if (hasExplicitWikiTextColor(link, root) || hasPageLinkColorRules) continue;
-    // A missing target is still a normal uncolored [[link]] for this presentation rule.
-    link.style.setProperty("color", "var(--wiki-link)", "important");
+  for(const link of links){
+    if(link.classList.contains("opennamu_not_exist_link")){
+      link.style.setProperty("color","var(--wiki-danger)","important");
+      link.style.setProperty("text-decoration","underline","important");
+      link.style.setProperty("text-decoration-color","currentColor","important");
+      continue;
+    }
+    if(hasExplicitWikiTextColor(link,root)||hasPageLinkColorRules)continue;
+    link.style.setProperty("color","var(--wiki-link)","important");
   }
-
-  root.dataset.aonFinalPresentation = "applied";
+  root.dataset.aonFinalPresentation="applied";
 }
 
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
+  const tableScrollSelector=".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap";
   root.querySelectorAll("table").forEach(table=>{
-    // A nested table is part of its cell; do not create a block wrapper inside a cell.
     if(table.closest("td,th"))return;
     let floatHost=(table.style.float==="left"||table.style.float==="right")?table:null;
     if(!floatHost){
       for(let parent=table.parentElement;parent&&parent!==root;parent=parent.parentElement){
         const direction=(parent.style.float||"").toLowerCase();
         if(direction==="left"||direction==="right"){floatHost=parent;break}
-        if(parent.matches(".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap"))break;
+        if(parent.matches(tableScrollSelector))break;
       }
     }
     if(floatHost){
       floatHost.classList.add(floatHost===table?"wiki-float-table":"wiki-float-host");
       if(!floatHost.nextElementSibling?.classList.contains("wiki-float-clear")){
-        const clear=document.createElement("div");
-        clear.className="wiki-float-clear";
-        clear.setAttribute("aria-hidden","true");
-        floatHost.after(clear);
+        const clear=document.createElement("div");clear.className="wiki-float-clear";clear.setAttribute("aria-hidden","true");floatHost.after(clear);
       }
       return;
     }
-    const parent=table.parentElement;
-    if(parent?.matches(".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap")){
-      parent.classList.add("wiki-table-wrap");
-      return;
+    let wrapper=table.parentElement?.closest(tableScrollSelector)||null;
+    if(!wrapper){wrapper=document.createElement("div");wrapper.className="wiki-table-wrap";table.before(wrapper);wrapper.append(table);}
+    else wrapper.classList.add("wiki-table-wrap");
+    wrapper.style.setProperty("display","block");
+    wrapper.style.setProperty("width","100%");
+    wrapper.style.setProperty("max-width","100%");
+    wrapper.style.setProperty("min-width","0");
+    wrapper.style.setProperty("overflow-x","auto");
+    wrapper.style.setProperty("overflow-y","hidden");
+    for(let parent=wrapper.parentElement;parent&&parent!==root;parent=parent.parentElement){
+      if(parent.matches(tableScrollSelector)){
+        parent.style.setProperty("overflow-x","visible");parent.style.setProperty("overflow-y","visible");parent.style.setProperty("min-width","0");
+      }
     }
-    const wrapper=document.createElement("div");
-    wrapper.className="wiki-table-wrap";
-    table.before(wrapper);
-    wrapper.append(table);
+  });
+  root.querySelectorAll(".wiki-fold,.opennamu_TOC,.wiki-fold-content").forEach(element=>{
+    element.style.setProperty("max-width","100%");element.style.setProperty("min-width","0");
   });
   refreshWikiTableContrast(root);
   root.classList.add("namumark-rendered");
@@ -1466,6 +1485,30 @@ $("editor-content").addEventListener("input", () => {
   if (!$("editor-preview").hidden) scheduleServerEditorPreview();
 });
 
+function runEditorCorrectionBot() {
+  const field=$("editor-content");if(!field)return;
+  const rules=[
+    [/안되요/gu,"안 돼요"],[/됬/gu,"됐"],[/되요/gu,"돼요"],
+    [/어떻해/gu,"어떻게"],[/몇일/gu,"며칠"],[/왠만/gu,"웬만"],
+    [/할수있/gu,"할 수 있"],[/할수없/gu,"할 수 없"],[/될수있/gu,"될 수 있"],
+    [/될수없/gu,"될 수 없"],[/수있습니다/gu,"수 있습니다"],[/수없습니다/gu,"수 없습니다"],
+    [/할께/gu,"할게"],[/갈께/gu,"갈게"],[/뵈요/gu,"봬요"],[/않되/gu,"안 되"]
+  ];
+  let insideCode=false,changedLines=0;
+  const corrected=field.value.split("\n").map(line=>{
+    if(/^\s*\{\{\{(?:#![a-z0-9_-]+)?\s*$/i.test(line)){insideCode=true;return line;}
+    if(insideCode){if(/^\s*\}\}\}\s*$/.test(line))insideCode=false;return line;}
+    if(/\{\{\{|\}\}\}|https?:\/\//i.test(line))return line;
+    let result=line;for(const [pattern,replacement] of rules)result=result.replace(pattern,replacement);
+    if(result!==line)changedLines++;return result;
+  }).join("\n");
+  if(!changedLines){$("editor-status").textContent="교정 BOT: 수정할 만한 명확한 오타를 찾지 못했습니다.";return;}
+  if(!window.confirm("명확한 오타 "+changedLines+"줄을 교정할까요?\n교정 결과는 편집기에만 적용됩니다. 저장 전에 확인하세요."))return;
+  field.value=corrected;field.dispatchEvent(new Event("input",{bubbles:true}));
+  $("editor-status").textContent="교정 BOT: "+changedLines+"줄을 수정했습니다. 저장 전에 결과를 확인하세요.";field.focus();
+}
+$("editor-autocorrect")?.addEventListener("click",runEditorCorrectionBot);
+
 function escapeHighlightText(value) {
   return String(value).replace(/[&<>"']/g, char => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -1493,7 +1536,7 @@ function highlightNamuLine(line, insideCode) {
   }
   if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return syntax(line);
 
-  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
+  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\[anchor\([^\]]+\)\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|<(?:table(?:width|height|align|textalign|bgcolor|color|bordercolor|class)=[^>\n]+|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
   let output = "", last = 0, match;
   while ((match = tokenPattern.exec(line))) {
     output += escapeHighlightText(line.slice(last, match.index));
@@ -1522,9 +1565,16 @@ function highlightNamuLine(line, insideCode) {
     } else if (token.startsWith("[*")) {
       output += syntax("[*") + content(token.slice(2, -1)) + syntax("]");
     } else if (/^\[https?:\/\//i.test(token)) {
-      const inner = token.slice(1, -1), separator = inner.indexOf("|");
-      output += syntax("[") + '<span class="mk-external-url">' + escapeHighlightText(separator >= 0 ? inner.slice(0, separator) : inner) + '</span>' +
-        (separator >= 0 ? syntax("|") + content(inner.slice(separator + 1)) : "") + syntax("]");
+      const inner = token.slice(1, -1), pipe = inner.indexOf("|");
+      const separator = pipe >= 0 ? pipe : inner.search(/\s/);
+      const url = separator >= 0 ? inner.slice(0, separator) : inner;
+      const label = separator >= 0 ? inner.slice(separator + (pipe >= 0 ? 1 : 0)).trim() : "";
+      output += syntax("[") + '<span class="mk-external-url">' + escapeHighlightText(url) + '</span>' +
+        (label ? syntax(pipe >= 0 ? "|" : " ") + content(label) : "") + syntax("]");
+    } else if (token.startsWith("<")) {
+      output += syntax(token);
+    } else if (/^\[anchor\(/i.test(token)) {
+      output += syntax("[anchor(") + '<span class="mk-anchor-target">' + content(token.slice(8, -2)) + '</span>' + syntax(")]");
     } else if (/^\[include\(/i.test(token)) {
       output += syntax("[include(") + '<span class="mk-include-target">' + escapeHighlightText(token.slice(9, -2)) + '</span>' + syntax(")]");
     } else if (/^\{\{\{#!/i.test(token)) {
@@ -1666,6 +1716,10 @@ function showHistoryList() {
     addText(info, "strong", item.created_at || "날짜 정보 없음");
     addText(info, "span", (item.editor || "알 수 없음") + (item.summary ? " · " + item.summary : ""));
     const actions = document.createElement("div"); actions.className = "history-version-actions";
+    const previewButton=document.createElement("button");previewButton.type="button";previewButton.className="button";previewButton.textContent="렌더 미리보기";
+    previewButton.addEventListener("click",()=>previewRevision(item.id));
+    const restoreButton=document.createElement("button");restoreButton.type="button";restoreButton.className="button";restoreButton.textContent="이 버전으로 되돌리기";
+    restoreButton.addEventListener("click",()=>restoreRevision(item.id));
     const aButton = document.createElement("button");
     aButton.type = "button"; aButton.className = "button";
     aButton.textContent = revisionA === item.id ? "A 선택됨" : "A 기준";
@@ -1676,7 +1730,7 @@ function showHistoryList() {
     bButton.textContent = revisionB === item.id ? "B 선택됨" : "B 비교";
     bButton.classList.toggle("selected", revisionB === item.id);
     bButton.onclick = () => { revisionB = revisionB === item.id ? null : item.id; if (revisionA === item.id) revisionA = null; showHistoryList(); };
-    actions.append(aButton, bButton); row.append(info, actions); choices.append(row);
+    actions.append(previewButton, restoreButton, aButton, bButton); row.append(info, actions); choices.append(row);
   });
   body.append(choices);
   const compare = document.createElement("button");
@@ -1686,40 +1740,62 @@ function showHistoryList() {
   compare.onclick = () => renderRevisionComparison(revisionA, revisionB);
   body.append(compare);
 }
-async function renderRevisionComparison(idA, idB) {
-  const body = $("dialog-body"); body.replaceChildren();
-  addText(body, "p", "두 버전의 문서 내용을 불러오는 중입니다.").className = "compare-intro";
-  try {
-    const [aData, bData] = await Promise.all([
-      api("/api/revision?id=" + encodeURIComponent(idA)), api("/api/revision?id=" + encodeURIComponent(idB))
-    ]);
-    const a = aData.revision, b = bData.revision;
-    if (!a || !b) throw new Error("비교할 버전을 찾을 수 없습니다.");
-    body.replaceChildren();
-    addText(body, "p", "A 기준: " + a.created_at + " · " + (a.editor || "알 수 없음") +
-      " → B 비교: " + b.created_at + " · " + (b.editor || "알 수 없음")).className = "compare-intro";
-    const diff = document.createElement("div"); diff.className = "revision-diff";
-    const rows = diffRevisionLines(a.content, b.content); let added = 0, removed = 0;
-    rows.forEach(line => {
-      if (line.type === "add") added++;
-      if (line.type === "remove") removed++;
-      const row = document.createElement("div"); row.className = "revision-diff-line diff-" + line.type;
-      const sign = document.createElement("span"); sign.className = "revision-diff-sign";
-      sign.textContent = line.type === "add" ? "+" : line.type === "remove" ? "−" : " ";
-      const content = document.createElement("code"); content.textContent = line.text || " ";
-      row.append(sign, content); diff.append(row);
-    });
-    addText(body, "p", "추가 " + added + "줄 · 삭제 " + removed + "줄").className = "compare-summary";
-    body.append(diff);
-    const back = document.createElement("button"); back.type = "button"; back.className = "button";
-    back.textContent = "버전 선택으로 돌아가기"; back.addEventListener("click", showHistoryList); body.prepend(back);
-    $("save").textContent = "닫기"; $("save").onclick = () => $("dialog").close();
-  } catch (error) {
-    body.replaceChildren(); addText(body, "p", error.message).className = "dialog-status";
-    const back = document.createElement("button"); back.type = "button"; back.className = "button";
-    back.textContent = "돌아가기"; back.onclick = showHistoryList; body.append(back);
-  }
+async function restoreRevision(id) {
+  const item=historyItemsForCompare.find(x=>Number(x.id)===Number(id)),date=item?.created_at?" ("+item.created_at+")":"";
+  if(!window.confirm("선택한 버전"+date+"의 내용을 현재 문서로 복원할까요?\n현재 내용도 새 역사 항목으로 보존됩니다."))return;
+  try{
+    await api("/api/revision/restore",{method:"POST",body:JSON.stringify({id:Number(id),title:currentTitle})});
+    invalidateNamuDatabaseCache();$("dialog").close();await loadPage(currentTitle,false);
+    $("message").textContent="선택한 버전으로 복원했습니다. 복원 전 내용도 문서 역사에 보존되었습니다.";
+  }catch(error){$("dialog-status").textContent=error.message;$("message").textContent=error.message;}
 }
+async function previewRevision(id) {
+  const body=$("dialog-body");body.replaceChildren();
+  addText(body,"p","선택한 버전을 Worker에서 렌더링하고 있습니다.").className="compare-intro";
+  try{
+    const data=await api("/api/revision?id="+encodeURIComponent(id)),revision=data.revision;
+    if(!revision)throw new Error("문서 버전을 찾을 수 없습니다.");
+    body.replaceChildren();addText(body,"p",revision.created_at+" · "+(revision.editor||"알 수 없음")+(revision.summary?" · "+revision.summary:"")).className="compare-intro";
+    const preview=document.createElement("article");preview.className="wiki-content revision-single-preview";body.append(preview);
+    await renderNamuMarkup(revision.content,preview,revision.title||currentTitle);
+    const actions=document.createElement("div");actions.className="revision-preview-actions";
+    const restore=document.createElement("button");restore.type="button";restore.className="button button-primary";restore.textContent="이 버전으로 되돌리기";restore.addEventListener("click",()=>restoreRevision(id));
+    const back=document.createElement("button");back.type="button";back.className="button";back.textContent="역사 목록으로";back.addEventListener("click",showHistoryList);
+    actions.append(restore,back);body.append(actions);
+  }catch(error){body.replaceChildren();addText(body,"p",error.message).className="dialog-status";const back=document.createElement("button");back.type="button";back.className="button";back.textContent="돌아가기";back.onclick=showHistoryList;body.append(back);}
+}
+async function renderRevisionComparison(idA,idB) {
+  const body=$("dialog-body");body.replaceChildren();addText(body,"p","두 버전의 원문과 렌더 결과를 불러오고 있습니다.").className="compare-intro";
+  try{
+    const [aData,bData]=await Promise.all([api("/api/revision?id="+encodeURIComponent(idA)),api("/api/revision?id="+encodeURIComponent(idB))]);
+    const a=aData.revision,b=bData.revision;if(!a||!b)throw new Error("비교할 버전을 찾을 수 없습니다.");
+    body.replaceChildren();addText(body,"p","A 기준: "+a.created_at+" · "+(a.editor||"알 수 없음")+" → B 비교: "+b.created_at+" · "+(b.editor||"알 수 없음")).className="compare-intro";
+    const toolbar=document.createElement("div");toolbar.className="revision-compare-toolbar";
+    const syntaxButton=document.createElement("button");syntaxButton.type="button";syntaxButton.className="button selected";syntaxButton.textContent="문법(원문) 비교";
+    const renderButton=document.createElement("button");renderButton.type="button";renderButton.className="button";renderButton.textContent="실제 렌더 결과 비교";
+    const restoreA=document.createElement("button");restoreA.type="button";restoreA.className="button";restoreA.textContent="A 버전 복원";restoreA.addEventListener("click",()=>restoreRevision(idA));
+    const restoreB=document.createElement("button");restoreB.type="button";restoreB.className="button";restoreB.textContent="B 버전 복원";restoreB.addEventListener("click",()=>restoreRevision(idB));
+    const back=document.createElement("button");back.type="button";back.className="button";back.textContent="버전 선택으로";back.addEventListener("click",showHistoryList);
+    toolbar.append(syntaxButton,renderButton,restoreA,restoreB,back);body.append(toolbar);
+    const panel=document.createElement("div");panel.className="revision-compare-panel";body.append(panel);
+    const showSyntax=()=>{
+      syntaxButton.classList.add("selected");renderButton.classList.remove("selected");panel.replaceChildren();
+      const diff=document.createElement("div");diff.className="revision-diff";const rows=diffRevisionLines(a.content,b.content);let added=0,removed=0;
+      rows.forEach(line=>{if(line.type==="add")added++;if(line.type==="remove")removed++;const row=document.createElement("div");row.className="revision-diff-line diff-"+line.type;const sign=document.createElement("span");sign.className="revision-diff-sign";sign.textContent=line.type==="add"?"+":line.type==="remove"?"−":" ";const code=document.createElement("code");code.textContent=line.text||" ";row.append(sign,code);diff.append(row);});
+      addText(panel,"p","추가 "+added+"줄 · 삭제 "+removed+"줄").className="compare-summary";panel.append(diff);
+    };
+    const showRendered=async()=>{
+      syntaxButton.classList.remove("selected");renderButton.classList.add("selected");panel.replaceChildren();
+      const grid=document.createElement("div");grid.className="revision-render-grid";
+      const makePane=(label,revision)=>{const pane=document.createElement("section");pane.className="revision-render-pane";addText(pane,"h3",label+" · "+revision.created_at);const article=document.createElement("article");article.className="wiki-content revision-rendered-content";pane.append(article);grid.append(pane);return article;};
+      const left=makePane("A 기준",a),right=makePane("B 비교",b);panel.append(grid);
+      await Promise.all([renderNamuMarkup(a.content,left,a.title||currentTitle),renderNamuMarkup(b.content,right,b.title||currentTitle)]);
+    };
+    syntaxButton.addEventListener("click",showSyntax);renderButton.addEventListener("click",()=>showRendered().catch(error=>{panel.replaceChildren();addText(panel,"p","렌더 비교에 실패했습니다: "+error.message).className="dialog-status";}));
+    showSyntax();$("save").textContent="닫기";$("save").onclick=()=>$("dialog").close();
+  }catch(error){body.replaceChildren();addText(body,"p",error.message).className="dialog-status";const back=document.createElement("button");back.type="button";back.className="button";back.textContent="돌아가기";back.onclick=showHistoryList;body.append(back);}
+}
+
 $("history").onclick=async()=>{
   try {
     const data=await api("/api/history?title="+encodeURIComponent(currentTitle));

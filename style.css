@@ -892,3 +892,66 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 .wiki-content .opennamu_TOC>summary:after{content:"▾";float:right;font-size:11px;color:var(--wiki-muted)}
 .wiki-content .opennamu_TOC:not([open])>summary:after{content:"▸"}
 .wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_list{font-size:12px!important;line-height:1.5!important}
+
+
+/* Parser/editor release */
+.wiki-content .opennamu_TOC{display:table;width:max-content;min-width:0;max-width:100%;margin:0 0 16px;padding:6px 10px;font-size:12px!important;line-height:1.5!important}
+.wiki-content .opennamu_TOC>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0;padding:1px 2px;font-size:12px!important;line-height:1.5!important;cursor:pointer;list-style:none;user-select:none}
+.wiki-content .opennamu_TOC>summary::-webkit-details-marker{display:none}
+.wiki-content .opennamu_TOC>summary::marker{content:""}
+.wiki-content .opennamu_TOC_toggle{display:inline-block;flex:0 0 auto;width:12px;text-align:center;color:var(--wiki-muted)}
+.wiki-content .opennamu_TOC_toggle::before{content:"▸"}
+.wiki-content .opennamu_TOC[open]>.opennamu_TOC_title .opennamu_TOC_toggle::before{content:"▾"}
+.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_contents *,.wiki-content .opennamu_TOC_list{font-size:12px!important;line-height:1.5!important}
+.wiki-content .opennamu_TOC_contents{padding-top:5px;overflow-wrap:anywhere}
+.wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited,.wiki-content table a.opennamu_not_exist_link{color:var(--wiki-danger)!important;text-decoration:underline!important;text-decoration-color:currentColor!important}
+.wiki-content .wiki-fold,.wiki-content .wiki-fold-content{max-width:100%;min-width:0}.wiki-content .wiki-fold-content{overflow:visible}
+.wiki-content .table_safe,.wiki-content .wiki-table-wrap,.wiki-content .wiki-table-scroll,.wiki-content .wiki-table{box-sizing:border-box;min-width:0;max-width:100%}
+.wiki-content .table_safe .wiki-table-wrap,.wiki-content .wiki-table-wrap .table_safe{overflow:visible}
+#editor-highlight .mk-syntax{color:#cf222e;font-weight:650}
+#editor-highlight .mk-heading-text{color:#8250df;font-weight:700}
+#editor-highlight .mk-content{color:var(--wiki-text)}
+#editor-highlight .mk-link-target{color:#0969da;font-weight:600}
+#editor-highlight .mk-external-url{color:#8250df}
+#editor-highlight .mk-include-target{color:#cf222e;font-weight:600}
+#editor-highlight .mk-category-label{color:#bf8700;font-weight:700}
+#editor-highlight .mk-file-label{color:#0969da;font-weight:700}
+#editor-highlight .mk-anchor-target{color:#1a7f37}
+#editor-highlight .mk-table{color:#8250df}
+#editor-highlight .mk-directive{color:#0550ae}
+#editor-highlight .mk-code-fence{color:#6e7781;font-weight:700}
+#editor-highlight .mk-code-line{color:var(--wiki-muted)}
+#editor-highlight .mk-bold-text{color:var(--wiki-text);font-weight:800}
+#editor-highlight .mk-italic-text{color:var(--wiki-text);font-style:italic}
+#editor-highlight .mk-underline-text{color:var(--wiki-text);text-decoration:underline}
+#editor-highlight .mk-strike-text{color:var(--wiki-muted);text-decoration:line-through}
+#editor-highlight .mk-script-text{color:#8250df}
+.editor-markup-toolbar .editor-autocorrect{margin-left:auto;border-color:var(--wiki-warning-border);background:var(--wiki-warning-bg);color:var(--wiki-text);font-weight:700}
+.editor-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.revision-compare-toolbar,.revision-preview-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0}
+.revision-compare-toolbar .selected{border-color:var(--wiki-primary);background:var(--wiki-primary);color:#fff}
+.revision-render-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
+.revision-render-pane{min-width:0;border:1px solid var(--wiki-border);background:var(--wiki-panel)}
+.revision-render-pane>h3{margin:0;padding:8px 10px;border-bottom:1px solid var(--wiki-border);font-size:12px}
+.revision-rendered-content{min-width:0;max-width:100%;padding:9px;overflow-x:hidden}
+.revision-single-preview{max-width:100%;overflow-x:hidden;border:1px solid var(--wiki-border);padding:12px}
+.revision-preview-actions{justify-content:flex-end}
+.guide-page{max-width:1120px;margin:0 auto;padding:24px 20px 60px;color:var(--wiki-text)}
+.guide-page header{margin-bottom:22px;padding:22px;border:1px solid var(--wiki-border);background:var(--wiki-panel)}
+.guide-page h1{margin:0 0 8px;font-size:28px}.guide-page h2{margin:30px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--wiki-border);font-size:21px}
+.guide-page h3{margin:20px 0 7px;font-size:16px}.guide-page p,.guide-page li{line-height:1.75}
+.guide-page table{width:100%;border-collapse:collapse;margin:10px 0 18px}
+.guide-page th,.guide-page td{padding:8px 10px;border:1px solid var(--wiki-border);text-align:left;vertical-align:top}
+.guide-page th{background:var(--wiki-panel-soft)}
+.guide-page code,.guide-page pre{font-family:ui-monospace,Consolas,monospace}
+.guide-page code{padding:1px 4px;border-radius:2px;background:var(--wiki-panel-soft);overflow-wrap:anywhere}
+.guide-page pre{padding:12px;overflow:auto;border:1px solid var(--wiki-border);background:var(--wiki-panel-soft);line-height:1.6}
+.guide-page .guide-note{padding:10px 12px;border-left:3px solid var(--wiki-primary);background:var(--wiki-panel-soft)}
+.guide-page .guide-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+@media(max-width:700px){.revision-render-grid{grid-template-columns:minmax(0,1fr)}.revision-compare-toolbar .button{font-size:11px;padding:6px 8px}.guide-page{padding:14px 12px 40px}.guide-page h1{font-size:23px}.guide-page table{display:block;overflow-x:auto}}
+html[data-theme="dark"] #editor-highlight .mk-syntax{color:#ff7b72}
+html[data-theme="dark"] #editor-highlight .mk-heading-text,html[data-theme="dark"] #editor-highlight .mk-external-url,html[data-theme="dark"] #editor-highlight .mk-table,html[data-theme="dark"] #editor-highlight .mk-script-text{color:#d2a8ff}
+html[data-theme="dark"] #editor-highlight .mk-link-target,html[data-theme="dark"] #editor-highlight .mk-file-label,html[data-theme="dark"] #editor-highlight .mk-directive{color:#79c0ff}
+html[data-theme="dark"] #editor-highlight .mk-include-target{color:#ff7b72}
+html[data-theme="dark"] #editor-highlight .mk-category-label{color:#e3b341}
+html[data-theme="dark"] #editor-highlight .mk-anchor-target{color:#7ee787}

@@ -251,12 +251,12 @@ function extractAdminLinkColors(source) {
 }
 function buildAdminLinkColorMarkup(html, colors) {
   const selectors = {
-    light: 'html[data-theme="light"] .aonwiki-page-content a',
-    dark: 'html[data-theme="dark"] .aonwiki-page-content a',
-    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:visited',
-    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:visited',
-    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:hover',
-    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:hover'
+    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link)',
+    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link)',
+    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):visited',
+    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):visited',
+    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):hover',
+    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):hover'
   };
   const rules = [];
   for (const [key, selector] of Object.entries(selectors)) {
@@ -442,6 +442,14 @@ async function sanitizeServerWikiHtml(markup) {
         if(/^https?:\/\//i.test(href)){
           element.setAttribute("target","_blank");
           element.setAttribute("rel","noopener noreferrer");
+        }
+      }
+      if(tag==="A"){
+        const classes=(element.getAttribute("class")||"").split(/\s+/);
+        if(classes.includes("opennamu_not_exist_link")){
+          const current=element.getAttribute("style")||"";
+          const cleaned=current.split(";").filter(part=>!/^\s*(?:color|text-decoration)(?:\s|:)/i.test(part)).join(";");
+          element.setAttribute("style",(cleaned?cleaned.replace(/;?$/,";"):"")+"color:#d1242f;text-decoration:underline;");
         }
       }
       if(tag==="IFRAME"){
@@ -1135,6 +1143,29 @@ export default {
         const revision = await env.DB.prepare("SELECT id, title, content, editor, created_at, summary FROM revisions WHERE id = ?").bind(id).first();
         if (!revision) return response({ error: "문서 버전을 찾을 수 없습니다." }, 404, cors);
         return response({ revision }, 200, cors);
+      }
+      if (url.pathname === "/api/revision/restore" && request.method === "POST") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "버전을 복원하려면 로그인하세요." }, 401, cors);
+        if (await authRateLimited(request, env, "revision-restore", 20, 60 * 1000)) return response({ error: "복원 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
+        const body = await request.json(), id = Number(body.id), title = cleanTitle(body.title);
+        if (!title || !Number.isSafeInteger(id) || id < 1) return response({ error: "문서 제목 또는 버전 번호가 올바르지 않습니다." }, 400, cors);
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
+        if (!(columns.results || []).some(column => column.name === "summary")) await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+        const revision = await env.DB.prepare("SELECT id, title, content FROM revisions WHERE id = ? AND title = ?").bind(id, title).first();
+        if (!revision) return response({ error: "해당 문서에 속한 버전을 찾을 수 없습니다." }, 404, cors);
+        await ensurePageProtectionSchema(env);
+        const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(title).first();
+        if (protection?.level === "admin" && !user.isAdmin) return response({ error: "이 문서는 관리자만 복원할 수 있도록 보호되어 있습니다." }, 403, cors);
+        if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") return response({ error: "이 문서는 로그인한 회원만 복원할 수 있도록 보호되어 있습니다." }, 403, cors);
+        const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "현재 문서를 찾을 수 없습니다." }, 404, cors);
+        const now = new Date().toISOString(), content = String(revision.content || "");
+        await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?").bind(content, now, title).run();
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, "이전 버전 #" + id + " 복원").run();
+        invalidateNamuServerIndexes();await clearPersistentNamuRenderCache(env);
+        return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
         const user = await currentUser(request, env);
