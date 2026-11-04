@@ -2034,23 +2034,23 @@ opennamu_do_ip_render();
 `;
     const applyInlineFontSize = (pattern, size, lineHeight = 1.8) => {
       this.renderData = this.renderData.replace(pattern, (tag) => {
-        const fontStyle = `font-size:${size}px !important;line-height:${lineHeight} !important;`;
-        const styleMatch = tag.match(/\\sstyle=(["'])([\\s\\S]*?)\\1/i);
+        const fontStyle = "font-size:" + size + "px !important;line-height:" + lineHeight + " !important;";
+        const styleMatch = tag.match(/\sstyle=(["'])([\s\S]*?)\1/i);
         if (styleMatch) {
-          const existingStyle = styleMatch[2].replace(/\\s*;?\\s*$/, ";");
-          return tag.replace(styleMatch[0], ` style=${styleMatch[1]}${existingStyle}${fontStyle}${styleMatch[1]}`);
+          const existingStyle = styleMatch[2].replace(/\s*;?\s*$/, ";");
+          return tag.replace(styleMatch[0], " style=" + styleMatch[1] + existingStyle + fontStyle + styleMatch[1]);
         }
-        return tag.replace(/>$/, ` style="${fontStyle}">`);
+        return tag.replace(/>$/, ' style="' + fontStyle + '">');
       });
     };
     const headingSizes = [34, 30, 26, 23, 21, 19];
     headingSizes.forEach((size, index) => {
-      applyInlineFontSize(new RegExp(`<h${index + 1}\\\\b[^>]*>`, "gi"), size, 1.4);
+      applyInlineFontSize(new RegExp("<h" + (index + 1) + "\\b[^>]*>", "gi"), size, 1.4);
     });
-    applyInlineFontSize(/<table\\b[^>]*>/gi, 18);
-    applyInlineFontSize(/<([a-z][\\w:-]*)\\b([^>]*\\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 18);
-    applyInlineFontSize(/<figcaption\\b[^>]*>/gi, 18);
-    applyInlineFontSize(/<a\\b(?=[^>]*\\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 18);
+    applyInlineFontSize(/<table\b[^>]*>/gi, 18);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 18);
+    applyInlineFontSize(/<figcaption\b[^>]*>/gi, 18);
+    applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 18);
     this.renderData = '<div style="font-size:20px !important; line-height:1.85 !important;">' + this.renderData + "</div>";
   }
   manageAfterwork() {
