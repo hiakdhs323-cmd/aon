@@ -268,6 +268,11 @@ var NamuMark = class _NamuMark {
     this.database = database;
     this.docName = String(config.docName || "");
   }
+  getToolDatabaseFind(title) {
+    const lookup = this.database.lookup;
+    if (lookup instanceof Map) return lookup.get(title);
+    return (this.database.data || []).find((value) => value?.title === title);
+  }
   getToolPxAddCheck(data) {
     if (data.match(/^[0-9]+$/)) return data + "px";
     else return data;
@@ -412,7 +417,7 @@ var NamuMark = class _NamuMark {
         this.dataBacklink[includeName] = {};
       }
       this.dataBacklink[includeName]["include"] = "";
-      const result = this.database.data.find((v) => v.title === includeName);
+      const result = this.getToolDatabaseFind(includeName);
       let dataName;
       if (result) {
         let includeLink = "";
@@ -1408,7 +1413,7 @@ try {
           if (!this.dataBacklink[`file:${linkMain}`]) {
             this.dataBacklink[`file:${linkMain}`] = {};
           }
-          const dbData = this.database.data.find((value) => value.title === `file:${linkMain}`)?.title;
+          const dbData = this.getToolDatabaseFind(`file:${linkMain}`)?.title;
           if (dbData) {
             linkExist = "";
           } else {
@@ -1511,7 +1516,7 @@ try {
         if (!this.dataCategoryList.includes(linkMain)) {
           this.dataCategoryList.push(linkMain);
           if (!this.dataBacklink["category:" + linkMain]) this.dataBacklink["category:" + linkMain] = {};
-          const dbData = this.database.data.find((value) => value.title === "category:" + linkMain)?.title;
+          const dbData = this.getToolDatabaseFind("category:" + linkMain)?.title;
           let linkExist;
           if (dbData) {
             linkExist = "";
@@ -1607,7 +1612,7 @@ try {
         const linkTitle = escapeHtml(linkMain + linkDataSharp);
         let linkExist = "";
         if (linkMain !== "") {
-          const dbData = this.database.data.find((value) => value.title === linkMain)?.title;
+          const dbData = this.getToolDatabaseFind(linkMain)?.title;
           if (!dbData) {
             if (!this.dataBacklink[linkMain]) {
               this.dataBacklink[linkMain] = {};
