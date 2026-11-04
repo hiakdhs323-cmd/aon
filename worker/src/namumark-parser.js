@@ -250,6 +250,19 @@ var NamuMark = class _NamuMark {
         else return dataNew[1];
       }
     });
+    __publicField(this, "getToolThemeColorStyle", (property, kind, data) => {
+      const values = splitSafeExpression(String(data || ""), ",").map((value) => value.trim()).filter(Boolean);
+      const isColor = (value) => /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i.test(value);
+      if (values.length !== 2 || !values.every(isColor)) {
+        const selected = values[0] || "";
+        if (property === "border") return "border:2px solid " + selected + ";";
+        return property + ":" + selected + ";";
+      }
+      const [light, dark] = values;
+      const prefix = "--aonwiki-table-" + kind;
+      const base = property === "border" ? "2px solid " + light : light;
+      return prefix + "-light:" + light + ";" + prefix + "-dark:" + dark + ";" + property + ":" + base + ";";
+    });
     this.doType = doType;
     this.renderData = wikiText.replace("\r", "");
     if (doType === "exter") {
@@ -814,7 +827,7 @@ try {
         if (tableParameterSplit.length === 2) {
           const tableParameterName = tableParameterSplit[0].replace(" ", "").toLowerCase();
           tableParameterData = this.getToolCssSafe(tableParameterSplit[1]);
-          if (tableParameterName == "tablebgcolor") tableParameterAll["table"] += "background:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+          if (tableParameterName == "tablebgcolor") tableParameterAll["table"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "tablewidth") {
             tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
             tableParameterAll["table"] += "width:100%;";
@@ -827,18 +840,18 @@ try {
             }
           } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterSplit[1];
           else if (tableParameterName == "tabletextalign") tableParameterAll["table"] += "text-align:" + tableParameterData + " !important;";
-          else if (tableParameterName == "tablecolor") tableParameterAll["table"] += "color:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+          else if (tableParameterName == "tablecolor") tableParameterAll["table"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "tablebordercolor")
-            tableParameterAll["table"] += "border:2px solid " + this.getToolDarkModeSplit(tableParameterData) + ";";
-          else if (tableParameterName == "rowbgcolor") tableParameterAll["tr"] += "background:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+            tableParameterAll["table"] += this.getToolThemeColorStyle("border", "border", tableParameterData);
+          else if (tableParameterName == "rowbgcolor") tableParameterAll["tr"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "rowtextalign") tableParameterAll["tr"] += "text-align:" + tableParameterData + " !important;";
-          else if (tableParameterName == "rowcolor") tableParameterAll["tr"] += "color:" + this.getToolDarkModeSplit(tableParameterData) + ";";
-          else if (tableParameterName == "colcolor") tableParameterAll["col"] += "color:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+          else if (tableParameterName == "rowcolor") tableParameterAll["tr"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
+          else if (tableParameterName == "colcolor") tableParameterAll["col"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "colbgcolor")
-            tableParameterAll["col"] += "background:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+            tableParameterAll["col"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "coltextalign") tableParameterAll["col"] += "text-align:" + tableParameterData + " !important;";
-          else if (tableParameterName == "bgcolor") tableParameterAll["td"] += "background:" + this.getToolDarkModeSplit(tableParameterData) + ";";
-          else if (tableParameterName == "color") tableParameterAll["td"] += "color:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+          else if (tableParameterName == "bgcolor") tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
+          else if (tableParameterName == "color") tableParameterAll["td"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "height") tableParameterAll["td"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else doAnyThing += "&lt;" + tableParameter + "&gt;";
@@ -858,7 +871,7 @@ try {
             else if (tableParameter == ")") tableParameterAll["td"] += "text-align: right !important;";
           } else if (tableParameter.match(/^(?:(?:#((?:[0-9a-f-A-F]{3}){1,2}))|(\w+))$/)) {
             tableParameterData = this.getToolCssSafe(tableParameter);
-            tableParameterAll["td"] += "background:" + this.getToolDarkModeSplit(tableParameterData) + ";";
+            tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           } else {
             doAnyThing += "&lt;" + tableParameter + "&gt;";
           }
