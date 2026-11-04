@@ -356,13 +356,17 @@ function safeWikiStyle(raw) {
     "float","clear","display","vertical-align","white-space","list-style-type",
     "image-rendering","object-fit","overflow","overflow-wrap","box-shadow","opacity"
   ]);
+  const themeVariable = /^--aonwiki-table-(?:(?:bg|fg|border)-(?:light|dark)|auto-fg-(?:light|dark))$/;
+  const safeColor = /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i;
   const output = [];
   String(raw || "").split(";").forEach(entry => {
     const at = entry.indexOf(":");
     if (at < 1) return;
     const key = entry.slice(0, at).trim().toLowerCase();
     const value = entry.slice(at + 1).trim();
-    if (!allowed.has(key) || !value || /url\s*\(|expression|javascript|@import|[<>{}]/i.test(value)) return;
+    const isThemeVariable = themeVariable.test(key);
+    if ((!allowed.has(key) && !isThemeVariable) || !value || /url\s*\(|expression|javascript|@import|[<>{}]/i.test(value)) return;
+    if (isThemeVariable && !safeColor.test(value)) return;
     output.push(key + ":" + value);
   });
   return output.join(";");

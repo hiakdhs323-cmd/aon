@@ -203,12 +203,16 @@ const SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER 
 const SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
 function sanitizeServerWikiStyle(raw) {
   const allowed = new Set(["color","background","background-color","font-size","font-weight","font-style","text-align","text-decoration","text-transform","line-height","letter-spacing","word-spacing","width","max-width","min-width","height","max-height","min-height","margin","margin-left","margin-right","margin-top","margin-bottom","padding","border","border-color","border-width","border-style","border-radius","border-collapse","float","clear","display","vertical-align","white-space","list-style-type","image-rendering","object-fit","overflow","overflow-wrap","box-shadow","opacity"]);
+  const themeVariable = /^--aonwiki-table-(?:(?:bg|fg|border)-(?:light|dark)|auto-fg-(?:light|dark))$/;
+  const safeColor = /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i;
   const output=[];
   String(raw||"").split(";").forEach(entry=>{
     const at=entry.indexOf(":");if(at<1)return;
     const key=entry.slice(0,at).trim().toLowerCase();
     const value=entry.slice(at+1).trim();
-    if(!allowed.has(key)||!value||/url\s*\(|expression|javascript|@import|[<>{}]/i.test(value))return;
+    const isThemeVariable=themeVariable.test(key);
+    if((!allowed.has(key)&&!isThemeVariable)||!value||/url\s*\(|expression|javascript|@import|[<>{}]/i.test(value))return;
+    if(isThemeVariable&&!safeColor.test(value))return;
     output.push(key+":"+value);
   });
   return output.join(";");
@@ -550,6 +554,15 @@ function getInlineStyleProperties(element) {
 async function applyTableTextContrast(markup) {
   const tableStack = [];
   const rowStack = [];
+  const getThemeBackground = (levels, theme) => {
+    for (const properties of levels) {
+      const paired = properties["--aonwiki-table-bg-" + theme];
+      if (paired) return paired;
+      const fixed = properties["background-color"] || properties.background || "";
+      if (fixed && !/^transparent$/i.test(fixed)) return fixed;
+    }
+    return "";
+  };
   const rewriter = new HTMLRewriter()
     .on("table", {
       element(element) { tableStack.push(getInlineStyleProperties(element)); },
@@ -564,18 +577,35 @@ async function applyTableTextContrast(markup) {
         const cell = getInlineStyleProperties(element);
         const row = rowStack[rowStack.length - 1] || {};
         const table = tableStack[tableStack.length - 1] || {};
-        // Explicit foreground colors at any level are intentional and must win.
-        if (cell.color || row.color || table.color) return;
-        const background = cell["background-color"] || cell.background ||
-          row["background-color"] || row.background ||
-          table["background-color"] || table.background;
-        const contrastColor = parseTableColorValue(background);
-        if (!contrastColor) return;
+        const levels = [cell, row, table];
+
+        // Explicit foreground colors (including theme pairs) always take priority.
+        if (levels.some(properties =>
+          properties.color ||
+          properties["--aonwiki-table-fg-light"] ||
+          properties["--aonwiki-table-fg-dark"]
+        )) return;
+
+        const lightBackground = getThemeBackground(levels, "light");
+        const darkBackground = getThemeBackground(levels, "dark");
+        const lightContrast = lightBackground ? parseTableColorValue(lightBackground) : null;
+        const darkContrast = darkBackground ? parseTableColorValue(darkBackground) : null;
+        if (!lightContrast && !darkContrast) return;
+
+        const declarations = [];
+        if (lightContrast) declarations.push("--aonwiki-table-auto-fg-light:" + lightContrast);
+        if (darkContrast) declarations.push("--aonwiki-table-auto-fg-dark:" + darkContrast);
+        declarations.push("color:" + (lightContrast
+          ? "var(--aonwiki-table-auto-fg-light,var(--wiki-text))"
+          : "var(--aonwiki-table-auto-fg-dark,var(--wiki-text))"));
+
         const currentStyle = element.getAttribute("style") || "";
-        element.setAttribute("style", (currentStyle.trim() ? currentStyle.trim().replace(/;?$/, ";") : "") + "color:" + contrastColor + ";");
+        element.setAttribute("style",
+          (currentStyle.trim() ? currentStyle.trim().replace(/;?$/, ";") : "") +
+          declarations.join(";") + ";"
+        );
       }
-    })
-    ;
+    });
   return await rewriter.transform(new Response(String(markup || ""), {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   })).text();
@@ -586,7 +616,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v18-default-table-link-color:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v19-theme-aware-table-colors:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);

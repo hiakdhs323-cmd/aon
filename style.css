@@ -289,16 +289,26 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
 .wiki-content .opennamu_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
 .wiki-content .opennamu_category a{margin:0 4px}
-.wiki-fold{margin:10px 0;border:0}
+.wiki-fold{
+  display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
+  margin:8px 0;border:1px solid var(--wiki-border-strong);border-radius:3px;
+  background:var(--wiki-panel);overflow:hidden
+}
 .wiki-fold>summary{
-  display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:1px 7px;
-  border:1px solid var(--wiki-primary);border-radius:2px;background:var(--wiki-panel-soft);
-  color:var(--wiki-link);font-weight:700;line-height:1.7;cursor:pointer;list-style:none
+  display:flex;align-items:center;gap:7px;box-sizing:border-box;width:100%;min-width:0;
+  min-height:30px;padding:5px 9px;border:0;border-radius:0;
+  background:var(--wiki-panel-soft);color:var(--wiki-link);
+  font-size:13px;font-weight:700;line-height:1.45;cursor:pointer;
+  list-style:none;white-space:normal;overflow-wrap:anywhere
 }
 .wiki-fold>summary::-webkit-details-marker{display:none}
-.wiki-fold>summary::before{content:"▸";font-size:12px;line-height:1}
+.wiki-fold>summary::before{content:"▸";flex:0 0 auto;font-size:11px;line-height:1}
+.wiki-fold[open]>summary{border-bottom:1px solid var(--wiki-border)}
 .wiki-fold[open]>summary::before{content:"▾"}
-.wiki-fold-content{margin-top:6px;padding:10px;border-left:2px solid var(--wiki-border-strong)}
+.wiki-fold-content{
+  box-sizing:border-box;min-width:0;max-width:100%;margin:0;padding:9px 11px;
+  border:0;background:var(--wiki-panel);overflow-wrap:anywhere
+}
 .wiki-spoiler{border-radius:2px;background:var(--wiki-text);color:var(--wiki-text);cursor:pointer}
 .wiki-spoiler:hover,.wiki-spoiler:focus{color:var(--wiki-panel)}
 .wiki-content sup,.wiki-content sub{line-height:0}
@@ -706,14 +716,16 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 html[data-theme="dark"] .wiki-content table{border-color:var(--wiki-border-strong)}
 html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 
-/* Table links follow the cell's automatically selected high-contrast text color. */
+/* Links inside tables retain the wiki link palette instead of inheriting cell text colors. */
 .wiki-content table td a,
 .wiki-content table td a:visited,
-.wiki-content table td a:hover,
 .wiki-content table th a,
-.wiki-content table th a:visited,
+.wiki-content table th a:visited{
+  color:var(--wiki-link);
+}
+.wiki-content table td a:hover,
 .wiki-content table th a:hover{
-  color:inherit;
+  color:var(--wiki-link-hover);
 }
 
 /* Allow links inside an explicitly colored NamuMark span to inherit that color. */
@@ -1005,4 +1017,42 @@ html[data-theme="dark"] .diff-remove{background:#4a2227;color:#ffb4b4}
   color:var(--wiki-muted);
   font-size:12px;
   line-height:1.6;
+}
+
+
+/* Theme-aware table colors emitted by the server-side NamuMark parser. */
+html[data-theme="light"] .wiki-content [style*="--aonwiki-table-bg-light:"]{
+  background:var(--aonwiki-table-bg-light)!important
+}
+html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-bg-dark:"]{
+  background:var(--aonwiki-table-bg-dark)!important
+}
+html[data-theme="light"] .wiki-content [style*="--aonwiki-table-fg-light:"]{
+  color:var(--aonwiki-table-fg-light)!important
+}
+html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-fg-dark:"]{
+  color:var(--aonwiki-table-fg-dark)!important
+}
+html[data-theme="light"] .wiki-content [style*="--aonwiki-table-border-light:"]{
+  border-color:var(--aonwiki-table-border-light)!important
+}
+html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-border-dark:"]{
+  border-color:var(--aonwiki-table-border-dark)!important
+}
+html[data-theme="light"] .wiki-content [style*="--aonwiki-table-auto-fg-light:"]{
+  color:var(--aonwiki-table-auto-fg-light)!important
+}
+html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
+  color:var(--aonwiki-table-auto-fg-dark)!important
+}
+
+/* Compact fold panels inside table cells without creating an oversized button. */
+.wiki-content .table_safe td .wiki-fold{
+  width:100%;margin:0;border-color:var(--wiki-border);border-radius:2px
+}
+.wiki-content .table_safe td .wiki-fold>summary{
+  min-height:26px;padding:4px 7px;font-size:12px
+}
+.wiki-content .table_safe td .wiki-fold-content{
+  padding:7px 8px;font-size:12px
 }
