@@ -304,7 +304,7 @@ var NamuMarkBundle = (() => {
       let data = "";
       for (const forA in this.dataFootnote) {
         if (data === "") {
-          data += '<div class="opennamu_footnote">';
+          data += '<div class="opennamu_footnote" style="font-size:12px !important;line-height:1.6 !important;">';
         } else {
           data += "<br>";
         }
@@ -316,7 +316,7 @@ var NamuMarkBundle = (() => {
         } else {
           data += '<a id="' + this.docSet["docInclude"] + "fn_" + this.dataFootnote[forA]["list"][0] + '" href="#' + this.docSet["docInclude"] + "rfn_" + this.dataFootnote[forA]["list"][0] + '">(' + forA + ") </a> ";
         }
-        data += '<footnote_title id="' + this.docSet["docInclude"] + "fn_" + this.dataFootnote[forA]["list"][0] + '_title">' + this.dataFootnote[forA]["data"] + "</footnote_title>";
+        data += '<footnote_title style="font-size:12px !important;line-height:1.6 !important;" id="' + this.docSet["docInclude"] + "fn_" + this.dataFootnote[forA]["list"][0] + '_title">' + this.dataFootnote[forA]["data"] + "</footnote_title>";
       }
       if (data !== "") {
         data += "</div>";
