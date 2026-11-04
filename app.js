@@ -1520,16 +1520,14 @@ function runEditorCorrectionBot() {
   );
 
   const changes = [];
-  let codeDepth = 0;
+  let insideCodeBlock = false;
   const correctedLines = field.value.split("\n").map((line, lineIndex) => {
-    const opens = (line.match(/\{\{\{/g) || []).length;
-    const closes = (line.match(/\}\}\}/g) || []).length;
-    if (codeDepth > 0) {
-      codeDepth = Math.max(0, codeDepth + opens - closes);
+    if (insideCodeBlock) {
+      if (/^\s*\}\}\}\s*$/.test(line)) insideCodeBlock = false;
       return line;
     }
-    if (opens > closes) {
-      codeDepth = opens - closes;
+    if (/^\s*\{\{\{/.test(line)) {
+      if (!/\}\}\}\s*$/.test(line)) insideCodeBlock = true;
       return line;
     }
 
