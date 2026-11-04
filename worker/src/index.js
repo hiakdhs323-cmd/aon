@@ -208,7 +208,8 @@ function sanitizeServerWikiStyle(raw) {
   const output=[];
   String(raw||"").split(";").forEach(entry=>{
     const at=entry.indexOf(":");if(at<1)return;
-    const key=entry.slice(0,at).trim().toLowerCase();
+    const rawKey=entry.slice(0,at).trim().toLowerCase();
+    const key=rawKey.replace(/^\\2d\s+\\2d\s+/i,"--");
     const value=entry.slice(at+1).trim();
     const isThemeVariable=themeVariable.test(key);
     if((!allowed.has(key)&&!isThemeVariable)||!value||/url\s*\(|expression|javascript|@import|[<>{}]/i.test(value))return;
@@ -616,7 +617,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v20-escaped-theme-table-colors:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v22-full-cell-theme-contrast:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
