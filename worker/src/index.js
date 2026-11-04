@@ -560,12 +560,98 @@ async function applyTableTextContrast(markup) {
   })).text();
 }
 
+async function applyArticleFootnotePresentation(markup) {
+  let tableDepth = 0;
+  let footnoteDepth = 0;
+  let explicitColorDepth = 0;
+  const explicitColorStack = [];
+  const voidElements = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+
+  function setInlineStyles(element, updates) {
+    const style = element.getAttribute("style") || "";
+    const names = new Set(Object.keys(updates).map(name => name.toLowerCase()));
+    const kept = style.split(";").filter(declaration => {
+      const separator = declaration.indexOf(":");
+      if (separator < 1) return Boolean(declaration.trim());
+      return !names.has(declaration.slice(0, separator).trim().toLowerCase());
+    });
+    for (const [name, value] of Object.entries(updates)) kept.push(name + ":" + value);
+    element.setAttribute("style", kept.join(";"));
+  }
+
+  const rewriter = new HTMLRewriter()
+    .on("table", {
+      element() { tableDepth += 1; },
+      endTag() { tableDepth = Math.max(0, tableDepth - 1); }
+    })
+    .on(".opennamu_footnote, .wiki-footnotes, .opennamu_spead_footnote, .opennamu_popup_footnote", {
+      element(element) {
+        footnoteDepth += 1;
+        setInlineStyles(element, { "font-size": "12px !important", "line-height": "1.6 !important" });
+      },
+      endTag() { footnoteDepth = Math.max(0, footnoteDepth - 1); }
+    })
+    // Track source-authored foreground colors only. This runs before automatic table
+    // contrast colors are added, so generated contrast colors never suppress blue links.
+    .on("[style], font[color]", {
+      element(element) {
+        const tag = String(element.tagName || "").toLowerCase();
+        if (voidElements.has(tag)) return;
+        const style = getInlineStyleProperties(element);
+        const hasColor = Boolean(style.color) || (tag === "font" && Boolean(element.getAttribute("color")));
+        explicitColorStack.push(hasColor);
+        if (hasColor) explicitColorDepth += 1;
+      },
+      endTag() {
+        const hadColor = explicitColorStack.pop();
+        if (hadColor) explicitColorDepth = Math.max(0, explicitColorDepth - 1);
+      }
+    })
+    .on(".opennamu_category", {
+      element(element) {
+        setInlineStyles(element, { "font-size": "12px !important", "line-height": "1.6 !important" });
+      }
+    })
+    .on("footnote_title", {
+      element(element) {
+        setInlineStyles(element, { "font-size": "12px !important", "line-height": "1.6 !important" });
+      }
+    })
+    .on("a", {
+      element(element) {
+        const id = String(element.getAttribute("id") || "");
+        const className = String(element.getAttribute("class") || "");
+        const style = getInlineStyleProperties(element);
+        const hasOwnColor = Boolean(style.color) || Boolean(element.getAttribute("color"));
+        const isMissingPage = /(?:^|\s)opennamu_not_exist_link(?:\s|$)/i.test(className);
+        const isFootnoteReference = /(?:^|_)r?fn_\d+/i.test(id);
+
+        if (
+          (tableDepth > 0 || footnoteDepth > 0) &&
+          !hasOwnColor &&
+          explicitColorDepth === 0 &&
+          !isMissingPage
+        ) {
+          setInlineStyles(element, { color: "var(--wiki-link) !important" });
+        }
+
+        if (footnoteDepth > 0 || isFootnoteReference) {
+          setInlineStyles(element, { "font-size": "12px !important", "line-height": "1.5 !important" });
+        }
+      }
+    });
+
+  return await rewriter.transform(new Response(String(markup || ""), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  })).text();
+}
+
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const extracted = extractAdminLinkColors(source);
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v15-list-font-15:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v16-footnote-postprocess:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -585,7 +671,8 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const parser = new NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
-    const contrastedHtml = await applyTableTextContrast(cleanHtml);
+    const footnoteStyledHtml = await applyArticleFootnotePresentation(cleanHtml);
+    const contrastedHtml = await applyTableTextContrast(footnoteStyledHtml);
     const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
     if (namuRenderCache.size > 100) { const oldest = namuRenderCache.keys().next().value; if (oldest) namuRenderCache.delete(oldest); }
