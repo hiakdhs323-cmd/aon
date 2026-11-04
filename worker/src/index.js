@@ -1,4 +1,4 @@
-import { NamuMarkBundle } from "./namumark-parser.js";
+import { NamuMark } from "./namumark-parser.js";
 function response(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -582,7 +582,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       }
     } catch (error) { console.warn("AonWiki persistent render cache read failed:", error); }
     const database = await buildNamuServerDatabase(env, title, text);
-    const parser = new NamuMarkBundle.NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
+    const parser = new NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
     const contrastedHtml = await applyTableTextContrast(cleanHtml);
