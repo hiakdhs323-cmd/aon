@@ -1490,26 +1490,90 @@ $("editor-content").addEventListener("input", () => {
 });
 
 function runEditorCorrectionBot() {
-  const field=$("editor-content");if(!field)return;
-  const rules=[
-    [/안되요/gu,"안 돼요"],[/됬/gu,"됐"],[/되요/gu,"돼요"],
-    [/어떻해/gu,"어떻게"],[/몇일/gu,"며칠"],[/왠만/gu,"웬만"],
-    [/할수있/gu,"할 수 있"],[/할수없/gu,"할 수 없"],[/될수있/gu,"될 수 있"],
-    [/될수없/gu,"될 수 없"],[/수있습니다/gu,"수 있습니다"],[/수없습니다/gu,"수 없습니다"],
-    [/할께/gu,"할게"],[/갈께/gu,"갈게"],[/뵈요/gu,"봬요"],[/않되/gu,"안 되"]
+  const field = $("editor-content");
+  if (!field) return;
+
+  const rules = [
+    [/안되요/gu, "안 돼요"], [/됬/gu, "됐"], [/되요/gu, "돼요"],
+    [/어떻해/gu, "어떻게"], [/몇일/gu, "며칠"], [/왠만/gu, "웬만"],
+    [/웬지/gu, "왠지"], [/금새/gu, "금세"], [/희안/gu, "희한"],
+    [/어의없/gu, "어이없"], [/역활/gu, "역할"], [/일부로/gu, "일부러"],
+    [/오랫만/gu, "오랜만"], [/구지/gu, "굳이"], [/설레임/gu, "설렘"],
+    [/아니예요/gu, "아니에요"], [/아니였/gu, "아니었"], [/뭐에요/gu, "뭐예요"],
+    [/할께요/gu, "할게요"], [/갈께요/gu, "갈게요"], [/볼께요/gu, "볼게요"],
+    [/할께/gu, "할게"], [/갈께/gu, "갈게"], [/뵈요/gu, "봬요"], [/않되/gu, "안 되"],
+    [/할수있/gu, "할 수 있"], [/할수없/gu, "할 수 없"],
+    [/될수있/gu, "될 수 있"], [/될수없/gu, "될 수 없"],
+    [/수있습니다/gu, "수 있습니다"], [/수없습니다/gu, "수 없습니다"],
+    [/수있는/gu, "수 있는"], [/수없는/gu, "수 없는"],
+    [/할거에요/gu, "할 거예요"], [/갈거에요/gu, "갈 거예요"], [/될거에요/gu, "될 거예요"]
   ];
-  let insideCode=false,changedLines=0;
-  const corrected=field.value.split("\n").map(line=>{
-    if(/^\s*\{\{\{(?:#![a-z0-9_-]+)?\s*$/i.test(line)){insideCode=true;return line;}
-    if(insideCode){if(/^\s*\}\}\}\s*$/.test(line))insideCode=false;return line;}
-    if(/\{\{\{|\}\}\}|https?:\/\//i.test(line))return line;
-    let result=line;for(const [pattern,replacement] of rules)result=result.replace(pattern,replacement);
-    if(result!==line)changedLines++;return result;
-  }).join("\n");
-  if(!changedLines){$("editor-status").textContent="교정 BOT: 수정할 만한 명확한 오타를 찾지 못했습니다.";return;}
-  if(!window.confirm("명확한 오타 "+changedLines+"줄을 교정할까요?\n교정 결과는 편집기에만 적용됩니다. 저장 전에 확인하세요."))return;
-  field.value=corrected;field.dispatchEvent(new Event("input",{bubbles:true}));
-  $("editor-status").textContent="교정 BOT: "+changedLines+"줄을 수정했습니다. 저장 전에 결과를 확인하세요.";field.focus();
+
+  const protectedPattern = /\{\{\{[\s\S]*?\}\}\}|https?:\/\/[^\s<>\]]+|\[\[[^\]\n]*\]\]|\[[^\]\n]*\]|\x60[^\x60\n]*\x60/gi;
+  const protectedTokens = [];
+  const protect = value => String(value).replace(protectedPattern, token => {
+    const index = protectedTokens.push(token) - 1;
+    return "\uE000" + index + "\uE001";
+  });
+  const restore = value => String(value).replace(/\uE000(\d+)\uE001/g, (match, index) =>
+    protectedTokens[Number(index)] ?? match
+  );
+
+  const changes = [];
+  let codeDepth = 0;
+  const correctedLines = field.value.split("\n").map((line, lineIndex) => {
+    const opens = (line.match(/\{\{\{/g) || []).length;
+    const closes = (line.match(/\}\}\}/g) || []).length;
+    if (codeDepth > 0) {
+      codeDepth = Math.max(0, codeDepth + opens - closes);
+      return line;
+    }
+    if (opens > closes) {
+      codeDepth = opens - closes;
+      return line;
+    }
+
+    let result = protect(line);
+    for (const [pattern, replacement] of rules) {
+      const matches = result.match(pattern) || [];
+      if (!matches.length) continue;
+      for (const before of matches) changes.push({ line: lineIndex + 1, before, after: replacement });
+      result = result.replace(pattern, replacement);
+    }
+    return restore(result);
+  });
+
+  if (!changes.length) {
+    $("editor-status").textContent = "교정 BOT: 보호 영역을 제외한 본문에서 등록된 명확한 오타를 찾지 못했습니다.";
+    return;
+  }
+
+  const unique = [];
+  const seen = new Set();
+  for (const change of changes) {
+    const key = change.line + "\u0000" + change.before + "\u0000" + change.after;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(change);
+  }
+  const preview = unique.slice(0, 8)
+    .map(change => change.line + "행: " + change.before + " → " + change.after)
+    .join("\n");
+  const omitted = unique.length > 8 ? "\n외 " + (unique.length - 8) + "개 유형" : "";
+
+  if (!window.confirm(
+    "교정 후보 " + changes.length + "건을 찾았습니다.\n\n" +
+    preview + omitted +
+    "\n\nURL, 내부·외부 링크, 인라인 코드와 {{{ }}} 영역은 보존합니다.\n교정 결과를 편집기에 적용할까요?"
+  )) return;
+
+  const selectionStart = field.selectionStart;
+  const selectionEnd = field.selectionEnd;
+  field.value = correctedLines.join("\n");
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  field.setSelectionRange(Math.min(selectionStart, field.value.length), Math.min(selectionEnd, field.value.length));
+  $("editor-status").textContent = "교정 BOT: " + changes.length + "건을 수정했습니다. 저장 전 미리보기에서 확인하세요.";
+  field.focus();
 }
 $("editor-autocorrect")?.addEventListener("click",runEditorCorrectionBot);
 

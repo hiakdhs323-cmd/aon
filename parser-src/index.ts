@@ -341,7 +341,7 @@ export class NamuMark {
     const [light, dark] = values;
     // Encode the leading hyphens as HTML entities before manageText().
     // Otherwise the NamuMark --strike-- rule treats CSS custom properties as strike-through.
-    const prefix = "&#45;&#45;aonwiki-table-" + kind;
+    const prefix = "\\2d \\2d aonwiki-table-" + kind;
     const base = property === "border" ? "2px solid " + light : light;
     return prefix + "-light:" + light + ";" +
       prefix + "-dark:" + dark + ";" +
@@ -2583,8 +2583,8 @@ try {
       const element = tocList[tocIndex];
       tocData += (tocIndex === 0 ? "" : "<br>") +
         '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) +
-        '<span class="opennamu_TOC_list"><a href="#s-' + element[0] + '">' +
-        element[0] + ". </a><toc_inside>" + element[1] + "</toc_inside></span>";
+        '<span class="opennamu_TOC_list"><a class="opennamu_TOC_link" href="#s-' + element[0] + '">' +
+        element[0] + ". <toc_inside>" + element[1] + "</toc_inside></a></span>";
     }
     if (tocData !== "") {
       tocData += "</div></details>";
@@ -2677,10 +2677,9 @@ try {
 
     // add toc
     const handlerToc = (match: string, p1: string) => {
-      let data = p1;
-      let dataSub = data.replace(/<([^<>]*)>/g, "");
+      // Remove links inside a heading before wrapping the entire TOC row in one link.
+      let data = p1.replace(/<\\/?a(?: [^<>]*)?>/gi, "");
       data = data.replace(/<([^<>]*)>/g, handlerTocFilter);
-
       return data;
     };
 

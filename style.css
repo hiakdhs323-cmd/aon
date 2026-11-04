@@ -1056,3 +1056,24 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
 .wiki-content .table_safe td .wiki-fold-content{
   padding:7px 8px;font-size:12px
 }
+
+/* Keep explicitly authored NamuMark text colors on links in preview and saved pages. */
+#article.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link),
+#article.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link):visited,
+#article.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link):hover,
+#article.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link):focus,
+.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link),
+.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link):visited,
+.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link):hover,
+.wiki-content span[style*="color"] a:not(.opennamu_not_exist_link):focus{
+  color:inherit!important;
+  text-decoration:underline!important;
+  text-decoration-color:currentColor!important;
+  text-underline-offset:2px
+}
+
+/* The complete TOC entry, including its title, is one link. */
+.wiki-content .opennamu_TOC_link{display:inline-block;color:var(--wiki-link);text-decoration:none}
+.wiki-content .opennamu_TOC_link:hover,.wiki-content .opennamu_TOC_link:focus{
+  color:var(--wiki-link-hover);text-decoration:underline
+}
