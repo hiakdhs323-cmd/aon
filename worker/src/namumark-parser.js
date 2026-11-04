@@ -1905,7 +1905,7 @@ try {
     }
     let tocData = "";
     if (tocList.length !== 0) {
-      tocData = '<details class="opennamu_TOC" id="toc" open><summary class="opennamu_TOC_title">\uBAA9\uCC28</summary><div class="opennamu_TOC_contents">';
+      tocData = '<details class="opennamu_TOC" id="toc"><summary class="opennamu_TOC_title"><span class="opennamu_TOC_label">\uBAA9\uCC28</span><span class="opennamu_TOC_toggle" aria-hidden="true"></span></summary><div class="opennamu_TOC_contents">';
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
@@ -2057,7 +2057,7 @@ opennamu_do_ip_render();
     applyInlineFontSize(/<li\b[^>]*>/gi, 14, 1.8);
     applyInlineFontSize(/<table\b[^>]*>/gi, 14);
     applyInlineFontSize(/<code\b[^>]*>/gi, 14);
-    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 12);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 12, 1.5);
     applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:opennamu_footnote|wiki-footnotes)[^"']*["'][^>]*)>/gi, 12, 1.6);
     applyInlineFontSize(/<footnote_title\b[^>]*>/gi, 12, 1.6);
     applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*opennamu_category[^"']*["'][^>]*)>/gi, 12, 1.6);
