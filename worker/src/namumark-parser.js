@@ -2052,6 +2052,9 @@ opennamu_do_ip_render();
     headingSizes.forEach((size, index) => {
       applyInlineFontSize(new RegExp("<h" + (index + 1) + "\\b[^>]*>", "gi"), size, 1.4);
     });
+    applyInlineFontSize(/<ul\b[^>]*>/gi, 15, 1.8);
+    applyInlineFontSize(/<ol\b[^>]*>/gi, 15, 1.8);
+    applyInlineFontSize(/<li\b[^>]*>/gi, 15, 1.8);
     applyInlineFontSize(/<table\b[^>]*>/gi, 15);
     applyInlineFontSize(/<code\b[^>]*>/gi, 15);
     applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 15);
