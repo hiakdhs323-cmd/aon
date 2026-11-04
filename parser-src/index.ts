@@ -2745,18 +2745,18 @@ try {
     // Override independent small-size declarations in the wiki skin.
     // Star/numbered list syntax becomes UL/OL + LI; the skin has a 12px !important rule on LI.
     // Apply the 15px override directly to every list container and list item, including nested items.
-    applyInlineFontSize(/<ul\b[^>]*>/gi, 15, 1.8);
-    applyInlineFontSize(/<ol\b[^>]*>/gi, 15, 1.8);
-    applyInlineFontSize(/<li\b[^>]*>/gi, 15, 1.8);
+    applyInlineFontSize(/<ul\b[^>]*>/gi, 14, 1.8);
+    applyInlineFontSize(/<ol\b[^>]*>/gi, 14, 1.8);
+    applyInlineFontSize(/<li\b[^>]*>/gi, 14, 1.8);
 
-    applyInlineFontSize(/<table\b[^>]*>/gi, 15);
-    applyInlineFontSize(/<code\b[^>]*>/gi, 15);
-    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 15);
+    applyInlineFontSize(/<table\b[^>]*>/gi, 14);
+    applyInlineFontSize(/<code\b[^>]*>/gi, 14);
+    applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 12);
     // Footnotes and the category strip at the end of the document are intentionally secondary text.
     applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:opennamu_footnote|wiki-footnotes)[^"']*["'][^>]*)>/gi, 12, 1.6);
     applyInlineFontSize(/<footnote_title\b[^>]*>/gi, 12, 1.6);
     applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*opennamu_category[^"']*["'][^>]*)>/gi, 12, 1.6);
-    applyInlineFontSize(/<figcaption\b[^>]*>/gi, 15);
+    applyInlineFontSize(/<figcaption\b[^>]*>/gi, 14);
     applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 12, 1.5);
 
     this.renderData = '<div style="font-size:14px !important; line-height:1.8 !important;">' + this.renderData + '</div>';
