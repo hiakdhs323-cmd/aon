@@ -630,7 +630,7 @@ export class NamuMark {
         );
       } else {
         this.dataBacklink[includeName]["no"] = "";
-        const includeLink = '<div><a class="opennamu_not_exist_link" href="/w/' + urlPas(includeName) + '">(' + includeNameOrg + ")</a></div>";
+        const includeLink = '<div><a class="opennamu_not_exist_link" style="color:#d1242f!important;text-decoration:underline" href="/w/' + urlPas(includeName) + '">(' + includeNameOrg + ")</a></div>";
 
         dataName = this.getToolDataStorage(includeLink, "", matchOrg);
       }
