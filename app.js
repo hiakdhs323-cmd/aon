@@ -698,6 +698,51 @@ function toggleNamumarkBeta() {
   syncNamumarkBetaButton();
 }
 syncNamumarkBetaButton();
+function hasExplicitWikiTextColor(element, root) {
+  for (let node = element; node && node !== root; node = node.parentElement) {
+    if (node.style && node.style.getPropertyValue("color").trim()) return true;
+    if (node.tagName === "FONT" && node.hasAttribute("color")) return true;
+  }
+  return false;
+}
+
+function applyFinalWikiTypographyAndLinkColors(root) {
+  if (!root) return;
+
+  const compactNodes = root.querySelectorAll([
+    ".opennamu_footnote", ".opennamu_footnote *",
+    ".wiki-footnotes", ".wiki-footnotes *",
+    ".opennamu_spead_footnote", ".opennamu_spead_footnote *",
+    ".opennamu_popup_footnote", ".opennamu_popup_footnote *",
+    "footnote_title", ".opennamu_category", ".opennamu_category *",
+    ".wiki-footnote-tooltip"
+  ].join(","));
+
+  for (const element of compactNodes) {
+    element.style.setProperty("font-size", "12px", "important");
+    element.style.setProperty("line-height", "1.6", "important");
+  }
+
+  const links = root.querySelectorAll([
+    "table td a", "table th a",
+    ".opennamu_footnote a", ".wiki-footnotes a", "footnote_title a"
+  ].join(","));
+
+  for (const link of links) {
+    if (link.classList.contains("opennamu_not_exist_link")) continue;
+    if (hasExplicitWikiTextColor(link, root)) continue;
+
+    const parentColor = link.parentElement ? getComputedStyle(link.parentElement).color : "";
+    const ownColor = getComputedStyle(link).color;
+    // Keep any existing page-level link color that differs from the inherited text color.
+    if (ownColor && parentColor && ownColor !== parentColor) continue;
+
+    link.style.setProperty("color", "var(--wiki-link)", "important");
+  }
+
+  root.dataset.aonFinalPresentation = "applied";
+}
+
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
   root.querySelectorAll("table").forEach(table=>{
@@ -735,6 +780,7 @@ function prepareServerRenderedMarkup(root,docTitle){
   root.classList.add("namumark-rendered");
   root.classList.remove("namumark-beta-active");
   enhanceFootnoteHover(root);
+  applyFinalWikiTypographyAndLinkColors(root);
   if(window.katex){
     root.querySelectorAll('span[id*="opennamu_math_"]').forEach(element=>{
       try{window.katex.render(element.textContent||"",element,{throwOnError:false,strict:"ignore"})}
