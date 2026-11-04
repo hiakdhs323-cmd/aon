@@ -1,104 +1,135 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><title>나무마크 문법 안내 - AonWiki</title><link rel="stylesheet" href="style.css?v=20261104-editor-parser-history-r3"><style>
-body{margin:0;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font)}.guide-header{border-bottom:1px solid var(--wiki-border);background:var(--wiki-panel)}.guide-header-inner{max-width:1120px;margin:auto;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}.guide-brand{font-weight:800;font-size:18px;color:var(--wiki-text)}.guide-brand span{color:var(--wiki-primary)}.guide-toc{padding:12px 15px;border:1px solid var(--wiki-border);background:var(--wiki-panel-soft)}.guide-toc ol{columns:2;margin:6px 0 0;padding-left:23px}.guide-toc a{color:var(--wiki-link)}.guide-tag{font-size:11px;color:var(--wiki-muted);font-weight:700}@media(max-width:650px){.guide-toc ol{columns:1}}
-</style></head><body><div class="guide-header"><div class="guide-header-inner"><a class="guide-brand" href="https://hiakdhs323-cmd.github.io/aon/">Aon<span>Wiki</span></a><a class="button" href="https://aon.hiakdhs323.workers.dev/">위키로 돌아가기</a></div></div>
-<main class="guide-page"><header><div class="guide-top"><p class="home-kicker">AONWIKI DOCUMENTATION</p><p class="guide-tag">현재 AonWiki Worker 파서 기준</p></div><h1>나무마크 문법 안내</h1><p>AonWiki에서 지원하는 나무마크 문법을 설명합니다. 편집 후 미리보기에서 Worker가 렌더링한 결과를 확인하고 저장하세요.</p><p class="guide-note">AonWiki는 나무위키 계열 문법을 기반으로 하지만 모든 나무위키 확장 문법·외부 서비스·위젯을 완전히 동일하게 지원하지는 않습니다. 아래 예제는 현재 AonWiki 파서 구현을 기준으로 합니다.</p></header>
-<nav class="guide-toc"><strong>문서 목차</strong><ol><li><a href="#heading">제목·문단</a></li><li><a href="#format">글자 꾸미기</a></li><li><a href="#links">링크</a></li><li><a href="#list">목록</a></li><li><a href="#table">표</a></li><li><a href="#fold">접기·펼치기</a></li><li><a href="#include">문서 삽입</a></li><li><a href="#media">이미지·분류</a></li><li><a href="#footnote">각주·앵커</a></li><li><a href="#macro">매크로</a></li><li><a href="#code">코드·위키 블록</a></li><li><a href="#save">저장·역사</a></li></ol></nav>
-<section id="heading"><h2>1. 제목과 문단</h2><table><thead><tr><th>문법</th><th>설명</th></tr></thead><tbody><tr><td><code>== 제목 ==</code></td><td>문단 제목과 목차 항목 생성</td></tr><tr><td><code>=== 하위 제목 ===</code></td><td>하위 문단. 등호 2~6개 지원</td></tr><tr><td><code>----</code></td><td>가로 구분선</td></tr><tr><td><code>[br]</code></td><td>줄바꿈</td></tr><tr><td><code>[clearfix]</code></td><td>떠 있는 요소 아래에서 문서 흐름 정리</td></tr></tbody></table><pre>== 운영 안내 ==
-본문 첫 문장입니다.
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>나무위키 공식 문법 문서 - AonWiki</title>
+  <link rel="stylesheet" href="style.css?v=20261104-namu-official-reference-r1">
+  <style>
+    body{margin:0;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font)}
+    .official-page{max-width:1120px;margin:0 auto;padding:24px 20px 64px}
+    .official-page header{padding:22px;margin:0 0 18px;border:1px solid var(--wiki-border);background:var(--wiki-panel)}
+    .official-page h1{margin:0 0 9px;font-size:27px}
+    .official-page h2{margin:30px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--wiki-border);font-size:20px}
+    .official-page p,.official-page li{line-height:1.75}
+    .official-kicker{margin:0 0 7px;color:var(--wiki-muted);font-size:11px;font-weight:800;letter-spacing:.08em}
+    .official-note{padding:12px 14px;border-left:3px solid var(--wiki-primary);background:var(--wiki-panel-soft)}
+    .official-source-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .official-source{display:flex;flex-direction:column;gap:7px;min-width:0;padding:15px;border:1px solid var(--wiki-border);background:var(--wiki-panel);color:var(--wiki-text);text-decoration:none}
+    .official-source:hover{border-color:var(--wiki-primary);text-decoration:none}
+    .official-source strong{font-size:15px}
+    .official-source span{font-size:12px;color:var(--wiki-muted);line-height:1.6}
+    .official-source em{font-size:12px;color:var(--wiki-link);font-style:normal;font-weight:700}
+    .official-table-wrap{max-width:100%;overflow-x:auto}
+    .official-page table{width:100%;border-collapse:collapse}
+    .official-page th,.official-page td{padding:9px 10px;border:1px solid var(--wiki-border);text-align:left;vertical-align:top}
+    .official-page th{background:var(--wiki-panel-soft)}
+    .official-page code{padding:1px 4px;background:var(--wiki-panel-soft);font-family:ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+    .official-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .official-meta span{padding:4px 8px;border:1px solid var(--wiki-border);font-size:11px;color:var(--wiki-muted)}
+    .official-footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--wiki-border);font-size:12px;color:var(--wiki-muted)}
+    .official-footer a{color:var(--wiki-link)}
+    @media(max-width:680px){
+      .official-page{padding:14px 12px 42px}
+      .official-page header{padding:16px}
+      .official-page h1{font-size:22px}
+      .official-source-list{grid-template-columns:minmax(0,1fr)}
+      .official-page table{min-width:580px}
+    }
+  </style>
+</head>
+<body>
+  <div class="guide-header">
+    <div class="guide-header-inner">
+      <a class="guide-brand" href="https://hiakdhs323-cmd.github.io/aon/">Aon<span>Wiki</span></a>
+      <a class="button" href="https://aon.hiakdhs323.workers.dev/">위키로 돌아가기</a>
+    </div>
+  </div>
 
-=== 담당 업무 ===
-담당 업무를 적습니다.</pre></section>
-<section id="format"><h2>2. 글자 꾸미기</h2><table><thead><tr><th>문법</th><th>기능</th></tr></thead><tbody><tr><td><code>'''굵게'''</code></td><td>굵은 글씨</td></tr><tr><td><code>''기울임''</code></td><td>기울임</td></tr><tr><td><code>__밑줄__</code></td><td>밑줄</td></tr><tr><td><code>~~취소선~~</code></td><td>취소선</td></tr><tr><td><code>^^위첨자^^</code></td><td>위첨자</td></tr><tr><td><code>,,아래첨자,,</code></td><td>아래첨자</td></tr><tr><td><code>{{{+1 큰 글씨}}}</code></td><td>글자 크기 확대(+1~+5), 축소(-1~-5)</td></tr><tr><td><code>{{{#red 빨간 글씨}}}</code></td><td>글자색</td></tr><tr><td><code>{{{@yellow 강조 배경}}}</code></td><td>배경색</td></tr></tbody></table><pre>'''중요 공지'''
-이 문장은 ''강조''하고 __밑줄__을 표시합니다.
-{{{#red 반드시 확인}}}</pre></section>
-<section id="links"><h2>3. 내부 링크와 외부 링크</h2><table><thead><tr><th>문법</th><th>설명</th></tr></thead><tbody><tr><td><code>[[문서명]]</code></td><td>다른 문서로 이동</td></tr><tr><td><code>[[문서명|표시 문구]]</code></td><td>링크 표시명 지정</td></tr><tr><td><code>[[문서명#s-1]]</code></td><td>특정 문단으로 이동</td></tr><tr><td><code>[https://example.com|공식 사이트]</code></td><td>외부 링크</td></tr></tbody></table><p>존재하지 않는 내부 문서는 빨간색으로 표시됩니다. 표 안의 링크도 같은 원칙이 적용됩니다.</p></section>
-<section id="list"><h2>4. 목록</h2><pre>* 첫 번째 항목
-* 두 번째 항목
-** 하위 항목
+  <main class="official-page">
+    <header>
+      <p class="official-kicker">NAMUWIKI OFFICIAL DOCUMENTATION</p>
+      <h1>나무위키 공식 문법 문서</h1>
+      <p>나무위키에서 관리하는 공식 문법 도움말을 기준 자료로 연결합니다. 아래 원문 링크를 누르면 나무위키의 최신 문서를 직접 확인할 수 있습니다.</p>
+      <p class="official-note">여기는 임의로 재작성한 문법 요약본이 아니라, 공식 원문을 찾아볼 수 있도록 AonWiki 안에 마련한 문서 안내 페이지입니다. 원문의 설명·예제·개정 사항은 나무위키에서 직접 확인하세요.</p>
+      <div class="official-meta">
+        <span>원문 출처: 나무위키</span>
+        <span>문서 계열: 나무마크</span>
+        <span>AonWiki 파서와 완전 동일하지 않을 수 있음</span>
+      </div>
+    </header>
 
-1. 첫 번째 순서
-2. 두 번째 순서</pre><p><code>*</code> 개수로 글머리 목록의 깊이를 나타내고 숫자와 마침표로 순서 목록을 만듭니다.</p></section>
-<section id="table"><h2>5. 표</h2>
-<pre>|| 이름 || 담당 업무 ||
-|| 아온 || 서버 운영 ||
-|| 코지 || 운영 지원 ||</pre>
-<table><thead><tr><th>구분</th><th>문법 예시</th><th>기능</th></tr></thead><tbody>
-<tr><td>표 너비·높이</td><td><code>&lt;tablewidth=600&gt;</code>, <code>&lt;tableheight=300&gt;</code></td><td>표 외부 폭 및 높이 지정</td></tr>
-<tr><td>표 정렬</td><td><code>&lt;tablealign=center&gt;</code>, <code>&lt;tablealign=right&gt;</code></td><td>가운데 또는 오른쪽 배치</td></tr>
-<tr><td>표 배경·글자색</td><td><code>&lt;tablebgcolor=#eeeeee&gt;</code>, <code>&lt;tablecolor=#222222&gt;</code></td><td>표 전체 색상</td></tr>
-<tr><td>표 테두리·클래스</td><td><code>&lt;tablebordercolor=#888888&gt;</code>, <code>&lt;tableclass=custom&gt;</code></td><td>표 테두리 색 및 클래스</td></tr>
-<tr><td>표 내부 정렬</td><td><code>&lt;tabletextalign=center&gt;</code></td><td>표의 기본 텍스트 정렬</td></tr>
-<tr><td>행 옵션</td><td><code>&lt;rowbgcolor=#eeeeee&gt;</code>, <code>&lt;rowcolor=#222222&gt;</code>, <code>&lt;rowtextalign=center&gt;</code></td><td>행 배경·글자색·정렬</td></tr>
-<tr><td>열 옵션</td><td><code>&lt;colbgcolor=#eeeeee&gt;</code>, <code>&lt;colcolor=#222222&gt;</code>, <code>&lt;coltextalign=center&gt;</code></td><td>열 배경·글자색·정렬</td></tr>
-<tr><td>셀 옵션</td><td><code>&lt;bgcolor=#eeeeee&gt;</code>, <code>&lt;color=red&gt;</code>, <code>&lt;width=180&gt;</code>, <code>&lt;height=50&gt;</code></td><td>배경·글자색·너비·높이</td></tr>
-<tr><td>셀 정렬</td><td><code>&lt;(&gt;</code>, <code>&lt;:&gt;</code>, <code>&lt;)&gt;</code></td><td>왼쪽·가운데·오른쪽</td></tr>
-<tr><td>병합</td><td><code>&lt;-2&gt;</code>, <code>&lt;|2&gt;</code></td><td>가로 2칸·세로 2행 병합</td></tr>
-<tr><td>세로 위치·여백</td><td><code>&lt;^|2&gt;</code>, <code>&lt;v|2&gt;</code>, <code>&lt;nopad&gt;</code></td><td>세로 정렬·셀 여백 제거</td></tr>
-</tbody></table>
-<p>셀 앞에 옵션을 적어 해당 셀 또는 행·열에 적용합니다. 여러 옵션을 사용할 때는 <code>&lt;bgcolor=#eeeeee&gt;&lt;color=#222222&gt;</code>처럼 이어서 적습니다.</p>
-<p class="guide-note">표가 화면보다 넓으면 표 컨테이너 하나에서 가로 스크롤됩니다. 문서나 접기 영역 전체에 중복 스크롤이 생기는 것은 의도한 동작이 아닙니다.</p></section>
-<section id="fold"><h2>6. 접기와 펼치기</h2><pre>{{{#!folding 접기 제목
-접었을 때 숨겨지는 본문입니다.
-이 안에도 문법과 표를 넣을 수 있습니다.
-}}}</pre><p>접기 제목을 누르면 본문이 열리고 다시 누르면 닫힙니다.</p></section>
-<section id="include"><h2>7. 문서 삽입</h2><pre>[include(문서명)]
-[include(문서명, 변수=값)]</pre><p>다른 문서의 내용을 현재 문서에 포함합니다. 존재하지 않는 대상은 빨간 링크로 표시됩니다.</p></section>
-<section id="media"><h2>8. 이미지와 분류</h2>
-<pre>[[파일:이미지.png]]
-[[파일:이미지.png|width=300&height=180&align=center]]
-[[파일:이미지.png|width=320&bgcolor=#eeeeee&border-radius=8]]
-[[분류:운영]]</pre>
-<table><thead><tr><th>이미지 옵션</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>width</code>, <code>height</code></td><td>이미지 너비와 높이</td></tr>
-<tr><td><code>align=left|center|right</code></td><td>이미지 정렬</td></tr>
-<tr><td><code>bgcolor</code></td><td>이미지 영역의 배경색</td></tr>
-<tr><td><code>theme=dark|light</code></td><td>특정 테마에서 표시하도록 지정</td></tr>
-<tr><td><code>border-radius</code></td><td>모서리 둥글기</td></tr>
-<tr><td><code>rendering=pixelated</code></td><td>픽셀 이미지 렌더링 방식 지정</td></tr>
-</tbody></table>
-<p>파일이 등록되어 있지 않으면 업로드가 필요한 링크로 표시됩니다. <code>[[분류:이름]]</code>은 문서 분류로 처리됩니다.</p></section>
-<section id="footnote"><h2>9. 각주와 앵커</h2><pre>본문 내용[* 출처 또는 보충 설명]
-[anchor(운영정책)]
-[[운영 정책#운영정책]]</pre><p><code>[* 내용]</code>은 각주, <code>[anchor(이름)]</code>은 문서 내 이동 지점을 만듭니다.</p></section>
-<section id="macro"><h2>10. 매크로</h2>
-<table><thead><tr><th>문법</th><th>기능</th></tr></thead><tbody>
-<tr><td><code>[목차]</code>, <code>[toc]</code></td><td>제목 구조를 바탕으로 목차 생성</td></tr>
-<tr><td><code>[목차(hide)]</code></td><td>목차 기본 표시 상태 옵션</td></tr>
-<tr><td><code>[date]</code>, <code>[datetime]</code></td><td>현재 날짜·시간 문자열</td></tr>
-<tr><td><code>[pagecount]</code></td><td>문서 수</td></tr>
-<tr><td><code>[br]</code>, <code>[clearfix]</code></td><td>줄바꿈, 떠 있는 요소 정리</td></tr>
-<tr><td><code>[age(2000-01-01)]</code></td><td>입력한 날짜부터 지난 연수</td></tr>
-<tr><td><code>[dday(2027-01-01)]</code></td><td>입력한 날짜와 오늘 사이의 일수</td></tr>
-<tr><td><code>[anchor(문단이름)]</code></td><td>문서 안에서 이동할 위치 생성</td></tr>
-<tr><td><code>[ruby(漢字,ruby=かんじ)]</code></td><td>루비(후리가나) 표기</td></tr>
-<tr><td><code>[math(x^2+y^2)]</code></td><td>수식 렌더링</td></tr>
-</tbody></table>
-<h3>동영상·외부 미디어 매크로</h3>
-<p>다음 공급자 이름을 사용합니다. 실제 표시 여부는 각 서비스의 임베드 정책과 콘텐츠 공개 상태에 따라 달라집니다.</p>
-<pre>[youtube(동영상 ID)]
-[youtube(동영상 ID,width=640,height=360,start=30,end=90)]
-[nicovideo(sm9)]
-[navertv(클립 ID)]
-[kakaotv(클립 ID)]
-[vimeo(동영상 ID)]
-[instagram(게시물 ID)]
-[twitter(게시물 URL)]
-[tiktok(동영상 ID)]
-[facebook(게시물 URL)]</pre>
-<p><code>width</code>와 <code>height</code>로 크기를 지정할 수 있으며, YouTube는 <code>start</code>와 <code>end</code> 재생 구간도 지원합니다.</p>
-<p class="guide-note">매크로는 대소문자를 구분하지 않도록 처리되어 있습니다. 다만 서비스 측에서 임베드를 제한하거나 삭제한 콘텐츠는 표시되지 않을 수 있습니다.</p></section>
-<section id="code"><h2>11. 코드·위키·수식 블록</h2>
-<pre>{{{#!syntax python
-def hello():
-    print("Hello, AonWiki")
-}}}</pre>
-<p><code>#!syntax</code> 뒤에 언어명을 지정하면 코드 블록으로 분리하고 구문 강조를 적용합니다. 지원 언어는 코드 강조 라이브러리에 따라 달라질 수 있습니다.</p>
-<pre>{{{#!wiki style="border:1px solid #888; padding:10px"
-'''위키 문법'''으로 렌더링되는 꾸밈 블록입니다.
-}}}</pre>
-<p><code>#!wiki</code>는 내부 내용을 나무마크로 렌더링하는 블록입니다. HTML/CSS는 보안 필터를 거치며 임의 스크립트는 실행되지 않습니다.</p>
-<pre>[math(E = mc^2)]
-<math>E = mc^2</math></pre>
-<p>수식은 <code>[math(식)]</code> 또는 <code>&lt;math&gt;식&lt;/math&gt;</code> 형식으로 작성합니다.</p></section>
-<section id="save"><h2>12. 관리자 기능과 저장 전 확인</h2><ul><li>편집 권한은 로그인과 문서 보호 설정을 따릅니다.</li><li>미리보기는 Worker가 실제 파싱한 결과를 표시합니다.</li><li>문서 역사에서 원문 차이와 렌더 결과를 비교할 수 있습니다.</li><li>이전 버전을 복원하면 복원 전 현재 문서도 새 역사 항목으로 보존됩니다.</li><li>교정 BOT은 흔한 오타를 찾아 제안하는 보조 기능이며 문맥형 맞춤법 검사기는 아닙니다. 저장 전에 확인하세요.</li></ul><p class="guide-note">지원 범위는 파서 업데이트에 따라 변경됩니다. 불확실한 문법은 실제 서버 미리보기 결과를 기준으로 판단하세요.</p><p><a href="https://aon.hiakdhs323.workers.dev/">AonWiki로 돌아가기</a></p></section>
-</main></body></html>
+    <section aria-labelledby="official-documents">
+      <h2 id="official-documents">공식 문서 바로가기</h2>
+      <div class="official-source-list">
+        <a class="official-source" href="https://namu.wiki/w/나무위키:문법%20도움말" target="_blank" rel="noopener noreferrer">
+          <strong>나무위키:문법 도움말</strong>
+          <span>기본 문법을 다루는 공식 안내 문서입니다. 텍스트 서식, 링크, 목록, 표, 이미지, 매크로 등 기본 사용법을 확인할 수 있습니다.</span>
+          <em>공식 원문 열기 ↗</em>
+        </a>
+        <a class="official-source" href="https://namu.wiki/w/나무위키:문법%20도움말/심화" target="_blank" rel="noopener noreferrer">
+          <strong>나무위키:문법 도움말/심화</strong>
+          <span>기본 문법을 넘어서는 응용 문법과 세부 사용법을 확인하는 문서입니다.</span>
+          <em>심화 문서 열기 ↗</em>
+        </a>
+        <a class="official-source" href="https://namu.wiki/w/나무위키:문법%20도움말/심화/CSS" target="_blank" rel="noopener noreferrer">
+          <strong>나무위키:문법 도움말/심화/CSS</strong>
+          <span>CSS를 사용하는 응용 표현과 스타일 관련 문법을 확인하는 공식 하위 문서입니다.</span>
+          <em>CSS 문서 열기 ↗</em>
+        </a>
+        <a class="official-source" href="https://namu.wiki/w/나무위키:문법%20도움말/심화/TeX" target="_blank" rel="noopener noreferrer">
+          <strong>나무위키:문법 도움말/심화/TeX</strong>
+          <span>TeX 수식 입력과 수식 관련 사용법을 확인하는 공식 하위 문서입니다.</span>
+          <em>TeX 문서 열기 ↗</em>
+        </a>
+        <a class="official-source" href="https://namu.wiki/w/나무위키:문법%20도움말/개발" target="_blank" rel="noopener noreferrer">
+          <strong>나무위키:문법 도움말/개발</strong>
+          <span>문법을 처리하는 원리와 구문 해석 관점을 다루는 개발 참고 문서입니다.</span>
+          <em>개발 문서 열기 ↗</em>
+        </a>
+        <a class="official-source" href="https://namu.wiki/w/나무위키:도움말" target="_blank" rel="noopener noreferrer">
+          <strong>나무위키:도움말</strong>
+          <span>문법뿐 아니라 나무위키의 편집·기능 관련 공식 도움말을 찾아볼 수 있는 상위 안내 문서입니다.</span>
+          <em>도움말 열기 ↗</em>
+        </a>
+      </div>
+    </section>
+
+    <section aria-labelledby="aonwiki-compatibility">
+      <h2 id="aonwiki-compatibility">AonWiki에서 사용할 때 주의할 점</h2>
+      <p>나무위키 공식 문서는 나무위키의 현재 엔진을 기준으로 설명합니다. AonWiki는 별도의 Worker 파서와 보안 필터를 사용하므로, 같은 문법이라도 출력이나 지원 범위가 다를 수 있습니다.</p>
+      <div class="official-table-wrap">
+        <table>
+          <thead><tr><th>문법 영역</th><th>AonWiki 적용 기준</th><th>확인 방법</th></tr></thead>
+          <tbody>
+            <tr><td>제목·문단·목차</td><td>AonWiki 파서가 생성하는 제목과 목차 구조를 따릅니다.</td><td>편집기에서 서버 미리보기</td></tr>
+            <tr><td>텍스트 서식</td><td>굵게, 기울임, 밑줄, 취소선, 크기·색상 지정 등 파서에 구현된 범위에서 적용됩니다.</td><td>서식 입력 후 미리보기</td></tr>
+            <tr><td>내부·외부 링크</td><td>문서 존재 여부와 AonWiki의 링크 처리 규칙을 따릅니다.</td><td>실제 문서 링크를 눌러 확인</td></tr>
+            <tr><td>목록·표</td><td>목록 및 표 파서가 지원하는 옵션과 셀 병합 규칙을 따릅니다.</td><td>표가 포함된 테스트 문서로 확인</td></tr>
+            <tr><td>이미지·미디어</td><td>업로드된 파일, 허용된 주소, Worker 보안 필터의 제한을 받습니다.</td><td>실제 파일을 넣어 미리보기</td></tr>
+            <tr><td>각주·접기·매크로</td><td>AonWiki 파서에 구현된 매크로와 접기 처리만 동작합니다.</td><td>기능별 예제를 서버에서 렌더링</td></tr>
+            <tr><td>고급 HTML·CSS·외부 임베드</td><td>보안 필터 또는 외부 서비스 정책에 따라 제한될 수 있습니다.</td><td>실제 렌더 결과와 오류 메시지 확인</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="official-note">나무위키 원문에서 지원한다고 해서 AonWiki에서도 자동으로 지원되는 것은 아닙니다. AonWiki에서 사용할 문법은 편집기의 <strong>서버 미리보기</strong> 결과를 최종 기준으로 삼으세요.</p>
+    </section>
+
+    <section aria-labelledby="source-license">
+      <h2 id="source-license">출처 및 이용 조건</h2>
+      <ul>
+        <li>문법 설명의 기준 자료는 나무위키의 「나무위키:문법 도움말」 및 그 하위 공식 문서입니다.</li>
+        <li>나무위키 문서의 기본 배포 라이선스는 CC BY-NC-SA 2.0 KR로 안내되어 있습니다. 원문 내용을 별도로 복제·수정·재배포할 경우 저작자 표시, 비영리, 동일조건변경허락 등 해당 라이선스 조건을 확인해야 합니다.</li>
+        <li>문서에 포함된 이미지·첨부 파일은 문서 본문과 다른 라이선스가 적용될 수 있습니다.</li>
+      </ul>
+      <p>관련 정책: <a href="https://namu.wiki/w/나무위키:기본방침/문서%20관리%20방침" target="_blank" rel="noopener noreferrer">나무위키:기본방침/문서 관리 방침</a></p>
+    </section>
+
+    <footer class="official-footer">
+      <p>이 페이지는 나무위키 공식 문서의 원문을 대체하지 않습니다. 원문이 개정되면 나무위키의 최신 내용을 우선 확인하세요.</p>
+      <p><a href="https://namu.wiki/w/나무위키:문법%20도움말" target="_blank" rel="noopener noreferrer">나무위키 공식 문법 도움말 다시 열기</a></p>
+    </footer>
+  </main>
+</body>
+</html>
