@@ -629,7 +629,7 @@ var NamuMark = class _NamuMark {
         let wikiDataEnd = "<inter_data_" + interCount + ">";
         interCount += 1;
         middleDataPass = wikiDataFolding;
-        dataName = this.getToolDataStorage("<details><summary>", '</summary><div class="opennamu_folding">', middleDataOrg);
+        dataName = this.getToolDataStorage('<details class="wiki-fold"><summary>', '</summary><div class="wiki-fold-content opennamu_folding">', middleDataOrg);
         const dataName2 = this.getToolDataStorage("", "</div></details>", "");
         middleDataAdd = "<" + dataName2 + ">" + wikiDataEnd + "</" + dataName2 + ">";
         foldingCount += 1;
