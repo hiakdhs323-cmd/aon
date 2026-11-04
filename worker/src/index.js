@@ -1159,11 +1159,18 @@ export default {
         const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(title).first();
         if (protection?.level === "admin" && !user.isAdmin) return response({ error: "이 문서는 관리자만 복원할 수 있도록 보호되어 있습니다." }, 403, cors);
         if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") return response({ error: "이 문서는 로그인한 회원만 복원할 수 있도록 보호되어 있습니다." }, 403, cors);
-        const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(title).first();
+        const page = await env.DB.prepare("SELECT title, content FROM pages WHERE title = ?").bind(title).first();
         if (!page) return response({ error: "현재 문서를 찾을 수 없습니다." }, 404, cors);
         const now = new Date().toISOString(), content = String(revision.content || "");
+        const currentContent = String(page.content || "");
+        // Preserve the live content explicitly before replacing it with the selected revision.
+        if (currentContent !== content) {
+          await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
+            .bind(title, currentContent, user.username, now, "버전 복원 직전 자동 보존").run();
+        }
         await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?").bind(content, now, title).run();
-        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, "이전 버전 #" + id + " 복원").run();
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
+          .bind(title, content, user.username, now, "이전 버전 #" + id + " 복원").run();
         invalidateNamuServerIndexes();await clearPersistentNamuRenderCache(env);
         return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
