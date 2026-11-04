@@ -208,9 +208,9 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
   color:var(--wiki-text);font-family:inherit;overflow-wrap:anywhere;
   scroll-margin-top:78px;line-height:1.4
 }
-.wiki-content h1{margin:30px 0 15px;padding:0 0 8px;border-bottom:2px solid var(--wiki-text);font-size:30px;font-weight:600}
-.wiki-content h2{margin:28px 0 13px;padding:0 0 6px;border-bottom:1px solid var(--wiki-border-strong);font-size:25px;font-weight:600}
-.wiki-content h3{margin:23px 0 10px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:22px;font-weight:600}
+.wiki-content h1{margin:26px 0 13px;padding:0 0 7px;border-bottom:2px solid var(--wiki-text);font-size:26px;font-weight:600}
+.wiki-content h2{margin:23px 0 10px;padding:0 0 5px;border-bottom:1px solid var(--wiki-border-strong);font-size:20px;font-weight:600}
+.wiki-content h3{margin:19px 0 8px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:17px;font-weight:600}
 .wiki-content h4{margin:19px 0 8px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:19px;font-weight:600}
 .wiki-content h5{margin:17px 0 7px;font-size:17px;font-weight:700}
 .wiki-content h6{margin:15px 0 6px;font-size:16px;font-weight:700}
@@ -664,8 +664,13 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
  margin:0;border-collapse:collapse;table-layout:auto;font-size:14px;
 }
 .wiki-content table{border-collapse:collapse;width:auto;min-width:0;max-width:100%;margin:12px 0;font-size:14px;table-layout:auto}
-.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:7px 10px;vertical-align:top;white-space:normal;overflow-wrap:anywhere;word-break:normal}
-.wiki-content th{background:var(--wiki-panel-soft);font-weight:700}
+.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border);padding:5px 8px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;word-break:normal;color:var(--wiki-text);background:transparent;font-size:13px;line-height:1.5}
+.wiki-content th{background:var(--wiki-panel-soft);font-weight:650;color:var(--wiki-text)}
+.wiki-content tr:nth-child(even) td{background:color-mix(in srgb,var(--wiki-panel-soft) 48%,transparent)}
+.wiki-content table code{font-size:.92em}
+.wiki-content table p{margin:0;line-height:1.5}
+.wiki-content table a{color:var(--wiki-link);text-decoration:none}
+.wiki-content table a:hover{text-decoration:underline}
 
 /* Floated infoboxes stay on the side on desktop, then following prose is cleared below them. */
 .wiki-content .wiki-float-table{float:right;width:auto;min-width:0;max-width:48%;margin:0 0 12px 16px;table-layout:fixed}
@@ -792,3 +797,31 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content .opennamu_TOC,#article.wiki-content .opennamu_TOC_fold {
  margin-top:4px !important; margin-bottom:8px !important; padding-top:4px !important; padding-bottom:6px !important; line-height:1.3 !important;
 }
+
+
+/* Compact, theme-aware article tables and heading scale. */
+#article.wiki-content h2{font-size:19px!important;margin:21px 0 9px!important}
+#article.wiki-content h3{font-size:16px!important;margin:17px 0 7px!important}
+#article.wiki-content h4{font-size:14px!important}
+#article.wiki-content table{font-size:13px!important;border-spacing:0}
+#article.wiki-content th,#article.wiki-content td{padding:4px 7px!important;font-size:12px!important;line-height:1.45!important}
+#article.wiki-content th{background:var(--wiki-panel-soft)!important;color:var(--wiki-text)!important}
+#article.wiki-content td{background:transparent!important;color:var(--wiki-text)!important}
+#article.wiki-content tr:nth-child(even) td{background:color-mix(in srgb,var(--wiki-panel-soft) 48%,transparent)!important}
+#article.wiki-content td a,#article.wiki-content th a{color:var(--wiki-link)!important}
+#article.wiki-content .wiki-table-wrap{border:1px solid var(--wiki-border);border-radius:4px;background:var(--wiki-panel);padding:2px}
+#article.wiki-content .wiki-table-wrap table{min-width:100%}
+
+
+/* Editor syntax guide: compact reference-sheet styling. */
+.editor-help{margin:14px 20px 0;padding:14px 15px;border:1px solid var(--wiki-border);border-radius:5px;background:var(--wiki-panel);font-size:12px;color:var(--wiki-text)}
+.editor-help h2{margin:0 0 6px;font-size:16px}
+.editor-help h3{margin:15px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--wiki-border);font-size:13px}
+.editor-help .syntax-intro,.editor-help .syntax-note{color:var(--wiki-muted);font-size:11px;line-height:1.6}
+.editor-help .syntax-reference{width:100%;margin:6px 0 10px;border-collapse:collapse;font-size:12px}
+.editor-help .syntax-reference th,.editor-help .syntax-reference td{padding:5px 8px;border-bottom:1px solid var(--wiki-border);text-align:left;vertical-align:middle;background:transparent;color:var(--wiki-text);line-height:1.45}
+.editor-help .syntax-reference th{background:var(--wiki-panel-soft);font-size:11px;font-weight:650;color:var(--wiki-muted)}
+.editor-help .syntax-reference td:first-child{width:42%;white-space:normal}
+.editor-help .syntax-reference code{display:inline-block;padding:2px 5px;border:1px solid var(--wiki-border);border-radius:3px;background:var(--wiki-panel-soft);color:var(--wiki-text);font:11px/1.5 ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+.editor-help .syntax-reference tr:last-child td{border-bottom:0}
+@media(max-width:700px){.editor-help{margin-left:12px;margin-right:12px;padding:11px}.editor-help .syntax-reference td:first-child{width:48%}}
