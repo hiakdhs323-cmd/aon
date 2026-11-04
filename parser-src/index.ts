@@ -2556,7 +2556,7 @@ try {
     // make toc
         let tocData = "";
     if (tocList.length !== 0) {
-      tocData = '<div class="opennamu_TOC" id="toc"><span class="opennamu_TOC_title">목차</span>';
+      tocData = '<details class="opennamu_TOC" id="toc" open><summary class="opennamu_TOC_title">목차</summary><div class="opennamu_TOC_contents">';
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
@@ -2566,7 +2566,7 @@ try {
         element[0] + ". </a><toc_inside>" + element[1] + "</toc_inside></span>";
     }
     if (tocData !== "") {
-      tocData += "</div>";
+      tocData += "</div></details>";
 
       this.dataToc = tocData;
       this.renderData += "<toc_data>" + tocData + "</toc_data>";
@@ -2682,7 +2682,7 @@ try {
         for (let i = 0; i < 20; i++) {
           this.renderData = this.renderData.replace(
             /<toc_need_part_hide>/,
-            '<details class="opennamu_TOC_fold"><summary>목차</summary>' + this.dataToc + "</details>"
+            this.dataToc.replace(' open>', '>')
           );
           this.renderData = this.renderData.replace(/<toc_need_part>/, this.dataToc);
         }
@@ -2759,7 +2759,7 @@ try {
     applyInlineFontSize(/<figcaption\b[^>]*>/gi, 15);
     applyInlineFontSize(/<a\b(?=[^>]*\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 12, 1.5);
 
-    this.renderData = '<div style="font-size:15px !important; line-height:1.8 !important;">' + this.renderData + '</div>';
+    this.renderData = '<div style="font-size:14px !important; line-height:1.8 !important;">' + this.renderData + '</div>';
   }
 
   manageAfterwork() {
