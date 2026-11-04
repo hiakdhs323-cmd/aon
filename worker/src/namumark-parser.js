@@ -2005,7 +2005,7 @@ try {
         for (let i = 0; i < 20; i++) {
           this.renderData = this.renderData.replace(
             /<toc_need_part_hide>/,
-            this.dataToc.replace(' open>', '>')
+            this.dataToc.replace(" open>", ">")
           );
           this.renderData = this.renderData.replace(/<toc_need_part>/, this.dataToc);
         }
