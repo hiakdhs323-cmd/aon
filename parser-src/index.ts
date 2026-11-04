@@ -2743,6 +2743,12 @@ try {
     });
 
     // Override independent small-size declarations in the wiki skin.
+    // Star/numbered list syntax becomes UL/OL + LI; the skin has a 12px !important rule on LI.
+    // Apply the 15px override directly to every list container and list item, including nested items.
+    applyInlineFontSize(/<ul\b[^>]*>/gi, 15, 1.8);
+    applyInlineFontSize(/<ol\b[^>]*>/gi, 15, 1.8);
+    applyInlineFontSize(/<li\b[^>]*>/gi, 15, 1.8);
+
     applyInlineFontSize(/<table\b[^>]*>/gi, 15);
     applyInlineFontSize(/<code\b[^>]*>/gi, 15);
     applyInlineFontSize(/<([a-z][\w:-]*)\b([^>]*\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 15);
