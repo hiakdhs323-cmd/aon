@@ -515,30 +515,37 @@ function invalidateNamuServerIndexes() {
   namuRenderPending.clear();
   clearNamuPageResponseCache();
 }
-function parseTableColorValue(value) {
+function parseTableColorRgb(value) {
   const input = String(value || "").trim().toLowerCase();
-  const named = {
-    black:"#000000", white:"#ffffff", red:"#ff0000", green:"#008000", blue:"#0000ff",
-    yellow:"#ffff00", orange:"#ffa500", purple:"#800080", gray:"#808080", grey:"#808080",
-    silver:"#c0c0c0", maroon:"#800000", navy:"#000080", teal:"#008080", lime:"#00ff00",
-    aqua:"#00ffff", cyan:"#00ffff", fuchsia:"#ff00ff", magenta:"#ff00ff", olive:"#808000"
-  };
+  const named = {black:"#000000",white:"#ffffff",red:"#ff0000",green:"#008000",blue:"#0000ff",yellow:"#ffff00",orange:"#ffa500",purple:"#800080",gray:"#808080",grey:"#808080",navy:"#000080",teal:"#008080"};
   const color = named[input] || input;
-  let r, g, b;
   let match = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (match) {
-    const hex = match[1].length === 3 ? match[1].split("").map(char => char + char).join("") : match[1];
-    r = parseInt(hex.slice(0, 2), 16); g = parseInt(hex.slice(2, 4), 16); b = parseInt(hex.slice(4, 6), 16);
-  } else {
-    match = color.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/);
-    if (match) { r = Number(match[1]); g = Number(match[2]); b = Number(match[3]); }
+    const hex = match[1].length === 3 ? match[1].split("").map(c => c + c).join("") : match[1];
+    return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
   }
-  if (![r, g, b].every(Number.isFinite) || [r, g, b].some(channel => channel < 0 || channel > 255)) return null;
-  const linear = channel => { const value = channel / 255; return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4; };
-  const luminance = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
-  const whiteContrast = 1.05 / (luminance + 0.05);
-  const blackContrast = (luminance + 0.05) / 0.05;
-  return blackContrast >= whiteContrast ? "#000000" : "#ffffff";
+  match = color.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/);
+  if (match) return [Number(match[1]),Number(match[2]),Number(match[3])];
+  return null;
+}
+function tableLuminance(rgb) {
+  const linear = value => {
+    const c = value / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
+}
+function tableContrast(a,b) {
+  const x=tableLuminance(a),y=tableLuminance(b);
+  return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);
+}
+function chooseTableTextColor(backgroundValue, foregroundValue, theme) {
+  const canvas = theme === "dark" ? [26,29,32] : [255,255,255];
+  const background = parseTableColorRgb(backgroundValue) || canvas;
+  const foreground = parseTableColorRgb(foregroundValue);
+  if (foreground && tableContrast(foreground,background) >= 4.5) return foregroundValue;
+  const black=[0,0,0],white=[255,255,255];
+  return tableContrast(black,background) >= tableContrast(white,background) ? "#000000" : "#ffffff";
 }
 function getInlineStyleProperties(element) {
   const properties = {};
@@ -555,60 +562,42 @@ function getInlineStyleProperties(element) {
 async function applyTableTextContrast(markup) {
   const tableStack = [];
   const rowStack = [];
-  const getThemeBackground = (levels, theme) => {
+  const getThemeValue = (levels, key, theme) => {
     for (const properties of levels) {
-      const paired = properties["--aonwiki-table-bg-" + theme];
+      const paired = properties["--aonwiki-table-" + key + "-" + theme];
       if (paired) return paired;
-      const fixed = properties["background-color"] || properties.background || "";
-      if (fixed && !/^transparent$/i.test(fixed)) return fixed;
+      if (key === "bg") {
+        const fixed = properties["background-color"] || properties.background || "";
+        if (fixed && !/^transparent$/i.test(fixed)) return fixed;
+      } else if (key === "fg" && properties.color && !/^var\(/i.test(properties.color)) {
+        return properties.color;
+      }
     }
     return "";
   };
   const rewriter = new HTMLRewriter()
-    .on("table", {
-      element(element) { tableStack.push(getInlineStyleProperties(element)); },
-      endTag() { tableStack.pop(); }
-    })
-    .on("tr", {
-      element(element) { rowStack.push(getInlineStyleProperties(element)); },
-      endTag() { rowStack.pop(); }
-    })
+    .on("table", { element(el) { tableStack.push(getInlineStyleProperties(el)); }, endTag() { tableStack.pop(); } })
+    .on("tr", { element(el) { rowStack.push(getInlineStyleProperties(el)); }, endTag() { rowStack.pop(); } })
     .on("td, th", {
-      element(element) {
-        const cell = getInlineStyleProperties(element);
-        const row = rowStack[rowStack.length - 1] || {};
-        const table = tableStack[tableStack.length - 1] || {};
-        const levels = [cell, row, table];
-
-        // Explicit foreground colors (including theme pairs) always take priority.
-        if (levels.some(properties =>
-          properties.color ||
-          properties["--aonwiki-table-fg-light"] ||
-          properties["--aonwiki-table-fg-dark"]
-        )) return;
-
-        const lightBackground = getThemeBackground(levels, "light");
-        const darkBackground = getThemeBackground(levels, "dark");
-        const lightContrast = lightBackground ? parseTableColorValue(lightBackground) : null;
-        const darkContrast = darkBackground ? parseTableColorValue(darkBackground) : null;
-        if (!lightContrast && !darkContrast) return;
-
-        const declarations = [];
-        if (lightContrast) declarations.push("--aonwiki-table-auto-fg-light:" + lightContrast);
-        if (darkContrast) declarations.push("--aonwiki-table-auto-fg-dark:" + darkContrast);
-        declarations.push("color:" + (lightContrast
-          ? "var(--aonwiki-table-auto-fg-light,var(--wiki-text))"
-          : "var(--aonwiki-table-auto-fg-dark,var(--wiki-text))"));
-
-        const currentStyle = element.getAttribute("style") || "";
-        element.setAttribute("style",
-          (currentStyle.trim() ? currentStyle.trim().replace(/;?$/, ";") : "") +
-          declarations.join(";") + ";"
+      element(el) {
+        const levels = [getInlineStyleProperties(el), rowStack[rowStack.length-1] || {}, tableStack[tableStack.length-1] || {}];
+        const lightBg = getThemeValue(levels,"bg","light") || "#ffffff";
+        const darkBg = getThemeValue(levels,"bg","dark") || "#1a1d20";
+        const lightFg = getThemeValue(levels,"fg","light");
+        const darkFg = getThemeValue(levels,"fg","dark");
+        const lightText = chooseTableTextColor(lightBg,lightFg,"light");
+        const darkText = chooseTableTextColor(darkBg,darkFg,"dark");
+        const current = el.getAttribute("style") || "";
+        el.setAttribute("style",
+          (current.trim() ? current.trim().replace(/;?$/,";") : "") +
+          "--aonwiki-table-auto-fg-light:" + lightText + ";" +
+          "--aonwiki-table-auto-fg-dark:" + darkText + ";" +
+          "color:var(--aonwiki-table-auto-fg-light,var(--wiki-text));"
         );
       }
     });
   return await rewriter.transform(new Response(String(markup || ""), {
-    headers: { "Content-Type": "text/html; charset=utf-8" }
+    headers: {"Content-Type":"text/html; charset=utf-8"}
   })).text();
 }
 
