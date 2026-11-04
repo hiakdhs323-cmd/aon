@@ -2737,7 +2737,7 @@ try {
     };
 
     // Headings retain a clear hierarchy; normal paragraphs and lists inherit 15px.
-    const headingSizes = [34, 30, 26, 23, 21, 19];
+    const headingSizes = [28, 23, 19, 16, 14, 13];
     headingSizes.forEach((size, index) => {
       applyInlineFontSize(new RegExp("<h" + (index + 1) + "\\b[^>]*>", "gi"), size, 1.4);
     });
