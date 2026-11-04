@@ -5,6 +5,7 @@ on:
     paths:
       - "parser-src/**"
       - "worker/src/index.js"
+      - "app.js"
       - ".github/workflows/build-namumark.yml"
   workflow_dispatch:
 permissions:
@@ -19,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify frontend JavaScript syntax
+        run: node --check app.js
       - name: Bundle parser for browser
         run: npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=iife --global-name=NamuMarkBundle --target=es2020 --outfile=namumark-parser.js
       - name: Bundle parser for Cloudflare Worker
