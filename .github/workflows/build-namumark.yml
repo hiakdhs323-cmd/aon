@@ -26,13 +26,15 @@ jobs:
         run: npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=iife --global-name=NamuMarkBundle --target=es2020 --outfile=namumark-parser.js
       - name: Bundle parser for Cloudflare Worker
         run: npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=esm --target=es2020 --outfile=worker/src/namumark-parser.js
-      - name: Verify Cloudflare Worker entrypoint
-        run: npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --outfile=/tmp/aon-worker-verify.js
-      - name: Commit browser bundle
+      - name: Bundle Cloudflare Worker entrypoint
+        run: |
+          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --outfile=worker/dist/index.js
+          node --check worker/dist/index.js
+      - name: Commit generated bundles
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add namumark-parser.js worker/src/namumark-parser.js
+          git add namumark-parser.js worker/src/namumark-parser.js worker/dist/index.js
           if git diff --cached --quiet; then
             echo "No parser changes."
           else
