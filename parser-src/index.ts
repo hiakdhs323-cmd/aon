@@ -2556,7 +2556,7 @@ try {
     // make toc
         let tocData = "";
     if (tocList.length !== 0) {
-      tocData = '<details class="opennamu_TOC" id="toc"><summary class="opennamu_TOC_title"><span class="opennamu_TOC_label">목차</span><span class="opennamu_TOC_toggle" aria-hidden="true"></span></summary><div class="opennamu_TOC_contents">';
+      tocData = '<details class="opennamu_TOC" id="toc" open><summary class="opennamu_TOC_title"><span class="opennamu_TOC_label">목차</span><span class="opennamu_TOC_toggle" aria-hidden="true"></span></summary><div class="opennamu_TOC_contents">';
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
