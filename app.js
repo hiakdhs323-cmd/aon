@@ -1725,6 +1725,13 @@ function makeHistoryButton(label, action, extraClass = "") {
   button.addEventListener("click", action);
   return button;
 }
+function canEditHistoryDocument() {
+  if (!loggedInName && !isWikiAdmin) return false;
+  if (currentTitle === "대문") return false;
+  if (currentProtection.level === "admin" && !isWikiAdmin) return false;
+  if (currentProtection.level === "registered" && !loggedInName && !isWikiAdmin) return false;
+  return true;
+}
 function selectedRevisionLabel(id) {
   const item = historyItemsForCompare.find(value => Number(value.id) === Number(id));
   return item ? "#" + item.id + " · " + formatRevisionDate(item.created_at) : "선택 안 됨";
@@ -1737,6 +1744,7 @@ function showHistoryList() {
     addText(body, "p", "이 문서에는 저장된 역사 기록이 없습니다.").className = "empty-list";
     return;
   }
+  const canRestore = canEditHistoryDocument();
   const choices = document.createElement("div");
   choices.className = "history-version-list";
   historyItemsForCompare.forEach(item => {
@@ -1750,9 +1758,9 @@ function showHistoryList() {
     actions.className = "history-version-actions";
     actions.append(
       makeHistoryButton("문법 보기", () => showRevisionSource(item.id)),
-      makeHistoryButton("렌더링 보기", () => showRevisionRendered(item.id)),
-      makeHistoryButton("이 버전으로 복원", () => restoreRevision(item.id), "history-restore-button")
+      makeHistoryButton("렌더링 보기", () => showRevisionRendered(item.id))
     );
+    if (canRestore) actions.append(makeHistoryButton("이 버전으로 복원", () => restoreRevision(item.id), "history-restore-button"));
     const aButton = makeHistoryButton(revisionA === Number(item.id) ? "A 기준 선택됨" : "A 기준", () => {
       revisionA = revisionA === Number(item.id) ? null : Number(item.id);
       if (revisionB === Number(item.id)) revisionB = null;
@@ -1782,6 +1790,7 @@ function showHistoryList() {
   compareSource.disabled = !canCompare;
   compareRendered.disabled = !canCompare;
   compareActions.append(compareSource, compareRendered);
+  if (!canRestore) addText(selection, "p", "이전 버전 복원은 현재 문서를 편집할 수 있는 계정에만 제공됩니다.").className = "history-permission-note";
   selection.append(compareActions);
   body.append(selection);
 }
@@ -1794,6 +1803,10 @@ async function fetchHistoryRevision(id) {
   return data.revision;
 }
 async function restoreRevision(id) {
+  if (!canEditHistoryDocument()) {
+    $("dialog-status").textContent = "이전 버전을 복원하려면 현재 문서의 편집 권한이 필요합니다.";
+    return;
+  }
   const item = historyItemsForCompare.find(value => Number(value.id) === Number(id));
   const title = historyDocumentTitle || currentTitle;
   const versionDate = item ? formatRevisionDate(item.created_at) : "선택한 버전";
@@ -1842,7 +1855,7 @@ async function showRevisionSource(id) {
           $("dialog-status").textContent = copied ? "원문을 복사했습니다." : "원문을 직접 선택해 복사하세요.";
         }
       }),
-      makeHistoryButton("이 버전으로 복원", () => restoreRevision(id), "button-primary"),
+      ...(canEditHistoryDocument() ? [makeHistoryButton("이 버전으로 복원", () => restoreRevision(id), "button-primary")] : []),
       makeHistoryButton("역사 목록", showHistoryList)
     );
     body.append(actions);
@@ -1868,7 +1881,7 @@ async function showRevisionRendered(id) {
     actions.className = "revision-preview-actions";
     actions.append(
       makeHistoryButton("문법 보기", () => showRevisionSource(id)),
-      makeHistoryButton("이 버전으로 복원", () => restoreRevision(id), "button-primary"),
+      ...(canEditHistoryDocument() ? [makeHistoryButton("이 버전으로 복원", () => restoreRevision(id), "button-primary")] : []),
       makeHistoryButton("역사 목록", showHistoryList)
     );
     body.append(actions);
@@ -1890,10 +1903,15 @@ async function renderRevisionComparison(idA, idB, mode = "source") {
     toolbar.className = "revision-compare-toolbar";
     const sourceButton = makeHistoryButton("문법 차이", () => showSourceComparison(), "button-primary");
     const renderButton = makeHistoryButton("렌더 결과", () => showRenderedComparison());
-    const restoreA = makeHistoryButton("A 버전 복원", () => restoreRevision(idA));
-    const restoreB = makeHistoryButton("B 버전 복원", () => restoreRevision(idB));
     const back = makeHistoryButton("버전 선택으로", showHistoryList);
-    toolbar.append(sourceButton, renderButton, restoreA, restoreB, back);
+    toolbar.append(sourceButton, renderButton);
+    if (canEditHistoryDocument()) {
+      toolbar.append(
+        makeHistoryButton("A 버전 복원", () => restoreRevision(idA)),
+        makeHistoryButton("B 버전 복원", () => restoreRevision(idB))
+      );
+    }
+    toolbar.append(back);
     body.append(toolbar);
     const panel = document.createElement("div");
     panel.className = "revision-compare-panel";

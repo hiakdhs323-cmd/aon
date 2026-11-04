@@ -125,6 +125,19 @@ async function ensurePageProtectionSchema(env) {
   }
   await pageProtectionSchemaPromise;
 }
+async function checkPageEditPermission(env, user, title, protectionTitle = title) {
+  if (!user) return { status: 401, error: "문서를 편집하려면 로그인하세요." };
+  if (title === "대문") return { status: 403, error: "대문은 편집하거나 복원할 수 없습니다." };
+  await ensurePageProtectionSchema(env);
+  const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
+  if (protection?.level === "admin" && !user.isAdmin) {
+    return { status: 403, error: "이 문서는 관리자만 편집하거나 복원할 수 있도록 보호되어 있습니다." };
+  }
+  if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") {
+    return { status: 403, error: "이 문서는 로그인한 회원만 편집하거나 복원할 수 있도록 보호되어 있습니다." };
+  }
+  return null;
+}
 async function ensurePageAliasSchema(env) {
   if (!pageAliasSchemaPromise) {
     pageAliasSchemaPromise = (async () => {
@@ -1159,10 +1172,8 @@ export default {
         if (!(columns.results || []).some(column => column.name === "summary")) await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
         const revision = await env.DB.prepare("SELECT id, title, content FROM revisions WHERE id = ? AND title = ?").bind(id, title).first();
         if (!revision) return response({ error: "해당 문서에 속한 버전을 찾을 수 없습니다." }, 404, cors);
-        await ensurePageProtectionSchema(env);
-        const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(title).first();
-        if (protection?.level === "admin" && !user.isAdmin) return response({ error: "이 문서는 관리자만 복원할 수 있도록 보호되어 있습니다." }, 403, cors);
-        if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") return response({ error: "이 문서는 로그인한 회원만 복원할 수 있도록 보호되어 있습니다." }, 403, cors);
+        const editPermission = await checkPageEditPermission(env, user, title);
+        if (editPermission) return response({ error: editPermission.error }, editPermission.status, cors);
         const page = await env.DB.prepare("SELECT title, content FROM pages WHERE title = ?").bind(title).first();
         if (!page) return response({ error: "현재 문서를 찾을 수 없습니다." }, 404, cors);
         const now = new Date().toISOString(), content = String(revision.content || "");
@@ -1186,12 +1197,9 @@ export default {
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
-        await ensurePageProtectionSchema(env);
         const protectionTitle = cleanTitle(body.originalTitle || title);
-        const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
-        if (protection?.level === "admin" && !user.isAdmin) return response({ error: "이 문서는 관리자만 편집할 수 있도록 보호되어 있습니다." }, 403, cors);
-        if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") return response({ error: "이 문서는 로그인한 회원만 편집할 수 있도록 보호되어 있습니다." }, 403, cors);
-        if (title === "대문") return response({ error: "대문은 문서 목록 시작 화면이므로 편집할 수 없습니다." }, 403, cors);
+        const editPermission = await checkPageEditPermission(env, user, title, protectionTitle);
+        if (editPermission) return response({ error: editPermission.error }, editPermission.status, cors);
         if (content.length > 200000) return response({ error: "문서는 200,000자 이하로 작성해 주세요." }, 413, cors);
         const now = new Date().toISOString();
         const summary = String(body.summary || "").trim().slice(0, 200);
