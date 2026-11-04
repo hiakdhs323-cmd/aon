@@ -289,20 +289,16 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
 .wiki-content .opennamu_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
 .wiki-content .opennamu_category a{margin:0 4px}
-.wiki-fold{display:block;margin:12px 0;border:1px solid var(--wiki-border);border-radius:4px;background:var(--wiki-panel);overflow:hidden}
+.wiki-fold{margin:10px 0;border:0}
 .wiki-fold>summary{
-  display:flex;align-items:center;gap:8px;width:100%;max-width:100%;min-height:36px;padding:7px 11px;
-  border:0;border-radius:0;background:var(--wiki-panel-soft);
-  color:var(--wiki-text);font-weight:650;line-height:1.5;cursor:pointer;list-style:none
+  display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:1px 7px;
+  border:1px solid var(--wiki-primary);border-radius:2px;background:var(--wiki-panel-soft);
+  color:var(--wiki-link);font-weight:700;line-height:1.7;cursor:pointer;list-style:none
 }
 .wiki-fold>summary::-webkit-details-marker{display:none}
 .wiki-fold>summary::before{content:"▸";font-size:12px;line-height:1}
 .wiki-fold[open]>summary::before{content:"▾"}
-.wiki-fold-content{margin:0;padding:11px 13px;border-top:1px solid var(--wiki-border);border-left:0;background:var(--wiki-panel);overflow-wrap:anywhere}
-.wiki-content details:not(.wiki-fold){margin:12px 0}
-.wiki-content details:not(.wiki-fold)>summary{padding:7px 11px;border:1px solid var(--wiki-border);border-radius:3px;background:var(--wiki-panel-soft);color:var(--wiki-text);font-weight:650;cursor:pointer;list-style-position:inside}
-.wiki-content details:not(.wiki-fold)[open]>summary{border-radius:3px 3px 0 0}
-.wiki-content .opennamu_folding{padding:11px 13px;border:1px solid var(--wiki-border);border-top:0;border-radius:0 0 3px 3px;background:var(--wiki-panel);overflow-wrap:anywhere}
+.wiki-fold-content{margin-top:6px;padding:10px;border-left:2px solid var(--wiki-border-strong)}
 .wiki-spoiler{border-radius:2px;background:var(--wiki-text);color:var(--wiki-text);cursor:pointer}
 .wiki-spoiler:hover,.wiki-spoiler:focus{color:var(--wiki-panel)}
 .wiki-content sup,.wiki-content sub{line-height:0}
@@ -883,15 +879,16 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content :where(p,li,td,th,blockquote,summary){font-family:inherit;}
 
 
-/* Article typography and missing include links */
-.wiki-content{font-size:14px!important}
-.wiki-content a.opennamu_not_exist_link,
-.wiki-content a.opennamu_not_exist_link:visited{color:#d1242f!important;text-decoration:underline;text-decoration-color:currentColor}
-.wiki-content .opennamu_TOC{font-size:12px!important;line-height:1.55}
-.wiki-content .opennamu_TOC_title{font-size:12px!important;list-style:none}
+
+
+/* Requested article typography, compact collapsible TOC and missing include links */
+#article.wiki-content{font-size:14px!important}
+#article.wiki-content :where(p,li,td,th,blockquote){font-size:14px!important}
+.wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited{color:#d1242f!important;text-decoration:underline;text-decoration-color:currentColor}
+.wiki-content .opennamu_TOC{font-size:12px!important;line-height:1.5!important}
+.wiki-content .opennamu_TOC>summary{font-size:12px!important;cursor:pointer;list-style:none}
 .wiki-content .opennamu_TOC>summary::-webkit-details-marker{display:none}
 .wiki-content .opennamu_TOC>summary::marker{content:""}
 .wiki-content .opennamu_TOC>summary:after{content:"▾";float:right;font-size:11px;color:var(--wiki-muted)}
 .wiki-content .opennamu_TOC:not([open])>summary:after{content:"▸"}
-.wiki-content .opennamu_TOC_contents{font-size:12px;line-height:1.55}
-.wiki-content .opennamu_TOC_contents .opennamu_TOC_list{font-size:12px}
+.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_list{font-size:12px!important;line-height:1.5!important}
