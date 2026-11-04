@@ -259,7 +259,7 @@ var NamuMark = class _NamuMark {
         return property + ":" + selected + ";";
       }
       const [light, dark] = values;
-      const prefix = "&#45;&#45;aonwiki-table-" + kind;
+      const prefix = "\\2d \\2d aonwiki-table-" + kind;
       const base = property === "border" ? "2px solid " + light : light;
       return prefix + "-light:" + light + ";" + prefix + "-dark:" + dark + ";" + property + ":" + base + ";";
     });
@@ -1922,7 +1922,7 @@ try {
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
-      tocData += (tocIndex === 0 ? "" : "<br>") + '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) + '<span class="opennamu_TOC_list"><a href="#s-' + element[0] + '">' + element[0] + ". </a><toc_inside>" + element[1] + "</toc_inside></span>";
+      tocData += (tocIndex === 0 ? "" : "<br>") + '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) + '<span class="opennamu_TOC_list"><a class="opennamu_TOC_link" href="#s-' + element[0] + '">' + element[0] + ". <toc_inside>" + element[1] + "</toc_inside></a></span>";
     }
     if (tocData !== "") {
       tocData += "</div></details>";
@@ -1997,8 +1997,7 @@ try {
       }
     };
     const handlerToc = (match, p1) => {
-      let data = p1;
-      let dataSub = data.replace(/<([^<>]*)>/g, "");
+      let data = p1.replace(/<\/?a(?: [^<>]*)?>/gi, "");
       data = data.replace(/<([^<>]*)>/g, handlerTocFilter);
       return data;
     };
