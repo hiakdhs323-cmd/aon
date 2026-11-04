@@ -259,7 +259,7 @@ var NamuMark = class _NamuMark {
         return property + ":" + selected + ";";
       }
       const [light, dark] = values;
-      const prefix = "--aonwiki-table-" + kind;
+      const prefix = "&#45;&#45;aonwiki-table-" + kind;
       const base = property === "border" ? "2px solid " + light : light;
       return prefix + "-light:" + light + ";" + prefix + "-dark:" + dark + ";" + property + ":" + base + ";";
     });
