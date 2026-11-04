@@ -405,35 +405,8 @@ function getWikiEffectiveBackground(element){
  }
  return background;
 }
-function refreshWikiTableContrast(root=document){
- if(!root)return;
- const tables=[];
- if(root instanceof Element&&root.matches("table"))tables.push(root);
- if(root.querySelectorAll)tables.push(...root.querySelectorAll("table"));
- for(const table of tables){
-  const textElements=[...table.querySelectorAll("td,th,td *,th *")].filter(element=>
-   !element.closest("a")&&[...element.childNodes].some(node=>node.nodeType===Node.TEXT_NODE&&node.nodeValue.trim())
-  );
-  for(const element of textElements){
-   if(element.dataset.wikiContrastSaved!=="1"){
-    element.dataset.wikiContrastSaved="1";
-    element.dataset.wikiContrastOriginal=element.style.getPropertyValue("color");
-    element.dataset.wikiContrastPriority=element.style.getPropertyPriority("color");
-   }else{
-    const original=element.dataset.wikiContrastOriginal||"";
-    const priority=element.dataset.wikiContrastPriority||"";
-    if(original)element.style.setProperty("color",original,priority);
-    else element.style.removeProperty("color");
-   }
-   const foreground=parseWikiRgbColor(getComputedStyle(element).color);
-   const background=getWikiEffectiveBackground(element);
-   if(!foreground||wikiContrastRatio(foreground,background)>=4.5)continue;
-   const black=[0,0,0,1],white=[255,255,255,1];
-   const best=wikiContrastRatio(black,background)>=wikiContrastRatio(white,background)?"#000000":"#ffffff";
-   element.style.setProperty("color",best,"important");
-  }
- }
-}
+function refreshWikiTableContrast(){ /* Preserve authored colors and theme variables. */ }
+
 function sanitizeNamuStylesheet(raw) {
   const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|visited|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
   const allowedThemeRoot = /^html\[data-theme=(?:"(?:light|dark)"|'(?:light|dark)'|(?:light|dark))\]$/i;
