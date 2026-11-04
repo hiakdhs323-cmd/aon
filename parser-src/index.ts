@@ -339,7 +339,9 @@ export class NamuMark {
     }
 
     const [light, dark] = values;
-    const prefix = "--aonwiki-table-" + kind;
+    // Encode the leading hyphens as HTML entities before manageText().
+    // Otherwise the NamuMark --strike-- rule treats CSS custom properties as strike-through.
+    const prefix = "&#45;&#45;aonwiki-table-" + kind;
     const base = property === "border" ? "2px solid " + light : light;
     return prefix + "-light:" + light + ";" +
       prefix + "-dark:" + dark + ";" +
