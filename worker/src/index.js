@@ -1139,9 +1139,13 @@ export default {
       }
       if (url.pathname === "/api/revision" && request.method === "GET") {
         const id = Number(url.searchParams.get("id"));
+        const title = cleanTitle(url.searchParams.get("title"));
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 버전 ID가 아닙니다." }, 400, cors);
-        const revision = await env.DB.prepare("SELECT id, title, content, editor, created_at, summary FROM revisions WHERE id = ?").bind(id).first();
-        if (!revision) return response({ error: "문서 버전을 찾을 수 없습니다." }, 404, cors);
+        if (!title) return response({ error: "문서 제목을 지정해야 합니다." }, 400, cors);
+        const revision = await env.DB.prepare(
+          "SELECT id, title, content, editor, created_at, summary FROM revisions WHERE id = ? AND title = ?"
+        ).bind(id, title).first();
+        if (!revision) return response({ error: "해당 문서에 속한 버전을 찾을 수 없습니다." }, 404, cors);
         return response({ revision }, 200, cors);
       }
       if (url.pathname === "/api/revision/restore" && request.method === "POST") {

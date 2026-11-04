@@ -1709,102 +1709,258 @@ function diffRevisionLines(beforeText, afterText) {
   while (j < m) result.push({ type: "add", text: after[j++] });
   return result;
 }
-let historyItemsForCompare = [], revisionA = null, revisionB = null;
+let historyItemsForCompare = [];
+let historyDocumentTitle = "";
+let revisionA = null, revisionB = null;
+
+function formatRevisionDate(value) {
+  const date = new Date(value || "");
+  return Number.isNaN(date.getTime()) ? String(value || "날짜 정보 없음") : date.toLocaleString("ko-KR");
+}
+function makeHistoryButton(label, action, extraClass = "") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = ("button " + extraClass).trim();
+  button.textContent = label;
+  button.addEventListener("click", action);
+  return button;
+}
+function selectedRevisionLabel(id) {
+  const item = historyItemsForCompare.find(value => Number(value.id) === Number(id));
+  return item ? "#" + item.id + " · " + formatRevisionDate(item.created_at) : "선택 안 됨";
+}
 function showHistoryList() {
-  const body = $("dialog-body"); body.replaceChildren();
-  addText(body, "p", "비교할 두 버전을 선택하세요. A는 기준 버전, B는 비교할 버전입니다.").className = "compare-intro";
-  const choices = document.createElement("div"); choices.className = "history-version-list";
+  const body = $("dialog-body");
+  body.replaceChildren();
+  addText(body, "p", "각 버전의 원문 문법과 실제 렌더 결과를 따로 열어볼 수 있습니다. A와 B를 선택하면 두 버전의 차이도 비교할 수 있습니다.").className = "compare-intro";
+  if (!historyItemsForCompare.length) {
+    addText(body, "p", "이 문서에는 저장된 역사 기록이 없습니다.").className = "empty-list";
+    return;
+  }
+  const choices = document.createElement("div");
+  choices.className = "history-version-list";
   historyItemsForCompare.forEach(item => {
-    const row = document.createElement("div"); row.className = "history-version-row";
-    const info = document.createElement("div"); info.className = "history-version-info";
-    addText(info, "strong", item.created_at || "날짜 정보 없음");
-    addText(info, "span", (item.editor || "알 수 없음") + (item.summary ? " · " + item.summary : ""));
-    const actions = document.createElement("div"); actions.className = "history-version-actions";
-    const previewButton=document.createElement("button");previewButton.type="button";previewButton.className="button";previewButton.textContent="렌더 미리보기";
-    previewButton.addEventListener("click",()=>previewRevision(item.id));
-    const restoreButton=document.createElement("button");restoreButton.type="button";restoreButton.className="button";restoreButton.textContent="이 버전으로 되돌리기";
-    restoreButton.addEventListener("click",()=>restoreRevision(item.id));
-    const aButton = document.createElement("button");
-    aButton.type = "button"; aButton.className = "button";
-    aButton.textContent = revisionA === item.id ? "A 선택됨" : "A 기준";
-    aButton.classList.toggle("selected", revisionA === item.id);
-    aButton.onclick = () => { revisionA = revisionA === item.id ? null : item.id; if (revisionB === item.id) revisionB = null; showHistoryList(); };
-    const bButton = document.createElement("button");
-    bButton.type = "button"; bButton.className = "button";
-    bButton.textContent = revisionB === item.id ? "B 선택됨" : "B 비교";
-    bButton.classList.toggle("selected", revisionB === item.id);
-    bButton.onclick = () => { revisionB = revisionB === item.id ? null : item.id; if (revisionA === item.id) revisionA = null; showHistoryList(); };
-    actions.append(previewButton, restoreButton, aButton, bButton); row.append(info, actions); choices.append(row);
+    const row = document.createElement("section");
+    row.className = "history-version-row";
+    const info = document.createElement("div");
+    info.className = "history-version-info";
+    addText(info, "strong", "버전 #" + item.id + " · " + formatRevisionDate(item.created_at));
+    addText(info, "span", (item.editor || "알 수 없음") + (item.summary ? " · " + item.summary : " · 편집 요약 없음"));
+    const actions = document.createElement("div");
+    actions.className = "history-version-actions";
+    actions.append(
+      makeHistoryButton("문법 보기", () => showRevisionSource(item.id)),
+      makeHistoryButton("렌더링 보기", () => showRevisionRendered(item.id)),
+      makeHistoryButton("이 버전으로 복원", () => restoreRevision(item.id), "history-restore-button")
+    );
+    const aButton = makeHistoryButton(revisionA === Number(item.id) ? "A 기준 선택됨" : "A 기준", () => {
+      revisionA = revisionA === Number(item.id) ? null : Number(item.id);
+      if (revisionB === Number(item.id)) revisionB = null;
+      showHistoryList();
+    });
+    aButton.classList.toggle("selected", revisionA === Number(item.id));
+    const bButton = makeHistoryButton(revisionB === Number(item.id) ? "B 비교 선택됨" : "B 비교", () => {
+      revisionB = revisionB === Number(item.id) ? null : Number(item.id);
+      if (revisionA === Number(item.id)) revisionA = null;
+      showHistoryList();
+    });
+    bButton.classList.toggle("selected", revisionB === Number(item.id));
+    actions.append(aButton, bButton);
+    row.append(info, actions);
+    choices.append(row);
   });
   body.append(choices);
-  const compare = document.createElement("button");
-  compare.type = "button"; compare.className = "button button-primary";
-  compare.textContent = "선택한 두 버전 비교";
-  compare.disabled = !revisionA || !revisionB || revisionA === revisionB;
-  compare.onclick = () => renderRevisionComparison(revisionA, revisionB);
-  body.append(compare);
+  const selection = document.createElement("div");
+  selection.className = "history-compare-selection";
+  addText(selection, "p", "A 기준: " + selectedRevisionLabel(revisionA)).className = "history-selection-label";
+  addText(selection, "p", "B 비교: " + selectedRevisionLabel(revisionB)).className = "history-selection-label";
+  const compareActions = document.createElement("div");
+  compareActions.className = "history-compare-actions";
+  const compareSource = makeHistoryButton("문법 차이 비교", () => renderRevisionComparison(revisionA, revisionB, "source"), "button-primary");
+  const compareRendered = makeHistoryButton("렌더 결과 비교", () => renderRevisionComparison(revisionA, revisionB, "render"));
+  const canCompare = Boolean(revisionA && revisionB && revisionA !== revisionB);
+  compareSource.disabled = !canCompare;
+  compareRendered.disabled = !canCompare;
+  compareActions.append(compareSource, compareRendered);
+  selection.append(compareActions);
+  body.append(selection);
+}
+async function fetchHistoryRevision(id) {
+  const title = historyDocumentTitle || currentTitle;
+  if (!title) throw new Error("문서 제목을 확인할 수 없습니다.");
+  const query = "?id=" + encodeURIComponent(id) + "&title=" + encodeURIComponent(title);
+  const data = await api("/api/revision" + query);
+  if (!data.revision || data.revision.title !== title) throw new Error("현재 문서에 속한 버전을 찾을 수 없습니다.");
+  return data.revision;
 }
 async function restoreRevision(id) {
-  const item=historyItemsForCompare.find(x=>Number(x.id)===Number(id)),date=item?.created_at?" ("+item.created_at+")":"";
-  if(!window.confirm("선택한 버전"+date+"의 내용을 현재 문서로 복원할까요?\n현재 내용도 새 역사 항목으로 보존됩니다."))return;
-  try{
-    await api("/api/revision/restore",{method:"POST",body:JSON.stringify({id:Number(id),title:currentTitle})});
-    invalidateNamuDatabaseCache();$("dialog").close();await loadPage(currentTitle,false);
-    $("message").textContent="선택한 버전으로 복원했습니다. 복원 전 내용도 문서 역사에 보존되었습니다.";
-  }catch(error){$("dialog-status").textContent=error.message;$("message").textContent=error.message;}
+  const item = historyItemsForCompare.find(value => Number(value.id) === Number(id));
+  const title = historyDocumentTitle || currentTitle;
+  const versionDate = item ? formatRevisionDate(item.created_at) : "선택한 버전";
+  if (!window.confirm("'" + title + "' 문서를 " + versionDate + " 버전으로 복원할까요?\n현재 문서 내용도 별도의 역사 항목으로 먼저 보존됩니다.")) return;
+  try {
+    await api("/api/revision/restore", { method: "POST", body: JSON.stringify({ id: Number(id), title }) });
+    invalidateNamuDatabaseCache();
+    $("dialog").close();
+    await loadPage(title, false);
+    $("message").textContent = "버전 #" + id + " 복원이 완료되었습니다. 복원 직전 내용도 역사에 보존했습니다.";
+  } catch (error) {
+    $("dialog-status").textContent = error.message;
+    $("message").textContent = error.message;
+  }
 }
-async function previewRevision(id) {
-  const body=$("dialog-body");body.replaceChildren();
-  addText(body,"p","선택한 버전을 Worker에서 렌더링하고 있습니다.").className="compare-intro";
-  try{
-    const data=await api("/api/revision?id="+encodeURIComponent(id)),revision=data.revision;
-    if(!revision)throw new Error("문서 버전을 찾을 수 없습니다.");
-    body.replaceChildren();addText(body,"p",revision.created_at+" · "+(revision.editor||"알 수 없음")+(revision.summary?" · "+revision.summary:"")).className="compare-intro";
-    const preview=document.createElement("article");preview.className="wiki-content revision-single-preview";body.append(preview);
-    await renderNamuMarkup(revision.content,preview,revision.title||currentTitle);
-    const actions=document.createElement("div");actions.className="revision-preview-actions";
-    const restore=document.createElement("button");restore.type="button";restore.className="button button-primary";restore.textContent="이 버전으로 되돌리기";restore.addEventListener("click",()=>restoreRevision(id));
-    const back=document.createElement("button");back.type="button";back.className="button";back.textContent="역사 목록으로";back.addEventListener("click",showHistoryList);
-    actions.append(restore,back);body.append(actions);
-  }catch(error){body.replaceChildren();addText(body,"p",error.message).className="dialog-status";const back=document.createElement("button");back.type="button";back.className="button";back.textContent="돌아가기";back.onclick=showHistoryList;body.append(back);}
+async function showRevisionSource(id) {
+  const body = $("dialog-body");
+  body.replaceChildren();
+  addText(body, "p", "문서 원문 문법을 불러오는 중입니다.").className = "compare-intro";
+  try {
+    const revision = await fetchHistoryRevision(id);
+    body.replaceChildren();
+    addText(body, "p", "버전 #" + revision.id + " · " + formatRevisionDate(revision.created_at) + " · " + (revision.editor || "알 수 없음")).className = "compare-intro";
+    if (revision.summary) addText(body, "p", "편집 요약: " + revision.summary).className = "compare-intro";
+    const source = document.createElement("pre");
+    source.className = "revision-source-code";
+    source.tabIndex = 0;
+    source.textContent = String(revision.content || "");
+    body.append(source);
+    const actions = document.createElement("div");
+    actions.className = "revision-preview-actions";
+    actions.append(
+      makeHistoryButton("원문 복사", async () => {
+        try {
+          await navigator.clipboard.writeText(String(revision.content || ""));
+          $("dialog-status").textContent = "원문을 클립보드에 복사했습니다.";
+        } catch {
+          const temporary = document.createElement("textarea");
+          temporary.value = String(revision.content || "");
+          temporary.style.position = "fixed";
+          temporary.style.opacity = "0";
+          document.body.append(temporary);
+          temporary.select();
+          const copied = document.execCommand("copy");
+          temporary.remove();
+          $("dialog-status").textContent = copied ? "원문을 복사했습니다." : "원문을 직접 선택해 복사하세요.";
+        }
+      }),
+      makeHistoryButton("이 버전으로 복원", () => restoreRevision(id), "button-primary"),
+      makeHistoryButton("역사 목록", showHistoryList)
+    );
+    body.append(actions);
+  } catch (error) {
+    body.replaceChildren();
+    addText(body, "p", error.message).className = "dialog-status";
+    body.append(makeHistoryButton("역사 목록", showHistoryList));
+  }
 }
-async function renderRevisionComparison(idA,idB) {
-  const body=$("dialog-body");body.replaceChildren();addText(body,"p","두 버전의 원문과 렌더 결과를 불러오고 있습니다.").className="compare-intro";
-  try{
-    const [aData,bData]=await Promise.all([api("/api/revision?id="+encodeURIComponent(idA)),api("/api/revision?id="+encodeURIComponent(idB))]);
-    const a=aData.revision,b=bData.revision;if(!a||!b)throw new Error("비교할 버전을 찾을 수 없습니다.");
-    body.replaceChildren();addText(body,"p","A 기준: "+a.created_at+" · "+(a.editor||"알 수 없음")+" → B 비교: "+b.created_at+" · "+(b.editor||"알 수 없음")).className="compare-intro";
-    const toolbar=document.createElement("div");toolbar.className="revision-compare-toolbar";
-    const syntaxButton=document.createElement("button");syntaxButton.type="button";syntaxButton.className="button selected";syntaxButton.textContent="문법(원문) 비교";
-    const renderButton=document.createElement("button");renderButton.type="button";renderButton.className="button";renderButton.textContent="실제 렌더 결과 비교";
-    const restoreA=document.createElement("button");restoreA.type="button";restoreA.className="button";restoreA.textContent="A 버전 복원";restoreA.addEventListener("click",()=>restoreRevision(idA));
-    const restoreB=document.createElement("button");restoreB.type="button";restoreB.className="button";restoreB.textContent="B 버전 복원";restoreB.addEventListener("click",()=>restoreRevision(idB));
-    const back=document.createElement("button");back.type="button";back.className="button";back.textContent="버전 선택으로";back.addEventListener("click",showHistoryList);
-    toolbar.append(syntaxButton,renderButton,restoreA,restoreB,back);body.append(toolbar);
-    const panel=document.createElement("div");panel.className="revision-compare-panel";body.append(panel);
-    const showSyntax=()=>{
-      syntaxButton.classList.add("selected");renderButton.classList.remove("selected");panel.replaceChildren();
-      const diff=document.createElement("div");diff.className="revision-diff";const rows=diffRevisionLines(a.content,b.content);let added=0,removed=0;
-      rows.forEach(line=>{if(line.type==="add")added++;if(line.type==="remove")removed++;const row=document.createElement("div");row.className="revision-diff-line diff-"+line.type;const sign=document.createElement("span");sign.className="revision-diff-sign";sign.textContent=line.type==="add"?"+":line.type==="remove"?"−":" ";const code=document.createElement("code");code.textContent=line.text||" ";row.append(sign,code);diff.append(row);});
-      addText(panel,"p","추가 "+added+"줄 · 삭제 "+removed+"줄").className="compare-summary";panel.append(diff);
-    };
-    const showRendered=async()=>{
-      syntaxButton.classList.remove("selected");renderButton.classList.add("selected");panel.replaceChildren();
-      const grid=document.createElement("div");grid.className="revision-render-grid";
-      const makePane=(label,revision)=>{const pane=document.createElement("section");pane.className="revision-render-pane";addText(pane,"h3",label+" · "+revision.created_at);const article=document.createElement("article");article.className="wiki-content revision-rendered-content";pane.append(article);grid.append(pane);return article;};
-      const left=makePane("A 기준",a),right=makePane("B 비교",b);panel.append(grid);
-      await Promise.all([renderNamuMarkup(a.content,left,a.title||currentTitle),renderNamuMarkup(b.content,right,b.title||currentTitle)]);
-    };
-    syntaxButton.addEventListener("click",showSyntax);renderButton.addEventListener("click",()=>showRendered().catch(error=>{panel.replaceChildren();addText(panel,"p","렌더 비교에 실패했습니다: "+error.message).className="dialog-status";}));
-    showSyntax();$("save").textContent="닫기";$("save").onclick=()=>$("dialog").close();
-  }catch(error){body.replaceChildren();addText(body,"p",error.message).className="dialog-status";const back=document.createElement("button");back.type="button";back.className="button";back.textContent="돌아가기";back.onclick=showHistoryList;body.append(back);}
+async function showRevisionRendered(id) {
+  const body = $("dialog-body");
+  body.replaceChildren();
+  addText(body, "p", "선택한 버전을 Worker에서 렌더링하고 있습니다.").className = "compare-intro";
+  try {
+    const revision = await fetchHistoryRevision(id);
+    body.replaceChildren();
+    addText(body, "p", "버전 #" + revision.id + " · " + formatRevisionDate(revision.created_at) + " · " + (revision.editor || "알 수 없음")).className = "compare-intro";
+    const preview = document.createElement("article");
+    preview.className = "wiki-content revision-single-preview";
+    body.append(preview);
+    await renderNamuMarkup(revision.content, preview, historyDocumentTitle || revision.title);
+    const actions = document.createElement("div");
+    actions.className = "revision-preview-actions";
+    actions.append(
+      makeHistoryButton("문법 보기", () => showRevisionSource(id)),
+      makeHistoryButton("이 버전으로 복원", () => restoreRevision(id), "button-primary"),
+      makeHistoryButton("역사 목록", showHistoryList)
+    );
+    body.append(actions);
+  } catch (error) {
+    body.replaceChildren();
+    addText(body, "p", error.message).className = "dialog-status";
+    body.append(makeHistoryButton("역사 목록", showHistoryList));
+  }
+}
+async function renderRevisionComparison(idA, idB, mode = "source") {
+  const body = $("dialog-body");
+  body.replaceChildren();
+  addText(body, "p", "두 버전의 원문을 불러오고 있습니다.").className = "compare-intro";
+  try {
+    const [a, b] = await Promise.all([fetchHistoryRevision(idA), fetchHistoryRevision(idB)]);
+    body.replaceChildren();
+    addText(body, "p", "A 기준: 버전 #" + a.id + " · " + formatRevisionDate(a.created_at) + " → B 비교: 버전 #" + b.id + " · " + formatRevisionDate(b.created_at)).className = "compare-intro";
+    const toolbar = document.createElement("div");
+    toolbar.className = "revision-compare-toolbar";
+    const sourceButton = makeHistoryButton("문법 차이", () => showSourceComparison(), "button-primary");
+    const renderButton = makeHistoryButton("렌더 결과", () => showRenderedComparison());
+    const restoreA = makeHistoryButton("A 버전 복원", () => restoreRevision(idA));
+    const restoreB = makeHistoryButton("B 버전 복원", () => restoreRevision(idB));
+    const back = makeHistoryButton("버전 선택으로", showHistoryList);
+    toolbar.append(sourceButton, renderButton, restoreA, restoreB, back);
+    body.append(toolbar);
+    const panel = document.createElement("div");
+    panel.className = "revision-compare-panel";
+    body.append(panel);
+    function showSourceComparison() {
+      sourceButton.classList.add("button-primary");
+      renderButton.classList.remove("button-primary");
+      panel.replaceChildren();
+      const diff = document.createElement("div");
+      diff.className = "revision-diff";
+      const rows = diffRevisionLines(a.content, b.content);
+      let added = 0, removed = 0;
+      rows.forEach(line => {
+        if (line.type === "add") added++;
+        if (line.type === "remove") removed++;
+        const row = document.createElement("div");
+        row.className = "revision-diff-line diff-" + line.type;
+        const sign = document.createElement("span");
+        sign.className = "revision-diff-sign";
+        sign.textContent = line.type === "add" ? "+" : line.type === "remove" ? "−" : " ";
+        const content = document.createElement("code");
+        content.textContent = line.text || " ";
+        row.append(sign, content);
+        diff.append(row);
+      });
+      addText(panel, "p", "추가 " + added + "줄 · 삭제 " + removed + "줄 · 변경된 원문 문법").className = "compare-summary";
+      panel.append(diff);
+    }
+    async function showRenderedComparison() {
+      sourceButton.classList.remove("button-primary");
+      renderButton.classList.add("button-primary");
+      panel.replaceChildren();
+      const grid = document.createElement("div");
+      grid.className = "revision-render-grid";
+      const makePane = (label, revision) => {
+        const pane = document.createElement("section");
+        pane.className = "revision-render-pane";
+        addText(pane, "h3", label + " · " + formatRevisionDate(revision.created_at));
+        const article = document.createElement("article");
+        article.className = "wiki-content revision-rendered-content";
+        pane.append(article);
+        grid.append(pane);
+        return article;
+      };
+      const left = makePane("A 기준", a);
+      const right = makePane("B 비교", b);
+      panel.append(grid);
+      await Promise.all([
+        renderNamuMarkup(a.content, left, historyDocumentTitle || a.title),
+        renderNamuMarkup(b.content, right, historyDocumentTitle || b.title)
+      ]);
+    }
+    if (mode === "render") await showRenderedComparison();
+    else showSourceComparison();
+  } catch (error) {
+    body.replaceChildren();
+    addText(body, "p", error.message).className = "dialog-status";
+    body.append(makeHistoryButton("버전 선택으로", showHistoryList));
+  }
 }
 
 $("history").onclick=async()=>{
   try {
-    const data=await api("/api/history?title="+encodeURIComponent(currentTitle));
-    historyItemsForCompare=data.revisions||[]; revisionA=null; revisionB=null;
-    $("dialog-title").textContent=currentTitle+" — 문서 역사 및 버전 비교";
+    historyDocumentTitle=currentTitle;
+    const data=await api("/api/history?title="+encodeURIComponent(historyDocumentTitle));
+    historyItemsForCompare=(data.revisions||[]).map(item=>({...item,id:Number(item.id)})); revisionA=null; revisionB=null;
+    $("dialog-title").textContent=historyDocumentTitle+" — 문서 역사 및 버전 비교";
     $("dialog-status").textContent="";
     $("save").textContent="닫기"; $("save").onclick=()=>$("dialog").close();
     showHistoryList(); $("dialog").showModal();
