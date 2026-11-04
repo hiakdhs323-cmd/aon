@@ -2715,7 +2715,32 @@ try {
     this.renderData = this.renderData.replace(/<a fn_target="([^"]+)"/g, handlerFootnote);
 
     this.renderDataJS += `document.querySelectorAll('details').forEach((el) => {new Accordion(el);});if(window.location.hash !== '' && document.getElementById(window.location.hash.replace(/^#/, ''))) {document.getElementById(window.location.hash.replace(/^#/, '')).focus();}\nopennamu_do_ip_render();\n`;
-    this.renderData = '<div style="font-size:16px !important; line-height:1.7 !important;">' + this.renderData + '</div>';
+    // Apply readable typography to the complete rendered document without changing the site's CSS files.
+    const applyInlineFontSize = (pattern: RegExp, size: number, lineHeight = 1.8) => {
+      this.renderData = this.renderData.replace(pattern, (tag: string) => {
+        const fontStyle = `font-size:${size}px !important;line-height:${lineHeight} !important;`;
+        const styleMatch = tag.match(/\\sstyle=(["'])([\\s\\S]*?)\\1/i);
+        if (styleMatch) {
+          const existingStyle = styleMatch[2].replace(/\\s*;?\\s*$/, ";");
+          return tag.replace(styleMatch[0], ` style=${styleMatch[1]}${existingStyle}${fontStyle}${styleMatch[1]}`);
+        }
+        return tag.replace(/>$/, ` style="${fontStyle}">`);
+      });
+    };
+
+    // The document body uses a larger base size; headings keep a clear hierarchy.
+    const headingSizes = [34, 30, 26, 23, 21, 19];
+    headingSizes.forEach((size, index) => {
+      applyInlineFontSize(new RegExp(`<h${index + 1}\\\\b[^>]*>`, "gi"), size, 1.4);
+    });
+
+    // These components have independent small font declarations in the skin.
+    applyInlineFontSize(/<table\\b[^>]*>/gi, 18);
+    applyInlineFontSize(/<([a-z][\\w:-]*)\\b([^>]*\\bclass=["'][^"']*(?:wiki-toc|opennamu_TOC|opennamu_footnote|wiki-footnotes|opennamu_category|wiki-footnote-tooltip)[^"']*["'][^>]*)>/gi, 18);
+    applyInlineFontSize(/<figcaption\\b[^>]*>/gi, 18);
+    applyInlineFontSize(/<a\\b(?=[^>]*\\bid=["'][^"']*(?:fn_|rfn_)[^"']*["'])[^>]*>/gi, 18);
+
+    this.renderData = '<div style="font-size:20px !important; line-height:1.85 !important;">' + this.renderData + '</div>';
   }
 
   manageAfterwork() {
