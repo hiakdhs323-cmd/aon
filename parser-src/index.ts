@@ -336,7 +336,7 @@ export class NamuMark {
     let data = "";
     for (const forA in this.dataFootnote) {
       if (data === "") {
-        data += '<div class="opennamu_footnote">';
+        data += '<div class="opennamu_footnote" style="font-size:12px !important;line-height:1.6 !important;">';
       } else {
         data += "<br>";
       }
@@ -374,7 +374,7 @@ export class NamuMark {
       }
 
       data +=
-        '<footnote_title id="' +
+        '<footnote_title style="font-size:12px !important;line-height:1.6 !important;" id="' +
         this.docSet["docInclude"] +
         "fn_" +
         this.dataFootnote[forA]["list"][0] +
