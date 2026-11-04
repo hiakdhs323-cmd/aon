@@ -805,9 +805,13 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content h4{font-size:14px!important}
 #article.wiki-content table{font-size:13px!important;border-spacing:0}
 #article.wiki-content th,#article.wiki-content td{padding:4px 7px!important;font-size:12px!important;line-height:1.45!important}
-#article.wiki-content th{background:var(--wiki-panel-soft)!important;color:var(--wiki-text)!important}
-#article.wiki-content td{background:transparent!important;color:var(--wiki-text)!important}
-#article.wiki-content tr:nth-child(even) td{background:color-mix(in srgb,var(--wiki-panel-soft) 48%,transparent)!important}
+/* Keep NamuMark-authored cell colors. Only provide a soft default for label cells. */
+#article.wiki-content th{background:var(--wiki-panel-soft);color:var(--wiki-text)}
+#article.wiki-content td{color:var(--wiki-text)}
+#article.wiki-content tr > td:first-child{background:var(--wiki-panel-soft)}
+#article.wiki-content tr > td:not(:first-child){background:transparent}
+#article.wiki-content td[style*="background"],#article.wiki-content th[style*="background"]{background-color:inherit}
+
 #article.wiki-content td a,#article.wiki-content th a{color:var(--wiki-link)!important}
 #article.wiki-content .wiki-table-wrap{border:1px solid var(--wiki-border);border-radius:4px;background:var(--wiki-panel);padding:2px}
 #article.wiki-content .wiki-table-wrap table{min-width:100%}
@@ -837,3 +841,23 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content table td{font-weight:400}
 #article.wiki-content table th{font-weight:600}
 #article.wiki-content table p{font-size:inherit!important;line-height:inherit!important}
+
+
+/* Two-column wiki information tables: label on the left, readable content on the right. */
+#article.wiki-content .wiki-table-wrap table,
+#article.wiki-content .table_safe table{
+  width:100%;
+  min-width:100%;
+  table-layout:auto;
+}
+#article.wiki-content table td,
+#article.wiki-content table th{
+  vertical-align:middle;
+  overflow-wrap:anywhere;
+}
+#article.wiki-content table td:first-child{
+  font-weight:600;
+}
+#article.wiki-content table td:not(:first-child){
+  text-align:left;
+}
