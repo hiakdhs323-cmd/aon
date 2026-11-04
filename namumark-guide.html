@@ -18,29 +18,87 @@ body{margin:0;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(-
 
 1. 첫 번째 순서
 2. 두 번째 순서</pre><p><code>*</code> 개수로 글머리 목록의 깊이를 나타내고 숫자와 마침표로 순서 목록을 만듭니다.</p></section>
-<section id="table"><h2>5. 표</h2><pre>|| 이름 || 담당 업무 ||
+<section id="table"><h2>5. 표</h2>
+<pre>|| 이름 || 담당 업무 ||
 || 아온 || 서버 운영 ||
-|| 코지 || 운영 지원 ||</pre><table><thead><tr><th>옵션</th><th>예시</th><th>설명</th></tr></thead><tbody><tr><td>표 너비</td><td><code>&lt;tablewidth=600&gt;</code></td><td>표 너비 지정</td></tr><tr><td>표 정렬</td><td><code>&lt;tablealign=center&gt;</code></td><td>가운데·오른쪽 정렬</td></tr><tr><td>셀 정렬</td><td><code>&lt;(&gt;</code>, <code>&lt;:&gt;</code>, <code>&lt;)&gt;</code></td><td>왼쪽·가운데·오른쪽</td></tr><tr><td>배경·글자색</td><td><code>&lt;bgcolor=#eeeeee&gt;</code>, <code>&lt;color=red&gt;</code></td><td>셀 색상</td></tr><tr><td>가로 병합</td><td><code>&lt;-2&gt;</code></td><td>두 칸 병합</td></tr><tr><td>세로 병합</td><td><code>&lt;|2&gt;</code></td><td>두 행 병합</td></tr><tr><td>여백 제거</td><td><code>&lt;nopad&gt;</code></td><td>셀 안쪽 여백 제거</td></tr></tbody></table><p class="guide-note">넓은 표는 표 컨테이너 안에서 가로 스크롤됩니다. 문서나 접기 영역에 중첩 가로 스크롤이 생기지 않도록 처리합니다.</p></section>
+|| 코지 || 운영 지원 ||</pre>
+<table><thead><tr><th>구분</th><th>문법 예시</th><th>기능</th></tr></thead><tbody>
+<tr><td>표 너비·높이</td><td><code>&lt;tablewidth=600&gt;</code>, <code>&lt;tableheight=300&gt;</code></td><td>표 외부 폭 및 높이 지정</td></tr>
+<tr><td>표 정렬</td><td><code>&lt;tablealign=center&gt;</code>, <code>&lt;tablealign=right&gt;</code></td><td>가운데 또는 오른쪽 배치</td></tr>
+<tr><td>표 배경·글자색</td><td><code>&lt;tablebgcolor=#eeeeee&gt;</code>, <code>&lt;tablecolor=#222222&gt;</code></td><td>표 전체 색상</td></tr>
+<tr><td>표 테두리·클래스</td><td><code>&lt;tablebordercolor=#888888&gt;</code>, <code>&lt;tableclass=custom&gt;</code></td><td>표 테두리 색 및 클래스</td></tr>
+<tr><td>표 내부 정렬</td><td><code>&lt;tabletextalign=center&gt;</code></td><td>표의 기본 텍스트 정렬</td></tr>
+<tr><td>행 옵션</td><td><code>&lt;rowbgcolor=#eeeeee&gt;</code>, <code>&lt;rowcolor=#222222&gt;</code>, <code>&lt;rowtextalign=center&gt;</code></td><td>행 배경·글자색·정렬</td></tr>
+<tr><td>열 옵션</td><td><code>&lt;colbgcolor=#eeeeee&gt;</code>, <code>&lt;colcolor=#222222&gt;</code>, <code>&lt;coltextalign=center&gt;</code></td><td>열 배경·글자색·정렬</td></tr>
+<tr><td>셀 옵션</td><td><code>&lt;bgcolor=#eeeeee&gt;</code>, <code>&lt;color=red&gt;</code>, <code>&lt;width=180&gt;</code>, <code>&lt;height=50&gt;</code></td><td>배경·글자색·너비·높이</td></tr>
+<tr><td>셀 정렬</td><td><code>&lt;(&gt;</code>, <code>&lt;:&gt;</code>, <code>&lt;)&gt;</code></td><td>왼쪽·가운데·오른쪽</td></tr>
+<tr><td>병합</td><td><code>&lt;-2&gt;</code>, <code>&lt;|2&gt;</code></td><td>가로 2칸·세로 2행 병합</td></tr>
+<tr><td>세로 위치·여백</td><td><code>&lt;^|2&gt;</code>, <code>&lt;v|2&gt;</code>, <code>&lt;nopad&gt;</code></td><td>세로 정렬·셀 여백 제거</td></tr>
+</tbody></table>
+<p>셀 앞에 옵션을 적어 해당 셀 또는 행·열에 적용합니다. 여러 옵션을 사용할 때는 <code>&lt;bgcolor=#eeeeee&gt;&lt;color=#222222&gt;</code>처럼 이어서 적습니다.</p>
+<p class="guide-note">표가 화면보다 넓으면 표 컨테이너 하나에서 가로 스크롤됩니다. 문서나 접기 영역 전체에 중복 스크롤이 생기는 것은 의도한 동작이 아닙니다.</p></section>
 <section id="fold"><h2>6. 접기와 펼치기</h2><pre>{{{#!folding 접기 제목
 접었을 때 숨겨지는 본문입니다.
 이 안에도 문법과 표를 넣을 수 있습니다.
 }}}</pre><p>접기 제목을 누르면 본문이 열리고 다시 누르면 닫힙니다.</p></section>
 <section id="include"><h2>7. 문서 삽입</h2><pre>[include(문서명)]
 [include(문서명, 변수=값)]</pre><p>다른 문서의 내용을 현재 문서에 포함합니다. 존재하지 않는 대상은 빨간 링크로 표시됩니다.</p></section>
-<section id="media"><h2>8. 이미지와 분류</h2><pre>[[파일:이미지.png]]
-[[파일:이미지.png|width=300]]
-[[분류:운영]]</pre><p>이미지는 파일 이름과 선택 옵션을 지정합니다. 분류 문법은 문서의 분류 정보를 등록합니다.</p></section>
+<section id="media"><h2>8. 이미지와 분류</h2>
+<pre>[[파일:이미지.png]]
+[[파일:이미지.png|width=300&height=180&align=center]]
+[[파일:이미지.png|width=320&bgcolor=#eeeeee&border-radius=8]]
+[[분류:운영]]</pre>
+<table><thead><tr><th>이미지 옵션</th><th>설명</th></tr></thead><tbody>
+<tr><td><code>width</code>, <code>height</code></td><td>이미지 너비와 높이</td></tr>
+<tr><td><code>align=left|center|right</code></td><td>이미지 정렬</td></tr>
+<tr><td><code>bgcolor</code></td><td>이미지 영역의 배경색</td></tr>
+<tr><td><code>theme=dark|light</code></td><td>특정 테마에서 표시하도록 지정</td></tr>
+<tr><td><code>border-radius</code></td><td>모서리 둥글기</td></tr>
+<tr><td><code>rendering=pixelated</code></td><td>픽셀 이미지 렌더링 방식 지정</td></tr>
+</tbody></table>
+<p>파일이 등록되어 있지 않으면 업로드가 필요한 링크로 표시됩니다. <code>[[분류:이름]]</code>은 문서 분류로 처리됩니다.</p></section>
 <section id="footnote"><h2>9. 각주와 앵커</h2><pre>본문 내용[* 출처 또는 보충 설명]
 [anchor(운영정책)]
 [[운영 정책#운영정책]]</pre><p><code>[* 내용]</code>은 각주, <code>[anchor(이름)]</code>은 문서 내 이동 지점을 만듭니다.</p></section>
-<section id="macro"><h2>10. 매크로</h2><table><thead><tr><th>문법</th><th>기능</th></tr></thead><tbody><tr><td><code>[목차]</code></td><td>제목 구조를 바탕으로 접고 펼 수 있는 목차 출력</td></tr><tr><td><code>[목차(hide)]</code></td><td>목차 기본 표시 상태 옵션</td></tr><tr><td><code>[date]</code></td><td>날짜 매크로</td></tr><tr><td><code>[pagecount]</code></td><td>문서 수 관련 매크로</td></tr><tr><td><code>[br]</code></td><td>줄바꿈</td></tr><tr><td><code>[clearfix]</code></td><td>떠 있는 요소 정리</td></tr></tbody></table></section>
-<section id="code"><h2>11. 코드·위키 블록</h2><pre>{{{#!syntax python
+<section id="macro"><h2>10. 매크로</h2>
+<table><thead><tr><th>문법</th><th>기능</th></tr></thead><tbody>
+<tr><td><code>[목차]</code>, <code>[toc]</code></td><td>제목 구조를 바탕으로 목차 생성</td></tr>
+<tr><td><code>[목차(hide)]</code></td><td>목차 기본 표시 상태 옵션</td></tr>
+<tr><td><code>[date]</code>, <code>[datetime]</code></td><td>현재 날짜·시간 문자열</td></tr>
+<tr><td><code>[pagecount]</code></td><td>문서 수</td></tr>
+<tr><td><code>[br]</code>, <code>[clearfix]</code></td><td>줄바꿈, 떠 있는 요소 정리</td></tr>
+<tr><td><code>[age(2000-01-01)]</code></td><td>입력한 날짜부터 지난 연수</td></tr>
+<tr><td><code>[dday(2027-01-01)]</code></td><td>입력한 날짜와 오늘 사이의 일수</td></tr>
+<tr><td><code>[anchor(문단이름)]</code></td><td>문서 안에서 이동할 위치 생성</td></tr>
+<tr><td><code>[ruby(漢字,ruby=かんじ)]</code></td><td>루비(후리가나) 표기</td></tr>
+<tr><td><code>[math(x^2+y^2)]</code></td><td>수식 렌더링</td></tr>
+</tbody></table>
+<h3>동영상·외부 미디어 매크로</h3>
+<p>다음 공급자 이름을 사용합니다. 실제 표시 여부는 각 서비스의 임베드 정책과 콘텐츠 공개 상태에 따라 달라집니다.</p>
+<pre>[youtube(동영상 ID)]
+[youtube(동영상 ID,width=640,height=360,start=30,end=90)]
+[nicovideo(sm9)]
+[navertv(클립 ID)]
+[kakaotv(클립 ID)]
+[vimeo(동영상 ID)]
+[instagram(게시물 ID)]
+[twitter(게시물 URL)]
+[tiktok(동영상 ID)]
+[facebook(게시물 URL)]</pre>
+<p><code>width</code>와 <code>height</code>로 크기를 지정할 수 있으며, YouTube는 <code>start</code>와 <code>end</code> 재생 구간도 지원합니다.</p>
+<p class="guide-note">매크로는 대소문자를 구분하지 않도록 처리되어 있습니다. 다만 서비스 측에서 임베드를 제한하거나 삭제한 콘텐츠는 표시되지 않을 수 있습니다.</p></section>
+<section id="code"><h2>11. 코드·위키·수식 블록</h2>
+<pre>{{{#!syntax python
 def hello():
     print("Hello, AonWiki")
-}}}</pre><p>언어 이름을 지정한 코드 영역입니다.</p><pre>{{{#!wiki style="border:1px solid #888; padding:10px"
-위키 문법으로 렌더링되는 꾸밈 블록입니다.
-}}}</pre><p>위키 블록은 내부 내용을 나무마크로 렌더링합니다. HTML/CSS는 필터링되며 임의 스크립트는 실행되지 않습니다.</p><pre>{{{#!latex
-E = mc^2
-}}}</pre><p>LaTeX 블록은 수식 라이브러리가 준비된 경우 렌더링됩니다.</p></section>
+}}}</pre>
+<p><code>#!syntax</code> 뒤에 언어명을 지정하면 코드 블록으로 분리하고 구문 강조를 적용합니다. 지원 언어는 코드 강조 라이브러리에 따라 달라질 수 있습니다.</p>
+<pre>{{{#!wiki style="border:1px solid #888; padding:10px"
+'''위키 문법'''으로 렌더링되는 꾸밈 블록입니다.
+}}}</pre>
+<p><code>#!wiki</code>는 내부 내용을 나무마크로 렌더링하는 블록입니다. HTML/CSS는 보안 필터를 거치며 임의 스크립트는 실행되지 않습니다.</p>
+<pre>[math(E = mc^2)]
+<math>E = mc^2</math></pre>
+<p>수식은 <code>[math(식)]</code> 또는 <code>&lt;math&gt;식&lt;/math&gt;</code> 형식으로 작성합니다.</p></section>
 <section id="save"><h2>12. 관리자 기능과 저장 전 확인</h2><ul><li>편집 권한은 로그인과 문서 보호 설정을 따릅니다.</li><li>미리보기는 Worker가 실제 파싱한 결과를 표시합니다.</li><li>문서 역사에서 원문 차이와 렌더 결과를 비교할 수 있습니다.</li><li>이전 버전을 복원하면 복원 전 현재 문서도 새 역사 항목으로 보존됩니다.</li><li>교정 BOT은 흔한 오타를 찾아 제안하는 보조 기능이며 문맥형 맞춤법 검사기는 아닙니다. 저장 전에 확인하세요.</li></ul><p class="guide-note">지원 범위는 파서 업데이트에 따라 변경됩니다. 불확실한 문법은 실제 서버 미리보기 결과를 기준으로 판단하세요.</p><p><a href="https://aon.hiakdhs323.workers.dev/">AonWiki로 돌아가기</a></p></section>
 </main></body></html>
