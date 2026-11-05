@@ -827,6 +827,108 @@ try {
       this.renderData = this.renderData.replace(mathRegex2, handler);
       this.renderData = this.renderData.replace(mathRegex, handler);
     }
+    // Bracket-table syntax used by compact information boxes:
+    // [table(align=right,width=400)][tr][th=2]Title[/th][/tr]...[/table]
+    // Compact table syntax for structured information boxes.
+    manageBracketTables() {
+      const blockRegex = /\[table(?:\(([^)\n]*)\))?\]([\s\S]*?)\[\/table\]/gi;
+      let blockIndex = 0;
+      this.renderData = this.renderData.replace(blockRegex, (whole, rawOptions, rawBody) => {
+        const options = {};
+        for (const option of splitSafeExpression(String(rawOptions || ""), ",")) {
+          const equal = option.indexOf("=");
+          if (equal < 1) continue;
+          const key = option.slice(0, equal).trim().toLowerCase();
+          const value = option.slice(equal + 1).trim().replace(/^(?:"|')|(?:"|')$/g, "");
+          if (key) options[key] = value;
+        }
+        const rows = [];
+        let row = [];
+        let cell = null;
+        const closeCell = () => {
+          if (cell) {
+            row.push(cell);
+            cell = null;
+          }
+        };
+        const closeRow = () => {
+          closeCell();
+          if (row.length) rows.push(row);
+          row = [];
+        };
+        const appendText = (value) => {
+          if (!value) return;
+          if (!cell) {
+            if (!value.trim()) return;
+            cell = { tag: "td", colspan: 1, content: "" };
+          }
+          cell.content += value;
+        };
+        const tokenRegex = /\[(\/)?(tr|th|td)(?:\s*=\s*(\d+))?\]/gi;
+        let cursor = 0;
+        let token;
+        while ((token = tokenRegex.exec(rawBody)) !== null) {
+          appendText(rawBody.slice(cursor, token.index));
+          cursor = tokenRegex.lastIndex;
+          const closing = Boolean(token[1]);
+          const tag = token[2].toLowerCase();
+          if (tag === "tr") {
+            closeRow();
+            continue;
+          }
+          if (closing) {
+            if (cell && cell.tag === tag) closeCell();
+            continue;
+          }
+          closeCell();
+          cell = {
+            tag,
+            colspan: Math.max(1, Math.min(50, Number(token[3]) || 1)),
+            content: ""
+          };
+        }
+        appendText(rawBody.slice(cursor));
+        closeRow();
+        if (!rows.length) return whole;
+        const safeColor = (value) => /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\/\- ,]+\))$/i.test(value);
+        const wrapperStyles = [];
+        const tableStyles = ["border-collapse:collapse", "max-width:100%"];
+        const align = String(options.align || options.tablealign || "").toLowerCase();
+        if (align === "right") wrapperStyles.push("float:right", "margin:0 0 12px 16px");
+        else if (align === "left") wrapperStyles.push("float:left", "margin:0 16px 12px 0");
+        else if (align === "center") wrapperStyles.push("display:table", "margin-left:auto", "margin-right:auto");
+        const width = String(options.width || options.tablewidth || "").trim();
+        if (/^\d+(?:\.\d+)?$/.test(width)) wrapperStyles.push("width:" + width + "px", "max-width:100%");
+        else if (/^\d+(?:\.\d+)?(?:px|%|em|rem|vw)$/.test(width)) wrapperStyles.push("width:" + width, "max-width:100%");
+        const background = options.bgcolor || options.tablebgcolor;
+        if (background && safeColor(background)) tableStyles.push("background-color:" + background);
+        const borderColor = options.bordercolor || options.tablebordercolor;
+        if (borderColor && safeColor(borderColor)) tableStyles.push("border-color:" + borderColor);
+        const textAlign = String(options.textalign || options.tabletextalign || "").toLowerCase();
+        if (["left", "center", "right", "justify"].includes(textAlign)) tableStyles.push("text-align:" + textAlign);
+        const className = String(options.class || options.tableclass || "").split(/\s+/).filter((value) => /^[a-zA-Z_][a-zA-Z0-9_-]{0,48}$/.test(value)).join(" ");
+        let tableHtml = '<div class="table_safe bracket-table-wrap" style="' + wrapperStyles.join(";") + '">';
+        tableHtml += '<table class="wiki-bracket-table' + (className ? " " + escapeHtml(className) : "") + '" style="' + tableStyles.join(";") + '"><tbody>';
+        let cellIndex = 0;
+        for (const cells of rows) {
+          tableHtml += "<tr>";
+          for (const item of cells) {
+            const rendered = this.doInterRender(
+              item.content,
+              this.docSet["docInclude"] + "bracket_table_" + blockIndex + "_cell_" + cellIndex
+            );
+            const span = item.colspan > 1 ? ' colspan="' + item.colspan + '"' : "";
+            tableHtml += "<" + item.tag + span + ">" + rendered + "</" + item.tag + ">";
+            cellIndex += 1;
+          }
+          tableHtml += "</tr>";
+        }
+        tableHtml += "</tbody></table></div>";
+        const storageName = this.getToolDataStorage(tableHtml, "", whole);
+        blockIndex += 1;
+        return "<" + storageName + "></" + storageName + ">";
+      });
+    }
     // re.sub fix
     manageTable() {
       this.renderData = this.renderData.replace(/\n +\|\|/g, "\n||");
@@ -1567,7 +1669,7 @@ try {
             if (categoryBlur != "") this.dataBacklink["category:" + linkMain]["cat_blur"] = "";
             linkMain = urlPas(linkMain);
             if (this.dataCategory === "") {
-              this.dataCategory = '<div class="opennamu_category" id="cate"><a class="opennamu_category_button" href="#category-toggle">(-)</a><span class="opennamu_category_label">\uBD84\uB958:</span><span class="opennamu_category_links">';
+              this.dataCategory = '<div class="opennamu_category" id="cate"><span class="opennamu_category_label">\uBD84\uB958:</span><span class="opennamu_category_links">';
             } else {
               this.dataCategory += " | ";
             }
@@ -2111,6 +2213,7 @@ opennamu_do_ip_render();
       this.manageMiddle();
       this.manageInclude();
       this.manageMath();
+      this.manageBracketTables();
       this.manageTable();
       this.manageList();
       this.manageMacro();
