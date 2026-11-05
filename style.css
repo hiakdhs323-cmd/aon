@@ -2357,3 +2357,48 @@ html[data-theme="dark"] .wiki-content .wiki-fold-content{
     max-width:100%!important;
   }
 }
+
+/* Desktop: allow the compact TOC to sit beside a right-floated infobox.
+   The explicit NamuMark [clearfix] after the TOC clears both blocks. */
+.wiki-content .wiki-float-host,
+.wiki-content .wiki-float-table{
+  float:right;
+  margin:0 0 12px 16px;
+  max-width:48%;
+}
+.wiki-content .opennamu_TOC{
+  display:table;
+  width:fit-content;
+  min-width:220px;
+  max-width:100%;
+  float:none!important;
+  clear:none!important;
+  margin:0 0 17px;
+  vertical-align:top;
+}
+.wiki-content .opennamu_TOC>summary.opennamu_TOC_title::after{
+  content:"⌄";
+}
+.wiki-content .opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+  content:"›";
+}
+.wiki-content .opennamu_TOC_toggle{display:none!important}
+@media(max-width:700px){
+  .wiki-content .wiki-float-host,
+  .wiki-content .wiki-float-table{
+    float:none!important;
+    clear:both!important;
+    display:block;
+    width:100%!important;
+    max-width:100%!important;
+    margin:12px 0;
+  }
+  .wiki-content .wiki-float-table{display:table;table-layout:auto}
+  .wiki-content .opennamu_TOC{
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    clear:both;
+  }
+}
