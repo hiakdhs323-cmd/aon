@@ -517,35 +517,109 @@ function invalidateNamuServerIndexes() {
 }
 function parseTableColorRgb(value) {
   const input = String(value || "").trim().toLowerCase();
-  const named = {black:"#000000",white:"#ffffff",red:"#ff0000",green:"#008000",blue:"#0000ff",yellow:"#ffff00",orange:"#ffa500",purple:"#800080",gray:"#808080",grey:"#808080",navy:"#000080",teal:"#008080"};
-  const color = named[input] || input;
-  let match = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!input) return null;
+  const namedColors = Object.fromEntries((
+    "aliceblue f0f8ff antiquewhite faebd7 aqua 00ffff aquamarine 7fffd4 azure f0ffff " +
+    "beige f5f5dc bisque ffe4c4 black 000000 blanchedalmond ffebcd blue 0000ff blueviolet 8a2be2 " +
+    "brown a52a2a burlywood deb887 cadetblue 5f9ea0 chartreuse 7fff00 chocolate d2691e coral ff7f50 " +
+    "cornflowerblue 6495ed cornsilk fff8dc crimson dc143c cyan 00ffff darkblue 00008b darkcyan 008b8b " +
+    "darkgoldenrod b8860b darkgray a9a9a9 darkgreen 006400 darkgrey a9a9a9 darkkhaki bdb76b darkmagenta 8b008b " +
+    "darkolivegreen 556b2f darkorange ff8c00 darkorchid 9932cc darkred 8b0000 darksalmon e9967a darkseagreen 8fbc8f " +
+    "darkslateblue 483d8b darkslategray 2f4f4f darkslategrey 2f4f4f darkturquoise 00ced1 darkviolet 9400d3 " +
+    "deeppink ff1493 deepskyblue 00bfff dimgray 696969 dimgrey 696969 dodgerblue 1e90ff firebrick b22222 " +
+    "floralwhite fffaf0 forestgreen 228b22 fuchsia ff00ff gainsboro dcdcdc ghostwhite f8f8ff gold ffd700 " +
+    "goldenrod daa520 gray 808080 green 008000 greenyellow adff2f grey 808080 honeydew f0fff0 hotpink ff69b4 " +
+    "indianred cd5c5c indigo 4b0082 ivory fffff0 khaki f0e68c lavender e6e6fa lavenderblush fff0f5 " +
+    "lawngreen 7cfc00 lemonchiffon fffacd lightblue add8e6 lightcoral f08080 lightcyan e0ffff " +
+    "lightgoldenrodyellow fafad2 lightgray d3d3d3 lightgreen 90ee90 lightgrey d3d3d3 lightpink ffb6c1 " +
+    "lightsalmon ffa07a lightseagreen 20b2aa lightskyblue 87cefa lightslategray 778899 lightslategrey 778899 " +
+    "lightsteelblue b0c4de lightyellow ffffe0 lime 00ff00 limegreen 32cd32 linen faf0e6 magenta ff00ff " +
+    "maroon 800000 mediumaquamarine 66cdaa mediumblue 0000cd mediumorchid ba55d3 mediumpurple 9370db " +
+    "mediumseagreen 3cb371 mediumslateblue 7b68ee mediumspringgreen 00fa9a mediumturquoise 48d1cc " +
+    "mediumvioletred c71585 midnightblue 191970 mintcream f5fffa mistyrose ffe4e1 moccasin ffe4b5 " +
+    "navajowhite ffdead navy 000080 oldlace fdf5e6 olive 808000 olivedrab 6b8e23 orange ffa500 " +
+    "orangered ff4500 orchid da70d6 palegoldenrod eee8aa palegreen 98fb98 paleturquoise afeeee " +
+    "palevioletred db7093 papayawhip ffefd5 peachpuff ffdab9 peru cd853f pink ffc0cb plum dda0dd " +
+    "powderblue b0e0e6 purple 800080 rebeccapurple 663399 red ff0000 rosybrown bc8f8f royalblue 4169e1 " +
+    "saddlebrown 8b4513 salmon fa8072 sandybrown f4a460 seagreen 2e8b57 seashell fff5ee sienna a0522d " +
+    "silver c0c0c0 skyblue 87ceeb slateblue 6a5acd slategray 708090 slategrey 708090 snow fffafa " +
+    "springgreen 00ff7f steelblue 4682b4 tan d2b48c teal 008080 thistle d8bfd8 tomato ff6347 " +
+    "turquoise 40e0d0 violet ee82ee wheat f5deb3 white ffffff whitesmoke f5f5f5 yellow ffff00 yellowgreen 9acd32"
+  ).split(/\s+/).reduce((result, token, index, all) => {
+    if (index % 2 === 0) result.push([token, "#" + all[index + 1]]);
+    return result;
+  }, []));
+  if (input === "transparent") return [0, 0, 0, 0];
+
+  const color = namedColors[input] || input;
+  let match = color.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
   if (match) {
-    const hex = match[1].length === 3 ? match[1].split("").map(c => c + c).join("") : match[1];
-    return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
+    const raw = match[1];
+    const hex = raw.length <= 4 ? raw.split("").map(char => char + char).join("") : raw;
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16),
+      hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1
+    ];
   }
-  match = color.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/);
-  if (match) return [Number(match[1]),Number(match[2]),Number(match[3])];
+
+  match = color.match(/^rgba?\(\s*([\d.]+)(%)?[\s,]+([\d.]+)(%)?[\s,]+([\d.]+)(%)?(?:\s*[,/]\s*([\d.]+)(%)?)?\s*\)$/i);
+  if (match) {
+    const channel = (number, percent) => Math.max(0, Math.min(255, Number(number) * (percent ? 2.55 : 1)));
+    return [
+      channel(match[1], match[2]),
+      channel(match[3], match[4]),
+      channel(match[5], match[6]),
+      match[7] === undefined ? 1 : Math.max(0, Math.min(1, Number(match[7]) / (match[8] ? 100 : 1)))
+    ];
+  }
+
+  match = color.match(/^hsla?\(\s*(-?[\d.]+)(deg)?[\s,]+([\d.]+)%[\s,]+([\d.]+)%(?:\s*[,/]\s*([\d.]+)(%)?)?\s*\)$/i);
+  if (match) {
+    const hue = ((Number(match[1]) % 360) + 360) % 360 / 360;
+    const saturation = Math.max(0, Math.min(1, Number(match[3]) / 100));
+    const lightness = Math.max(0, Math.min(1, Number(match[4]) / 100));
+    const channel = index => {
+      const k = (index + hue * 12) % 12;
+      const a = saturation * Math.min(lightness, 1 - lightness);
+      return 255 * (lightness - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+    };
+    return [
+      channel(0), channel(8), channel(4),
+      match[5] === undefined ? 1 : Math.max(0, Math.min(1, Number(match[5]) / (match[6] ? 100 : 1)))
+    ];
+  }
   return null;
+}
+function blendTableColor(foreground, background) {
+  const alpha = Math.max(0, Math.min(1, foreground[3] ?? 1));
+  return [
+    foreground[0] * alpha + background[0] * (1 - alpha),
+    foreground[1] * alpha + background[1] * (1 - alpha),
+    foreground[2] * alpha + background[2] * (1 - alpha),
+    1
+  ];
 }
 function tableLuminance(rgb) {
   const linear = value => {
-    const c = value / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    const channel = Math.max(0, Math.min(255, value)) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   };
   return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
 }
-function tableContrast(a,b) {
-  const x=tableLuminance(a),y=tableLuminance(b);
-  return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);
+function tableContrast(first, second) {
+  const a = tableLuminance(first), b = tableLuminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
-function chooseTableTextColor(backgroundValue, foregroundValue, theme) {
-  const canvas = theme === "dark" ? [26,29,32] : [255,255,255];
-  const background = parseTableColorRgb(backgroundValue) || canvas;
+function chooseTableTextColor(background, foregroundValue) {
   const foreground = parseTableColorRgb(foregroundValue);
-  if (foreground && tableContrast(foreground,background) >= 4.5) return foregroundValue;
-  const black=[0,0,0],white=[255,255,255];
-  return tableContrast(black,background) >= tableContrast(white,background) ? "#000000" : "#ffffff";
+  if (foreground) {
+    const visibleForeground = blendTableColor(foreground, background);
+    if (tableContrast(visibleForeground, background) >= 4.5) return foregroundValue;
+  }
+  const black = [0, 0, 0, 1], white = [255, 255, 255, 1];
+  return tableContrast(black, background) >= tableContrast(white, background) ? "#000000" : "#ffffff";
 }
 function getInlineStyleProperties(element) {
   const properties = {};
@@ -553,7 +627,8 @@ function getInlineStyleProperties(element) {
   for (const declaration of style.split(";")) {
     const separator = declaration.indexOf(":");
     if (separator < 1) continue;
-    const name = declaration.slice(0, separator).trim().toLowerCase();
+    const rawName = declaration.slice(0, separator).trim().toLowerCase();
+    const name = rawName.replace(/^\\2d\s+\\2d\s+/i, "--");
     const value = declaration.slice(separator + 1).trim();
     if (name && value) properties[name] = value;
   }
@@ -562,42 +637,70 @@ function getInlineStyleProperties(element) {
 async function applyTableTextContrast(markup) {
   const tableStack = [];
   const rowStack = [];
-  const getThemeValue = (levels, key, theme) => {
+  const themeCanvas = {
+    light: [255, 255, 255, 1],
+    dark: [26, 29, 32, 1]
+  };
+  const getThemeBackground = (levels, theme) => {
+    let background = themeCanvas[theme].slice();
+    // Parent fills are painted first; row and cell fills are composited over them.
+    for (let index = levels.length - 1; index >= 0; index--) {
+      const properties = levels[index];
+      const themed = properties["--aonwiki-table-bg-" + theme];
+      const fixed = properties["background-color"] || properties.background || "";
+      const color = parseTableColorRgb(themed || fixed);
+      if (color) background = blendTableColor(color, background);
+    }
+    return background;
+  };
+  const getThemeForeground = (levels, theme) => {
     for (const properties of levels) {
-      const paired = properties["--aonwiki-table-" + key + "-" + theme];
-      if (paired) return paired;
-      if (key === "bg") {
-        const fixed = properties["background-color"] || properties.background || "";
-        if (fixed && !/^transparent$/i.test(fixed)) return fixed;
-      } else if (key === "fg" && properties.color && !/^var\(/i.test(properties.color)) {
-        return properties.color;
-      }
+      const themed = properties["--aonwiki-table-fg-" + theme];
+      if (themed) return themed;
+      const fixed = properties.color || "";
+      if (fixed && !/^var\(/i.test(fixed) && !/^inherit$/i.test(fixed)) return fixed;
     }
     return "";
   };
+
   const rewriter = new HTMLRewriter()
-    .on("table", { element(el) { tableStack.push(getInlineStyleProperties(el)); }, endTag() { tableStack.pop(); } })
-    .on("tr", { element(el) { rowStack.push(getInlineStyleProperties(el)); }, endTag() { rowStack.pop(); } })
+    .on("table", {
+      element(element) { tableStack.push(getInlineStyleProperties(element)); },
+      endTag() { tableStack.pop(); }
+    })
+    .on("tr", {
+      element(element) { rowStack.push(getInlineStyleProperties(element)); },
+      endTag() { rowStack.pop(); }
+    })
     .on("td, th", {
-      element(el) {
-        const levels = [getInlineStyleProperties(el), rowStack[rowStack.length-1] || {}, tableStack[tableStack.length-1] || {}];
-        const lightBg = getThemeValue(levels,"bg","light") || "#ffffff";
-        const darkBg = getThemeValue(levels,"bg","dark") || "#1a1d20";
-        const lightFg = getThemeValue(levels,"fg","light");
-        const darkFg = getThemeValue(levels,"fg","dark");
-        const lightText = chooseTableTextColor(lightBg,lightFg,"light");
-        const darkText = chooseTableTextColor(darkBg,darkFg,"dark");
-        const current = el.getAttribute("style") || "";
-        el.setAttribute("style",
-          (current.trim() ? current.trim().replace(/;?$/,";") : "") +
+      element(element) {
+        const levels = [
+          getInlineStyleProperties(element),
+          rowStack[rowStack.length - 1] || {},
+          tableStack[tableStack.length - 1] || {}
+        ];
+        const lightBackground = getThemeBackground(levels, "light");
+        const darkBackground = getThemeBackground(levels, "dark");
+        const lightForeground = getThemeForeground(levels, "light");
+        const darkForeground = getThemeForeground(levels, "dark");
+        const lightText = chooseTableTextColor(lightBackground, lightForeground);
+        const darkText = chooseTableTextColor(darkBackground, darkForeground);
+
+        const currentStyle = element.getAttribute("style") || "";
+        element.setAttribute("style",
+          (currentStyle.trim() ? currentStyle.trim().replace(/;?$/, ";") : "") +
           "--aonwiki-table-auto-fg-light:" + lightText + ";" +
           "--aonwiki-table-auto-fg-dark:" + darkText + ";" +
           "color:var(--aonwiki-table-auto-fg-light,var(--wiki-text));"
         );
+        const classNames = new Set(String(element.getAttribute("class") || "").split(/\s+/).filter(Boolean));
+        classNames.add("aonwiki-table-cell");
+        element.setAttribute("class", [...classNames].join(" "));
       }
     });
+
   return await rewriter.transform(new Response(String(markup || ""), {
-    headers: {"Content-Type":"text/html; charset=utf-8"}
+    headers: {"Content-Type": "text/html; charset=utf-8"}
   })).text();
 }
 
@@ -606,7 +709,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v22-full-cell-theme-contrast:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v23-every-table-cell-theme-colors:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -661,7 +764,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/$/, "") + "/";
   return html.replace(/((?:href|src)=["'])(style\.css|namumark-beta\.css|app\.js)([^"']*)(["'])/g,
     (_, prefix, file, query, suffix) => {
-      const cacheBust = file === "style.css" ? (query ? "&" : "?") + "aonfix=20261104-final" : "";
+      const cacheBust = file === "style.css" ? (query ? "&" : "?") + "aonfix=20261105-table-text-contrast-v1" : "";
       return prefix + base + file + query + cacheBust + suffix;
     });
 }

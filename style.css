@@ -1077,3 +1077,32 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
 .wiki-content .opennamu_TOC_link:hover,.wiki-content .opennamu_TOC_link:focus{
   color:var(--wiki-link-hover);text-decoration:underline
 }
+
+/* Final table typography contract: every server-rendered table cell has paired colors. */
+html[data-theme="light"] #article.wiki-content table td.aonwiki-table-cell,
+html[data-theme="light"] #article.wiki-content table th.aonwiki-table-cell,
+html[data-theme="light"] .wiki-content table td.aonwiki-table-cell,
+html[data-theme="light"] .wiki-content table th.aonwiki-table-cell{
+  color:var(--aonwiki-table-auto-fg-light,var(--wiki-text))!important
+}
+html[data-theme="dark"] #article.wiki-content table td.aonwiki-table-cell,
+html[data-theme="dark"] #article.wiki-content table th.aonwiki-table-cell,
+html[data-theme="dark"] .wiki-content table td.aonwiki-table-cell,
+html[data-theme="dark"] .wiki-content table th.aonwiki-table-cell{
+  color:var(--aonwiki-table-auto-fg-dark,var(--wiki-text))!important
+}
+
+/* Links stay identifiable, but their glyph color follows the readable cell color. */
+html[data-theme="light"] #article.wiki-content table td.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="light"] #article.wiki-content table th.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="light"] .wiki-content table td.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="light"] .wiki-content table th.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="dark"] #article.wiki-content table td.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="dark"] #article.wiki-content table th.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="dark"] .wiki-content table td.aonwiki-table-cell a:not(.opennamu_not_exist_link),
+html[data-theme="dark"] .wiki-content table th.aonwiki-table-cell a:not(.opennamu_not_exist_link){
+  color:inherit!important;
+  text-decoration:underline!important;
+  text-decoration-color:currentColor!important;
+  text-underline-offset:2px
+}
