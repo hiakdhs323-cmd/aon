@@ -67,10 +67,10 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
   width:34px;
   height:34px;
   object-fit:contain;
-  border:1px solid rgba(255,255,255,.82);
-  border-radius:7px;
-  background:#fff;
-  box-shadow:0 1px 2px rgba(0,0,0,.1)
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none
 }
 .brand-name{color:#fff;font-size:21px;font-weight:700;letter-spacing:-.7px}
 .brand-name span{color:#fff}
@@ -1162,22 +1162,19 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
   position:relative;
   z-index:1;
   display:flex;
-  flex:0 0 126px;
+  flex:0 0 138px;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  width:126px;
-  height:126px;
-  border:1px solid var(--wiki-border-strong);
-  background:var(--wiki-panel);
-  color:var(--wiki-primary);
-  box-shadow:7px 7px 0 var(--wiki-panel-soft)
+  width:138px;
+  height:138px;
+  color:var(--wiki-primary)
 }
-.home-hero-mark-letter{
-  font-family:Georgia,serif;
-  font-size:68px;
-  font-weight:700;
-  line-height:.98
+.home-hero-logo{
+  display:block;
+  width:112px;
+  height:112px;
+  object-fit:contain
 }
 .home-hero-mark-caption{
   margin-top:4px;
@@ -1486,7 +1483,7 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
 @media(max-width:900px){
   .home-portal-grid{grid-template-columns:minmax(0,1.2fr) minmax(235px,.8fr);gap:11px}
   .home-hero{padding:24px}
-  .home-hero-mark{flex-basis:108px;width:108px;height:108px}
+  .home-hero-mark{flex-basis:108px;width:108px;height:108px}.home-hero-logo{width:94px;height:94px}
 }
 @media(max-width:720px){
   .home-view{padding:10px 0 28px}
@@ -1502,8 +1499,8 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
 }
 @media(max-width:480px){
   .home-hero{gap:10px;padding:17px 14px}
-  .home-hero-mark{flex-basis:67px;width:67px;height:67px;box-shadow:4px 4px 0 var(--wiki-panel-soft)}
-  .home-hero-mark-letter{font-size:38px}
+  .home-hero-mark{flex-basis:67px;width:67px;height:67px}
+  .home-hero-logo{width:60px;height:60px}
   .home-hero-mark-caption{font-size:6px;letter-spacing:.8px}
   .home-hero h1{font-size:29px}
   .home-hero p:not(.home-kicker){font-size:12px}
