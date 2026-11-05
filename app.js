@@ -1873,8 +1873,22 @@ let editorOriginalTitle = "";
 let editorReturnTitle = "";
 let editorIsNew = false;
 
-function editPage(title = currentTitle, content = currentContent) {
+async function editPage(title = currentTitle, content = currentContent) {
   editorOriginalTitle = String(title || "");
+  // Always refresh the source text when opening an existing document for editing.
+  // SSR state can be present while the client-side currentContent is still stale/empty.
+  if (editorOriginalTitle) {
+    try {
+      const latest = await api("/api/page?title=" + encodeURIComponent(editorOriginalTitle));
+      if (latest.page && typeof latest.page.content === "string") {
+        content = latest.page.content;
+        currentContent = latest.page.content;
+        currentTitle = latest.page.title || editorOriginalTitle;
+      }
+    } catch (error) {
+      console.warn("편집 원문 새로 불러오기 실패:", error);
+    }
+  }
   editorReturnTitle = String(currentTitle || editorOriginalTitle || "");
   editorIsNew = !editorOriginalTitle;
   document.title = (editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집") + " - AonWiki";
