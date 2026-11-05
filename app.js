@@ -122,9 +122,11 @@ function renderBreadcrumbTrail(){
  host.append(home);
  breadcrumbTrail.forEach((title,index)=>{
   const sep=document.createElement("span");sep.textContent="›";sep.setAttribute("aria-hidden","true");host.append(sep);
-  const label=document.createElement(index===breadcrumbTrail.length-1?"span":"a");
+  const isCurrent=index===breadcrumbTrail.length-1;
+  const label=document.createElement(isCurrent?"span":"a");
+  if(isCurrent){label.id="crumb";label.setAttribute("aria-current","page")}
   label.textContent=title;
-  if(index!==breadcrumbTrail.length-1){
+  if(!isCurrent){
    label.href=routeFor(title);
    label.addEventListener("click",event=>{event.preventDefault();breadcrumbTrail=breadcrumbTrail.slice(0,index+1);loadPage(title,true)});
   }
@@ -590,12 +592,6 @@ function sanitizeNamuOutput(root, docTitle) {
       }
     }
     if (tag === "A") {
-      if (node.classList.contains("opennamu_category_button")) {
-        node.removeAttribute("href");
-        node.setAttribute("role", "button");
-        node.setAttribute("tabindex", "0");
-        return;
-      }
       if (parserAction.includes("opennamu_heading_folding")) {
         const heading = node.closest("h1,h2,h3,h4,h5,h6");
         const section = heading ? heading.nextElementSibling : null;
@@ -831,33 +827,8 @@ function applyFinalWikiTypographyAndLinkColors(root) {
   root.dataset.aonFinalPresentation="applied";
 }
 
-function enhanceCategoryBars(root) {
-  root.querySelectorAll(".opennamu_category").forEach(bar => {
-    const toggle = bar.querySelector(":scope > .opennamu_category_button");
-    const links = bar.querySelector(":scope > .opennamu_category_links");
-    if (!toggle || !links || toggle.dataset.aonCategoryToggleBound === "true") return;
-    const setExpanded = expanded => {
-      links.hidden = !expanded;
-      toggle.textContent = expanded ? "(-)" : "(+)";
-      toggle.setAttribute("aria-expanded", String(expanded));
-    };
-    setExpanded(true);
-    const activate = event => {
-      event.preventDefault();
-      setExpanded(links.hidden);
-    };
-    toggle.addEventListener("click", activate);
-    toggle.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") activate(event);
-    });
-    toggle.dataset.aonCategoryToggleBound = "true";
-  });
-}
-// The first paint can already contain Worker-rendered SSR markup.
-enhanceCategoryBars(document);
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
-  enhanceCategoryBars(root);
   const tableScrollSelector=".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap";
   root.querySelectorAll("table").forEach(table=>{
     if(table.closest("td,th"))return;
@@ -1254,16 +1225,16 @@ async function loadGlobalRail(){
   pagesHost.replaceChildren();talkHost.replaceChildren();
   const changes=(recent.changes||[]).slice(0,15);
   if(!changes.length){const li=addText(pagesHost,"li","아직 변경 기록이 없습니다.");li.className="rail-muted"}
-  changes.forEach((item,index)=>{
-   const li=document.createElement("li");li.append(document.createTextNode(String(index+1)+" "));
+  changes.forEach(item=>{
+   const li=document.createElement("li");
    const link=document.createElement("a");link.href=routeFor(item.title);link.textContent=item.title;
    link.addEventListener("click",event=>{event.preventDefault();openPage(item.title)});
    li.append(link);pagesHost.append(li);
   });
   const discussions=talks.discussions||[];
   if(!discussions.length){const li=addText(talkHost,"li","아직 토론이 없습니다.");li.className="rail-muted"}
-  discussions.slice(0,6).forEach((item,index)=>{
-   const li=document.createElement("li");li.append(document.createTextNode(String(index+1)+" "));
+  discussions.slice(0,6).forEach(item=>{
+   const li=document.createElement("li");
    const link=document.createElement("a");link.href="#/discussion/"+item.id;link.textContent=item.title;
    link.addEventListener("click",event=>{event.preventDefault();loadDiscussionDetail(item.id,true)});
    li.append(link);talkHost.append(li);
@@ -1880,11 +1851,14 @@ $("delete-page").onclick=async()=>{
 };
 
 let editorOriginalTitle = "";
+let editorReturnTitle = "";
 let editorIsNew = false;
 
 function editPage(title = currentTitle, content = currentContent) {
   editorOriginalTitle = String(title || "");
+  editorReturnTitle = String(currentTitle || editorOriginalTitle || "");
   editorIsNew = !editorOriginalTitle;
+  document.title = (editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집") + " - AonWiki";
   $("home-view").hidden = true;
   $("document-view").hidden = true;
   $("editor-view").hidden = false;
@@ -1931,11 +1905,22 @@ function editPage(title = currentTitle, content = currentContent) {
   $("editor-help").hidden = true;
 }
 
-$("editor-cancel").onclick = () => {
+function cancelEditor(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (typeof editorPreviewTimer !== "undefined") clearTimeout(editorPreviewTimer);
+  sessionStorage.removeItem("aonwiki-draft");
   document.body.classList.remove("editor-active");
-  if (editorOriginalTitle) openPage(editorOriginalTitle);
-  else showHome(true);
-};
+  const destination = editorReturnTitle || editorOriginalTitle;
+  editorReturnTitle = "";
+  if (destination) {
+    history.replaceState(null, "", routeFor(destination));
+    loadPage(destination, false);
+  } else {
+    showHome(true);
+  }
+}
+$("editor-cancel").addEventListener("click", cancelEditor);
 $("editor-help-toggle").onclick = () => {
   $("editor-help").hidden = !$("editor-help").hidden;
 };
@@ -2219,6 +2204,8 @@ function updateEditorHighlight() {
     }
     return highlightNamuLine(line, insideCode);
   }).join("\n") + (field.value.endsWith("\n") ? "\n" : "");
+  const wrap = field.closest(".editor-code-wrap");
+  if (wrap) wrap.classList.toggle("highlight-active", code.textContent === field.value);
   pre.scrollTop = field.scrollTop;
   pre.scrollLeft = field.scrollLeft;
 }

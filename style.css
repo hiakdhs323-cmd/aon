@@ -2525,3 +2525,472 @@ html[data-theme="dark"] .wiki-content caption{color:#f2f3f4}
   .wiki-content th,.wiki-content td{padding:5px 7px}
   .wiki-content .opennamu_category{padding:6px 7px}
 }
+
+/* =========================================================
+   Final rendering polish: TOC, folding, tables, editor themes,
+   mobile reading layout and stable rail controls.
+   ========================================================= */
+
+/* Category strip: plain "분류:" line, no legacy plus/minus widget. */
+#article.wiki-content .opennamu_category{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:0 6px;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  margin:12px 0 10px;
+  padding:6px 2px 5px;
+  border:0;
+  border-top:1px solid var(--wiki-border-strong);
+  border-radius:0;
+  background:transparent;
+  color:var(--wiki-text);
+  font-size:12px;
+  line-height:1.6;
+}
+#article.wiki-content .opennamu_category_label{
+  flex:0 0 auto;
+  margin:0;
+  color:var(--wiki-text);
+  font-weight:700;
+}
+#article.wiki-content .opennamu_category_links{
+  display:inline;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+#article.wiki-content .opennamu_category_links a{
+  display:inline;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--wiki-link);
+  font-size:12px;
+  text-decoration:none;
+}
+#article.wiki-content .opennamu_category_links a+a::before{
+  content:"·";
+  margin:0 6px;
+  color:var(--wiki-muted);
+}
+html[data-theme="light"] #article.wiki-content .opennamu_category_label{color:#20252a}
+html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1f3f5}
+
+/* The TOC is a clean disclosure header: no native marker, no glyph icon,
+   and only one CSS-drawn chevron. Keep it expanded on first render. */
+#article.wiki-content details.opennamu_TOC{
+  display:block!important;
+  float:none!important;
+  clear:none!important;
+  box-sizing:border-box;
+  width:fit-content;
+  min-width:180px;
+  max-width:100%;
+  margin:10px 0 16px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:var(--wiki-text);
+  box-shadow:none!important;
+  overflow:visible;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title{
+  position:relative;
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  box-sizing:border-box;
+  min-height:38px;
+  width:100%;
+  margin:0!important;
+  padding:8px 3px!important;
+  border:0;
+  border-top:1px solid var(--wiki-border-strong);
+  border-bottom:1px solid var(--wiki-border-strong);
+  border-radius:0;
+  background:var(--wiki-panel-soft)!important;
+  color:var(--wiki-text)!important;
+  font-size:13px!important;
+  font-weight:700;
+  line-height:1.5;
+  text-align:left!important;
+  list-style:none!important;
+  cursor:pointer;
+  user-select:none;
+  outline:none;
+  box-shadow:none!important;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::-webkit-details-marker{
+  display:none!important;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::marker{
+  content:""!important;
+  font-size:0!important;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title:focus,
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title:focus-visible{
+  outline:none!important;
+  box-shadow:inset 0 0 0 2px var(--wiki-primary)!important;
+}
+#article.wiki-content .opennamu_TOC_label{
+  display:block;
+  flex:1 1 auto;
+  min-width:0;
+  margin:0!important;
+  color:var(--wiki-text)!important;
+  text-align:left!important;
+}
+#article.wiki-content .opennamu_TOC_toggle{display:none!important}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::after{
+  content:"";
+  display:block;
+  flex:0 0 auto;
+  width:7px;
+  height:7px;
+  margin:0 4px 3px 0;
+  border-right:1.7px solid var(--wiki-muted);
+  border-bottom:1.7px solid var(--wiki-muted);
+  transform:rotate(45deg);
+  transition:transform .16s ease;
+}
+#article.wiki-content details.opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+  transform:rotate(-45deg);
+  margin-bottom:0;
+}
+#article.wiki-content .opennamu_TOC_contents{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+  margin:0;
+  padding:8px 5px 9px!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--wiki-text)!important;
+  font-size:12px!important;
+  line-height:1.7!important;
+  overflow-wrap:anywhere;
+}
+#article.wiki-content .opennamu_TOC_contents *,
+#article.wiki-content .opennamu_TOC_list,
+#article.wiki-content .opennamu_TOC_link{
+  font-size:12px!important;
+  line-height:1.7!important;
+}
+#article.wiki-content .opennamu_TOC_link{
+  color:var(--wiki-link);
+  text-decoration:none;
+}
+#article.wiki-content .opennamu_TOC_link:hover{text-decoration:underline}
+html[data-theme="light"] #article.wiki-content .opennamu_TOC_label{color:#20252a!important}
+html[data-theme="dark"] #article.wiki-content .opennamu_TOC_label{color:#f1f3f5!important}
+
+/* Expand/collapse blocks: remove browser marker and replace the old text
+   triangle with the same geometric chevron used by the TOC. */
+#article.wiki-content details.wiki-fold{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  margin:9px 0;
+  padding:0;
+  border:1px solid var(--wiki-border-strong);
+  border-radius:4px;
+  background:var(--wiki-panel);
+  color:var(--wiki-text);
+  overflow:hidden;
+}
+#article.wiki-content details.wiki-fold>summary{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:38px;
+  margin:0;
+  padding:8px 11px;
+  border:0;
+  border-radius:0;
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-text);
+  font-size:13px;
+  font-weight:650;
+  line-height:1.5;
+  text-align:left;
+  list-style:none;
+  cursor:pointer;
+  outline:none;
+  box-shadow:none;
+}
+#article.wiki-content details.wiki-fold>summary::-webkit-details-marker{display:none!important}
+#article.wiki-content details.wiki-fold>summary::marker{content:""!important;font-size:0!important}
+#article.wiki-content details.wiki-fold>summary::before{content:none!important;display:none!important}
+#article.wiki-content details.wiki-fold>summary::after{
+  content:"";
+  display:block;
+  flex:0 0 auto;
+  width:7px;
+  height:7px;
+  margin:0 3px 3px 0;
+  border-right:1.7px solid var(--wiki-muted);
+  border-bottom:1.7px solid var(--wiki-muted);
+  transform:rotate(-45deg);
+  transition:transform .16s ease;
+}
+#article.wiki-content details.wiki-fold[open]>summary{
+  border-bottom:1px solid var(--wiki-border);
+}
+#article.wiki-content details.wiki-fold[open]>summary::after{
+  transform:rotate(45deg);
+  margin-bottom:0;
+}
+#article.wiki-content details.wiki-fold>summary:focus-visible{
+  outline:2px solid var(--wiki-primary);
+  outline-offset:-2px;
+}
+#article.wiki-content .wiki-fold-content{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+  margin:0;
+  padding:10px 12px;
+  border:0;
+  background:var(--wiki-panel);
+  color:var(--wiki-text);
+  overflow-wrap:anywhere;
+}
+#article.wiki-content .wiki-fold-content>*:first-child{margin-top:0}
+#article.wiki-content .wiki-fold-content>*:last-child{margin-bottom:0}
+
+/* Bracket-table information boxes and ordinary NamuMark tables. */
+#article.wiki-content .bracket-table-wrap{
+  box-sizing:border-box;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+#article.wiki-content table.wiki-bracket-table{
+  width:100%;
+  max-width:100%;
+  margin:8px 0;
+  border-collapse:collapse;
+  border-spacing:0;
+  table-layout:auto;
+  color:var(--wiki-text);
+  font-size:13px;
+  line-height:1.55;
+}
+#article.wiki-content table.wiki-bracket-table th{
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-text);
+  font-weight:700;
+  text-align:center;
+}
+#article.wiki-content table.wiki-bracket-table td{
+  background:var(--wiki-panel);
+  color:var(--wiki-text);
+}
+#article.wiki-content table.wiki-bracket-table th,
+#article.wiki-content table.wiki-bracket-table td{
+  min-width:0;
+  padding:6px 8px;
+  border:1px solid var(--wiki-border-strong);
+  vertical-align:middle;
+  overflow-wrap:anywhere;
+}
+html[data-theme="light"] #article.wiki-content table.wiki-bracket-table th{
+  background:#f1f3f5;color:#20252a;border-color:#cbd2d8;
+}
+html[data-theme="light"] #article.wiki-content table.wiki-bracket-table td{
+  background:#fff;color:#20252a;border-color:#cbd2d8;
+}
+html[data-theme="dark"] #article.wiki-content table.wiki-bracket-table th{
+  background:#2b3035;color:#f1f3f5;border-color:#515960;
+}
+html[data-theme="dark"] #article.wiki-content table.wiki-bracket-table td{
+  background:#171a1d;color:#e7eaed;border-color:#515960;
+}
+
+/* Editor text remains readable even if syntax highlighting fails. The overlay
+   becomes active only after its text exactly matches the textarea. */
+#editor-highlight{
+  z-index:0;
+  color:var(--wiki-text)!important;
+  background:var(--wiki-panel)!important;
+  opacity:1!important;
+  visibility:visible;
+}
+#editor-highlight code{
+  display:block;
+  min-height:100%;
+  color:inherit!important;
+  background:transparent!important;
+  font:inherit;
+}
+#editor-content{
+  color:var(--wiki-text)!important;
+  -webkit-text-fill-color:var(--wiki-text)!important;
+  background:var(--wiki-panel)!important;
+}
+.editor-code-wrap.highlight-active #editor-highlight{visibility:visible!important}
+.editor-code-wrap.highlight-active #editor-content{
+  color:transparent!important;
+  -webkit-text-fill-color:transparent!important;
+  background:transparent!important;
+}
+.editor-code-wrap:not(.highlight-active) #editor-highlight{visibility:hidden!important}
+html[data-theme="light"] #editor-highlight .mk-content,
+html[data-theme="light"] #editor-highlight .mk-bold-text,
+html[data-theme="light"] #editor-highlight .mk-italic-text,
+html[data-theme="light"] #editor-highlight .mk-underline-text{
+  color:#20252a!important;
+}
+html[data-theme="light"] #editor-highlight .mk-syntax{color:#b42318!important}
+html[data-theme="light"] #editor-highlight .mk-heading-text{color:#6639a6!important}
+html[data-theme="light"] #editor-highlight .mk-link-target,
+html[data-theme="light"] #editor-highlight .mk-file-label,
+html[data-theme="light"] #editor-highlight .mk-directive{color:#0757a6!important}
+html[data-theme="light"] #editor-highlight .mk-category-label{color:#8a5b00!important}
+html[data-theme="light"] #editor-highlight .mk-external-url{color:#6040a0!important}
+html[data-theme="light"] #editor-highlight .mk-code-line,
+html[data-theme="light"] #editor-highlight .mk-code-fence{color:#58636e!important}
+html[data-theme="dark"] #editor-highlight .mk-content,
+html[data-theme="dark"] #editor-highlight .mk-bold-text,
+html[data-theme="dark"] #editor-highlight .mk-italic-text,
+html[data-theme="dark"] #editor-highlight .mk-underline-text{color:#e7eaed!important}
+html[data-theme="dark"] #editor-highlight .mk-syntax{color:#ff7b72!important}
+html[data-theme="dark"] #editor-highlight .mk-heading-text,
+html[data-theme="dark"] #editor-highlight .mk-external-url,
+html[data-theme="dark"] #editor-highlight .mk-table{color:#d2a8ff!important}
+html[data-theme="dark"] #editor-highlight .mk-link-target,
+html[data-theme="dark"] #editor-highlight .mk-file-label,
+html[data-theme="dark"] #editor-highlight .mk-directive{color:#79c0ff!important}
+html[data-theme="dark"] #editor-highlight .mk-category-label{color:#e3b341!important}
+html[data-theme="dark"] #editor-highlight .mk-code-line,
+html[data-theme="dark"] #editor-highlight .mk-code-fence{color:#a5abb1!important}
+
+/* Stable rail actions with drawn arrows instead of font-dependent glyphs. */
+.rail-scroll-tools{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  gap:8px;
+  min-height:48px;
+  padding:8px 12px;
+}
+.rail-scroll-tools button{
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:auto!important;
+  min-width:82px!important;
+  height:32px!important;
+  margin:0;
+  padding:0 9px;
+  border:1px solid var(--wiki-border);
+  border-radius:4px;
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-text);
+  font-size:12px;
+  line-height:1;
+  cursor:pointer;
+}
+.rail-scroll-tools button:hover{
+  border-color:var(--wiki-border-strong);
+  background:var(--wiki-panel);
+}
+.rail-scroll-icon{
+  position:relative;
+  display:inline-block;
+  flex:0 0 12px;
+  width:12px;
+  height:14px;
+  color:currentColor;
+}
+.rail-scroll-icon::before{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:3px;
+  width:2px;
+  height:10px;
+  border-radius:2px;
+  background:currentColor;
+}
+.rail-scroll-icon::after{
+  content:"";
+  position:absolute;
+  left:2px;
+  top:2px;
+  width:7px;
+  height:7px;
+  border-top:2px solid currentColor;
+  border-left:2px solid currentColor;
+  transform:rotate(45deg);
+}
+.rail-scroll-icon.rail-scroll-down::before{top:1px}
+.rail-scroll-icon.rail-scroll-down::after{
+  top:5px;
+  transform:rotate(225deg);
+}
+
+/* Responsive article and editor sizing; prevent nested tables and toolbars
+   from forcing a wider-than-screen layout. */
+@media(max-width:700px){
+  #article.wiki-content details.opennamu_TOC{
+    display:block!important;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    margin:8px 0 13px!important;
+  }
+  #article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title{
+    min-height:40px;
+    padding:9px 4px!important;
+    font-size:13px!important;
+  }
+  #article.wiki-content .opennamu_TOC_contents{padding:8px 4px!important}
+  #article.wiki-content details.wiki-fold>summary{
+    min-height:40px;
+    padding:9px 10px;
+    font-size:13px;
+  }
+  #article.wiki-content .wiki-fold-content{padding:9px 10px}
+  #article.wiki-content table.wiki-bracket-table{font-size:12px}
+  #article.wiki-content table.wiki-bracket-table th,
+  #article.wiki-content table.wiki-bracket-table td{padding:5px 6px}
+  #article.wiki-content .opennamu_category{font-size:12px}
+  .editor-card{width:100%;max-width:100%;margin:0;border-radius:0}
+  .editor-code-wrap{height:min(58dvh,560px);min-height:250px}
+  #editor-highlight,#editor-content{font-size:12px;line-height:1.55}
+  .editor-page-heading{padding:12px}
+  .editor-field{padding-left:12px;padding-right:12px}
+  .editor-field>input,.editor-field>textarea,.editor-field>select{max-width:100%}
+  .editor-tabs{flex-wrap:wrap}
+  .editor-markup-toolbar{gap:4px;padding:6px}
+  .editor-markup-toolbar button{min-height:32px;padding:5px 8px;font-size:11px}
+  .editor-actions{position:sticky;bottom:0;z-index:5;padding:10px 12px;background:var(--wiki-panel);border-top:1px solid var(--wiki-border)}
+  .rail-scroll-tools{gap:7px}
+  .rail-scroll-tools button{min-width:76px!important}
+}
+@media(max-width:420px){
+  #article.wiki-content{padding-left:0;padding-right:0}
+  #article.wiki-content table:not(.wiki-bracket-table){font-size:11px}
+  #article.wiki-content th,#article.wiki-content td{padding:4px 5px}
+  .rail-scroll-tools button{min-width:72px!important}
+  .editor-actions{gap:6px}
+  .editor-actions .button{min-width:76px}
+}
