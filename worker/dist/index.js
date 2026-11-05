@@ -819,23 +819,23 @@ try {
       tableParameterResults.forEach((array) => array.splice(0, 1));
       tableParameterResults = tableParameterResults.flat();
       for (const tableParameter of tableParameterResults) {
-        const tableParameterSplit = tableParameter.split("=");
+        const tableParameterEqualIndex = tableParameter.indexOf("=");
         let tableParameterData;
-        if (tableParameterSplit.length === 2) {
-          const tableParameterName = tableParameterSplit[0].replace(" ", "").toLowerCase();
-          tableParameterData = this.getToolCssSafe(tableParameterSplit[1]);
+        if (tableParameterEqualIndex >= 0) {
+          const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
+          tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
           if (tableParameterName == "tablebgcolor") tableParameterAll["table"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "tablewidth") {
-            tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
+            tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
             tableParameterAll["table"] += "width:100%;";
           } else if (tableParameterName == "tableheight") tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "tablealign") {
-            if (tableParameterData == "right") tableParameterAll["div"] += "float:right;";
+            if (tableParameterData == "right") tableParameterAll["div"] += "float:right;max-width:100%;";
             else if (tableParameterData == "center") {
-              tableParameterAll["div"] += "margin:auto;";
-              tableParameterAll["table"] += "margin:auto;";
+              tableParameterAll["div"] += "display:table;max-width:100%;margin-left:auto;margin-right:auto;";
+              tableParameterAll["table"] += "margin-left:auto;margin-right:auto;";
             }
-          } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterSplit[1];
+          } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterData.replace(/[^a-zA-Z0-9 _-]/g, "");
           else if (tableParameterName == "tabletextalign") tableParameterAll["table"] += "text-align:" + tableParameterData + " !important;";
           else if (tableParameterName == "tablecolor") tableParameterAll["table"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "tablebordercolor")
@@ -852,8 +852,8 @@ try {
           else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "height") tableParameterAll["td"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else doAnyThing += "&lt;" + tableParameter + "&gt;";
-        } else if (tableParameterSplit.length === 1) {
-          if (tableParameter == "nopad") tableParameterAll["td"] += "padding: 0 !important;";
+        } else {
+          if (tableParameter.trim() == "nopad") tableParameterAll["td"] += "padding: 0 !important;";
           else if (tableParameter.match(/^-[0-9]+$/)) {
             tableColspanAuto = 0;
             tableParameterAll["colspan"] = tableParameter.replace(/[^0-9]+/g, "");
@@ -872,8 +872,6 @@ try {
           } else {
             doAnyThing += "&lt;" + tableParameter + "&gt;";
           }
-        } else {
-          doAnyThing += "&lt;" + tableParameter + "&gt;";
         }
       }
       if (tableAlignAuto === 1) {
@@ -939,18 +937,17 @@ try {
         }
         let tableSubParameter = manageTableParameter(tableSub[1], tableSub[2], tableDataIn);
         tableParameter["tr"] += tableSubParameter["tr"];
-        if (!tableParameter["rowspan"][tableColNum]) {
-          tableParameter["rowspan"][tableColNum] = 0;
-        } else {
-          if (tableParameter["rowspan"][tableColNum] !== 0) {
-            tableParameter["rowspan"][tableColNum] -= 1;
-            tableColNum += 1;
-          }
+        while (Number(tableParameter["rowspan"][tableColNum] || 0) > 0) {
+          tableParameter["rowspan"][tableColNum] -= 1;
+          tableColNum += 1;
         }
+        const colspanInt = Math.max(1, Number(tableSubParameter["colspan"]) || 1);
         if (tableSubParameter["rowspan"] !== "") {
           const rowspanInt = Number(tableSubParameter["rowspan"]);
           if (rowspanInt > 1) {
-            tableParameter["rowspan"][tableColNum] = rowspanInt - 1;
+            for (let spanColumn = 0; spanColumn < colspanInt; spanColumn += 1) {
+              tableParameter["rowspan"][tableColNum + spanColumn] = rowspanInt - 1;
+            }
           }
         }
         if (!tableParameter["col"][tableColNum]) {
@@ -960,13 +957,18 @@ try {
         tableParameter["class"] = tableSubParameter["class"] !== "" ? tableSubParameter["class"] : tableParameter["class"];
         tableParameter["table"] += tableSubParameter["table"];
         tableParameter["col"][tableColNum] += tableSubParameter["col"];
+        for (let spanColumn = 1; spanColumn < colspanInt; spanColumn += 1) {
+          const coveredColumn = tableColNum + spanColumn;
+          if (!tableParameter["col"][coveredColumn]) tableParameter["col"][coveredColumn] = "";
+          tableParameter["col"][coveredColumn] += tableSubParameter["col"];
+        }
         if (tableSub[2] === "" && tableSub[3] === "") {
           tableTrChange = 1;
         } else {
           tableTrChange = 0;
           tableParameter["td"] += '<td colspan="' + tableSubParameter["colspan"] + '" rowspan="' + tableSubParameter["rowspan"] + '" style="' + tableParameter["col"][tableColNum] + tableSubParameter["td"] + '"><back_br>\n' + tableSubParameter["data"] + "\n<front_br></td>";
         }
-        tableColNum += 1;
+        tableColNum += colspanInt;
       }
       tableDataEnd += '<tr style="' + tableParameter["tr"] + '">' + tableParameter["td"] + "</tr>";
       tableDataEnd = '<table class="' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
@@ -1539,7 +1541,7 @@ try {
           if (categoryBlur != "") this.dataBacklink["category:" + linkMain]["cat_blur"] = "";
           linkMain = urlPas(linkMain);
           if (this.dataCategory === "") {
-            this.dataCategory = '<div class="opennamu_category" id="cate"><a class="opennamu_category_button" href="javascript:opennamu_do_category_spread();"> (+)</a>\uCE74\uD14C\uACE0\uB9AC : ';
+            this.dataCategory = '<div class="opennamu_category" id="cate"><a class="opennamu_category_button" href="#category-toggle">(-)</a><span class="opennamu_category_label">\uBD84\uB958:</span><span class="opennamu_category_links">';
           } else {
             this.dataCategory += " | ";
           }
@@ -1935,7 +1937,7 @@ try {
     console.log(this.docSet);
     if (this.docSet["docType"] === "view") {
       if (this.dataCategory !== "") {
-        let dataName = this.getToolDataStorage(this.dataCategory, "</div>", "");
+        let dataName = this.getToolDataStorage(this.dataCategory + "</span>", "</div>", "");
         const useCategorySet = this.config.useCategorySet;
         if (useCategorySet === "bottom") {
           if (/<footnote_category>/.test(this.renderData)) {
@@ -2233,6 +2235,18 @@ async function currentUser(request, env) {
   }
   if (await isAdminRequest(request, env)) return { username: "\uC704\uD0A4 \uAD00\uB9AC\uC790", role: "admin", isAdmin: true };
   return null;
+}
+function anonymousEditorIdentity(request) {
+  const raw = String(request.headers.get("CF-Connecting-IP") || "").trim().toLowerCase();
+  let label = "IP \uC54C \uC218 \uC5C6\uC74C";
+  const ipv4 = raw.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4 && ipv4.slice(1).every((part) => Number(part) >= 0 && Number(part) <= 255)) {
+    label = "IP " + ipv4[1] + "." + ipv4[2] + "." + ipv4[3] + ".*";
+  } else if (raw.includes(":")) {
+    const groups = raw.split("%")[0].split(":").filter(Boolean);
+    label = groups.length >= 4 ? "IP " + groups.slice(0, 4).join(":") + ":*" : "IP IPv6:*";
+  }
+  return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
 }
 var pageProtectionSchemaPromise = null;
 var pageAliasSchemaPromise = null;
@@ -3551,13 +3565,19 @@ var index_default = {
         return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uBB38\uC11C\uB97C \uD3B8\uC9D1\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-page-edit", 20, 10 * 60 * 1e3)) {
+          return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD3B8\uC9D1 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 10\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
+        }
         const body = await request.json();
         const title = cleanTitle(body.title);
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
         if (!title) return response({ error: "\uBB38\uC11C \uC81C\uBAA9\uC744 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+        if (user.isAnonymous && originalTitle && originalTitle !== title) {
+          return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD3B8\uC9D1\uC5D0\uC11C\uB294 \uBB38\uC11C \uC81C\uBAA9\uC744 \uBCC0\uACBD\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        }
         const protectionTitle = cleanTitle(body.originalTitle || title);
         const editPermission = await checkPageEditPermission(env, user, title, protectionTitle);
         if (editPermission) return response({ error: editPermission.error }, editPermission.status, cors);
