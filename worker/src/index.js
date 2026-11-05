@@ -142,8 +142,8 @@ async function checkPageEditPermission(env, user, title, protectionTitle = title
   if (title === "대문") return { status: 403, error: "대문은 편집하거나 복원할 수 없습니다." };
   await ensurePageProtectionSchema(env);
   const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
-  if (protection?.level === "admin") {
-    return { status: 403, error: "이 문서는 관리자 편집 보호 상태입니다. 보호를 해제한 뒤 편집하거나 복원할 수 있습니다." };
+  if (protection?.level === "admin" && !user.isAdmin) {
+    return { status: 403, error: "이 문서는 관리자만 편집하거나 복원할 수 있도록 보호되어 있습니다." };
   }
   if (protection?.level === "registered" && !user.isAdmin && user.role !== "user") {
     return { status: 403, error: "이 문서는 로그인한 회원만 편집하거나 복원할 수 있도록 보호되어 있습니다." };
@@ -741,7 +741,7 @@ async function renderFullWikiDocument(request, env, title) {
   const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
   const officialTemplate = found && /^(?:틀|template):/i.test(actualTitle);
   const protectionMessage = protectionLabel
-    ? (protection?.reason || (protection.level === "admin" ? "이 문서는 관리자도 편집할 수 없도록 보호되어 있습니다." : "이 문서는 로그인한 회원만 편집할 수 있습니다."))
+    ? (protection?.reason || (protection.level === "admin" ? "이 문서는 관리자만 편집할 수 있도록 보호되어 있습니다." : "이 문서는 로그인한 회원만 편집할 수 있습니다."))
     : "";
   let html = shell
     .replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
@@ -902,8 +902,6 @@ export default {
         if (!user?.isAdmin) return response({ error: "문서를 삭제하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
         const title = cleanTitle(url.searchParams.get("title"));
         if (!title || title === "대문") return response({ error: "삭제할 수 없는 문서입니다." }, 400, cors);
-        const protectionPermission = await checkPageEditPermission(env, user, title);
-        if (protectionPermission) return response({ error: protectionPermission.error }, protectionPermission.status, cors);
         await env.DB.prepare("DELETE FROM pages WHERE title = ?").bind(title).run();
         await ensurePageLinkColorsSchema(env);
         await env.DB.prepare("DELETE FROM page_link_colors WHERE title = ?").bind(title).run();
