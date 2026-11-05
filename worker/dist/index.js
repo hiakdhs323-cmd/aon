@@ -3134,7 +3134,7 @@ var index_default = {
         if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1e3)) return response({ error: "\uD1A0\uB860 \uC0DD\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await request.json();
-        const title = String(body.title || "").trim().replace(/[\\u0000-\\u001f\\u007f]/g, "").slice(0, 120);
+        const title = String(body.title || "").trim().replace(/[\x00-\x1f\x7f]/g, "").slice(0, 120);
         const content = String(body.body || "").trim().slice(0, 1e4);
         const pageTitle = cleanTitle(body.pageTitle || "");
         if (title.length < 2) return response({ error: "\uD1A0\uB860 \uC81C\uBAA9\uC740 2\uC790 \uC774\uC0C1 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
@@ -3172,12 +3172,22 @@ var index_default = {
         const body = await request.json();
         const id = Number(body.id);
         const action = String(body.action || "");
-        if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen"].includes(action)) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uC0C1\uD0DC \uBCC0\uACBD \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen", "edit"].includes(action)) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBCC0\uACBD \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
         const discussion = await env.DB.prepare("SELECT id, author, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
         if (!discussion) return response({ error: "\uD1A0\uB860\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
-        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "\uD1A0\uB860 \uC791\uC131\uC790 \uB610\uB294 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "\uD1A0\uB860 \uC791\uC131\uC790 \uB610\uB294 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uBCC0\uACBD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        if (action === "edit") {
+          const title = String(body.title || "").trim().replace(/[\x00-\x1f\x7f]/g, "").slice(0, 120);
+          const content = String(body.body || "").trim().slice(0, 1e4);
+          if (title.length < 2) return response({ error: "\uD1A0\uB860 \uC81C\uBAA9\uC740 2\uC790 \uC774\uC0C1 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+          if (!content) return response({ error: "\uD1A0\uB860 \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+          if (!user.isAdmin && discussion.status !== "open") return response({ error: "\uC885\uB8CC\uB41C \uD1A0\uB860\uC740 \uAD00\uB9AC\uC790\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+          await env.DB.prepare("UPDATE discussions SET title = ?, body = ?, updated_at = ? WHERE id = ?").bind(title, content, now, id).run();
+          return response({ ok: true, id, title, updated_at: now }, 200, cors);
+        }
         const status = action === "close" ? "closed" : "open";
-        await env.DB.prepare("UPDATE discussions SET status = ?, updated_at = ? WHERE id = ?").bind(status, (/* @__PURE__ */ new Date()).toISOString(), id).run();
+        await env.DB.prepare("UPDATE discussions SET status = ?, updated_at = ? WHERE id = ?").bind(status, now, id).run();
         return response({ ok: true, id, status }, 200, cors);
       }
       if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
