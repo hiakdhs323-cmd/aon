@@ -1061,24 +1061,24 @@ try {
       tableParameterResults = tableParameterResults.flat();
 
       for (const tableParameter of tableParameterResults) {
-        const tableParameterSplit = tableParameter.split("=");
+        const tableParameterEqualIndex = tableParameter.indexOf("=");
         let tableParameterData!: string;
-        if (tableParameterSplit.length === 2) {
-          const tableParameterName = tableParameterSplit[0].replace(" ", "").toLowerCase();
-          tableParameterData = this.getToolCssSafe(tableParameterSplit[1]);
+        if (tableParameterEqualIndex >= 0) {
+          const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
+          tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
 
           if (tableParameterName == "tablebgcolor") tableParameterAll["table"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "tablewidth") {
-            tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
+            tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
             tableParameterAll["table"] += "width:100%;";
           } else if (tableParameterName == "tableheight") tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "tablealign") {
-            if (tableParameterData == "right") tableParameterAll["div"] += "float:right;";
+            if (tableParameterData == "right") tableParameterAll["div"] += "float:right;max-width:100%;";
             else if (tableParameterData == "center") {
-              tableParameterAll["div"] += "margin:auto;";
-              tableParameterAll["table"] += "margin:auto;";
+              tableParameterAll["div"] += "display:table;max-width:100%;margin-left:auto;margin-right:auto;";
+              tableParameterAll["table"] += "margin-left:auto;margin-right:auto;";
             }
-          } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterSplit[1];
+          } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterData.replace(/[^a-zA-Z0-9 _-]/g, "");
           else if (tableParameterName == "tabletextalign") tableParameterAll["table"] += "text-align:" + tableParameterData + " !important;";
           else if (tableParameterName == "tablecolor") tableParameterAll["table"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "tablebordercolor")
@@ -1095,8 +1095,8 @@ try {
           else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "height") tableParameterAll["td"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else doAnyThing += "&lt;" + tableParameter + "&gt;";
-        } else if (tableParameterSplit.length === 1) {
-          if (tableParameter == "nopad") tableParameterAll["td"] += "padding: 0 !important;";
+        } else {
+          if (tableParameter.trim() == "nopad") tableParameterAll["td"] += "padding: 0 !important;";
           else if (tableParameter.match(/^-[0-9]+$/)) {
             tableColspanAuto = 0;
             tableParameterAll["colspan"] = tableParameter.replace(/[^0-9]+/g, "");
@@ -1203,19 +1203,19 @@ try {
         let tableSubParameter = manageTableParameter(tableSub[1], tableSub[2], tableDataIn);
         tableParameter["tr"] += tableSubParameter["tr"];
 
-        if (!tableParameter["rowspan"][tableColNum]) {
-          tableParameter["rowspan"][tableColNum] = 0;
-        } else {
-          if (tableParameter["rowspan"][tableColNum] !== 0) {
-            tableParameter["rowspan"][tableColNum] -= 1;
-            tableColNum += 1;
-          }
+        // Skip all grid columns occupied by rowspans from earlier rows.
+        while (Number(tableParameter["rowspan"][tableColNum] || 0) > 0) {
+          tableParameter["rowspan"][tableColNum] -= 1;
+          tableColNum += 1;
         }
 
+        const colspanInt = Math.max(1, Number(tableSubParameter["colspan"]) || 1);
         if (tableSubParameter["rowspan"] !== "") {
           const rowspanInt = Number(tableSubParameter["rowspan"]);
           if (rowspanInt > 1) {
-            tableParameter["rowspan"][tableColNum] = rowspanInt - 1;
+            for (let spanColumn = 0; spanColumn < colspanInt; spanColumn += 1) {
+              tableParameter["rowspan"][tableColNum + spanColumn] = rowspanInt - 1;
+            }
           }
         }
 
@@ -1227,6 +1227,11 @@ try {
         tableParameter["class"] = tableSubParameter["class"] !== "" ? tableSubParameter["class"] : tableParameter["class"];
         tableParameter["table"] += tableSubParameter["table"];
         tableParameter["col"][tableColNum] += tableSubParameter["col"];
+        for (let spanColumn = 1; spanColumn < colspanInt; spanColumn += 1) {
+          const coveredColumn = tableColNum + spanColumn;
+          if (!tableParameter["col"][coveredColumn]) tableParameter["col"][coveredColumn] = "";
+          tableParameter["col"][coveredColumn] += tableSubParameter["col"];
+        }
 
         if (tableSub[2] === "" && tableSub[3] === "") {
           tableTrChange = 1;
@@ -1245,7 +1250,7 @@ try {
             "\n<front_br></td>";
         }
 
-        tableColNum += 1;
+        tableColNum += colspanInt;
       }
 
       tableDataEnd += '<tr style="' + tableParameter["tr"] + '">' + tableParameter["td"] + "</tr>";
@@ -1975,9 +1980,9 @@ try {
           if (this.dataCategory === "") {
             this.dataCategory =
               '<div class="opennamu_category" id="cate">' +
-              '<a class="opennamu_category_button" href="javascript:opennamu_do_category_spread();"> (+)</a>' +
-              "카테고리" +
-              " : ";
+              '<a class="opennamu_category_button" href="#category-toggle">(-)</a>' +
+              '<span class="opennamu_category_label">분류:</span>' +
+              '<span class="opennamu_category_links">';
           } else {
             this.dataCategory += " | ";
           }
@@ -2604,7 +2609,7 @@ try {
     // add category
     if (this.docSet["docType"] === "view") {
       if (this.dataCategory !== "") {
-        let dataName = this.getToolDataStorage(this.dataCategory, "</div>", "");
+        let dataName = this.getToolDataStorage(this.dataCategory + "</span>", "</div>", "");
         const useCategorySet = this.config.useCategorySet;
 
         if (useCategorySet === "bottom") {

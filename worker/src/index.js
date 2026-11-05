@@ -114,6 +114,18 @@ async function currentUser(request, env) {
   if (await isAdminRequest(request, env)) return { username: "위키 관리자", role: "admin", isAdmin: true };
   return null;
 }
+function anonymousEditorIdentity(request) {
+  const raw = String(request.headers.get("CF-Connecting-IP") || "").trim().toLowerCase();
+  let label = "IP 알 수 없음";
+  const ipv4 = raw.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4 && ipv4.slice(1).every(part => Number(part) >= 0 && Number(part) <= 255)) {
+    label = "IP " + ipv4[1] + "." + ipv4[2] + "." + ipv4[3] + ".*";
+  } else if (raw.includes(":")) {
+    const groups = raw.split("%")[0].split(":").filter(Boolean);
+    label = groups.length >= 4 ? "IP " + groups.slice(0, 4).join(":") + ":*" : "IP IPv6:*";
+  }
+  return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
+}
 let pageProtectionSchemaPromise = null;
 let pageAliasSchemaPromise = null;
 let pageLinkColorsSchemaPromise = null;
@@ -1430,13 +1442,19 @@ export default {
         return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "문서를 편집하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-page-edit", 20, 10 * 60 * 1000)) {
+          return response({ error: "비로그인 편집 요청이 너무 많습니다. 10분 뒤 다시 시도하세요." }, 429, cors);
+        }
         const body = await request.json();
         const title = cleanTitle(body.title);
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
         if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        if (user.isAnonymous && originalTitle && originalTitle !== title) {
+          return response({ error: "비로그인 편집에서는 문서 제목을 변경할 수 없습니다." }, 403, cors);
+        }
         const protectionTitle = cleanTitle(body.originalTitle || title);
         const editPermission = await checkPageEditPermission(env, user, title, protectionTitle);
         if (editPermission) return response({ error: editPermission.error }, editPermission.status, cors);

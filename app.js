@@ -132,6 +132,7 @@ function renderBreadcrumbTrail(){
  });
 }
 function showHome(push=true){
+ document.title="AonWiki";
  breadcrumbTrail=[];
  pageNavigationSequence++;
  if(push)history.pushState(null,"","/");
@@ -589,6 +590,12 @@ function sanitizeNamuOutput(root, docTitle) {
       }
     }
     if (tag === "A") {
+      if (node.classList.contains("opennamu_category_button")) {
+        node.removeAttribute("href");
+        node.setAttribute("role", "button");
+        node.setAttribute("tabindex", "0");
+        return;
+      }
       if (parserAction.includes("opennamu_heading_folding")) {
         const heading = node.closest("h1,h2,h3,h4,h5,h6");
         const section = heading ? heading.nextElementSibling : null;
@@ -824,8 +831,33 @@ function applyFinalWikiTypographyAndLinkColors(root) {
   root.dataset.aonFinalPresentation="applied";
 }
 
+function enhanceCategoryBars(root) {
+  root.querySelectorAll(".opennamu_category").forEach(bar => {
+    const toggle = bar.querySelector(":scope > .opennamu_category_button");
+    const links = bar.querySelector(":scope > .opennamu_category_links");
+    if (!toggle || !links || toggle.dataset.aonCategoryToggleBound === "true") return;
+    const setExpanded = expanded => {
+      links.hidden = !expanded;
+      toggle.textContent = expanded ? "(-)" : "(+)";
+      toggle.setAttribute("aria-expanded", String(expanded));
+    };
+    setExpanded(true);
+    const activate = event => {
+      event.preventDefault();
+      setExpanded(links.hidden);
+    };
+    toggle.addEventListener("click", activate);
+    toggle.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") activate(event);
+    });
+    toggle.dataset.aonCategoryToggleBound = "true";
+  });
+}
+// The first paint can already contain Worker-rendered SSR markup.
+enhanceCategoryBars(document);
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
+  enhanceCategoryBars(root);
   const tableScrollSelector=".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap";
   root.querySelectorAll("table").forEach(table=>{
     if(table.closest("td,th"))return;
@@ -846,8 +878,9 @@ function prepareServerRenderedMarkup(root,docTitle){
     let wrapper=table.parentElement?.closest(tableScrollSelector)||null;
     if(!wrapper){wrapper=document.createElement("div");wrapper.className="wiki-table-wrap";table.before(wrapper);wrapper.append(table);}
     else wrapper.classList.add("wiki-table-wrap");
-    wrapper.style.setProperty("display","block");
-    wrapper.style.setProperty("width","100%");
+    // Preserve widths and display modes authored by <tablewidth> / <tablealign=center>.
+    if (!wrapper.style.getPropertyValue("display").trim()) wrapper.style.setProperty("display","block");
+    if (!wrapper.style.getPropertyValue("width").trim()) wrapper.style.setProperty("width","100%");
     wrapper.style.setProperty("max-width","100%");
     wrapper.style.setProperty("min-width","0");
     wrapper.style.setProperty("overflow-x","auto");
@@ -1041,6 +1074,7 @@ function buildDiscussionCreateForm(pageTitle=""){
 }
 async function loadDiscussionList(pushRoute=true,pageTitle=""){
  const title=pageTitle?pageTitle+" — 문서 토론":"최근 토론";
+ document.title=title+" - AonWiki";
  const route="#/discussions"+(pageTitle?"?title="+encodeURIComponent(pageTitle):"");
  const requestId=prepareDiscussionView(title,route,pushRoute);
  const article=$("article");
@@ -1116,6 +1150,7 @@ function buildDiscussionPostCard(post){
 async function loadDiscussionDetail(id,pushRoute=true){
  id=Number(id);if(!Number.isSafeInteger(id)||id<1){loadDiscussionList(pushRoute);return}
  const requestId=prepareDiscussionView("토론 #"+id,"#/discussion/"+id,pushRoute);
+ document.title="토론 #"+id+" - AonWiki";
  const article=$("article");
  const loading=addText(article,"p","토론 내용을 불러오는 중입니다…");loading.className="loading";
  try{
@@ -1257,6 +1292,7 @@ async function loadSpecialPage(type,pushRoute=true){
  const config=SPECIAL_PAGE_CONFIG[type];
  if(!config){loadHome(true);return}
  const requestId=prepareDiscussionView(config.title,"#/special/"+encodeURIComponent(type),pushRoute);
+ document.title=config.title+" - AonWiki";
  const article=$("article");
  const heading=document.createElement("div");heading.className="special-page-heading";
  const copy=document.createElement("div");
@@ -1426,6 +1462,7 @@ async function loadCategoryIndex(pushRoute = true) {
   const requestId=++pageNavigationSequence;
   if (pushRoute) history.pushState(null, "", "#/categories");
   currentTitle = "분류 목록";
+  document.title = "분류 목록 - AonWiki";
   currentContent = "";
   $("home-view").hidden = true;
   $("document-view").hidden = false;
@@ -1594,6 +1631,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
  renderBreadcrumbTrail();
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;$("discussion-tab").hidden=true;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
+ document.title=displayTitle+" - AonWiki";
  const targets=ensureDocumentViewTargets();
  const templateStatus=$("template-status");
  if(templateStatus)templateStatus.hidden=true;
@@ -1620,12 +1658,12 @@ async function loadPage(title,pushRoute=true,anchor=""){
    $("message").replaceChildren();
    const notice=document.createElement("div");notice.className="missing-page-panel";
    const title=document.createElement("strong");title.textContent="아직 작성되지 않은 문서입니다.";
-   const detail=document.createElement("p");detail.textContent="이 문서를 직접 만들거나, 로그인 후 내용을 추가할 수 있습니다.";
+   const detail=document.createElement("p");detail.textContent="이 문서를 직접 만들 수 있습니다. 비로그인 편집은 IP로 기록됩니다.";
    const create=document.createElement("button");create.type="button";create.className="primary-button missing-page-create";create.textContent="이 문서 지금 만들기";
-   create.addEventListener("click",()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;});
+   create.addEventListener("click",()=>{const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;});
    notice.append(title,detail,create);$("message").append(notice);
    $("edit").textContent="문서 만들기";
-   $("edit").onclick=()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;};
+   $("edit").onclick=()=>{const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;};
    $("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
    return;
   }
@@ -1845,10 +1883,6 @@ let editorOriginalTitle = "";
 let editorIsNew = false;
 
 function editPage(title = currentTitle, content = currentContent) {
-  if (!loggedInName && !sessionStorage.getItem(TOKEN_SETTING)) {
-    openLogin();
-    return;
-  }
   editorOriginalTitle = String(title || "");
   editorIsNew = !editorOriginalTitle;
   $("home-view").hidden = true;
@@ -1867,6 +1901,9 @@ function editPage(title = currentTitle, content = currentContent) {
   $("editor-title").disabled = false;
   $("editor-title").removeAttribute("readonly");
   $("editor-title").removeAttribute("disabled");
+  const anonymousEditing = !loggedInName && !sessionStorage.getItem(TOKEN_SETTING);
+  $("editor-title").readOnly = anonymousEditing && !editorIsNew;
+  if (anonymousEditing) $("editor-breadcrumb").textContent += " · IP 편집";
   let editorText = String(content || "");
   try {
     const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
