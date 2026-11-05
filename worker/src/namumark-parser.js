@@ -1062,11 +1062,6 @@ try {
         tableParameter["class"] = tableSubParameter["class"] !== "" ? tableSubParameter["class"] : tableParameter["class"];
         tableParameter["table"] += tableSubParameter["table"];
         tableParameter["col"][tableColNum] += tableSubParameter["col"];
-        for (let spanColumn = 1; spanColumn < colspanInt; spanColumn += 1) {
-          const coveredColumn = tableColNum + spanColumn;
-          if (!tableParameter["col"][coveredColumn]) tableParameter["col"][coveredColumn] = "";
-          tableParameter["col"][coveredColumn] += tableSubParameter["col"];
-        }
         if (tableSub[2] === "" && tableSub[3] === "") {
           tableTrChange = 1;
         } else {
