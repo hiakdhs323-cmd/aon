@@ -3079,6 +3079,3 @@ html[data-theme="dark"] #article.wiki-content details.wiki-fold>.wiki-fold-conte
 #article.wiki-content table tr[style*="background"]>th{background-color:transparent}
 #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:var(--wiki-panel-soft)}
 html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
-
-/* The title-bar edit control is the single primary document edit action. */
-.article-tools #edit{display:none!important;}
