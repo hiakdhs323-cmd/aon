@@ -1080,7 +1080,7 @@ try {
           tableTrChange = 0;
           const cellStyles = tableParameter["col"][tableColNum] + tableSubParameter["td"];
           const hasCellBackground = /(?:^|;)\s*background(?:-color)?\s*:/i.test(cellStyles);
-          const inheritedTableBackground = tableParameter["tableBg"] && !hasCellBackground ? "background:inherit;" : "";
+          const inheritedTableBackground = tableParameter["tableBg"] && !hasCellBackground ? tableParameter["tableBg"] : "";
           tableParameter["td"] += '<td colspan="' + tableSubParameter["colspan"] + '" rowspan="' + tableSubParameter["rowspan"] + '" style="' + inheritedTableBackground + cellStyles + '"><back_br>\n' + tableSubParameter["data"] + "\n<front_br></td>";
         }
         tableColNum += colspanInt;
