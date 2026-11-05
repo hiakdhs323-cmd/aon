@@ -839,9 +839,8 @@ function prepareServerRenderedMarkup(root,docTitle){
     }
     if(floatHost){
       floatHost.classList.add(floatHost===table?"wiki-float-table":"wiki-float-host");
-      if(!floatHost.nextElementSibling?.classList.contains("wiki-float-clear")){
-        const clear=document.createElement("div");clear.className="wiki-float-clear";clear.setAttribute("aria-hidden","true");floatHost.after(clear);
-      }
+      // Keep following content beside the floated infobox. The document's
+      // explicit [clearfix] marker is responsible for clearing the float.
       return;
     }
     let wrapper=table.parentElement?.closest(tableScrollSelector)||null;

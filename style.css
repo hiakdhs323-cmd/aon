@@ -903,24 +903,24 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content{font-size:14px!important}
 #article.wiki-content :where(p,li,td,th,blockquote){font-size:14px!important}
 .wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited{color:#d1242f!important;text-decoration:underline;text-decoration-color:currentColor}
-.wiki-content .opennamu_TOC{font-size:12px!important;line-height:1.5!important}
-.wiki-content .opennamu_TOC>summary{font-size:12px!important;cursor:pointer;list-style:none}
+.wiki-content .opennamu_TOC{font-size:12px;line-height:1.5}
+.wiki-content .opennamu_TOC>summary{font-size:12px;cursor:pointer;list-style:none}
 .wiki-content .opennamu_TOC>summary::-webkit-details-marker{display:none}
 .wiki-content .opennamu_TOC>summary::marker{content:""}
 .wiki-content .opennamu_TOC>summary:after{content:"▾";float:right;font-size:11px;color:var(--wiki-muted)}
 .wiki-content .opennamu_TOC:not([open])>summary:after{content:"▸"}
-.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_list{font-size:12px!important;line-height:1.5!important}
+.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_list{font-size:12px;line-height:1.5}
 
 
 /* Parser/editor release */
-.wiki-content .opennamu_TOC{display:table;width:max-content;min-width:0;max-width:100%;margin:0 0 16px;padding:6px 10px;font-size:12px!important;line-height:1.5!important}
-.wiki-content .opennamu_TOC>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0;padding:1px 2px;font-size:12px!important;line-height:1.5!important;cursor:pointer;list-style:none;user-select:none}
+.wiki-content .opennamu_TOC{display:table;width:max-content;min-width:0;max-width:100%;margin:0 0 16px;padding:6px 10px;font-size:12px;line-height:1.5}
+.wiki-content .opennamu_TOC>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0;padding:1px 2px;font-size:12px;line-height:1.5;cursor:pointer;list-style:none;user-select:none}
 .wiki-content .opennamu_TOC>summary::-webkit-details-marker{display:none}
 .wiki-content .opennamu_TOC>summary::marker{content:""}
 .wiki-content .opennamu_TOC_toggle{display:inline-block;flex:0 0 auto;width:12px;text-align:center;color:var(--wiki-muted)}
 .wiki-content .opennamu_TOC_toggle::before{content:"▸"}
 .wiki-content .opennamu_TOC[open]>.opennamu_TOC_title .opennamu_TOC_toggle::before{content:"▾"}
-.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_contents *,.wiki-content .opennamu_TOC_list{font-size:12px!important;line-height:1.5!important}
+.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_contents *,.wiki-content .opennamu_TOC_list{font-size:12px;line-height:1.5}
 .wiki-content .opennamu_TOC_contents{padding-top:5px;overflow-wrap:anywhere}
 .wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited,.wiki-content table a.opennamu_not_exist_link{color:var(--wiki-danger)!important;text-decoration:underline!important;text-decoration-color:currentColor!important}
 .wiki-content .wiki-fold,.wiki-content .wiki-fold-content{max-width:100%;min-width:0}.wiki-content .wiki-fold-content{overflow:visible}
@@ -2341,4 +2341,55 @@ html[data-theme="dark"] .wiki-content .wiki-fold-content{
   }
   .wiki-content .opennamu_TOC_title{min-height:40px;padding:9px 11px;font-size:13px}
   .wiki-content .opennamu_TOC_contents{padding:8px 11px 10px;font-size:12px;line-height:1.7}
+}
+
+/* The summary row uses a single CSS chevron; hide the legacy inline icon. */
+.wiki-content .opennamu_TOC_toggle{display:none!important}
+
+/* Desktop infobox + contents layout: the TOC stays beside right-floated tables.
+   [clearfix] in the source document clears both only after the TOC. */
+.wiki-content .wiki-float-table,
+.wiki-content .wiki-float-host{
+  float:right;
+  max-width:48%;
+  margin:0 0 12px 16px;
+}
+.wiki-content .opennamu_TOC{
+  display:table;
+  float:none!important;
+  clear:none!important;
+  width:fit-content;
+  min-width:220px;
+  max-width:100%;
+  vertical-align:top;
+}
+.wiki-content .opennamu_TOC>summary.opennamu_TOC_title::after{
+  content:"⌄";
+}
+.wiki-content .opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+  content:"›";
+}
+.wiki-content .opennamu_TOC_toggle{display:none!important}
+.wiki-content .wiki-content-clear,
+.wiki-content div[style*="clear: both"],
+.wiki-content div[style*="clear:both"]{clear:both}
+@media(max-width:560px){
+  .wiki-content .wiki-float-table,
+  .wiki-content .wiki-float-host{
+    float:none!important;
+    clear:both;
+    display:block;
+    width:100%;
+    max-width:100%;
+    margin:12px 0;
+  }
+  .wiki-content .wiki-float-table{display:table;table-layout:auto}
+  .wiki-content .opennamu_TOC{
+    display:block;
+    float:none!important;
+    clear:both;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
 }
