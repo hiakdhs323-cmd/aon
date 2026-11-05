@@ -2297,6 +2297,22 @@ async function ensureImageSchema(env) {
   }
   await imageSchemaPromise;
 }
+var discussionSchemaPromise = null;
+async function ensureDiscussionSchema(env) {
+  if (!discussionSchemaPromise) {
+    discussionSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS discussions (id INTEGER PRIMARY KEY AUTOINCREMENT, page_title TEXT NOT NULL DEFAULT '', title TEXT NOT NULL, body TEXT NOT NULL, author TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, last_post_at TEXT NOT NULL, reply_count INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed')), deleted_at TEXT NOT NULL DEFAULT '', deleted_by TEXT NOT NULL DEFAULT '')").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS discussion_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, discussion_id INTEGER NOT NULL, body TEXT NOT NULL, author TEXT NOT NULL, created_at TEXT NOT NULL, edited_at TEXT NOT NULL DEFAULT '', is_deleted INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(discussion_id) REFERENCES discussions(id))").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_discussions_last_post ON discussions(deleted_at, last_post_at DESC)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_discussions_page_title ON discussions(page_title, deleted_at, last_post_at DESC)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_discussion_posts_topic ON discussion_posts(discussion_id, id)").run();
+    })().catch((error) => {
+      discussionSchemaPromise = null;
+      throw error;
+    });
+  }
+  await discussionSchemaPromise;
+}
 function cleanImageName(value, contentType) {
   const extension = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" }[contentType] || "img";
   let name = String(value || "").normalize("NFC").replace(/[\\/:*?"<>|]/g, "_").replace(/[\u0000-\u001f\u007f]/g, "").trim();
@@ -3079,6 +3095,136 @@ var index_default = {
         const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token), user.id, expires).run();
         return response({ ok: true, token, username: user.username, expires_at: expires }, 200, cors);
+      }
+      if (url.pathname === "/api/discussions" && request.method === "GET") {
+        await ensureDiscussionSchema(env);
+        const pageTitle = cleanTitle(url.searchParams.get("title"));
+        const query = String(url.searchParams.get("q") || "").trim().slice(0, 80);
+        const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+        const offset = Math.min(1e5, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+        const conditions = ["deleted_at = ''"];
+        const values = [];
+        if (pageTitle) {
+          conditions.push("page_title = ?");
+          values.push(pageTitle);
+        }
+        if (query) {
+          conditions.push("(title LIKE ? OR body LIKE ?)");
+          values.push("%" + query.replace(/[\\%_]/g, "") + "%", "%" + query.replace(/[\\%_]/g, "") + "%");
+        }
+        const where = conditions.join(" AND ");
+        const [items, count] = await Promise.all([
+          env.DB.prepare("SELECT id, page_title, title, author, created_at, updated_at, last_post_at, reply_count, status FROM discussions WHERE " + where + " ORDER BY last_post_at DESC, id DESC LIMIT ? OFFSET ?").bind(...values, limit, offset).all(),
+          env.DB.prepare("SELECT COUNT(*) AS total FROM discussions WHERE " + where).bind(...values).first()
+        ]);
+        return response({ discussions: items.results || [], total: Number(count?.total || 0), limit, offset, pageTitle }, 200, cors);
+      }
+      if (url.pathname === "/api/discussion" && request.method === "GET") {
+        await ensureDiscussionSchema(env);
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, page_title, title, body, author, created_at, updated_at, last_post_at, reply_count, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "\uD1A0\uB860\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        const posts = await env.DB.prepare("SELECT id, discussion_id, body, author, created_at, edited_at, is_deleted FROM discussion_posts WHERE discussion_id = ? ORDER BY id ASC LIMIT 500").bind(id).all();
+        return response({ discussion, posts: posts.results || [] }, 200, cors);
+      }
+      if (url.pathname === "/api/discussions" && request.method === "POST") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "\uD1A0\uB860\uC744 \uC2DC\uC791\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1e3)) return response({ error: "\uD1A0\uB860 \uC0DD\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const title = String(body.title || "").trim().replace(/[\\u0000-\\u001f\\u007f]/g, "").slice(0, 120);
+        const content = String(body.body || "").trim().slice(0, 1e4);
+        const pageTitle = cleanTitle(body.pageTitle || "");
+        if (title.length < 2) return response({ error: "\uD1A0\uB860 \uC81C\uBAA9\uC740 2\uC790 \uC774\uC0C1 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+        if (!content) return response({ error: "\uD1A0\uB860 \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+        if (pageTitle) {
+          const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(pageTitle).first();
+          if (!page) return response({ error: "\uC5F0\uACB0\uD560 \uBB38\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        }
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const result = await env.DB.prepare("INSERT INTO discussions (page_title, title, body, author, created_at, updated_at, last_post_at, reply_count, status) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'open')").bind(pageTitle, title, content, user.username, now, now, now).run();
+        return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
+      }
+      if (url.pathname === "/api/discussion/reply" && request.method === "POST") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC791\uC131\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        if (await authRateLimited(request, env, "discussion-reply", 15, 5 * 60 * 1e3)) return response({ error: "\uB2F5\uAE00 \uC791\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const id = Number(body.id);
+        const content = String(body.body || "").trim().slice(0, 6e3);
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        if (!content) return response({ error: "\uB2F5\uAE00 \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "\uD1A0\uB860\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        if (discussion.status !== "open") return response({ error: "\uC885\uB8CC\uB41C \uD1A0\uB860\uC5D0\uB294 \uB2F5\uAE00\uC744 \uC791\uC131\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 409, cors);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const result = await env.DB.prepare("INSERT INTO discussion_posts (discussion_id, body, author, created_at) VALUES (?, ?, ?, ?)").bind(id, content, user.username, now).run();
+        await env.DB.prepare("UPDATE discussions SET reply_count = reply_count + 1, updated_at = ?, last_post_at = ? WHERE id = ?").bind(now, now, id).run();
+        return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
+      }
+      if (url.pathname === "/api/discussion" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "\uD1A0\uB860 \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const id = Number(body.id);
+        const action = String(body.action || "");
+        if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen"].includes(action)) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uC0C1\uD0DC \uBCC0\uACBD \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, author, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "\uD1A0\uB860\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "\uD1A0\uB860 \uC791\uC131\uC790 \uB610\uB294 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        const status = action === "close" ? "closed" : "open";
+        await env.DB.prepare("UPDATE discussions SET status = ?, updated_at = ? WHERE id = ?").bind(status, (/* @__PURE__ */ new Date()).toISOString(), id).run();
+        return response({ ok: true, id, status }, 200, cors);
+      }
+      if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC218\uC815\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const id = Number(body.id);
+        const content = String(body.body || "").trim().slice(0, 6e3);
+        if (!Number.isSafeInteger(id) || id < 1 || !content) return response({ error: "\uC62C\uBC14\uB978 \uB2F5\uAE00 \uC218\uC815 \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        const post = await env.DB.prepare("SELECT id, discussion_id, author, created_at, is_deleted FROM discussion_posts WHERE id = ?").bind(id).first();
+        if (!post || Number(post.is_deleted)) return response({ error: "\uC218\uC815\uD560 \uB2F5\uAE00\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        if (!user.isAdmin && post.author !== user.username) return response({ error: "\uBCF8\uC778\uC774 \uC791\uC131\uD55C \uB2F5\uAE00\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        const age = Date.now() - Date.parse(post.created_at);
+        if (!user.isAdmin && (age < 0 || age > 30 * 60 * 1e3)) return response({ error: "\uC77C\uBC18 \uD68C\uC6D0\uC740 \uC791\uC131 \uD6C4 30\uBD84 \uC774\uB0B4\uC758 \uB2F5\uAE00\uB9CC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        await env.DB.prepare("UPDATE discussion_posts SET body = ?, edited_at = ? WHERE id = ?").bind(content, now, id).run();
+        await env.DB.prepare("UPDATE discussions SET updated_at = ? WHERE id = ?").bind(now, post.discussion_id).run();
+        return response({ ok: true, id, edited_at: now }, 200, cors);
+      }
+      if (url.pathname === "/api/discussion/post" && request.method === "DELETE") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC0AD\uC81C\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uB2F5\uAE00 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        const post = await env.DB.prepare("SELECT id, discussion_id, author, is_deleted FROM discussion_posts WHERE id = ?").bind(id).first();
+        if (!post || Number(post.is_deleted)) return response({ error: "\uC0AD\uC81C\uD560 \uB2F5\uAE00\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        if (!user.isAdmin && post.author !== user.username) return response({ error: "\uBCF8\uC778\uC774 \uC791\uC131\uD55C \uB2F5\uAE00\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        await env.DB.prepare("UPDATE discussion_posts SET body = '', is_deleted = 1, edited_at = ? WHERE id = ?").bind(now, id).run();
+        await env.DB.prepare("UPDATE discussions SET reply_count = MAX(0, reply_count - 1), updated_at = ?, last_post_at = COALESCE((SELECT MAX(created_at) FROM discussion_posts WHERE discussion_id = ? AND is_deleted = 0), created_at) WHERE id = ?").bind(now, post.discussion_id, post.discussion_id).run();
+        return response({ ok: true, id }, 200, cors);
+      }
+      if (url.pathname === "/api/discussions" && request.method === "DELETE") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "\uD1A0\uB860\uC744 \uC0AD\uC81C\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, author, reply_count FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "\uD1A0\uB860\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "\uD1A0\uB860 \uC791\uC131\uC790 \uB610\uB294 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." }, 403, cors);
+        if (!user.isAdmin && Number(discussion.reply_count) > 0) return response({ error: "\uB2F5\uAE00\uC774 \uC788\uB294 \uD1A0\uB860\uC740 \uAD00\uB9AC\uC790\uB9CC \uC0AD\uC81C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uD1A0\uB860\uC744 \uC885\uB8CC\uD574 \uC8FC\uC138\uC694." }, 403, cors);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        await env.DB.prepare("UPDATE discussions SET deleted_at = ?, deleted_by = ?, status = 'closed', updated_at = ? WHERE id = ?").bind(now, user.username, now, id).run();
+        return response({ ok: true, id }, 200, cors);
       }
       if (url.pathname === "/api/page-index" && request.method === "GET") {
         const result = await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
