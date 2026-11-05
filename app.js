@@ -720,18 +720,6 @@ function applyFinalWikiTypographyAndLinkColors(root) {
     ".opennamu_footnote a",".wiki-footnotes a","footnote_title a"
   ].join(","));
   for(const link of links){
-    const tableCell=link.closest("td.aonwiki-table-cell,th.aonwiki-table-cell");
-    if(tableCell){
-      if(link.classList.contains("opennamu_not_exist_link")){
-        // Keep missing-document links red, but leave their theme styling to the table CSS.
-        link.style.removeProperty("color");
-      }else{
-        link.style.setProperty("color","inherit","important");
-      }
-      link.style.setProperty("text-decoration","underline","important");
-      link.style.setProperty("text-decoration-color","currentColor","important");
-      continue;
-    }
     if(link.classList.contains("opennamu_not_exist_link")){
       link.style.setProperty("color","var(--wiki-danger)","important");
       link.style.setProperty("text-decoration","underline","important");
