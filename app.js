@@ -34,6 +34,19 @@ function routeFor(title,anchor=""){
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 let isWikiAdmin=false;
 let currentRole="anonymous";
+function syncDocumentEditControls(){
+ const hasDocument=Boolean(currentTitle&&!isHomeRoute()&&!$("document-view").hidden);
+ const canEdit=hasDocument && (currentProtection.level!=="admin" || isWikiAdmin);
+ const canShowHeadingEdit=canEdit && (Boolean(loggedInName)||Boolean(sessionStorage.getItem(TOKEN_SETTING))||isWikiAdmin);
+ $("edit").hidden=!canEdit;
+ $("heading-edit").hidden=!canShowHeadingEdit;
+ if(hasDocument){
+  $("edit").textContent="편집";
+  $("edit").onclick=()=>editPage(currentTitle,currentContent);
+  $("heading-edit").textContent="편집";
+  $("heading-edit").onclick=()=>editPage(currentTitle,currentContent);
+ }
+}
 async function refreshIdentity(){
  try{
   const me=await api("/api/me");
@@ -59,7 +72,9 @@ async function refreshIdentity(){
  $("delete-page").hidden=!isWikiAdmin||!currentTitle;
   const protectionButton=$("page-protection");
   const isArticleView=!$("document-view").hidden&&!$("backlinks-tab").hidden&&!/^(?:분류|category):/i.test(currentTitle)&&!$("message").textContent.includes("이 문서는 아직 존재하지 않습니다");
-  if(protectionButton)protectionButton.hidden=!isWikiAdmin||!currentTitle||isHomeRoute()||!isArticleView;}
+  if(protectionButton)protectionButton.hidden=!isWikiAdmin||!currentTitle||isHomeRoute()||!isArticleView;
+  syncDocumentEditControls();
+}
 
 function addText(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
 const liveWatchStartedAt=new Date().toISOString();
@@ -2731,7 +2746,7 @@ if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){
  else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
 }
 if(document.body.dataset.ssrPage!=="true")readRoute();
-refreshIdentity();
+refreshIdentity().then(()=>syncDocumentEditControls());
 loadGlobalRail();
 startLivePageWatcher();
 
