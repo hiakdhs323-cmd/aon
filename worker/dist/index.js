@@ -3236,6 +3236,73 @@ var index_default = {
         await env.DB.prepare("UPDATE discussions SET deleted_at = ?, deleted_by = ?, status = 'closed', updated_at = ? WHERE id = ?").bind(now, user.username, now, id).run();
         return response({ ok: true, id }, 200, cors);
       }
+      if (url.pathname === "/api/special-pages" && request.method === "GET") {
+        const type = String(url.searchParams.get("type") || "").trim();
+        const supported = /* @__PURE__ */ new Set(["missing", "orphan", "orphan-categories", "uncategorized", "old", "short", "long", "blocked"]);
+        if (!supported.has(type)) return response({ error: "\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 \uD2B9\uC218 \uBB38\uC11C\uC785\uB2C8\uB2E4." }, 400, cors);
+        if (type === "blocked") return response({ type, available: false, items: [], total: 0, message: "\uD604\uC7AC AonWiki\uC5D0\uB294 \uD68C\uC6D0 \uCC28\uB2E8 \uC774\uB825\uC744 \uAE30\uB85D\uD558\uB294 \uAE30\uB2A5\uC774 \uC5F0\uACB0\uB418\uC5B4 \uC788\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 200, cors);
+        const result = await env.DB.prepare("SELECT title, content, updated_at FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
+        const pages = (result.results || []).map((page) => ({
+          title: String(page.title || ""),
+          content: String(page.content || ""),
+          updated_at: String(page.updated_at || "")
+        }));
+        const pageByKey = new Map(pages.map((page) => [page.title.toLocaleLowerCase(), page]));
+        const inbound = /* @__PURE__ */ new Map();
+        const missing = /* @__PURE__ */ new Map();
+        const categoryReferences = /* @__PURE__ */ new Set();
+        const categoryPattern = /\[\[(?:분류|category):([^\]|#]+)(?:\|[^\]]*)?\]\]/gi;
+        for (const page of pages) {
+          for (const match of page.content.matchAll(/\[\[([^\]]+)\]\]/g)) {
+            const target = String(match[1] || "").split("|")[0].split("#")[0].trim();
+            if (!target) continue;
+            const key = target.toLocaleLowerCase();
+            inbound.set(key, (inbound.get(key) || 0) + 1);
+            if (/^(?:분류|category):/i.test(target)) {
+              const category = target.replace(/^(?:분류|category):/i, "").trim().toLocaleLowerCase();
+              if (category) categoryReferences.add(category);
+            } else if (!pageByKey.has(key) && !/^(?:파일|file):/i.test(target) && target !== page.title) {
+              const item = missing.get(key) || { title: target, count: 0, source: page.title };
+              item.count++;
+              missing.set(key, item);
+            }
+          }
+          for (const match of page.content.matchAll(categoryPattern)) {
+            const category = String(match[1] || "").trim().toLocaleLowerCase();
+            if (category) categoryReferences.add(category);
+          }
+        }
+        const regular = pages.filter((page) => page.title !== "\uB300\uBB38" && !/^(?:분류|category):/i.test(page.title));
+        let items = [];
+        let description = "";
+        if (type === "missing") {
+          description = "\uB2E4\uB978 \uBB38\uC11C\uC5D0\uC11C \uB9C1\uD06C\uD558\uACE0 \uC788\uC9C0\uB9CC \uC544\uC9C1 \uC791\uC131\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
+          items = [...missing.values()].sort((a, b) => b.count - a.count || a.title.localeCompare(b.title, "ko"));
+        } else if (type === "orphan") {
+          description = "\uB2E4\uB978 \uBB38\uC11C\uC5D0\uC11C \uB0B4\uBD80 \uB9C1\uD06C\uB85C \uCC38\uC870\uB418\uC9C0 \uC54A\uB294 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
+          items = regular.filter((page) => !inbound.has(page.title.toLocaleLowerCase())).map((page) => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "orphan-categories") {
+          description = "\uC5B4\uB5A4 \uBB38\uC11C\uC5D0\uC11C\uB3C4 \uBD84\uB958 \uB9C1\uD06C\uB85C \uCC38\uC870\uD558\uC9C0 \uC54A\uB294 \uBD84\uB958\uC785\uB2C8\uB2E4.";
+          items = pages.filter((page) => /^(?:분류|category):/i.test(page.title)).filter((page) => {
+            const name = page.title.replace(/^(?:분류|category):/i, "").toLocaleLowerCase();
+            return !categoryReferences.has(name);
+          }).map((page) => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "uncategorized") {
+          description = "\uBD84\uB958 \uB9C1\uD06C\uAC00 \uD558\uB098\uB3C4 \uB4F1\uB85D\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
+          items = regular.filter((page) => !/\[\[(?:분류|category):/i.test(page.content)).map((page) => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "old") {
+          description = "\uCD5C\uADFC \uC218\uC815 \uC2DC\uAC01\uC774 \uC624\uB798\uB41C \uBB38\uC11C\uBD80\uD130 \uD45C\uC2DC\uD569\uB2C8\uB2E4.";
+          items = [...regular].sort((a, b) => (Date.parse(a.updated_at) || 0) - (Date.parse(b.updated_at) || 0)).map((page) => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "short") {
+          description = "\uBCF8\uBB38 \uC6D0\uBB38\uC774 200\uC790 \uC774\uD558\uC778 \uBB38\uC11C\uC785\uB2C8\uB2E4. \uB098\uBB34\uB9C8\uD06C \uAE30\uD638\uC640 \uACF5\uBC31\uB3C4 \uAE00\uC790 \uC218\uC5D0 \uD3EC\uD568\uB429\uB2C8\uB2E4.";
+          items = regular.filter((page) => page.content.trim().length <= 200).map((page) => ({ title: page.title, characters: page.content.length, updated_at: page.updated_at })).sort((a, b) => a.characters - b.characters);
+        } else if (type === "long") {
+          description = "\uBCF8\uBB38 \uC6D0\uBB38\uC774 10,000\uC790 \uC774\uC0C1\uC778 \uBB38\uC11C\uC785\uB2C8\uB2E4. \uB098\uBB34\uB9C8\uD06C \uAE30\uD638\uC640 \uACF5\uBC31\uB3C4 \uAE00\uC790 \uC218\uC5D0 \uD3EC\uD568\uB429\uB2C8\uB2E4.";
+          items = regular.filter((page) => page.content.length >= 1e4).map((page) => ({ title: page.title, characters: page.content.length, updated_at: page.updated_at })).sort((a, b) => b.characters - a.characters);
+        }
+        const total = items.length;
+        return response({ type, available: true, description, total, items: items.slice(0, 500) }, 200, cors);
+      }
       if (url.pathname === "/api/page-index" && request.method === "GET") {
         const result = await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
         return response({ pages: result.results || [] }, 200, cors);
