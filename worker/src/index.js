@@ -167,6 +167,21 @@ async function ensureImageSchema(env) {
   }
   await imageSchemaPromise;
 }
+
+let discussionSchemaPromise = null;
+async function ensureDiscussionSchema(env) {
+  if (!discussionSchemaPromise) {
+    discussionSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS discussions (id INTEGER PRIMARY KEY AUTOINCREMENT, page_title TEXT NOT NULL DEFAULT '', title TEXT NOT NULL, body TEXT NOT NULL, author TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, last_post_at TEXT NOT NULL, reply_count INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed')), deleted_at TEXT NOT NULL DEFAULT '', deleted_by TEXT NOT NULL DEFAULT '')").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS discussion_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, discussion_id INTEGER NOT NULL, body TEXT NOT NULL, author TEXT NOT NULL, created_at TEXT NOT NULL, edited_at TEXT NOT NULL DEFAULT '', is_deleted INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(discussion_id) REFERENCES discussions(id))").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_discussions_last_post ON discussions(deleted_at, last_post_at DESC)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_discussions_page_title ON discussions(page_title, deleted_at, last_post_at DESC)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_discussion_posts_topic ON discussion_posts(discussion_id, id)").run();
+    })().catch(error => { discussionSchemaPromise = null; throw error; });
+  }
+  await discussionSchemaPromise;
+}
+
 function cleanImageName(value, contentType) {
   const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" })[contentType] || "img";
   let name = String(value || "").normalize("NFC").replace(/[\\/:*?"<>|]/g, "_").replace(/[\u0000-\u001f\u007f]/g, "").trim();
@@ -955,6 +970,131 @@ export default {
         const expires = new Date(Date.now()+7*24*60*60*1000).toISOString();
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
         return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
+      }
+
+      if (url.pathname === "/api/discussions" && request.method === "GET") {
+        await ensureDiscussionSchema(env);
+        const pageTitle = cleanTitle(url.searchParams.get("title"));
+        const query = String(url.searchParams.get("q") || "").trim().slice(0, 80);
+        const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+        const offset = Math.min(100000, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+        const conditions = ["deleted_at = ''"];
+        const values = [];
+        if (pageTitle) { conditions.push("page_title = ?"); values.push(pageTitle); }
+        if (query) { conditions.push("(title LIKE ? OR body LIKE ?)"); values.push("%" + query.replace(/[\\%_]/g, "") + "%", "%" + query.replace(/[\\%_]/g, "") + "%"); }
+        const where = conditions.join(" AND ");
+        const [items, count] = await Promise.all([
+          env.DB.prepare("SELECT id, page_title, title, author, created_at, updated_at, last_post_at, reply_count, status FROM discussions WHERE " + where + " ORDER BY last_post_at DESC, id DESC LIMIT ? OFFSET ?").bind(...values, limit, offset).all(),
+          env.DB.prepare("SELECT COUNT(*) AS total FROM discussions WHERE " + where).bind(...values).first()
+        ]);
+        return response({ discussions: items.results || [], total: Number(count?.total || 0), limit, offset, pageTitle }, 200, cors);
+      }
+      if (url.pathname === "/api/discussion" && request.method === "GET") {
+        await ensureDiscussionSchema(env);
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 토론 번호가 아닙니다." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, page_title, title, body, author, created_at, updated_at, last_post_at, reply_count, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "토론을 찾을 수 없습니다." }, 404, cors);
+        const posts = await env.DB.prepare("SELECT id, discussion_id, body, author, created_at, edited_at, is_deleted FROM discussion_posts WHERE discussion_id = ? ORDER BY id ASC LIMIT 500").bind(id).all();
+        return response({ discussion, posts: posts.results || [] }, 200, cors);
+      }
+      if (url.pathname === "/api/discussions" && request.method === "POST") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "토론을 시작하려면 로그인하세요." }, 401, cors);
+        if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1000)) return response({ error: "토론 생성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const title = String(body.title || "").trim().replace(/[\\u0000-\\u001f\\u007f]/g, "").slice(0, 120);
+        const content = String(body.body || "").trim().slice(0, 10000);
+        const pageTitle = cleanTitle(body.pageTitle || "");
+        if (title.length < 2) return response({ error: "토론 제목은 2자 이상 입력하세요." }, 400, cors);
+        if (!content) return response({ error: "토론 내용을 입력하세요." }, 400, cors);
+        if (pageTitle) {
+          const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(pageTitle).first();
+          if (!page) return response({ error: "연결할 문서를 찾을 수 없습니다." }, 404, cors);
+        }
+        const now = new Date().toISOString();
+        const result = await env.DB.prepare("INSERT INTO discussions (page_title, title, body, author, created_at, updated_at, last_post_at, reply_count, status) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'open')").bind(pageTitle, title, content, user.username, now, now, now).run();
+        return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
+      }
+      if (url.pathname === "/api/discussion/reply" && request.method === "POST") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "답글을 작성하려면 로그인하세요." }, 401, cors);
+        if (await authRateLimited(request, env, "discussion-reply", 15, 5 * 60 * 1000)) return response({ error: "답글 작성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const id = Number(body.id);
+        const content = String(body.body || "").trim().slice(0, 6000);
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 토론 번호가 아닙니다." }, 400, cors);
+        if (!content) return response({ error: "답글 내용을 입력하세요." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "토론을 찾을 수 없습니다." }, 404, cors);
+        if (discussion.status !== "open") return response({ error: "종료된 토론에는 답글을 작성할 수 없습니다." }, 409, cors);
+        const now = new Date().toISOString();
+        const result = await env.DB.prepare("INSERT INTO discussion_posts (discussion_id, body, author, created_at) VALUES (?, ?, ?, ?)").bind(id, content, user.username, now).run();
+        await env.DB.prepare("UPDATE discussions SET reply_count = reply_count + 1, updated_at = ?, last_post_at = ? WHERE id = ?").bind(now, now, id).run();
+        return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
+      }
+      if (url.pathname === "/api/discussion" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "토론 상태를 변경하려면 로그인하세요." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const id = Number(body.id);
+        const action = String(body.action || "");
+        if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen"].includes(action)) return response({ error: "올바른 토론 상태 변경 요청이 아닙니다." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, author, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "토론을 찾을 수 없습니다." }, 404, cors);
+        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "토론 작성자 또는 위키 관리자만 상태를 변경할 수 있습니다." }, 403, cors);
+        const status = action === "close" ? "closed" : "open";
+        await env.DB.prepare("UPDATE discussions SET status = ?, updated_at = ? WHERE id = ?").bind(status, new Date().toISOString(), id).run();
+        return response({ ok: true, id, status }, 200, cors);
+      }
+      if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "답글을 수정하려면 로그인하세요." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const body = await request.json();
+        const id = Number(body.id);
+        const content = String(body.body || "").trim().slice(0, 6000);
+        if (!Number.isSafeInteger(id) || id < 1 || !content) return response({ error: "올바른 답글 수정 요청이 아닙니다." }, 400, cors);
+        const post = await env.DB.prepare("SELECT id, discussion_id, author, created_at, is_deleted FROM discussion_posts WHERE id = ?").bind(id).first();
+        if (!post || Number(post.is_deleted)) return response({ error: "수정할 답글을 찾을 수 없습니다." }, 404, cors);
+        if (!user.isAdmin && post.author !== user.username) return response({ error: "본인이 작성한 답글만 수정할 수 있습니다." }, 403, cors);
+        const age = Date.now() - Date.parse(post.created_at);
+        if (!user.isAdmin && (age < 0 || age > 30 * 60 * 1000)) return response({ error: "일반 회원은 작성 후 30분 이내의 답글만 수정할 수 있습니다." }, 403, cors);
+        const now = new Date().toISOString();
+        await env.DB.prepare("UPDATE discussion_posts SET body = ?, edited_at = ? WHERE id = ?").bind(content, now, id).run();
+        await env.DB.prepare("UPDATE discussions SET updated_at = ? WHERE id = ?").bind(now, post.discussion_id).run();
+        return response({ ok: true, id, edited_at: now }, 200, cors);
+      }
+      if (url.pathname === "/api/discussion/post" && request.method === "DELETE") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "답글을 삭제하려면 로그인하세요." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 답글 번호가 아닙니다." }, 400, cors);
+        const post = await env.DB.prepare("SELECT id, discussion_id, author, is_deleted FROM discussion_posts WHERE id = ?").bind(id).first();
+        if (!post || Number(post.is_deleted)) return response({ error: "삭제할 답글을 찾을 수 없습니다." }, 404, cors);
+        if (!user.isAdmin && post.author !== user.username) return response({ error: "본인이 작성한 답글만 삭제할 수 있습니다." }, 403, cors);
+        const now = new Date().toISOString();
+        await env.DB.prepare("UPDATE discussion_posts SET body = '', is_deleted = 1, edited_at = ? WHERE id = ?").bind(now, id).run();
+        await env.DB.prepare("UPDATE discussions SET reply_count = MAX(0, reply_count - 1), updated_at = ?, last_post_at = COALESCE((SELECT MAX(created_at) FROM discussion_posts WHERE discussion_id = ? AND is_deleted = 0), created_at) WHERE id = ?").bind(now, post.discussion_id, post.discussion_id).run();
+        return response({ ok: true, id }, 200, cors);
+      }
+      if (url.pathname === "/api/discussions" && request.method === "DELETE") {
+        const user = await currentUser(request, env);
+        if (!user) return response({ error: "토론을 삭제하려면 로그인하세요." }, 401, cors);
+        await ensureDiscussionSchema(env);
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 토론 번호가 아닙니다." }, 400, cors);
+        const discussion = await env.DB.prepare("SELECT id, author, reply_count FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
+        if (!discussion) return response({ error: "토론을 찾을 수 없습니다." }, 404, cors);
+        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "토론 작성자 또는 위키 관리자만 삭제할 수 있습니다." }, 403, cors);
+        if (!user.isAdmin && Number(discussion.reply_count) > 0) return response({ error: "답글이 있는 토론은 관리자만 삭제할 수 있습니다. 토론을 종료해 주세요." }, 403, cors);
+        const now = new Date().toISOString();
+        await env.DB.prepare("UPDATE discussions SET deleted_at = ?, deleted_by = ?, status = 'closed', updated_at = ? WHERE id = ?").bind(now, user.username, now, id).run();
+        return response({ ok: true, id }, 200, cors);
       }
       if (url.pathname === "/api/page-index" && request.method === "GET") {
         const result = await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
