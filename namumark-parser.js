@@ -2075,7 +2075,7 @@ try {
             }
           } else {
             this.renderData = this.renderData.replace(/<footnote_category>/, "");
-            this.renderData = `<${dataName}></${dataName}><hr class="main_hr">${this.renderData}`;
+            this.renderData = `<${dataName}></${dataName}>${this.renderData}`;
           }
         } else {
           this.renderData = this.renderData.replace(/<footnote_category>/, "");
