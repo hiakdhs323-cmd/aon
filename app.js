@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);
 
-const THEME_SETTING = "aonwiki-theme";
+const THEME_SETTING = "aonwiki-theme-v2";
 function applyWikiTheme(theme) {
   const selected = theme === "dark" ? "dark" : "light";
   document.documentElement.dataset.theme = selected;
@@ -13,7 +13,7 @@ function applyWikiTheme(theme) {
   if (meta) meta.content = selected === "dark" ? "#151a23" : "#ffffff";
   refreshWikiTableContrast(document);
 }
-applyWikiTheme(localStorage.getItem(THEME_SETTING) || "light");
+applyWikiTheme(localStorage.getItem(THEME_SETTING) || "dark");
 $("theme-toggle").addEventListener("click", () => {
   const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   localStorage.setItem(THEME_SETTING, next);
@@ -292,6 +292,15 @@ function readRoute(){
   if(hash==="#"||hash==="#/"||hash==="#/home"){history.replaceState(null,"","/");showHome(false);return}
   if(hash==="#/categories"){loadCategoryIndex(false);return}
   if(hash==="#/recent"){loadRecentChanges(false);return}
+  if(hash==="#/discussions"||hash.startsWith("#/discussions?")){
+   const query=hash.includes("?")?hash.slice(hash.indexOf("?")+1):"";
+   const pageTitle=new URLSearchParams(query).get("title")||"";
+   loadDiscussionList(false,pageTitle);return
+  }
+  if(hash.startsWith("#/discussion/")){
+   const id=Number(hash.slice("#/discussion/".length));
+   loadDiscussionDetail(id,false);return
+  }
   if(hash.startsWith("#/backlinks/")){let target=hash.slice("#/backlinks/".length);try{target=decodeURIComponent(target)}catch{}loadBacklinks(target,false);return}
   let title="",anchor="";
   if(hash.startsWith("#/w/")){
@@ -914,7 +923,7 @@ async function loadRecentChanges(pushRoute=true){
  currentTitle="최근 변경";currentContent="";
  $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
  $("home").classList.remove("active");$("new").classList.remove("active");
- $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;$("backlinks-tab").hidden=true;
+ $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
  $("title").textContent="최근 변경";$("crumb").textContent="최근 변경";$("message").textContent="";
  const article=$("article");article.replaceChildren();
  try{
@@ -941,6 +950,281 @@ async function loadBacklinks(title,pushRoute=true){
   const list=document.createElement("div");list.className="backlink-list";
   backlinks.forEach(page=>{const row=document.createElement("div");row.className="backlink-row";const link=document.createElement("a");link.href=routeFor(page.title);link.textContent=page.title;link.onclick=e=>{e.preventDefault();openPage(page.title)};const meta=addText(row,"span",page.count+"회 참조");row.append(link,meta);list.append(row)});article.append(list);
  }catch(error){if(requestId===pageNavigationSequence)addText(article,"p",error.message).className="empty-list"}
+}
+
+
+function discussionDate(value){
+ const date=value?new Date(value):null;
+ return date&&!Number.isNaN(date.getTime())?date.toLocaleString("ko-KR"):"시간 정보 없음";
+}
+function discussionText(host,value,className="discussion-body"){
+ const box=document.createElement("div");
+ box.className=className;
+ box.textContent=String(value||"");
+ host.append(box);
+ return box;
+}
+function prepareDiscussionView(title,route,pushRoute){
+ const requestId=++pageNavigationSequence;
+ if(pushRoute)history.pushState(null,"",route);
+ breadcrumbTrail=[];
+ $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ document.body.classList.remove("editor-active");
+ $("home").classList.remove("active");
+ $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;
+ $("file-manager").hidden=true;$("delete-page").hidden=true;
+ $("heading-edit").hidden=true;$("page-protection").hidden=true;
+ $("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
+ $("template-status").hidden=true;$("protection-status").hidden=true;$("protection-notice").hidden=true;
+ $("title").textContent=title;$("crumb").textContent=title;$("message").textContent="";
+ $("article").replaceChildren();
+ window.scrollTo({top:0,behavior:"auto"});
+ loadGlobalRail();
+ return requestId;
+}
+function makeDiscussionNotice(host,text){
+ const notice=document.createElement("p");
+ notice.className="discussion-empty";
+ notice.textContent=text;
+ host.append(notice);
+ return notice;
+}
+function discussionLink(title,label){
+ const link=document.createElement("a");
+ link.href=routeFor(title);link.textContent=label||title;
+ link.addEventListener("click",event=>{event.preventDefault();openPage(title)});
+ return link;
+}
+function buildDiscussionCreateForm(pageTitle=""){
+ const form=document.createElement("form");
+ form.className="discussion-create-form";
+ form.hidden=true;
+ const heading=addText(form,"h3","새 토론 시작");
+ heading.className="discussion-form-heading";
+ const titleLabel=document.createElement("label");
+ titleLabel.className="discussion-field";
+ titleLabel.append(document.createTextNode("토론 제목"));
+ const titleInput=document.createElement("input");
+ titleInput.type="text";titleInput.maxLength=120;titleInput.required=true;
+ titleInput.placeholder="토론 주제를 입력하세요.";
+ titleLabel.append(titleInput);
+ const pageLabel=document.createElement("label");
+ pageLabel.className="discussion-field";
+ pageLabel.append(document.createTextNode("연결할 문서 (선택)"));
+ const pageInput=document.createElement("input");
+ pageInput.type="text";pageInput.maxLength=120;pageInput.value=pageTitle;
+ pageInput.placeholder="예: AonWiki";
+ if(pageTitle)pageInput.readOnly=true;
+ pageLabel.append(pageInput);
+ const bodyLabel=document.createElement("label");
+ bodyLabel.className="discussion-field";
+ bodyLabel.append(document.createTextNode("토론 내용"));
+ const bodyInput=document.createElement("textarea");
+ bodyInput.required=true;bodyInput.maxLength=10000;bodyInput.rows=6;
+ bodyInput.placeholder="토론을 시작하게 된 이유와 논의할 내용을 작성하세요.";
+ bodyLabel.append(bodyInput);
+ const footer=document.createElement("div");footer.className="discussion-form-actions";
+ const cancel=document.createElement("button");cancel.type="button";cancel.className="title-button";cancel.textContent="취소";
+ const submit=document.createElement("button");submit.type="submit";submit.className="primary-button";submit.textContent="토론 생성";
+ cancel.addEventListener("click",()=>{form.hidden=true;});
+ footer.append(cancel,submit);
+ const status=addText(form,"p","");status.className="discussion-form-status";
+ form.append(titleLabel,pageLabel,bodyLabel,footer,status);
+ form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
+  submit.disabled=true;status.textContent="토론을 생성하고 있습니다…";
+  try{
+   const result=await api("/api/discussions",{method:"POST",body:JSON.stringify({title:titleInput.value,pageTitle:pageInput.value,body:bodyInput.value})});
+   await loadDiscussionDetail(result.id,true);
+   loadGlobalRail();
+  }catch(error){status.textContent=error.message;submit.disabled=false}
+ });
+ return form;
+}
+async function loadDiscussionList(pushRoute=true,pageTitle=""){
+ const title=pageTitle?pageTitle+" — 문서 토론":"최근 토론";
+ const route="#/discussions"+(pageTitle?"?title="+encodeURIComponent(pageTitle):"");
+ const requestId=prepareDiscussionView(title,route,pushRoute);
+ const article=$("article");
+ const head=document.createElement("div");head.className="discussion-page-heading";
+ const copy=document.createElement("div");
+ addText(copy,"p","AONWIKI COMMUNITY").className="discussion-eyebrow";
+ addText(copy,"h2",title);
+ addText(copy,"p",pageTitle?"이 문서에 연결된 토론을 확인하고 의견을 나눌 수 있습니다.":"최근 활동이 있는 토론을 확인하고 새로운 논의를 시작할 수 있습니다.").className="discussion-intro";
+ head.append(copy);
+ const actions=document.createElement("div");actions.className="discussion-page-actions";
+ const create=document.createElement("button");create.type="button";create.className="primary-button";create.textContent="새 토론 시작";
+ const form=buildDiscussionCreateForm(pageTitle);
+ create.addEventListener("click",()=>{
+  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
+  form.hidden=!form.hidden;
+  if(!form.hidden)form.querySelector("input")?.focus();
+ });
+ actions.append(create);head.append(actions);article.append(head,form);
+ const listWrap=document.createElement("section");listWrap.className="discussion-list-section";
+ const listTitle=addText(listWrap,"h3","토론 목록");listTitle.className="discussion-section-title";
+ const list=document.createElement("div");list.className="discussion-list";
+ listWrap.append(list);article.append(listWrap);
+ try{
+  const path="/api/discussions?limit=40"+(pageTitle?"&title="+encodeURIComponent(pageTitle):"");
+  const data=await api(path);
+  if(requestId!==pageNavigationSequence)return;
+  const topics=data.discussions||[];
+  const total=addText(listTitle,"span",Number(data.total||0).toLocaleString("ko-KR")+"개");total.className="discussion-total";
+  if(!topics.length){makeDiscussionNotice(list,pageTitle?"이 문서에 등록된 토론이 없습니다. 첫 토론을 시작해 보세요.":"아직 등록된 토론이 없습니다. 첫 토론을 시작해 보세요.");return}
+  topics.forEach(topic=>{
+   const row=document.createElement("article");row.className="discussion-list-item";
+   const main=document.createElement("div");main.className="discussion-list-main";
+   const link=document.createElement("a");link.href="#/discussion/"+topic.id;link.textContent=topic.title;
+   link.addEventListener("click",event=>{event.preventDefault();loadDiscussionDetail(topic.id,true)});
+   const meta=document.createElement("div");meta.className="discussion-list-meta";
+   meta.append(document.createTextNode("#"+topic.id+" · "+(topic.author||"알 수 없음")+" · "+discussionDate(topic.last_post_at)));
+   if(topic.page_title){meta.append(document.createTextNode(" · "));meta.append(discussionLink(topic.page_title,"문서: "+topic.page_title))}
+   main.append(link,meta);
+   const side=document.createElement("div");side.className="discussion-list-side";
+   const state=addText(side,"span",topic.status==="closed"?"종료":"진행 중");state.className="discussion-state "+(topic.status==="closed"?"is-closed":"is-open");
+   const count=addText(side,"span","답글 "+Number(topic.reply_count||0));count.className="discussion-reply-count";
+   side.append(state,count);row.append(main,side);list.append(row);
+  });
+ }catch(error){makeDiscussionNotice(list,error.message)}
+}
+function buildDiscussionPostCard(post){
+ const card=document.createElement("article");card.className="discussion-post-card";
+ const header=document.createElement("div");header.className="discussion-post-header";
+ const author=addText(header,"strong",post.author||"알 수 없음");
+ const meta=addText(header,"span",discussionDate(post.created_at)+(post.edited_at?" · 수정됨":""));
+ header.append(author,meta);card.append(header);
+ if(Number(post.is_deleted)){discussionText(card,"삭제된 답글입니다.","discussion-body is-deleted");return card}
+ discussionText(card,post.body);
+ if(isWikiAdmin||loggedInName===post.author){
+  const actions=document.createElement("div");actions.className="discussion-post-actions";
+  const edit=document.createElement("button");edit.type="button";edit.className="text-action";edit.textContent="수정";
+  edit.addEventListener("click",async()=>{
+   const next=prompt("답글 수정",post.body);
+   if(next===null)return;
+   try{await api("/api/discussion/post",{method:"PATCH",body:JSON.stringify({id:post.id,body:next})});await loadDiscussionDetail(post.discussion_id,false)}
+   catch(error){alert(error.message)}
+  });
+  const remove=document.createElement("button");remove.type="button";remove.className="text-action danger-text";remove.textContent="삭제";
+  remove.addEventListener("click",async()=>{
+   if(!confirm("이 답글을 삭제할까요?"))return;
+   try{await api("/api/discussion/post?id="+post.id,{method:"DELETE"});await loadDiscussionDetail(post.discussion_id,false);loadGlobalRail()}
+   catch(error){alert(error.message)}
+  });
+  actions.append(edit,remove);card.append(actions);
+ }
+ return card;
+}
+async function loadDiscussionDetail(id,pushRoute=true){
+ id=Number(id);if(!Number.isSafeInteger(id)||id<1){loadDiscussionList(pushRoute);return}
+ const requestId=prepareDiscussionView("토론 #"+id,"#/discussion/"+id,pushRoute);
+ const article=$("article");
+ const loading=addText(article,"p","토론 내용을 불러오는 중입니다…");loading.className="loading";
+ try{
+  const data=await api("/api/discussion?id="+id);
+  if(requestId!==pageNavigationSequence)return;
+  const topic=data.discussion,posts=data.posts||[];
+  article.replaceChildren();
+  const head=document.createElement("div");head.className="discussion-page-heading";
+  const copy=document.createElement("div");
+  const eyebrow=addText(copy,"p","DISCUSSION #"+topic.id);eyebrow.className="discussion-eyebrow";
+  addText(copy,"h2",topic.title);
+  const meta=addText(copy,"p",(topic.author||"알 수 없음")+" · 시작 "+discussionDate(topic.created_at)+" · 답글 "+Number(topic.reply_count||0));meta.className="discussion-intro";
+  head.append(copy);
+  const state=addText(head,"span",topic.status==="closed"?"종료된 토론":"진행 중인 토론");
+  state.className="discussion-state "+(topic.status==="closed"?"is-closed":"is-open");
+  article.append(head);
+  const nav=document.createElement("div");nav.className="discussion-breadcrumb";
+  const back=document.createElement("a");back.href="#/discussions"+(topic.page_title?"?title="+encodeURIComponent(topic.page_title):"");back.textContent="‹ 토론 목록";
+  back.addEventListener("click",event=>{event.preventDefault();loadDiscussionList(true,topic.page_title||"")});
+  nav.append(back);
+  if(topic.page_title){nav.append(document.createTextNode(" · "));nav.append(discussionLink(topic.page_title,"연결 문서: "+topic.page_title))}
+  article.append(nav);
+  const original=document.createElement("section");original.className="discussion-original";
+  const originalHeader=document.createElement("div");originalHeader.className="discussion-post-header";
+  addText(originalHeader,"strong",topic.author||"알 수 없음");
+  addText(originalHeader,"span",discussionDate(topic.created_at)+" · 원문");
+  original.append(originalHeader);discussionText(original,topic.body);article.append(original);
+  const controls=document.createElement("div");controls.className="discussion-topic-actions";
+  if(isWikiAdmin||loggedInName===topic.author){
+   const statusButton=document.createElement("button");statusButton.type="button";statusButton.className="title-button";
+   statusButton.textContent=topic.status==="closed"?"토론 다시 열기":"토론 종료";
+   statusButton.addEventListener("click",async()=>{
+    const action=topic.status==="closed"?"reopen":"close";
+    try{await api("/api/discussion",{method:"PATCH",body:JSON.stringify({id:topic.id,action})});await loadDiscussionDetail(topic.id,false);loadGlobalRail()}
+    catch(error){alert(error.message)}
+   });
+   controls.append(statusButton);
+   if(isWikiAdmin||Number(topic.reply_count)===0){
+    const remove=document.createElement("button");remove.type="button";remove.className="title-button danger-button";remove.textContent="토론 삭제";
+    remove.addEventListener("click",async()=>{
+     if(!confirm("토론을 삭제할까요? 삭제한 토론은 목록에서 숨겨집니다."))return;
+     try{await api("/api/discussions?id="+topic.id,{method:"DELETE"});loadDiscussionList(true,topic.page_title||"");loadGlobalRail()}
+     catch(error){alert(error.message)}
+    });
+    controls.append(remove);
+   }
+  }
+  if(controls.childElementCount)article.append(controls);
+  const replySection=document.createElement("section");replySection.className="discussion-replies";
+  const replyHeading=addText(replySection,"h3","답글");replyHeading.className="discussion-section-title";
+  const replyList=document.createElement("div");replyList.className="discussion-post-list";
+  if(!posts.length)makeDiscussionNotice(replyList,"아직 답글이 없습니다. 첫 의견을 남겨 보세요.");
+  else posts.forEach(post=>replyList.append(buildDiscussionPostCard(post)));
+  replySection.append(replyList);article.append(replySection);
+  if(topic.status==="open"){
+   if(loggedInName||sessionStorage.getItem(TOKEN_SETTING)){
+    const form=document.createElement("form");form.className="discussion-reply-form";
+    addText(form,"h3","답글 작성").className="discussion-form-heading";
+    const textarea=document.createElement("textarea");textarea.required=true;textarea.maxLength=6000;textarea.rows=5;textarea.placeholder="토론에 대한 의견을 작성하세요.";
+    const footer=document.createElement("div");footer.className="discussion-form-actions";
+    const submit=document.createElement("button");submit.type="submit";submit.className="primary-button";submit.textContent="답글 등록";
+    footer.append(submit);const status=addText(form,"p","");status.className="discussion-form-status";
+    form.append(textarea,footer,status);form.addEventListener("submit",async event=>{
+     event.preventDefault();submit.disabled=true;status.textContent="답글을 등록하고 있습니다…";
+     try{await api("/api/discussion/reply",{method:"POST",body:JSON.stringify({id:topic.id,body:textarea.value})});await loadDiscussionDetail(topic.id,false);loadGlobalRail()}
+     catch(error){status.textContent=error.message;submit.disabled=false}
+    });
+    article.append(form);
+   }else{
+    const login=document.createElement("button");login.type="button";login.className="primary-button";login.textContent="로그인 후 답글 작성";
+    login.addEventListener("click",openLogin);article.append(login);
+   }
+  }else{
+   makeDiscussionNotice(article,"이 토론은 종료되었습니다. 작성자 또는 위키 관리자가 다시 열면 답글을 작성할 수 있습니다.");
+  }
+ }catch(error){
+  if(requestId!==pageNavigationSequence)return;
+  article.replaceChildren();makeDiscussionNotice(article,error.message);
+ }
+}
+async function loadGlobalRail(){
+ const pagesHost=$("rail-recent-pages"),talkHost=$("rail-recent-discussions");
+ if(!pagesHost||!talkHost)return;
+ try{
+  const [recent,talks]=await Promise.all([
+   api("/api/recent").catch(()=>({changes:[]})),
+   api("/api/discussions?limit=6").catch(()=>({discussions:[]}))
+  ]);
+  pagesHost.replaceChildren();talkHost.replaceChildren();
+  const changes=(recent.changes||[]).slice(0,15);
+  if(!changes.length){const li=addText(pagesHost,"li","아직 변경 기록이 없습니다.");li.className="rail-muted"}
+  changes.forEach((item,index)=>{
+   const li=document.createElement("li");li.append(document.createTextNode(String(index+1)+" "));
+   const link=document.createElement("a");link.href=routeFor(item.title);link.textContent=item.title;
+   link.addEventListener("click",event=>{event.preventDefault();openPage(item.title)});
+   li.append(link);pagesHost.append(li);
+  });
+  const discussions=talks.discussions||[];
+  if(!discussions.length){const li=addText(talkHost,"li","아직 토론이 없습니다.");li.className="rail-muted"}
+  discussions.slice(0,6).forEach((item,index)=>{
+   const li=document.createElement("li");li.append(document.createTextNode(String(index+1)+" "));
+   const link=document.createElement("a");link.href="#/discussion/"+item.id;link.textContent=item.title;
+   link.addEventListener("click",event=>{event.preventDefault();loadDiscussionDetail(item.id,true)});
+   li.append(link);talkHost.append(li);
+  });
+ }catch(error){console.warn("활동 패널을 불러오지 못했습니다.",error)}
 }
 
 const CATEGORY_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -1181,7 +1465,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   else breadcrumbTrail=[title];
  }
  renderBreadcrumbTrail();
- currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
+ currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;$("discussion-tab").hidden=true;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  const targets=ensureDocumentViewTargets();
  const templateStatus=$("template-status");
@@ -1215,11 +1499,12 @@ async function loadPage(title,pushRoute=true,anchor=""){
    notice.append(title,detail,create);$("message").append(notice);
    $("edit").textContent="문서 만들기";
    $("edit").onclick=()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return;}const missingTitle=currentTitle;editPage("","");$("editor-title").value=missingTitle;};
-   $("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("backlinks-tab").hidden=true;
+   $("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
    return;
   }
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
   if(templateStatus)templateStatus.hidden=!/^(?:틀|template):/i.test(data.page.title||title);
+  $("discussion-tab").hidden=false;
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
   const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
@@ -1816,6 +2101,7 @@ document.querySelectorAll("[data-markup]").forEach(button=>{
  button.addEventListener("click",()=>insertEditorMarkup(button.dataset.markup));
 });
 $("home").onclick=()=>showHome(true);
+$("discussion-tab").onclick=()=>loadDiscussionList(true,currentTitle);
 $("recent-changes").onclick=()=>loadRecentChanges(true);
 $("categories").onclick=()=>loadCategoryIndex(true);
 $("random-page").onclick=()=>openRandomPage();
@@ -2186,6 +2472,8 @@ async function openFileManager(){
  }catch(error){$("message").textContent=error.message}
 }
 $("file-manager").onclick=()=>openFileManager();
+$("scroll-top")?.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+$("scroll-bottom")?.addEventListener("click",()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"}));
 $("upload").onclick=()=>{
  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
  $("file").click()
@@ -2284,5 +2572,6 @@ if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){
 }
 if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity();
+loadGlobalRail();
 startLivePageWatcher();
 
