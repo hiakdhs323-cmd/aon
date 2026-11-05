@@ -1158,7 +1158,7 @@ try {
     this.renderData = this.renderData.replace(/\n +\|\|/g, "\n||");
 
     const manageTableParameter = (cellCount: string, parameter: string, data: string) => {
-      const tableParameterAll = { div: "", class: "", table: "", tr: "", td: "", col: "", colspan: "", rowspan: "", data: "" };
+      const tableParameterAll = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: "", colspan: "", rowspan: "", data: "" };
 
       let tableAlignAuto = 1;
       let tableColspanAuto = 1;
@@ -1181,7 +1181,11 @@ try {
           const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
           tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
 
-          if (tableParameterName == "tablebgcolor") tableParameterAll["table"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
+          if (tableParameterName == "tablebgcolor") {
+            const tableBgStyle = this.getToolThemeColorStyle("background", "bg", tableParameterData);
+            tableParameterAll["table"] += tableBgStyle;
+            tableParameterAll["tableBg"] += tableBgStyle;
+          }
           else if (tableParameterName == "tablewidth") {
             tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
             tableParameterAll["table"] += "width:100%;";
@@ -1289,11 +1293,18 @@ try {
         div: string;
         class: string;
         table: string;
+        tableBg: string;
         tr: string;
         td: string;
         col: Record<number, string>;
         rowspan: Record<number, number>;
-      } = { div: "", class: "", table: "", tr: "", td: "", col: {}, rowspan: {} };
+      } = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: {}, rowspan: {} };
+      const getTableRowStyle = () => {
+        const rowStyle = tableParameter["tr"];
+        return /(?:^|;)\s*background(?:-color)?\s*:/i.test(rowStyle)
+          ? rowStyle
+          : tableParameter["tableBg"] + rowStyle;
+      };
       let tableDataEnd = "";
       let tableColNum = 0;
       let tableTrChange = 0;
@@ -1312,7 +1323,7 @@ try {
 
         if (tableSub[0] !== "" && tableTrChange === 1) {
           tableColNum = 0;
-          tableDataEnd += '<tr style="' + tableParameter["tr"] + '">' + tableParameter["td"] + "</tr>";
+          tableDataEnd += '<tr style="' + getTableRowStyle() + '">' + tableParameter["td"] + "</tr>";
           tableParameter["tr"] = "";
           tableParameter["td"] = "";
         }
@@ -1343,6 +1354,7 @@ try {
         tableParameter["div"] += tableSubParameter["div"];
         tableParameter["class"] = tableSubParameter["class"] !== "" ? tableSubParameter["class"] : tableParameter["class"];
         tableParameter["table"] += tableSubParameter["table"];
+        tableParameter["tableBg"] = tableSubParameter["tableBg"] || tableParameter["tableBg"];
         tableParameter["col"][tableColNum] += tableSubParameter["col"];
         if (tableSub[2] === "" && tableSub[3] === "") {
           tableTrChange = 1;
@@ -1364,7 +1376,7 @@ try {
         tableColNum += colspanInt;
       }
 
-      tableDataEnd += '<tr style="' + tableParameter["tr"] + '">' + tableParameter["td"] + "</tr>";
+      tableDataEnd += '<tr style="' + getTableRowStyle() + '">' + tableParameter["td"] + "</tr>";
       tableDataEnd =
         '<table class="' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
       tableDataEnd = '<div class="table_safe" style="' + tableParameter["div"] + '">' + tableDataEnd + "</div>";
