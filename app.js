@@ -1650,7 +1650,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    protectionStatus.hidden=false;protectionStatus.textContent="관리자 편집 보호";protectionStatus.title=currentProtection.reason||"일반 회원은 편집할 수 없으며 관리자만 편집할 수 있습니다.";
    protectionNotice.hidden=false;protectionNotice.replaceChildren();
    const strong=document.createElement("strong");strong.textContent="이 문서는 관리자 편집 보호 상태입니다.";
-   const detail=document.createElement("span");detail.textContent=" 관리자도 편집할 수 없습니다. 보호를 해제한 뒤 편집할 수 있습니다.";
+   const detail=document.createElement("span");detail.textContent=" 일반 회원은 편집할 수 없으며 관리자만 편집할 수 있습니다.";
    protectionNotice.append(strong,detail);
   }else if(currentProtection.level==="registered"){
    protectionStatus.hidden=false;protectionStatus.textContent="회원 편집 보호";protectionStatus.title=currentProtection.reason||"로그인한 회원만 편집할 수 있습니다.";
