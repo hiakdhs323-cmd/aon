@@ -1004,7 +1004,7 @@ export default {
         if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1000)) return response({ error: "토론 생성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await request.json();
-        const title = String(body.title || "").trim().replace(/[\\u0000-\\u001f\\u007f]/g, "").slice(0, 120);
+        const title = String(body.title || "").trim().replace(/[\x00-\x1f\x7f]/g, "").slice(0, 120);
         const content = String(body.body || "").trim().slice(0, 10000);
         const pageTitle = cleanTitle(body.pageTitle || "");
         if (title.length < 2) return response({ error: "토론 제목은 2자 이상 입력하세요." }, 400, cors);
@@ -1042,12 +1042,22 @@ export default {
         const body = await request.json();
         const id = Number(body.id);
         const action = String(body.action || "");
-        if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen"].includes(action)) return response({ error: "올바른 토론 상태 변경 요청이 아닙니다." }, 400, cors);
+        if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen", "edit"].includes(action)) return response({ error: "올바른 토론 변경 요청이 아닙니다." }, 400, cors);
         const discussion = await env.DB.prepare("SELECT id, author, status FROM discussions WHERE id = ? AND deleted_at = ''").bind(id).first();
         if (!discussion) return response({ error: "토론을 찾을 수 없습니다." }, 404, cors);
-        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "토론 작성자 또는 위키 관리자만 상태를 변경할 수 있습니다." }, 403, cors);
+        if (!user.isAdmin && discussion.author !== user.username) return response({ error: "토론 작성자 또는 위키 관리자만 변경할 수 있습니다." }, 403, cors);
+        const now = new Date().toISOString();
+        if (action === "edit") {
+          const title = String(body.title || "").trim().replace(/[\x00-\x1f\x7f]/g, "").slice(0, 120);
+          const content = String(body.body || "").trim().slice(0, 10000);
+          if (title.length < 2) return response({ error: "토론 제목은 2자 이상 입력하세요." }, 400, cors);
+          if (!content) return response({ error: "토론 내용을 입력하세요." }, 400, cors);
+          if (!user.isAdmin && discussion.status !== "open") return response({ error: "종료된 토론은 관리자만 수정할 수 있습니다." }, 403, cors);
+          await env.DB.prepare("UPDATE discussions SET title = ?, body = ?, updated_at = ? WHERE id = ?").bind(title, content, now, id).run();
+          return response({ ok: true, id, title, updated_at: now }, 200, cors);
+        }
         const status = action === "close" ? "closed" : "open";
-        await env.DB.prepare("UPDATE discussions SET status = ?, updated_at = ? WHERE id = ?").bind(status, new Date().toISOString(), id).run();
+        await env.DB.prepare("UPDATE discussions SET status = ?, updated_at = ? WHERE id = ?").bind(status, now, id).run();
         return response({ ok: true, id, status }, 200, cors);
       }
       if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {

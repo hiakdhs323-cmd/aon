@@ -1148,6 +1148,18 @@ async function loadDiscussionDetail(id,pushRoute=true){
   original.append(originalHeader);discussionText(original,topic.body);article.append(original);
   const controls=document.createElement("div");controls.className="discussion-topic-actions";
   if(isWikiAdmin||loggedInName===topic.author){
+   const editTopic=document.createElement("button");editTopic.type="button";editTopic.className="title-button";editTopic.textContent="토론 수정";
+   editTopic.addEventListener("click",async()=>{
+    const nextTitle=prompt("토론 제목 수정",topic.title);
+    if(nextTitle===null)return;
+    const nextBody=prompt("토론 원문 수정",topic.body);
+    if(nextBody===null)return;
+    try{
+     await api("/api/discussion",{method:"PATCH",body:JSON.stringify({id:topic.id,action:"edit",title:nextTitle,body:nextBody})});
+     await loadDiscussionDetail(topic.id,false);loadGlobalRail();
+    }catch(error){alert(error.message)}
+   });
+   controls.append(editTopic);
    const statusButton=document.createElement("button");statusButton.type="button";statusButton.className="title-button";
    statusButton.textContent=topic.status==="closed"?"토론 다시 열기":"토론 종료";
    statusButton.addEventListener("click",async()=>{
