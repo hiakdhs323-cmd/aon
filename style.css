@@ -1539,3 +1539,53 @@ html[data-theme="dark"] .template-status{
   background:#203b38;
   color:#a8e5d8
 }
+
+
+/* AonWiki table visual system — framed, structured, role-table friendly. */
+.wiki-content table{
+  border:2px solid var(--wiki-border-strong);
+  border-collapse:collapse;
+  background:var(--wiki-panel);
+  box-shadow:none;
+}
+.wiki-content table tr{background:var(--wiki-panel)}
+.wiki-content th,.wiki-content td{
+  border:1px solid var(--wiki-border-strong);
+  padding:7px 10px;
+  vertical-align:middle;
+}
+.wiki-content th{
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-text);
+  font-weight:700;
+  text-align:center;
+}
+.wiki-content td{color:var(--wiki-text);background:var(--wiki-panel)}
+.wiki-content tr:nth-child(even) td{background:var(--wiki-panel-soft)}
+.wiki-content table td:first-child:not([style*="background"]),
+.wiki-content table th:first-child:not([style*="background"]){
+  text-align:center;
+  font-weight:700;
+}
+.wiki-content table td[style*="background"],
+.wiki-content table th[style*="background"]{color:inherit}
+html[data-theme="dark"] .wiki-content table{
+  border-color:#f0f0f0;
+  background:#232323;
+}
+html[data-theme="dark"] .wiki-content table th{
+  background:#2d3034;
+  color:#f4f4f4;
+  border-color:#44484d;
+}
+html[data-theme="dark"] .wiki-content table td{
+  background:#292b2e;
+  color:#f4f4f4;
+  border-color:#44484d;
+}
+html[data-theme="dark"] .wiki-content table tr:nth-child(even) td{background:#242629}
+html[data-theme="dark"] .wiki-content table td[style*="background"],
+html[data-theme="dark"] .wiki-content table th[style*="background"]{border-color:#44484d}
+@media(max-width:700px){
+  .wiki-content th,.wiki-content td{padding:6px 8px}
+}
