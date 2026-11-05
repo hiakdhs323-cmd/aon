@@ -10,6 +10,8 @@ const styles = fs.readFileSync("style.css", "utf8");
 assert.ok(styles.includes("#article.wiki-content details.opennamu_TOC"), "TOC panel styles must exist");
 assert.ok(styles.includes("background:var(--wiki-panel)!important"), "TOC panel must retain its background");
 assert.ok(!styles.includes(".opennamu_category_links a+a::before"), "category links must not add a second separator");
+assert.ok(styles.includes("table td{background-color:transparent}"), "table cells must reveal table backgrounds");
+assert.ok(styles.includes('table tr[style*="background"]>td'), "row backgrounds must remain visible through cells");
 
 const NamuMark = globalThis.NamuMarkBundle?.NamuMark;
 assert.equal(typeof NamuMark, "function", "NamuMark parser export must be available");

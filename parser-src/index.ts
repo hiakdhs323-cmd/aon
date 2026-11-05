@@ -332,10 +332,10 @@ export class NamuMark {
     const isColor = (value: string) =>
       /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i.test(value);
 
-    if (values.length !== 2 || !values.every(isColor)) {
-      const selected = values[0] || "";
-      if (property === "border") return "border:2px solid " + selected + ";";
-      return property + ":" + selected + ";";
+    if (!values.length || !values.every(isColor)) return "";
+    if (values.length === 1) {
+      if (property === "border") return "border:2px solid " + values[0] + ";";
+      return property + ":" + values[0] + ";";
     }
 
     const [light, dark] = values;
@@ -1186,6 +1186,7 @@ try {
             tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
             tableParameterAll["table"] += "width:100%;";
           } else if (tableParameterName == "tableheight") tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          else if (tableParameterName == "rowheight") tableParameterAll["tr"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";"
           else if (tableParameterName == "tablealign") {
             if (tableParameterData == "right") tableParameterAll["div"] += "float:right;max-width:100%;";
             else if (tableParameterData == "center") {
@@ -1207,7 +1208,11 @@ try {
           else if (tableParameterName == "bgcolor") tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "color") tableParameterAll["td"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
-          else if (tableParameterName == "height") tableParameterAll["td"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          else if (tableParameterName == "height") {
+            const heightStyle = "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+            if (data.trim() === "") tableParameterAll["tr"] += heightStyle;
+            else tableParameterAll["td"] += heightStyle;
+          };
           else doAnyThing += "&lt;" + tableParameter + "&gt;";
         } else {
           if (tableParameter.trim() == "nopad") tableParameterAll["td"] += "padding: 0 !important;";

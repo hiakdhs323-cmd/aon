@@ -2124,7 +2124,7 @@ function highlightNamuLine(line, insideCode) {
   }
   if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return syntax(line);
 
-  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|<(?:table(?:width|height|align|textalign|bgcolor|color|bordercolor|class)=[^>\n]+|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:\/?table(?:\([^\]\n]*\))?|\/?tr|\/?th(?:=\d+)?|\/?td(?:=\d+)?)\]|\[(?:br|date|clearfix|pagecount)\])/gi;
+  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|<(?:(?:table(?:width|height|align|textalign|bgcolor|color|bordercolor|class)|row(?:bgcolor|color|textalign|height)|col(?:bgcolor|color|textalign)|width|height|align|textalign|bgcolor|color|bordercolor|class)=[^>\n]+|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:\/?table(?:\([^\]\n]*\))?|\/?tr|\/?th(?:=\d+)?|\/?td(?:=\d+)?)\]|\[(?:br|date|clearfix|pagecount)\])/gi;
   let output = "", last = 0, match;
   while ((match = tokenPattern.exec(line))) {
     output += escapeHighlightText(line.slice(last, match.index));

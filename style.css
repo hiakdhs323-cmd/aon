@@ -683,7 +683,7 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 .wiki-content table{border-collapse:collapse;width:auto;min-width:0;max-width:100%;margin:12px 0;font-size:14px;table-layout:auto}
 .wiki-content th,.wiki-content td{border:1px solid var(--wiki-border);padding:5px 8px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;word-break:normal;color:var(--wiki-text);background:transparent;font-size:13px;line-height:1.5}
 .wiki-content th{background:var(--wiki-panel-soft);font-weight:650;color:var(--wiki-text)}
-.wiki-content tr:nth-child(even) td{background:color-mix(in srgb,var(--wiki-panel-soft) 48%,transparent)}
+.wiki-content tr:nth-child(even):not([style*="background"]){background:color-mix(in srgb,var(--wiki-panel-soft) 48%,transparent)}
 .wiki-content table code{font-size:.92em}
 .wiki-content table p{margin:0;line-height:1.5}
 .wiki-content table a{color:var(--wiki-link);text-decoration:none}
@@ -1560,8 +1560,8 @@ html[data-theme="dark"] .template-status{
   font-weight:700;
   text-align:center;
 }
-.wiki-content td{color:var(--wiki-text);background:var(--wiki-panel)}
-.wiki-content tr:nth-child(even) td{background:var(--wiki-panel-soft)}
+.wiki-content td{color:var(--wiki-text);background:transparent}
+.wiki-content tr:nth-child(even):not([style*="background"]){background:var(--wiki-panel-soft)}
 .wiki-content table td:first-child:not([style*="background"]),
 .wiki-content table th:first-child:not([style*="background"]){
   text-align:center;
@@ -1579,11 +1579,11 @@ html[data-theme="dark"] .wiki-content table th{
   border-color:#44484d;
 }
 html[data-theme="dark"] .wiki-content table td{
-  background:#292b2e;
+  background:transparent;
   color:#f4f4f4;
   border-color:#44484d;
 }
-html[data-theme="dark"] .wiki-content table tr:nth-child(even) td{background:#242629}
+html[data-theme="dark"] .wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
 html[data-theme="dark"] .wiki-content table td[style*="background"],
 html[data-theme="dark"] .wiki-content table th[style*="background"]{border-color:#44484d}
 @media(max-width:700px){
@@ -3062,6 +3062,14 @@ html[data-theme="dark"] #article.wiki-content details.wiki-fold>.wiki-fold-conte
 }
 /* Ordinary table defaults do not override inline per-column/cell colors. */
 #article.wiki-content table td{background-color:inherit}
-#article.wiki-content table tr:nth-child(even) td:not([style*="background"]){
+#article.wiki-content table tr:nth-child(even):not([style*="background"]){
   background:var(--wiki-panel-soft);
 }
+
+/* Table color cascade: let authored table and row fills show through cells. */
+#article.wiki-content table td{background-color:transparent}
+#article.wiki-content table[style*="background"] th{background-color:transparent}
+#article.wiki-content table tr[style*="background"]>td,
+#article.wiki-content table tr[style*="background"]>th{background-color:transparent}
+#article.wiki-content table tr:nth-child(even):not([style*="background"]){background:var(--wiki-panel-soft)}
+html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
