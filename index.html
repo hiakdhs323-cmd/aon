@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff">
 <title>AonWiki</title>
-<link rel="stylesheet" href="style.css?v=20261105-wiki-portal-home-v2">
+<link rel="icon" type="image/svg+xml" href="aonwiki-mark.svg?v=20261105-brand-v1">
+<link rel="mask-icon" href="aonwiki-mark.svg?v=20261105-brand-v1" color="#00a69c">
+<link rel="stylesheet" href="style.css?v=20261105-aonwiki-brand-official-templates-v1">
 <link rel="stylesheet" href="namumark-beta.css?v=20261102-r2">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
@@ -13,7 +15,7 @@
 </head>
 <body>
 <header class="site-header">
-  <a class="brand" href="#/" aria-label="AonWiki 대문"><span class="brand-symbol">A</span><span class="brand-name">Aon<span>Wiki</span></span></a>
+  <a class="brand" href="#/" aria-label="AonWiki 대문"><img class="brand-symbol" src="aonwiki-mark.svg?v=20261105-brand-v1" alt=""><span class="brand-name">Aon<span>Wiki</span></span></a>
   <form id="search" class="searchbar" role="search"><input id="query" placeholder="AonWiki에서 검색" aria-label="문서 검색" autocomplete="off"><button type="submit">검색</button></form>
   <nav class="header-actions"><span id="role-label" class="role-label" hidden></span><button id="change-password" class="button button-plain" type="button" hidden>비밀번호 변경</button><button id="login" class="button button-plain" type="button">로그인</button><button id="settings" class="button button-plain" type="button" title="API 설정">설정</button><button id="labs" class="button button-plain" type="button" title="나무마크 엔진 정보">엔진 정보</button><button id="theme-toggle" class="button button-plain" type="button">다크 모드</button></nav>
 </header>
@@ -178,7 +180,7 @@
     <section id="document-view" class="document-view" hidden>
       <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>
       <section class="article">
-        <div class="article-titlebar"><h1 id="title"></h1><div class="title-actions"><span id="protection-status" class="protection-status" hidden></span><button id="page-protection" class="title-button admin-protection-button" type="button" hidden>편집 보호</button><button id="heading-edit" class="title-button" type="button">편집</button></div></div><div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>
+        <div class="article-titlebar"><h1 id="title"></h1><div class="title-actions"><span id="template-status" class="template-status" hidden>공식 틀 문서</span><span id="protection-status" class="protection-status" hidden></span><button id="page-protection" class="title-button admin-protection-button" type="button" hidden>편집 보호</button><button id="heading-edit" class="title-button" type="button">편집</button></div></div><div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>
         <div class="article-tools"><span class="current-tab">문서</span><button id="history-tab" type="button">역사</button><button id="backlinks-tab" type="button" hidden>역링크</button><span class="tool-spacer"></span><span class="article-language">한국어</span></div>
         <div id="message" class="notice" role="status"></div>
         <article id="article" class="wiki-content"></article>
@@ -249,5 +251,5 @@ hover-dark: #a5d6ff
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" crossorigin="anonymous"></script>
-<script defer src="app.js?v=20261105-wiki-portal-home-v2"></script>
+<script defer src="app.js?v=20261105-aonwiki-brand-official-templates-v1"></script>
 </body></html>

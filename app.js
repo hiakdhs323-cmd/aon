@@ -1184,6 +1184,8 @@ async function loadPage(title,pushRoute=true,anchor=""){
  currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  const targets=ensureDocumentViewTargets();
+ const templateStatus=$("template-status");
+ if(templateStatus)templateStatus.hidden=true;
  targets.title.textContent=displayTitle;targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();
  if(targets.protection)targets.protection.hidden=true;
  if(targets.headingEdit)targets.headingEdit.hidden=false;
@@ -1217,6 +1219,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    return;
   }
   if(data.page.title&&data.page.title!==title){history.replaceState(null,"",routeFor(data.page.title,anchor));return loadPage(data.page.title,false,anchor)}
+  if(templateStatus)templateStatus.hidden=!/^(?:틀|template):/i.test(data.page.title||title);
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
   const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
