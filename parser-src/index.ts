@@ -1212,7 +1212,7 @@ try {
             const heightStyle = "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
             if (data.trim() === "") tableParameterAll["tr"] += heightStyle;
             else tableParameterAll["td"] += heightStyle;
-          };
+          }
           else doAnyThing += "&lt;" + tableParameter + "&gt;";
         } else {
           if (tableParameter.trim() == "nopad") tableParameterAll["td"] += "padding: 0 !important;";
