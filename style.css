@@ -1549,6 +1549,12 @@ html[data-theme="dark"] .template-status{
   box-shadow:none;
 }
 .wiki-content table tr{background:var(--wiki-panel)}
+/* Compact single-cell title bars without shrinking their text. */
+.wiki-content td:only-child,.wiki-content th:only-child{
+  padding-top:1px;
+  padding-bottom:1px;
+  line-height:1.3;
+}
 .wiki-content th,.wiki-content td{
   border:1px solid var(--wiki-border-strong);
   padding:7px 10px;
