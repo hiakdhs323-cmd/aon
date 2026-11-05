@@ -1643,11 +1643,11 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("discussion-tab").hidden=false;
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
-  $("edit").hidden=currentProtection.level==="admin";
+  $("edit").hidden=currentProtection.level==="admin"&&!isWikiAdmin;
   $("delete-page").hidden=!isWikiAdmin||currentProtection.level==="admin";
   const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
   if(currentProtection.level==="admin"){
-   protectionStatus.hidden=false;protectionStatus.textContent="관리자 편집 보호";protectionStatus.title=currentProtection.reason||"관리자도 편집할 수 없습니다. 보호를 해제해야 합니다.";
+   protectionStatus.hidden=false;protectionStatus.textContent="관리자 편집 보호";protectionStatus.title=currentProtection.reason||"일반 회원은 편집할 수 없으며 관리자만 편집할 수 있습니다.";
    protectionNotice.hidden=false;protectionNotice.replaceChildren();
    const strong=document.createElement("strong");strong.textContent="이 문서는 관리자 편집 보호 상태입니다.";
    const detail=document.createElement("span");detail.textContent=" 관리자도 편집할 수 없습니다. 보호를 해제한 뒤 편집할 수 있습니다.";
@@ -1668,7 +1668,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    reason.append(label,document.createTextNode(currentProtection.reason));protectionNotice.append(reason);
   }
   $("page-protection").hidden=!isWikiAdmin;
-  $("heading-edit").hidden=currentProtection.level==="admin"||(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING))||(currentProtection.level==="registered"&&!loggedInName&&!isWikiAdmin);
+  $("heading-edit").hidden=(currentProtection.level==="admin"&&!isWikiAdmin)||(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin)||(currentProtection.level==="registered"&&!loggedInName&&!isWikiAdmin);
   $("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
