@@ -229,8 +229,8 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-content pre{max-width:100%;overflow:auto;margin:12px 0;padding:12px;border:1px solid var(--wiki-border);border-radius:2px;background:var(--wiki-panel-soft);white-space:pre-wrap}
 .wiki-content code{padding:1px 4px;border-radius:2px;background:var(--wiki-panel-soft);font-family:ui-monospace,Consolas,monospace;font-size:.9em}
 .wiki-content pre code{padding:0;background:transparent}
-.wiki-content table{max-width:100%;margin:12px auto;border-collapse:collapse;font-size:14px;overflow-wrap:anywhere}
-.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:5px 9px;vertical-align:middle}
+.wiki-content table{max-width:100%;margin:10px auto;border-collapse:collapse;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.wiki-content th,.wiki-content td{border:1px solid var(--wiki-border-strong);padding:4px 7px;vertical-align:middle}
 .wiki-content th{background:var(--wiki-panel-soft);font-weight:700}
 .wiki-content img{display:block;max-width:100%;height:auto;object-fit:contain;margin:0 auto;border:0}
 .wiki-image{max-width:100%;margin:12px auto;text-align:center;clear:both}
