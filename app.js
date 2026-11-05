@@ -175,11 +175,12 @@ async function loadHome(){
   };
 
   try{
-    const [pageData,homeData,recentData,categoryData]=await Promise.all([
+    const [pageData,homeData,recentData,categoryData,pageIndexData]=await Promise.all([
       api("/api/pages"),
       api("/api/home").catch(()=>({settings:{}})),
       api("/api/recent").catch(()=>({changes:[]})),
-      api("/api/categories").catch(()=>({categories:[],total:0}))
+      api("/api/categories").catch(()=>({categories:[],total:0})),
+      api("/api/page-index").catch(()=>({pages:[]}))
     ]);
     const settings=homeData.settings||{};
     $("home-title").textContent=settings.title||"AonWiki";
@@ -210,7 +211,11 @@ async function loadHome(){
     const categories=categoryData.categories||[];
     const changes=(recentData.changes||[]).filter(change=>change.title&&change.title!=="대문");
 
-    $("home-doc-count").textContent=pages.length.toLocaleString("ko-KR");
+    const allTitles=(pageIndexData.pages||[]).map(page=>String(page.title||""));
+    const documentCount=allTitles.length
+      ?allTitles.filter(title=>title!=="대문"&&!/^(?:분류|category):/i.test(title)).length
+      :pages.length;
+    $("home-doc-count").textContent=documentCount.toLocaleString("ko-KR");
     $("home-category-count").textContent=Number(categoryData.total??categories.length).toLocaleString("ko-KR");
     $("home-latest-updated").textContent=pages.length&&pages[0].updated_at
       ?formatHomeDate(pages[0].updated_at)
