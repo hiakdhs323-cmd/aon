@@ -37,13 +37,143 @@
   </aside>
   <main class="main">
     <section id="home-view" class="home-view">
-      <div class="home-heading"><p class="home-kicker">AONWIKI</p><h1 id="home-title">AonWiki</h1><p id="home-tagline">함께 만드는 지식 백과사전</p></div>
+      <header class="home-hero">
+        <div class="home-hero-copy">
+          <p class="home-kicker">AONWIKI · KNOWLEDGE ARCHIVE</p>
+          <h1 id="home-title">AonWiki</h1>
+          <p id="home-tagline">함께 만드는 지식 백과사전</p>
+          <div class="home-hero-actions">
+            <a href="/w/AonWiki%3A%EB%AC%B8%EB%B2%95">문법 안내 보기</a>
+            <a href="/w/AonWiki%3A%ED%8E%B8%EC%A7%91%EC%A7%80%EC%B9%A8">편집지침 읽기</a>
+          </div>
+        </div>
+        <div class="home-hero-mark" aria-hidden="true">
+          <span class="home-hero-mark-letter">A</span>
+          <span class="home-hero-mark-caption">OPEN<br>KNOWLEDGE</span>
+        </div>
+      </header>
+
+      <nav class="home-quick-nav" aria-label="대문 바로가기">
+        <a href="#/recent"><span class="home-quick-index">01</span><span>최근 변경</span></a>
+        <a href="#/categories"><span class="home-quick-index">02</span><span>분류 목록</span></a>
+        <a href="/w/AonWiki"><span class="home-quick-index">03</span><span>AonWiki 소개</span></a>
+        <a href="/w/AonWiki%3A%EB%AC%B8%EB%B2%95"><span class="home-quick-index">04</span><span>문법 도움말</span></a>
+      </nav>
+
       <div id="home-notice" class="home-notice" hidden></div>
-      <article id="home-content" class="wiki-content home-content"></article>
-      <div id="home-admin-tools" class="home-admin-tools" hidden><span class="admin-label">관리자 도구</span><button id="home-edit" class="button" type="button">대문 편집</button><button id="admin-token-rotate" class="button" type="button">초기 키 폐기 · 랜덤 토큰 발급</button></div>
-      <div id="home-search-hint" class="home-search-hint">검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.</div>
-      <section class="home-section"><div class="section-heading"><h2 id="home-list-title">최근 수정된 문서</h2><span id="page-count"></span></div><div id="page-list" class="page-list"><p class="loading">문서 목록을 불러오는 중입니다…</p></div></section>
-      <section class="home-section"><div class="section-heading"><h2 id="home-bottom-title">문서가 없나요?</h2></div><p id="home-bottom-text" class="home-help">로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.</p><button id="home-new" class="button button-primary" type="button">새 문서 만들기</button></section>
+
+      <section class="home-stats" aria-label="AonWiki 현황">
+        <div class="home-stat">
+          <span class="home-stat-label">등록 문서</span>
+          <strong id="home-doc-count">—</strong>
+        </div>
+        <div class="home-stat">
+          <span class="home-stat-label">주제별 분류</span>
+          <strong id="home-category-count">—</strong>
+        </div>
+        <div class="home-stat home-stat-wide">
+          <span class="home-stat-label">최근 문서 수정</span>
+          <strong id="home-latest-updated">기록을 불러오는 중</strong>
+        </div>
+      </section>
+
+      <div class="home-search-hint" id="home-search-hint">
+        상단 검색창에서 문서 제목이나 본문 내용을 검색할 수 있습니다.
+      </div>
+
+      <div class="home-portal-grid">
+        <main class="home-primary-column">
+          <section class="home-panel home-intro-panel">
+            <div class="home-panel-heading">
+              <div>
+                <span class="home-panel-eyebrow">WELCOME TO AONWIKI</span>
+                <h2>AonWiki에 오신 것을 환영합니다</h2>
+              </div>
+              <span class="home-panel-symbol" aria-hidden="true">A</span>
+            </div>
+            <article id="home-content" class="wiki-content home-content"></article>
+          </section>
+
+          <section class="home-panel home-list-panel">
+            <div class="home-panel-heading">
+              <div>
+                <span class="home-panel-eyebrow">LATEST PAGES</span>
+                <h2 id="home-list-title">최근 수정된 문서</h2>
+              </div>
+              <span id="page-count" class="home-panel-count"></span>
+            </div>
+            <div id="page-list" class="page-list">
+              <p class="loading">문서 목록을 불러오는 중입니다…</p>
+            </div>
+          </section>
+
+          <section class="home-panel home-activity-panel">
+            <div class="home-panel-heading">
+              <div>
+                <span class="home-panel-eyebrow">COMMUNITY ACTIVITY</span>
+                <h2>최근 변경</h2>
+              </div>
+              <a class="home-panel-more" href="#/recent">전체 기록 보기 <span aria-hidden="true">›</span></a>
+            </div>
+            <div id="home-recent-changes" class="home-recent-changes">
+              <p class="loading">최근 변경을 불러오는 중입니다…</p>
+            </div>
+          </section>
+        </main>
+
+        <aside class="home-sidebar">
+          <section class="home-panel home-guide-panel">
+            <div class="home-panel-heading">
+              <div>
+                <span class="home-panel-eyebrow">GETTING STARTED</span>
+                <h2>처음 오셨나요?</h2>
+              </div>
+            </div>
+            <p class="home-panel-description">AonWiki를 처음 이용한다면 아래 안내부터 확인해 보세요.</p>
+            <a class="home-guide-link" href="/w/AonWiki%3A%EB%AC%B8%EB%B2%95">
+              <span class="home-guide-icon">Aa</span>
+              <span><strong>AonWiki 문법</strong><small>문서 작성과 서식 사용법</small></span>
+              <span class="home-link-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="home-guide-link" href="/w/AonWiki%3A%ED%8E%B8%EC%A7%91%EC%A7%80%EC%B9%A8">
+              <span class="home-guide-icon">§</span>
+              <span><strong>편집지침</strong><small>문서 작성의 기본 원칙</small></span>
+              <span class="home-link-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="home-guide-link" href="/w/AonWiki">
+              <span class="home-guide-icon">A</span>
+              <span><strong>AonWiki 소개</strong><small>위키의 목적과 안내</small></span>
+              <span class="home-link-arrow" aria-hidden="true">›</span>
+            </a>
+          </section>
+
+          <section class="home-panel home-category-panel">
+            <div class="home-panel-heading">
+              <div>
+                <span class="home-panel-eyebrow">BROWSE BY TOPIC</span>
+                <h2>주제별 분류</h2>
+              </div>
+              <a class="home-panel-more" href="#/categories">모두 보기 <span aria-hidden="true">›</span></a>
+            </div>
+            <div id="home-category-list" class="home-category-list">
+              <p class="loading">분류를 불러오는 중입니다…</p>
+            </div>
+          </section>
+
+          <section class="home-panel home-contribute-panel">
+            <span class="home-panel-eyebrow">JOIN THE PROJECT</span>
+            <h2 id="home-bottom-title">AonWiki에 함께 참여해 보세요</h2>
+            <p id="home-bottom-text" class="home-help">새 문서를 만들거나 기존 문서를 보완해 지식을 함께 쌓을 수 있습니다.</p>
+            <button id="home-new" class="button button-primary" type="button">새 문서 작성</button>
+          </section>
+        </aside>
+      </div>
+
+      <div id="home-admin-tools" class="home-admin-tools" hidden>
+        <span class="admin-label">관리자 도구</span>
+        <button id="home-edit" class="button" type="button">대문 편집</button>
+        <button id="admin-token-rotate" class="button" type="button">초기 키 폐기 · 랜덤 토큰 발급</button>
+      </div>
     </section>
     <section id="document-view" class="document-view" hidden>
       <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>

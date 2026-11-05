@@ -143,60 +143,140 @@ function showHome(push=true){
 }
 async function loadHome(){
   const list=$("page-list");
+  const changesHost=$("home-recent-changes");
+  const categoriesHost=$("home-category-list");
   list.replaceChildren();
+  changesHost?.replaceChildren();
+  categoriesHost?.replaceChildren();
   $("page-count").textContent="";
+
+  const formatHomeDate=value=>{
+    if(!value)return "";
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime()))return "";
+    return date.toLocaleString("ko-KR",{
+      month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"
+    });
+  };
+  const makeHomeLink=(title,label=title)=>{
+    const link=document.createElement("a");
+    link.href=routeFor(title);
+    link.textContent=label;
+    link.addEventListener("click",event=>{
+      event.preventDefault();
+      openPage(title);
+    });
+    return link;
+  };
+  const makeHomeEmpty=(host,message)=>{
+    if(!host)return;
+    host.replaceChildren();
+    addText(host,"p",message).className="empty-list";
+  };
+
   try{
-    const [data,homeData] = await Promise.all([
+    const [pageData,homeData,recentData,categoryData]=await Promise.all([
       api("/api/pages"),
-      api("/api/home").catch(()=>({settings:{}}))
+      api("/api/home").catch(()=>({settings:{}})),
+      api("/api/recent").catch(()=>({changes:[]})),
+      api("/api/categories").catch(()=>({categories:[],total:0}))
     ]);
     const settings=homeData.settings||{};
     $("home-title").textContent=settings.title||"AonWiki";
     $("home-tagline").textContent=settings.tagline||"함께 만드는 지식 백과사전";
+
     const hint=$("home-search-hint");
-    if(hint)hint.textContent=settings.searchHint||"검색창에서 문서를 찾거나 아래 목록에서 원하는 문서를 선택하세요.";
+    if(hint)hint.textContent=settings.searchHint||"상단 검색창에서 문서 제목이나 본문 내용을 검색할 수 있습니다.";
     $("home-list-title").textContent=settings.listTitle||"최근 수정된 문서";
-    $("home-bottom-title").textContent=settings.bottomTitle||"문서가 없나요?";
-    $("home-bottom-text").textContent=settings.bottomText||"로그인한 뒤 새 문서를 만들어 지식을 공유할 수 있습니다.";
+    $("home-bottom-title").textContent=settings.bottomTitle||"AonWiki에 함께 참여해 보세요";
+    $("home-bottom-text").textContent=settings.bottomText||"새 문서를 만들거나 기존 문서를 보완해 지식을 함께 쌓을 수 있습니다.";
+
     const notice=$("home-notice");
     notice.textContent=settings.notice||"";
     notice.hidden=!settings.notice;
+
     const content=settings.content||"";
     if(content)await renderNamuMarkup(content,$("home-content"),"대문");
     else $("home-content").replaceChildren();
-    $("home-admin-tools").hidden=!isWikiAdmin;
-  const linkColorHelp = $("editor-linkcolor-help");
-  const linkColorExample = $("editor-linkcolor-example");
-  if (linkColorHelp) linkColorHelp.hidden = !isWikiAdmin;
-  if (linkColorExample) linkColorExample.hidden = !isWikiAdmin;
 
-    const pages=(data.pages||[]).filter(p=>p.title!=="대문"&&!/^(?:분류|category):/i.test(p.title||""));
-    $("page-count").textContent=pages.length+"개 문서";
-    // The old homepage uses the classic compact document list. Category
-    // browsing remains available from the sidebar and /api/categories.
+    $("home-admin-tools").hidden=!isWikiAdmin;
+    const linkColorHelp=$("editor-linkcolor-help");
+    const linkColorExample=$("editor-linkcolor-example");
+    if(linkColorHelp)linkColorHelp.hidden=!isWikiAdmin;
+    if(linkColorExample)linkColorExample.hidden=!isWikiAdmin;
+
+    const pages=(pageData.pages||[])
+      .filter(page=>page.title!=="대문"&&!/^(?:분류|category):/i.test(page.title||""));
+    const categories=categoryData.categories||[];
+    const changes=(recentData.changes||[]).filter(change=>change.title&&change.title!=="대문");
+
+    $("home-doc-count").textContent=pages.length.toLocaleString("ko-KR");
+    $("home-category-count").textContent=Number(categoryData.total??categories.length).toLocaleString("ko-KR");
+    $("home-latest-updated").textContent=pages.length&&pages[0].updated_at
+      ?formatHomeDate(pages[0].updated_at)
+      :"아직 기록이 없습니다";
+
+    $("page-count").textContent=pages.length.toLocaleString("ko-KR")+"개 문서";
     if(!pages.length){
-      addText(list,"p","아직 등록된 문서가 없습니다. 로그인 후 첫 문서를 만들어 보세요.").className="empty-list";
-      return;
-    }
-    pages.forEach(page=>{
-      const row=document.createElement("div");
-      row.className="page-row";
-      const link=document.createElement("a");
-      link.href=routeFor(page.title);
-      link.textContent=page.title;
-      link.addEventListener("click",event=>{
-        event.preventDefault();
-        openPage(page.title);
+      makeHomeEmpty(list,"아직 등록된 문서가 없습니다. 로그인 후 첫 문서를 만들어 보세요.");
+    }else{
+      pages.slice(0,8).forEach(page=>{
+        const row=document.createElement("div");
+        row.className="page-row";
+        const main=makeHomeLink(page.title);
+        const date=document.createElement("time");
+        date.dateTime=page.updated_at||"";
+        date.textContent=formatHomeDate(page.updated_at);
+        row.append(main,date);
+        list.append(row);
       });
-      const time=document.createElement("time");
-      time.textContent=page.updated_at
-        ? new Date(page.updated_at).toLocaleDateString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"})
-        : "";
-      row.append(link,time);
-      list.append(row);
-    });
+    }
+
+    if(!changes.length){
+      makeHomeEmpty(changesHost,"아직 표시할 편집 기록이 없습니다.");
+    }else{
+      changes.slice(0,8).forEach(change=>{
+        const row=document.createElement("div");
+        row.className="home-change-row";
+        const main=document.createElement("div");
+        main.className="home-change-main";
+        main.append(makeHomeLink(change.title));
+        const summary=addText(main,"p",change.summary||"문서 내용 수정");
+        summary.className="home-change-summary";
+        const meta=document.createElement("div");
+        meta.className="home-change-meta";
+        addText(meta,"span",change.editor||"알 수 없음");
+        const time=document.createElement("time");
+        time.dateTime=change.created_at||"";
+        time.textContent=formatHomeDate(change.created_at);
+        meta.append(time);
+        row.append(main,meta);
+        changesHost.append(row);
+      });
+    }
+
+    if(!categories.length){
+      makeHomeEmpty(categoriesHost,"아직 분류가 없습니다. 문서에 [[분류:분류명]]을 추가하면 주제별로 모아 볼 수 있습니다.");
+    }else{
+      categories.slice(0,7).forEach(category=>{
+        const row=document.createElement("div");
+        row.className="home-category-row";
+        const link=makeHomeLink("분류:"+category.name,category.name);
+        const count=addText(row,"span",Number(category.count||0).toLocaleString("ko-KR")+"개 문서");
+        count.className="home-category-count";
+        row.append(link,count);
+        categoriesHost.append(row);
+      });
+      if(categories.length>7){
+        const more=makeHomeLink("분류 목록","전체 분류 "+Number(categoryData.total||categories.length).toLocaleString("ko-KR")+"개 보기");
+        more.className="home-category-more";
+        categoriesHost.append(more);
+      }
+    }
   }catch(error){
-    addText(list,"p",error.message).className="empty-list";
+    makeHomeEmpty(list,error.message||"문서 목록을 불러오지 못했습니다.");
+    makeHomeEmpty(changesHost,"최근 변경 기록을 불러오지 못했습니다.");
+    makeHomeEmpty(categoriesHost,"분류 목록을 불러오지 못했습니다.");
   }
 }
 function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){showHome(true);return}if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}loadPage(title,true,anchor)}
