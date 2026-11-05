@@ -930,11 +930,10 @@ try {
           const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
           tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
           if (tableParameterName == "tablebgcolor") {
-          const tableBgStyle = this.getToolThemeColorStyle("background", "bg", tableParameterData);
-          tableParameterAll["table"] += tableBgStyle;
-          tableParameterAll["tableBg"] += tableBgStyle;
-        }
-          else if (tableParameterName == "tablewidth") {
+            const tableBgStyle = this.getToolThemeColorStyle("background", "bg", tableParameterData);
+            tableParameterAll["table"] += tableBgStyle;
+            tableParameterAll["tableBg"] += tableBgStyle;
+          } else if (tableParameterName == "tablewidth") {
             tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
             tableParameterAll["table"] += "width:100%;";
           } else if (tableParameterName == "tableheight") tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
@@ -1031,9 +1030,7 @@ try {
       const tableParameter = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: {}, rowspan: {} };
       const getTableRowStyle = () => {
         const rowStyle = tableParameter["tr"];
-        return /(?:^|;)\s*background(?:-color)?\s*:/i.test(rowStyle)
-          ? rowStyle
-          : tableParameter["tableBg"] + rowStyle;
+        return /(?:^|;)\s*background(?:-color)?\s*:/i.test(rowStyle) ? rowStyle : tableParameter["tableBg"] + rowStyle;
       };
       let tableDataEnd = "";
       let tableColNum = 0;
