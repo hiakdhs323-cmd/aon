@@ -1078,7 +1078,10 @@ try {
           tableTrChange = 1;
         } else {
           tableTrChange = 0;
-          tableParameter["td"] += '<td colspan="' + tableSubParameter["colspan"] + '" rowspan="' + tableSubParameter["rowspan"] + '" style="' + tableParameter["col"][tableColNum] + tableSubParameter["td"] + '"><back_br>\n' + tableSubParameter["data"] + "\n<front_br></td>";
+          const cellStyles = tableParameter["col"][tableColNum] + tableSubParameter["td"];
+          const hasCellBackground = /(?:^|;)\s*background(?:-color)?\s*:/i.test(cellStyles);
+          const inheritedTableBackground = tableParameter["tableBg"] && !hasCellBackground ? "background:inherit;" : "";
+          tableParameter["td"] += '<td colspan="' + tableSubParameter["colspan"] + '" rowspan="' + tableSubParameter["rowspan"] + '" style="' + inheritedTableBackground + cellStyles + '"><back_br>\n' + tableSubParameter["data"] + "\n<front_br></td>";
         }
         tableColNum += colspanInt;
       }
