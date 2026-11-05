@@ -910,7 +910,7 @@ try {
   manageTable() {
     this.renderData = this.renderData.replace(/\n +\|\|/g, "\n||");
     const manageTableParameter = (cellCount, parameter, data) => {
-      const tableParameterAll = { div: "", class: "", table: "", tr: "", td: "", col: "", colspan: "", rowspan: "", data: "" };
+      const tableParameterAll = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: "", colspan: "", rowspan: "", data: "" };
       let tableAlignAuto = 1;
       let tableColspanAuto = 1;
       let doAnyThing = "";
@@ -929,7 +929,11 @@ try {
         if (tableParameterEqualIndex >= 0) {
           const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
           tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
-          if (tableParameterName == "tablebgcolor") tableParameterAll["table"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
+          if (tableParameterName == "tablebgcolor") {
+          const tableBgStyle = this.getToolThemeColorStyle("background", "bg", tableParameterData);
+          tableParameterAll["table"] += tableBgStyle;
+          tableParameterAll["tableBg"] += tableBgStyle;
+        }
           else if (tableParameterName == "tablewidth") {
             tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
             tableParameterAll["table"] += "width:100%;";
@@ -1024,7 +1028,13 @@ try {
       } else {
         tableCaption = "";
       }
-      const tableParameter = { div: "", class: "", table: "", tr: "", td: "", col: {}, rowspan: {} };
+      const tableParameter = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: {}, rowspan: {} };
+      const getTableRowStyle = () => {
+        const rowStyle = tableParameter["tr"];
+        return /(?:^|;)\s*background(?:-color)?\s*:/i.test(rowStyle)
+          ? rowStyle
+          : tableParameter["tableBg"] + rowStyle;
+      };
       let tableDataEnd = "";
       let tableColNum = 0;
       let tableTrChange = 0;
@@ -1040,7 +1050,7 @@ try {
         tableDataIn = tableDataIn.replace(/^\n+/g, "");
         if (tableSub[0] !== "" && tableTrChange === 1) {
           tableColNum = 0;
-          tableDataEnd += '<tr style="' + tableParameter["tr"] + '">' + tableParameter["td"] + "</tr>";
+          tableDataEnd += '<tr style="' + getTableRowStyle() + '">' + tableParameter["td"] + "</tr>";
           tableParameter["tr"] = "";
           tableParameter["td"] = "";
         }
@@ -1065,6 +1075,7 @@ try {
         tableParameter["div"] += tableSubParameter["div"];
         tableParameter["class"] = tableSubParameter["class"] !== "" ? tableSubParameter["class"] : tableParameter["class"];
         tableParameter["table"] += tableSubParameter["table"];
+        tableParameter["tableBg"] = tableSubParameter["tableBg"] || tableParameter["tableBg"];
         tableParameter["col"][tableColNum] += tableSubParameter["col"];
         if (tableSub[2] === "" && tableSub[3] === "") {
           tableTrChange = 1;
@@ -1074,7 +1085,7 @@ try {
         }
         tableColNum += colspanInt;
       }
-      tableDataEnd += '<tr style="' + tableParameter["tr"] + '">' + tableParameter["td"] + "</tr>";
+      tableDataEnd += '<tr style="' + getTableRowStyle() + '">' + tableParameter["td"] + "</tr>";
       tableDataEnd = '<table class="' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
       tableDataEnd = '<div class="table_safe" style="' + tableParameter["div"] + '">' + tableDataEnd + "</div>";
       this.renderData = this.renderData.replace(tableRegex, "\n<front_br>" + tableDataEnd + "\n");
