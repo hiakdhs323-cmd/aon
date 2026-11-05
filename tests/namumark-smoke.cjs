@@ -6,6 +6,11 @@ vm.runInThisContext(fs.readFileSync("namumark-parser.js", "utf8"), {
   filename: "namumark-parser.js"
 });
 
+const styles = fs.readFileSync("style.css", "utf8");
+assert.ok(styles.includes("#article.wiki-content details.opennamu_TOC"), "TOC panel styles must exist");
+assert.ok(styles.includes("background:var(--wiki-panel)!important"), "TOC panel must retain its background");
+assert.ok(!styles.includes(".opennamu_category_links a+a::before"), "category links must not add a second separator");
+
 const NamuMark = globalThis.NamuMarkBundle?.NamuMark;
 assert.equal(typeof NamuMark, "function", "NamuMark parser export must be available");
 
@@ -31,11 +36,12 @@ assert.match(infoBox, /문서 정보/, "table header text must be preserved");
 assert.match(infoBox, /한국지리/, "table cell text must be preserved");
 assert.match(infoBox, /정식 문서/, "last table cell must be preserved");
 
-const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]");
+const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]\n[[분류:사건 사고]]");
 assert.match(category, /opennamu_category_label/, "category strip label must render");
 assert.match(category, /분류:/, "category label must say 분류:");
-assert.doesNotMatch(category, /opennamu_category_button/, "category strip must not show +/- control");
-
+assert.match(category, /일반 틀[\s\S]* \| [\s\S]*사건 사고/, "category links must be separated by a pipe");
+assert.doesNotMatch(category, /opennamu_category_button|\(-\)/, "category strip must not show +/- control or minus text");
+assert.doesNotMatch(category, /<hr class="main_hr">/, "category must not add a stray horizontal rule");
 const toc = render("== 개요 ==\n본문\n=== 세부 내용 ===\n추가 내용");
 assert.match(toc, /class="opennamu_TOC"/, "table of contents must render");
 assert.match(toc, /<details[^>]*open/, "table of contents must start expanded");

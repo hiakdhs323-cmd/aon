@@ -2532,51 +2532,31 @@ html[data-theme="dark"] .wiki-content caption{color:#f2f3f4}
    ========================================================= */
 
 /* Category strip: plain "분류:" line, no legacy plus/minus widget. */
+/* Category bar: boxed "분류: 항목 | 항목" layout. */
 #article.wiki-content .opennamu_category{
-  display:flex;
-  align-items:baseline;
-  flex-wrap:wrap;
-  gap:0 6px;
-  box-sizing:border-box;
-  width:100%;
-  min-width:0;
-  margin:12px 0 10px;
-  padding:6px 2px 5px;
-  border:0;
-  border-top:1px solid var(--wiki-border-strong);
-  border-radius:0;
-  background:transparent;
-  color:var(--wiki-text);
-  font-size:12px;
-  line-height:1.6;
+  display:flex;align-items:center;flex-wrap:wrap;gap:0 6px;
+  box-sizing:border-box;width:100%;min-width:0;
+  margin:10px 0 12px;padding:6px 9px;
+  border:1px solid var(--wiki-border-strong);border-radius:4px;
+  background:var(--wiki-panel);color:var(--wiki-text);
+  font-size:12px;line-height:1.6;
 }
 #article.wiki-content .opennamu_category_label{
-  flex:0 0 auto;
-  margin:0;
-  color:var(--wiki-text);
-  font-weight:700;
+  display:inline;flex:0 0 auto;margin:0;color:var(--wiki-text);font-weight:700;
 }
-#article.wiki-content .opennamu_category_links{
-  display:inline;
-  min-width:0;
-  overflow-wrap:anywhere;
-}
+#article.wiki-content .opennamu_category_links{display:inline;min-width:0;overflow-wrap:anywhere}
 #article.wiki-content .opennamu_category_links a{
-  display:inline;
-  margin:0;
-  padding:0;
-  border:0;
-  background:transparent;
-  color:var(--wiki-link);
-  font-size:12px;
-  text-decoration:none;
+  display:inline;margin:0;padding:0;border:0;background:transparent;
+  color:var(--wiki-link);font-size:12px;text-decoration:none;
 }
-#article.wiki-content .opennamu_category_links a+a::before{
-  content:"·";
-  margin:0 6px;
-  color:var(--wiki-muted);
+#article.wiki-content .opennamu_category_links a:hover{text-decoration:underline}
+html[data-theme="light"] #article.wiki-content .opennamu_category{
+  background:#fff;border-color:#cbd2d8;color:#20252a;
 }
 html[data-theme="light"] #article.wiki-content .opennamu_category_label{color:#20252a}
+html[data-theme="dark"] #article.wiki-content .opennamu_category{
+  background:#171a1d;border-color:#515960;color:#e7eaed;
+}
 html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1f3f5}
 
 /* The TOC is a clean disclosure header: no native marker, no glyph icon,
@@ -2993,4 +2973,32 @@ html[data-theme="dark"] #editor-highlight .mk-code-fence{color:#a5abb1!important
   .rail-scroll-tools button{min-width:72px!important}
   .editor-actions{gap:6px}
   .editor-actions .button{min-width:76px}
+}
+
+/* Final TOC colors: keep a distinct card and filled contents in both themes. */
+#article.wiki-content details.opennamu_TOC,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+  background:var(--wiki-panel)!important;
+  border:1px solid var(--wiki-border-strong)!important;
+  border-radius:4px!important;
+}
+#article.wiki-content details.opennamu_TOC>.opennamu_TOC_title,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_title,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_title{
+  background:var(--wiki-panel-soft)!important;
+  color:var(--wiki-text)!important;
+  border-bottom:1px solid var(--wiki-border)!important;
+}
+#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+  background:var(--wiki-panel)!important;
+  color:var(--wiki-text)!important;
+  padding:8px 10px 10px!important;
+}
+@media(max-width:700px){
+  #article.wiki-content details.opennamu_TOC{
+    display:block!important;width:100%;min-width:0;max-width:100%;
+  }
 }
