@@ -2124,7 +2124,7 @@ function highlightNamuLine(line, insideCode) {
   }
   if (/^\s*(?:-{4,}|={4,})\s*$/.test(line)) return syntax(line);
 
-  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|<(?:table(?:width|height|align|textalign|bgcolor|color|bordercolor|class)=[^>\n]+|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:br|date|clearfix|pagecount)\])/gi;
+  const tokenPattern = /(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]]+\]|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-5][^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|<(?:table(?:width|height|align|textalign|bgcolor|color|bordercolor|class)=[^>\n]+|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|\^\^.*?\^\^|,,.*?,,|\[목차(?:\([^\]]*\))?\]|\[(?:\/?table(?:\([^\]\n]*\))?|\/?tr|\/?th(?:=\d+)?|\/?td(?:=\d+)?)\]|\[(?:br|date|clearfix|pagecount)\])/gi;
   let output = "", last = 0, match;
   while ((match = tokenPattern.exec(line))) {
     output += escapeHighlightText(line.slice(last, match.index));
@@ -2181,7 +2181,7 @@ function highlightNamuLine(line, insideCode) {
     last = tokenPattern.lastIndex;
   }
   output += escapeHighlightText(line.slice(last));
-  return output || " ";
+  return output;
 }
 function updateEditorHighlight() {
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
@@ -2205,7 +2205,10 @@ function updateEditorHighlight() {
     return highlightNamuLine(line, insideCode);
   }).join("\n") + (field.value.endsWith("\n") ? "\n" : "");
   const wrap = field.closest(".editor-code-wrap");
-  if (wrap) wrap.classList.toggle("highlight-active", code.textContent === field.value);
+  if (wrap) {
+    pre.dataset.sourceText = field.value;
+    wrap.classList.add("highlight-active");
+  }
   pre.scrollTop = field.scrollTop;
   pre.scrollLeft = field.scrollLeft;
 }
@@ -2213,8 +2216,10 @@ $("editor-content").addEventListener("scroll", () => {
   const pre = $("editor-highlight");
   if (pre) { pre.scrollTop = $("editor-content").scrollTop; pre.scrollLeft = $("editor-content").scrollLeft; }
 });
+$("editor-content").addEventListener("input", updateEditorHighlight);
 $("editor-content").addEventListener("keyup", updateEditorHighlight);
 $("editor-content").addEventListener("click", updateEditorHighlight);
+$("editor-content").addEventListener("compositionend", updateEditorHighlight);
 
 function insertEditorMarkup(kind){
  const field=$("editor-content"),start=field.selectionStart,end=field.selectionEnd;

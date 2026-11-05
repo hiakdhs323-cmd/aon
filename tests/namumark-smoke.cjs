@@ -36,6 +36,18 @@ assert.match(infoBox, /문서 정보/, "table header text must be preserved");
 assert.match(infoBox, /한국지리/, "table cell text must be preserved");
 assert.match(infoBox, /정식 문서/, "last table cell must be preserved");
 
+const columnColorTable = render([
+  "||<-2><colbgcolor=#74B9FF><colcolor=white>문서 정보||",
+  "||멤버 수||54명||"
+].join("\n"));
+const columnCells = [...columnColorTable.matchAll(/<td\b([^>]*)>/g)].map(match => match[1]);
+assert.ok(columnCells.length >= 3, "column-color test table must render all cells");
+const secondRowCells = columnCells.slice(-2);
+assert.match(secondRowCells[0], /background:#74B9FF/i, "colbgcolor applies to the first column");
+assert.match(secondRowCells[0], /color:white/i, "colcolor applies to the first column");
+assert.doesNotMatch(secondRowCells[1], /background:#74B9FF/i, "colbgcolor must not leak across a colspan");
+assert.doesNotMatch(secondRowCells[1], /color:white/i, "colcolor must not leak across a colspan");
+
 const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]\n[[분류:사건 사고]]");
 assert.match(category, /opennamu_category_label/, "category strip label must render");
 assert.match(category, /분류:/, "category label must say 분류:");

@@ -3002,3 +3002,66 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
     display:block!important;width:100%;min-width:0;max-width:100%;
   }
 }
+
+/* Team-section folds: centered charcoal rows, matching the reference table. */
+#article.wiki-content details.wiki-fold{
+  display:block;width:100%;min-width:0;max-width:100%;
+  margin:0 0 2px;padding:0;
+  border:1px solid var(--wiki-border-strong);border-radius:0;
+  background:var(--wiki-panel);color:var(--wiki-text);
+  box-shadow:none!important;overflow:hidden;
+}
+#article.wiki-content details.wiki-fold>summary,
+#article.wiki-content details.wiki-fold>summary:focus,
+#article.wiki-content details.wiki-fold>summary:focus-visible{
+  position:relative;display:flex!important;align-items:center;justify-content:center!important;
+  box-sizing:border-box;width:100%;min-height:42px;margin:0;padding:9px 30px;
+  border:0!important;border-radius:0!important;
+  outline:0!important;outline-offset:0!important;box-shadow:none!important;
+  background:var(--wiki-panel-soft)!important;color:var(--wiki-text)!important;
+  font-family:inherit;font-size:13px;font-weight:750;line-height:1.4;
+  text-align:center!important;list-style:none!important;cursor:pointer;
+}
+#article.wiki-content details.wiki-fold>summary::-webkit-details-marker,
+#article.wiki-content details.wiki-fold>summary::marker{
+  display:none!important;content:""!important;font-size:0!important;
+}
+#article.wiki-content details.wiki-fold>summary::before,
+#article.wiki-content details.wiki-fold>summary::after{
+  display:none!important;content:none!important;
+}
+#article.wiki-content details.wiki-fold[open]>summary{
+  border-bottom:1px solid var(--wiki-border)!important;
+}
+#article.wiki-content details.wiki-fold>.wiki-fold-content{
+  margin:0;padding:10px 12px;border:0;border-radius:0;
+  background:var(--wiki-panel)!important;color:var(--wiki-text)!important;
+}
+html[data-theme="light"] #article.wiki-content details.wiki-fold{
+  border-color:#cbd2d8;background:#fff;
+}
+html[data-theme="light"] #article.wiki-content details.wiki-fold>summary{
+  background:#e9edf1!important;color:#20252a!important;
+}
+html[data-theme="light"] #article.wiki-content details.wiki-fold>.wiki-fold-content{
+  background:#fff!important;color:#20252a!important;
+}
+html[data-theme="dark"] #article.wiki-content details.wiki-fold{
+  border-color:#51565c;background:#232629;
+}
+html[data-theme="dark"] #article.wiki-content details.wiki-fold>summary{
+  background:#2b2e32!important;color:#f1f3f5!important;
+}
+html[data-theme="dark"] #article.wiki-content details.wiki-fold>.wiki-fold-content{
+  background:#232629!important;color:#e7eaed!important;
+}
+@media(max-width:700px){
+  #article.wiki-content details.wiki-fold>summary{
+    min-height:42px;padding:9px 24px;font-size:13px;
+  }
+}
+/* Ordinary table defaults do not override inline per-column/cell colors. */
+#article.wiki-content table td{background-color:inherit}
+#article.wiki-content table tr:nth-child(even) td:not([style*="background"]){
+  background:var(--wiki-panel-soft);
+}
