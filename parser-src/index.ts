@@ -1116,6 +1116,7 @@ try {
           } else {
             doAnyThing += "&lt;" + tableParameter + "&gt;";
           }
+        }
       }
 
       if (tableAlignAuto === 1) {
