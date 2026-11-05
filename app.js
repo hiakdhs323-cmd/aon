@@ -1643,7 +1643,9 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("discussion-tab").hidden=false;
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
-  $("edit").hidden=currentProtection.level==="admin"&&!isWikiAdmin;
+  const canEditDocument = Boolean(isWikiAdmin || currentProtection.level !== "admin");
+  $("edit").hidden=!canEditDocument;
+  $("heading-edit").hidden=!canEditDocument || (!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin);
   $("delete-page").hidden=!isWikiAdmin||currentProtection.level==="admin";
   const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
   if(currentProtection.level==="admin"){
