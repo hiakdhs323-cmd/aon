@@ -10,7 +10,7 @@ function applyWikiTheme(theme) {
     button.setAttribute("aria-label", selected === "dark" ? "화이트 모드로 전환" : "다크 모드로 전환");
   }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = selected === "dark" ? "#151a23" : "#ffffff";
+  if (meta) meta.content = selected === "dark" ? "#050505" : "#ffffff";
   refreshWikiTableContrast(document);
 }
 applyWikiTheme(localStorage.getItem(THEME_SETTING) || "dark");
@@ -292,6 +292,10 @@ function readRoute(){
   if(hash==="#"||hash==="#/"||hash==="#/home"){history.replaceState(null,"","/");showHome(false);return}
   if(hash==="#/categories"){loadCategoryIndex(false);return}
   if(hash==="#/recent"){loadRecentChanges(false);return}
+  if(hash.startsWith("#/special/")){
+   let type=hash.slice("#/special/".length);try{type=decodeURIComponent(type)}catch{}
+   loadSpecialPage(type,false);return
+  }
   if(hash==="#/discussions"||hash.startsWith("#/discussions?")){
    const query=hash.includes("?")?hash.slice(hash.indexOf("?")+1):"";
    const pageTitle=new URLSearchParams(query).get("title")||"";
@@ -790,8 +794,6 @@ function applyFinalWikiTypographyAndLinkColors(root) {
     element.style.setProperty("line-height","1.6","important");
   }
   root.querySelectorAll(".opennamu_TOC").forEach(toc=>{
-    toc.style.setProperty("font-size","12px","important");
-    toc.style.setProperty("line-height","1.5","important");
     const summary=toc.querySelector(":scope > summary");
     const contents=toc.querySelector(":scope > .opennamu_TOC_contents");
     if(summary){
@@ -803,10 +805,6 @@ function applyFinalWikiTypographyAndLinkColors(root) {
       const syncExpanded=()=>summary.setAttribute("aria-expanded",String(toc.open));
       if(!toc.dataset.aonTocToggleBound){toc.addEventListener("toggle",syncExpanded);toc.dataset.aonTocToggleBound="true";}
     }
-    toc.querySelectorAll("*").forEach(element=>{
-      element.style.setProperty("font-size","12px","important");
-      element.style.setProperty("line-height","1.5","important");
-    });
   });
   const hasPageLinkColorRules=[...root.querySelectorAll("style")].some(style=>style.textContent.includes(".aonwiki-page-content a"));
   const links=root.querySelectorAll([
@@ -1238,6 +1236,124 @@ async function loadGlobalRail(){
   });
  }catch(error){console.warn("활동 패널을 불러오지 못했습니다.",error)}
 }
+
+
+const SPECIAL_PAGE_CONFIG={
+ missing:{title:"작성에 필요한 문서",description:"다른 문서에서 링크하고 있지만 아직 만들어지지 않은 문서입니다.",type:"missing"},
+ orphan:{title:"고립된 문서",description:"다른 문서에서 내부 링크로 참조되지 않는 문서입니다.",type:"orphan"},
+ "orphan-categories":{title:"고립된 분류",description:"어떤 문서에서도 분류 링크로 참조하지 않는 분류입니다.",type:"orphan-categories"},
+ uncategorized:{title:"분류가 되지 않은 문서",description:"분류 링크가 등록되지 않은 문서입니다.",type:"uncategorized"},
+ old:{title:"편집된 지 오래된 문서",description:"가장 오랫동안 수정되지 않은 문서부터 표시합니다.",type:"old"},
+ short:{title:"내용이 짧은 문서",description:"본문 원문이 200자 이하인 문서입니다.",type:"short"},
+ long:{title:"내용이 긴 문서",description:"본문 원문이 10,000자 이상인 문서입니다.",type:"long"},
+ blocked:{title:"차단 내역",description:"AonWiki에서 확인할 수 있는 회원 차단 이력입니다.",type:"blocked"},
+ license:{title:"라이선스",description:"AonWiki의 문서 및 소프트웨어 이용 안내입니다.",type:"license"}
+};
+function formatSpecialDate(value){
+ if(!value)return "수정 기록 없음";
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?"수정 기록 없음":date.toLocaleDateString("ko-KR");
+}
+async function loadSpecialPage(type,pushRoute=true){
+ const config=SPECIAL_PAGE_CONFIG[type];
+ if(!config){loadHome(true);return}
+ const requestId=prepareDiscussionView(config.title,"#/special/"+encodeURIComponent(type),pushRoute);
+ const article=$("article");
+ const heading=document.createElement("div");heading.className="special-page-heading";
+ const copy=document.createElement("div");
+ addText(copy,"p","AONWIKI · SPECIAL PAGES").className="discussion-eyebrow";
+ addText(copy,"h2",config.title);
+ addText(copy,"p",config.description).className="discussion-intro";
+ heading.append(copy);article.append(heading);
+ if(type==="license"){
+  const panel=document.createElement("section");panel.className="special-info-panel";
+  addText(panel,"h3","이용 전 확인 사항");
+  addText(panel,"p","AonWiki의 공통 라이선스 정책은 현재 이 문서에서 별도로 지정되어 있지 않습니다. 개별 문서에 저작권·라이선스 표시가 있다면 해당 표시를 먼저 확인하세요.");
+  addText(panel,"p","별도 허가나 라이선스가 확인되지 않은 자료는 재배포 및 2차 이용이 허용된다고 임의로 판단하지 마세요.");
+  const repoLink=document.createElement("a");repoLink.href="https://github.com/hiakdhs323-cmd/aon";repoLink.target="_blank";repoLink.rel="noopener noreferrer";repoLink.textContent="AonWiki 소스 코드 저장소";
+  panel.append(repoLink);article.append(panel);return;
+ }
+ const status=document.createElement("p");status.className="loading";status.textContent="특수 문서 데이터를 불러오는 중입니다…";article.append(status);
+ try{
+  const data=await api("/api/special-pages?type="+encodeURIComponent(type));
+  if(requestId!==pageNavigationSequence)return;
+  status.remove();
+  if(data.available===false){
+   const panel=document.createElement("section");panel.className="special-info-panel special-info-unavailable";
+   addText(panel,"h3","이 기능은 아직 연결되지 않았습니다.");
+   addText(panel,"p",data.message||"현재 표시할 수 있는 내역이 없습니다.");
+   article.append(panel);return;
+  }
+  const toolbar=document.createElement("div");toolbar.className="special-list-toolbar";
+  const count=addText(toolbar,"strong",Number(data.total||0).toLocaleString("ko-KR")+"개 문서");count.className="special-result-count";
+  const filter=document.createElement("input");filter.type="search";filter.placeholder="목록에서 검색";filter.setAttribute("aria-label","특수 문서 목록 검색");
+  toolbar.append(filter);article.append(toolbar);
+  const list=document.createElement("div");list.className="special-result-list";article.append(list);
+  const items=data.items||[];
+  const renderItems=()=>{
+   const query=filter.value.trim().toLocaleLowerCase();
+   const visible=items.filter(item=>String(item.title||"").toLocaleLowerCase().includes(query));
+   list.replaceChildren();
+   if(!visible.length){
+    const empty=addText(list,"p",items.length?"검색 결과가 없습니다.":"표시할 문서가 없습니다.");
+    empty.className="discussion-empty";return;
+   }
+   visible.forEach((item,index)=>{
+    const row=document.createElement("div");row.className="special-result-row";
+    const number=addText(row,"span",String(index+1));number.className="special-result-number";
+    const main=document.createElement("div");main.className="special-result-main";
+    const link=document.createElement("a");link.href=routeFor(item.title);link.textContent=item.title;
+    link.addEventListener("click",event=>{event.preventDefault();openPage(item.title)});
+    main.append(link);
+    const meta=[];
+    if(type==="missing"){meta.push("링크 "+Number(item.count||0)+"회",item.source?"예시: "+item.source:"")}
+    else if(type==="short"||type==="long"){meta.push("원문 "+Number(item.characters||0).toLocaleString("ko-KR")+"자")}
+    else meta.push(formatSpecialDate(item.updated_at));
+    if(meta.filter(Boolean).length){const detail=addText(main,"span",meta.filter(Boolean).join(" · "));detail.className="special-result-meta"}
+    row.append(main);list.append(row);
+   });
+  };
+  filter.addEventListener("input",renderItems);renderItems();
+ }catch(error){
+  if(requestId!==pageNavigationSequence)return;
+  status.textContent=error.message;status.className="discussion-empty";
+ }
+}
+function closeSpecialMenu(){
+ const menu=$("special-menu"),toggle=$("special-menu-toggle");
+ if(!menu||!toggle)return;
+ menu.hidden=true;toggle.setAttribute("aria-expanded","false");
+}
+function initSpecialMenu(){
+ const toggle=$("special-menu-toggle"),menu=$("special-menu");
+ if(!toggle||!menu)return;
+ toggle.addEventListener("click",event=>{
+  event.stopPropagation();
+  const open=menu.hidden;
+  menu.hidden=!open;toggle.setAttribute("aria-expanded",String(open));
+ });
+ menu.addEventListener("click",event=>{
+  const button=event.target.closest("[data-special-action],[data-special-type]");
+  if(!button)return;
+  closeSpecialMenu();
+  const type=button.dataset.specialType,action=button.dataset.specialAction;
+  if(type){loadSpecialPage(type,true);return}
+  if(action==="board"){loadDiscussionList(true);return}
+  if(action==="upload"){
+   if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
+   $("file").click();return;
+  }
+  if(action==="random"){openRandomPage();return}
+  if(action==="license"){loadSpecialPage("license",true);return}
+ });
+ document.addEventListener("click",event=>{
+  if(!event.target.closest(".special-dropdown"))closeSpecialMenu();
+ });
+ document.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&!menu.hidden){closeSpecialMenu();toggle.focus()}
+ });
+}
+initSpecialMenu();
 
 const CATEGORY_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 function categoryInitial(value) {

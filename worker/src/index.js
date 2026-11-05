@@ -1106,6 +1106,74 @@ export default {
         await env.DB.prepare("UPDATE discussions SET deleted_at = ?, deleted_by = ?, status = 'closed', updated_at = ? WHERE id = ?").bind(now, user.username, now, id).run();
         return response({ ok: true, id }, 200, cors);
       }
+
+      if (url.pathname === "/api/special-pages" && request.method === "GET") {
+        const type = String(url.searchParams.get("type") || "").trim();
+        const supported = new Set(["missing", "orphan", "orphan-categories", "uncategorized", "old", "short", "long", "blocked"]);
+        if (!supported.has(type)) return response({ error: "지원하지 않는 특수 문서입니다." }, 400, cors);
+        if (type === "blocked") return response({ type, available: false, items: [], total: 0, message: "현재 AonWiki에는 회원 차단 이력을 기록하는 기능이 연결되어 있지 않습니다." }, 200, cors);
+        const result = await env.DB.prepare("SELECT title, content, updated_at FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
+        const pages = (result.results || []).map(page => ({
+          title: String(page.title || ""),
+          content: String(page.content || ""),
+          updated_at: String(page.updated_at || "")
+        }));
+        const pageByKey = new Map(pages.map(page => [page.title.toLocaleLowerCase(), page]));
+        const inbound = new Map();
+        const missing = new Map();
+        const categoryReferences = new Set();
+        const categoryPattern = /\[\[(?:분류|category):([^\]|#]+)(?:\|[^\]]*)?\]\]/gi;
+        for (const page of pages) {
+          for (const match of page.content.matchAll(/\[\[([^\]]+)\]\]/g)) {
+            const target = String(match[1] || "").split("|")[0].split("#")[0].trim();
+            if (!target) continue;
+            const key = target.toLocaleLowerCase();
+            inbound.set(key, (inbound.get(key) || 0) + 1);
+            if (/^(?:분류|category):/i.test(target)) {
+              const category = target.replace(/^(?:분류|category):/i, "").trim().toLocaleLowerCase();
+              if (category) categoryReferences.add(category);
+            } else if (!pageByKey.has(key) && !/^(?:파일|file):/i.test(target) && target !== page.title) {
+              const item = missing.get(key) || { title: target, count: 0, source: page.title };
+              item.count++;
+              missing.set(key, item);
+            }
+          }
+          for (const match of page.content.matchAll(categoryPattern)) {
+            const category = String(match[1] || "").trim().toLocaleLowerCase();
+            if (category) categoryReferences.add(category);
+          }
+        }
+        const regular = pages.filter(page => page.title !== "대문" && !/^(?:분류|category):/i.test(page.title));
+        let items = [];
+        let description = "";
+        if (type === "missing") {
+          description = "다른 문서에서 링크하고 있지만 아직 작성되지 않은 문서입니다.";
+          items = [...missing.values()].sort((a, b) => b.count - a.count || a.title.localeCompare(b.title, "ko"));
+        } else if (type === "orphan") {
+          description = "다른 문서에서 내부 링크로 참조되지 않는 문서입니다.";
+          items = regular.filter(page => !inbound.has(page.title.toLocaleLowerCase())).map(page => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "orphan-categories") {
+          description = "어떤 문서에서도 분류 링크로 참조하지 않는 분류입니다.";
+          items = pages.filter(page => /^(?:분류|category):/i.test(page.title)).filter(page => {
+            const name = page.title.replace(/^(?:분류|category):/i, "").toLocaleLowerCase();
+            return !categoryReferences.has(name);
+          }).map(page => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "uncategorized") {
+          description = "분류 링크가 하나도 등록되지 않은 문서입니다.";
+          items = regular.filter(page => !/\[\[(?:분류|category):/i.test(page.content)).map(page => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "old") {
+          description = "최근 수정 시각이 오래된 문서부터 표시합니다.";
+          items = [...regular].sort((a, b) => (Date.parse(a.updated_at) || 0) - (Date.parse(b.updated_at) || 0)).map(page => ({ title: page.title, updated_at: page.updated_at }));
+        } else if (type === "short") {
+          description = "본문 원문이 200자 이하인 문서입니다. 나무마크 기호와 공백도 글자 수에 포함됩니다.";
+          items = regular.filter(page => page.content.trim().length <= 200).map(page => ({ title: page.title, characters: page.content.length, updated_at: page.updated_at })).sort((a, b) => a.characters - b.characters);
+        } else if (type === "long") {
+          description = "본문 원문이 10,000자 이상인 문서입니다. 나무마크 기호와 공백도 글자 수에 포함됩니다.";
+          items = regular.filter(page => page.content.length >= 10000).map(page => ({ title: page.title, characters: page.content.length, updated_at: page.updated_at })).sort((a, b) => b.characters - a.characters);
+        }
+        const total = items.length;
+        return response({ type, available: true, description, total, items: items.slice(0, 500) }, 200, cors);
+      }
       if (url.pathname === "/api/page-index" && request.method === "GET") {
         const result = await env.DB.prepare("SELECT title FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
         return response({ pages: result.results || [] }, 200, cors);

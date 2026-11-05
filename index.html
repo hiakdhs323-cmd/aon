@@ -7,7 +7,7 @@
 <title>AonWiki</title>
 <link rel="icon" type="image/svg+xml" href="aonwiki-mark.svg?v=20261105-brand-v3">
 <link rel="mask-icon" href="aonwiki-mark.svg?v=20261105-brand-v3" color="#00a69c">
-<link rel="stylesheet" href="style.css?v=20261105-aonwiki-dark-discussions-v1">
+<link rel="stylesheet" href="style.css?v=20261105-special-menu-mobile-v3">
 <link rel="stylesheet" href="namumark-beta.css?v=20261102-r2">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
@@ -21,9 +21,26 @@
       <button id="home" class="top-nav-link active" type="button">대문</button>
       <button id="recent-changes" class="top-nav-link" type="button"><span aria-hidden="true">◷</span> 최근 변경</button>
       <a class="top-nav-link" href="#/discussions"><span aria-hidden="true">▤</span> 최근 토론</a>
-      <button id="categories" class="top-nav-link" type="button">분류</button>
-      <button id="random-page" class="top-nav-link" type="button">임의 문서</button>
-      <button id="new" class="top-nav-link" type="button">새 문서</button>
+      <div class="special-dropdown">
+        <button id="special-menu-toggle" class="top-nav-link special-menu-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="special-menu">
+          <span class="special-trigger-icon" aria-hidden="true">▣</span><span>특수 기능</span><span class="special-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div id="special-menu" class="special-menu" role="menu" aria-label="특수 기능" hidden>
+          <button type="button" role="menuitem" data-special-action="board"><span class="special-menu-icon">▣</span><span>게시판</span></button>
+          <button type="button" role="menuitem" data-special-action="upload"><span class="special-menu-icon">⇧</span><span>파일 올리기</span></button>
+          <div class="special-menu-divider" role="separator"></div>
+          <button type="button" role="menuitem" data-special-type="missing"><span class="special-menu-icon">▤</span><span>작성에 필요한 문서</span></button>
+          <button type="button" role="menuitem" data-special-type="orphan"><span class="special-menu-icon">☻</span><span>고립된 문서</span></button>
+          <button type="button" role="menuitem" data-special-type="orphan-categories"><span class="special-menu-icon">☻</span><span>고립된 분류</span></button>
+          <button type="button" role="menuitem" data-special-type="uncategorized"><span class="special-menu-icon">◢</span><span>분류가 되지 않은 문서</span></button>
+          <button type="button" role="menuitem" data-special-type="old"><span class="special-menu-icon">♟</span><span>편집된 지 오래된 문서</span></button>
+          <button type="button" role="menuitem" data-special-type="short"><span class="special-menu-icon">♧</span><span>내용이 짧은 문서</span></button>
+          <button type="button" role="menuitem" data-special-type="long"><span class="special-menu-icon">♜</span><span>내용이 긴 문서</span></button>
+          <button type="button" role="menuitem" data-special-type="blocked"><span class="special-menu-icon">⊘</span><span>차단 내역</span></button>
+          <button type="button" role="menuitem" data-special-action="random"><span class="special-menu-icon special-r-icon">R</span><span>Random Page</span></button>
+          <button type="button" role="menuitem" data-special-action="license"><span class="special-menu-icon">◆</span><span>라이선스</span></button>
+        </div>
+      </div>
     </nav>
     <form id="search" class="searchbar" role="search"><input id="query" placeholder="AonWiki에서 검색..." aria-label="문서 검색" autocomplete="off"><button type="submit" aria-label="검색">⌕</button></form>
     <nav class="header-actions" aria-label="계정 및 설정">
@@ -34,6 +51,11 @@
       <button id="labs" class="button button-plain" type="button" title="나무마크 엔진 정보">엔진 정보</button>
       <button id="theme-toggle" class="button button-plain" type="button">화이트 모드</button>
     </nav>
+    <div class="legacy-nav-actions" hidden>
+      <button id="categories" type="button">분류</button>
+      <button id="new" type="button">새 문서</button>
+      <button id="random-page" type="button">임의 문서</button>
+    </div>
   </div>
 </header>
 <div class="layout">
@@ -278,5 +300,5 @@ hover-dark: #a5d6ff
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" crossorigin="anonymous"></script>
-<script defer src="app.js?v=20261105-aonwiki-dark-discussions-v2"></script>
+<script defer src="app.js?v=20261105-special-menu-mobile-v2"></script>
 </body></html>
