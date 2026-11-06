@@ -31,7 +31,6 @@ assert.match(foldingStyles, /min-height:23px/, "folding title row must match the
 assert.match(foldingStyles, /background:transparent!important/, "folding title and body must not be rendered as filled panels");
 assert.match(foldingStyles, /border:0!important/, "folding wrapper and title must not render an outer card border");
 assert.match(foldingStyles, /font-weight:500/, "folding title must use normal text weight instead of a heavy button label");
-assert.match(workerSource, /aonfix", "20261106-folding-entrywiki-v1"/, "SSR must serve the new folding stylesheet under a fresh cache key");
 
 const infoBox = render([
   "[table(align=right,width=400)]",
@@ -73,6 +72,7 @@ assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must no
 
 const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
+assert.ok(workerSource.includes('aonfix", "20261106-folding-entrywiki-v1"'), "SSR must serve the new folding stylesheet under a fresh cache key");
 const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
 assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text colors must be marked and preserved");
