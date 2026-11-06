@@ -71,6 +71,9 @@ assert.match(workerSource, /targeted-db-v24-explicit-cell-backgrounds:/, "server
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
+assert.match(styles, /table tr:not\(\[style\*="background"\]\)>td:first-child:not\(\[style\*="background"\]\)/, "label-cell palette must not cover cells in rows with authored backgrounds");
+assert.doesNotMatch(styles, /#article\.wiki-content table td:first-child:not\(\[style\*="background"\]\)/, "unconditional first-column background rule must not return");
+assert.match(workerSource, /aonfix", "20261106-table-bg-inheritance-v2"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");

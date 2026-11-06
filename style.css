@@ -845,7 +845,7 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content th{background:var(--wiki-panel-soft);color:var(--wiki-text)}
 #article.wiki-content td{color:var(--wiki-text)}
 /* Label/value tables: keep a clear two-column structure without overriding authored cell colors. */
-#article.wiki-content table td:first-child:not([style*="background"]){
+#article.wiki-content table tr:not([style*="background"])>td:first-child:not([style*="background"]){
   width:28%;
   min-width:112px;
   text-align:center;
