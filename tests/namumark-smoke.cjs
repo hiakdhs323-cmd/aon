@@ -68,7 +68,7 @@ assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td
 assert.match(styles, /html\[data-theme="dark"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#f2f3f4!important/s, "dark mode must lighten text without changing the label-cell background");
 assert.doesNotMatch(styles, /auto-bg-(?:light|dark)/, "theme switching must not add synthesized cell backgrounds");
 assert.match(workerSource, /aonfix", "20261106-theme-text-only-v1"/, "SSR asset URLs must receive a new cache key");
-assert.match(workerSource, /targeted-db-v24-explicit-cell-backgrounds:/, "server render cache must invalidate old table markup");
+assert.match(workerSource, /targeted-db-v25-theme-text-only:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
