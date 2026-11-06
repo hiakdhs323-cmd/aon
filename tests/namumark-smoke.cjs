@@ -50,6 +50,24 @@ assert.match(secondRowCells[0], /color:white/i, "colcolor applies to the first c
 assert.doesNotMatch(secondRowCells[1], /background:#74B9FF/i, "colbgcolor must not leak across a colspan");
 assert.doesNotMatch(secondRowCells[1], /color:white/i, "colcolor must not leak across a colspan");
 
+const warningNotice = render([
+  "||<tablewidth=100%><tablebgcolor=#1b1c1e><tablealign=center><rowbgcolor=><height=10>||",
+  "||{{{+1 주의. 사건·사고 관련 내용을 설명합니다.[br][br]}}}'''{{{#ff9100 [https://aon.hiakdhs323.workers.dev/w/AonWiki%3A%ED%8E%B8%EC%A7%91%EC%A7%80%EC%B9%A8#s-4 사건 사고 관련 서술 규정]}}}'''{{{을 유의하시기 바랍니다.}}} ||"
+].join("\n"));
+assert.match(warningNotice, /<table[^>]*style="[^"]*width:100%[^"]*background:#1b1c1e/i, "tablewidth and tablebgcolor must reach the rendered table");
+assert.match(warningNotice, /<tr class="aonwiki-table-spacer"[^>]*><td aria-hidden="true"/, "empty height rows must render a valid spacer cell");
+assert.match(warningNotice, /height:10px/i, "empty parameter row height must be retained");
+assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must not emit invalid CSS");
+
+const appSource = fs.readFileSync("app.js", "utf8");
+const htmlSource = fs.readFileSync("index.html", "utf8");
+assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
+assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
+assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
+assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
+assert.match(appSource, /aonwikiAutoText/, "automatic text colors must be tracked");
+assert.match(htmlSource, /document\.documentElement\.dataset\.theme = theme/, "theme must be selected before CSS loads");
+
 const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]\n[[분류:사건 사고]]");
 assert.match(category, /opennamu_category_label/, "category strip label must render");
 assert.match(category, /분류:/, "category label must say 분류:");

@@ -1306,6 +1306,22 @@ try {
           : tableParameter["tableBg"] + rowStyle;
       };
       let tableDataEnd = "";
+      const appendTableRow = () => {
+        const rowStyle = getTableRowStyle();
+        const rowSpecificStyle = tableParameter["tr"];
+        const rowContent = tableParameter["td"];
+        if (rowContent) {
+          tableDataEnd += '<tr style="' + rowStyle + '">' + rowContent + "</tr>";
+          return;
+        }
+
+        // Empty parameter rows are intentional spacers only when they carry
+        // an explicit height or row background. Emit valid table markup.
+        if (!/(?:^|;)\s*(?:height|background(?:-color)?)\s*:/i.test(rowSpecificStyle)) return;
+        const heightMatch = rowSpecificStyle.match(/(?:^|;)\s*height\s*:\s*([^;]+)/i);
+        const cellStyle = heightMatch ? "height:" + heightMatch[1].trim() + ";" : "height:1px;";
+        tableDataEnd += '<tr class="aonwiki-table-spacer" style="' + rowStyle + '"><td aria-hidden="true" style="' + cellStyle + '"></td></tr>';
+      };
       let tableColNum = 0;
       let tableTrChange = 0;
 
@@ -1323,7 +1339,7 @@ try {
 
         if (tableSub[0] !== "" && tableTrChange === 1) {
           tableColNum = 0;
-          tableDataEnd += '<tr style="' + getTableRowStyle() + '">' + tableParameter["td"] + "</tr>";
+          appendTableRow();
           tableParameter["tr"] = "";
           tableParameter["td"] = "";
         }
@@ -1376,7 +1392,7 @@ try {
         tableColNum += colspanInt;
       }
 
-      tableDataEnd += '<tr style="' + getTableRowStyle() + '">' + tableParameter["td"] + "</tr>";
+      appendTableRow();
       tableDataEnd =
         '<table class="' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
       tableDataEnd = '<div class="table_safe" style="' + tableParameter["div"] + '">' + tableDataEnd + "</div>";

@@ -525,7 +525,42 @@ function getWikiEffectiveBackground(element){
  }
  return background;
 }
-function refreshWikiTableContrast(){ /* Preserve authored colors and theme variables. */ }
+function hasAuthoredWikiTableColor(cell, table, wasAutoColor) {
+ for(let node=cell;node;node=node.parentElement){
+  if(!(node===cell&&wasAutoColor)){
+   const inlineColor=node.style?.getPropertyValue("color");
+   if(inlineColor&&inlineColor.trim())return true;
+  }
+  if(node===table)break;
+ }
+ return false;
+}
+function refreshWikiTableContrast(root = document){
+ if(!root||typeof root.querySelectorAll!=="function")return;
+ const tables=[];
+ if(root.matches?.("table"))tables.push(root);
+ root.querySelectorAll("table").forEach(table=>tables.push(table));
+ for(const table of tables){
+  if(!table.closest(".wiki-content"))continue;
+  table.querySelectorAll("th,td").forEach(cell=>{
+   const wasAutoColor=cell.dataset.aonwikiAutoText==="1";
+   if(hasAuthoredWikiTableColor(cell,table,wasAutoColor)){
+    if(wasAutoColor){
+     cell.style.removeProperty("color");
+     delete cell.dataset.aonwikiAutoText;
+    }
+    return;
+   }
+   const background=getWikiEffectiveBackground(cell);
+   const lightText=[248,249,250,1],darkText=[33,37,41,1];
+   const readableText=wikiContrastRatio(lightText,background)>=wikiContrastRatio(darkText,background)
+    ?"rgb(248, 249, 250)"
+    :"rgb(33, 37, 41)";
+   cell.style.setProperty("color",readableText,"important");
+   cell.dataset.aonwikiAutoText="1";
+  });
+ }
+}
 
 function sanitizeNamuStylesheet(raw) {
   const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|visited|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;

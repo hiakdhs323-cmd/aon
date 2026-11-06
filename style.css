@@ -1,20 +1,19 @@
-/* AonWiki — NamuWiki espejo-inspired skin */
 :root{
-  color-scheme:light;
+  color-scheme:dark;
   --wiki-primary:#00a69c;
   --wiki-primary-dark:#008f86;
-  --wiki-link:#0275d8;
-  --wiki-link-hover:#0056a8;
-  --wiki-bg:#f3f4f5;
-  --wiki-panel:#fff;
-  --wiki-panel-soft:#f8f9fa;
-  --wiki-text:#212529;
-  --wiki-muted:#6c757d;
-  --wiki-border:#dee2e6;
-  --wiki-border-strong:#c8cdd2;
-  --wiki-warning-bg:#fff8e1;
-  --wiki-warning-border:#e0c46a;
-  --wiki-danger:#c62828;
+  --wiki-link:#7db9ff;
+  --wiki-link-hover:#a5ceff;
+  --wiki-bg:#111315;
+  --wiki-panel:#1a1d20;
+  --wiki-panel-soft:#22262a;
+  --wiki-text:#e5e7e9;
+  --wiki-muted:#a5abb1;
+  --wiki-border:#34393e;
+  --wiki-border-strong:#50575e;
+  --wiki-warning-bg:#332e1e;
+  --wiki-warning-border:#806a30;
+  --wiki-danger:#ff7777;
   --wiki-font:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
   --wiki-article-size:14px;
   font-family:var(--wiki-font);
@@ -38,6 +37,24 @@ html[data-theme="dark"]{
   --wiki-warning-bg:#332e1e;
   --wiki-warning-border:#806a30;
   --wiki-danger:#ff7777;
+}
+
+html[data-theme="light"]{
+  color-scheme:light;
+  --wiki-primary:#00a69c;
+  --wiki-primary-dark:#008f86;
+  --wiki-link:#0275d8;
+  --wiki-link-hover:#0056a8;
+  --wiki-bg:#f3f4f5;
+  --wiki-panel:#fff;
+  --wiki-panel-soft:#f8f9fa;
+  --wiki-text:#212529;
+  --wiki-muted:#6c757d;
+  --wiki-border:#dee2e6;
+  --wiki-border-strong:#c8cdd2;
+  --wiki-warning-bg:#fff8e1;
+  --wiki-warning-border:#e0c46a;
+  --wiki-danger:#c62828;
 }
 *{box-sizing:border-box}
 html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg)}
@@ -3079,3 +3096,35 @@ html[data-theme="dark"] #article.wiki-content details.wiki-fold>.wiki-fold-conte
 #article.wiki-content table tr[style*="background"]>th{background-color:transparent}
 #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:var(--wiki-panel-soft)}
 html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
+
+
+/* Compact, valid spacer rows emitted by the NamuMark table parser. */
+#article.wiki-content .table_safe{margin-block:10px}
+#article.wiki-content .table_safe>table:not(.wiki-bracket-table){
+  margin:0;
+  border-spacing:0;
+  line-height:1.55;
+}
+#article.wiki-content .table_safe>table:not(.wiki-bracket-table) th,
+#article.wiki-content .table_safe>table:not(.wiki-bracket-table) td{
+  padding:5px 8px;
+}
+#article.wiki-content table tr.aonwiki-table-spacer>td{
+  padding:0!important;
+  border:0!important;
+  background-color:transparent!important;
+  line-height:0!important;
+  font-size:0!important;
+}
+#article.wiki-content table tr.aonwiki-table-spacer{background:transparent}
+#article.wiki-content table[style*="background"] th,
+#article.wiki-content table.wiki-bracket-table[style*="background"] td,
+#article.wiki-content table.wiki-bracket-table[style*="background"] th{
+  background-color:transparent;
+}
+#article.wiki-content table tr:nth-child(even):not([style*="background"]):not(.aonwiki-table-spacer){
+  background:var(--wiki-panel-soft);
+}
+html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([style*="background"]):not(.aonwiki-table-spacer){
+  background:#242629;
+}
