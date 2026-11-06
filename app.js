@@ -34,6 +34,165 @@ function routeFor(title,anchor=""){
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 let isWikiAdmin=false;
 let currentRole="anonymous";
+const AON_UI_ICON_SHAPES = {
+  lock: [
+    ["rect",{x:"3.2",y:"7",width:"9.6",height:"7.1",rx:"1.3"}],
+    ["path",{d:"M5.4 7V5.1a2.6 2.6 0 0 1 5.2 0V7"}],
+    ["path",{d:"M8 9.5v2"}]
+  ],
+  "shield-lock": [
+    ["path",{d:"M8 1.5 13 3.4v3.5c0 3.1-1.9 5.6-5 7.6-3.1-2-5-4.5-5-7.6V3.4z"}],
+    ["rect",{x:"5.7",y:"6.5",width:"4.6",height:"4",rx:"0.8"}],
+    ["path",{d:"M6.9 6.5V5.6a1.1 1.1 0 0 1 2.2 0v.9"}]
+  ],
+  shield: [
+    ["path",{d:"M8 1.5 13 3.4v3.5c0 3.1-1.9 5.6-5 7.6-3.1-2-5-4.5-5-7.6V3.4z"}],
+    ["path",{d:"m5.5 7.7 1.6 1.6 3.5-3.5"}]
+  ],
+  user: [
+    ["circle",{cx:"8",cy:"5.2",r:"2.5"}],
+    ["path",{d:"M2.8 14c.5-2.5 2.4-3.9 5.2-3.9s4.7 1.4 5.2 3.9"}]
+  ],
+  edit: [
+    ["path",{d:"m3 11.7-.6 2.2 2.2-.6 8.2-8.2-1.6-1.6z"}],
+    ["path",{d:"m9.9 4.1 1.7 1.7"}]
+  ],
+  history: [
+    ["circle",{cx:"8",cy:"8",r:"6"}],
+    ["path",{d:"M8 4.5v3.8l2.5 1.5"}]
+  ],
+  message: [
+    ["path",{d:"M2 2.8h12v8.1H7L3 13.2v-2.3H2z"}],
+    ["path",{d:"M4.7 5.6h6.6M4.7 8h4.8"}]
+  ],
+  link: [
+    ["path",{d:"m6.4 9.6-1.2 1.2a2.1 2.1 0 0 1-3-3l2.1-2.1a2.1 2.1 0 0 1 3 0"}],
+    ["path",{d:"m9.6 6.4 1.2-1.2a2.1 2.1 0 0 1 3 3l-2.1 2.1a2.1 2.1 0 0 1-3 0"}],
+    ["path",{d:"m5.8 10.2 4.4-4.4"}]
+  ],
+  upload: [
+    ["path",{d:"M8 10V2.5m-3 3 3-3 3 3"}],
+    ["path",{d:"M3 9.5v4h10v-4"}]
+  ],
+  folder: [
+    ["path",{d:"M1.8 4h4l1.6 1.7h6.8v7.1H1.8z"}]
+  ],
+  trash: [
+    ["path",{d:"M2.5 4.5h11M6 4.5V2.8h4v1.7"}],
+    ["path",{d:"m4.1 4.5.6 9h6.6l.6-9M6.5 6.5v4.7M9.5 6.5v4.7"}]
+  ],
+  external: [
+    ["path",{d:"M9 2.5h4.5V7"}],
+    ["path",{d:"M13.2 2.8 7.1 8.9"}],
+    ["path",{d:"M11.8 8.8v4.4H2.8V4.2h4.4"}]
+  ],
+  file: [
+    ["path",{d:"M4 1.8h5l3.2 3.1v9.3H4z"}],
+    ["path",{d:"M9 1.8v3.3h3.2M6 8h4.3M6 10.5h4.3"}]
+  ]
+};
+function createAonUiIcon(name,className="aon-ui-icon"){
+ const ns="http://www.w3.org/2000/svg";
+ const svg=document.createElementNS(ns,"svg");
+ svg.setAttribute("class",className);
+ svg.setAttribute("viewBox","0 0 16 16");
+ svg.setAttribute("width","14");
+ svg.setAttribute("height","14");
+ svg.setAttribute("fill","none");
+ svg.setAttribute("stroke","currentColor");
+ svg.setAttribute("stroke-width","1.45");
+ svg.setAttribute("stroke-linecap","round");
+ svg.setAttribute("stroke-linejoin","round");
+ svg.setAttribute("aria-hidden","true");
+ svg.setAttribute("focusable","false");
+ for(const [tag,attributes] of (AON_UI_ICON_SHAPES[name]||AON_UI_ICON_SHAPES.external)){
+  const shape=document.createElementNS(ns,tag);
+  for(const [key,value] of Object.entries(attributes))shape.setAttribute(key,value);
+  svg.append(shape);
+ }
+ return svg;
+}
+function setAonIconLabel(element,iconName,label){
+ if(!element)return;
+ const icon=createAonUiIcon(iconName);
+ const text=document.createElement("span");
+ text.className="aon-icon-label";
+ text.textContent=String(label||"");
+ element.replaceChildren(icon,text);
+ element.classList.add("aon-has-icon");
+ if(element.tagName==="BUTTON")element.setAttribute("aria-label",String(label||""));
+}
+function applyDocumentActionIcons(){
+ const controls=[
+  ["page-protection","shield-lock","편집 보호"],
+  ["heading-edit","edit","편집"],
+  ["edit","edit",($("edit")?.textContent||"편집").trim()||"편집"],
+  ["discussion-tab","message","토론"],
+  ["history-tab","history","역사"],
+  ["backlinks-tab","link","역링크"],
+  ["upload","upload","파일 올리기"],
+  ["file-manager","folder","파일 관리"],
+  ["delete-page","trash","삭제"]
+ ];
+ controls.forEach(([id,icon,label])=>setAonIconLabel($(id),icon,label));
+ const status=$("protection-status");
+ if(status&&!status.hidden&&currentProtection.level!=="none"){
+  const level=currentProtection.level;
+  setAonIconLabel(status,level==="admin"?"shield-lock":"lock",level==="admin"?"관리자 편집 보호":"회원 편집 보호");
+ }
+ const template=$("template-status");
+ if(template&&!template.hidden)setAonIconLabel(template,"file","공식 틀 문서");
+ const role=$("role-label");
+ if(role&&!role.hidden){
+  const label=(role.textContent||"회원").trim()||"회원";
+  setAonIconLabel(role,isWikiAdmin?"shield":"user",label);
+ }
+}
+function decorateExternalLinks(root){
+ if(!root)return;
+ root.querySelectorAll('a.opennamu_link_out:not([data-aon-external-decorated])').forEach(link=>{
+  let url;
+  try{url=new URL(link.getAttribute("href")||"",location.href)}catch{return}
+  if(!/^https?:$/.test(url.protocol))return;
+  const hostname=url.hostname.toLowerCase().replace(/^www\./,"");
+  if(!hostname)return;
+  const originalText=(link.textContent||"").trim();
+  let isBareUrl=!originalText;
+  if(originalText){
+   try{
+    const labelUrl=new URL(originalText);
+    isBareUrl=labelUrl.protocol==="http:"||labelUrl.protocol==="https:";
+   }catch{
+    isBareUrl=originalText===url.hostname||originalText===hostname;
+   }
+  }
+  const label=document.createElement("span");
+  label.className="wiki-external-link-label";
+  if(isBareUrl)label.textContent=hostname;
+  else while(link.firstChild)label.append(link.firstChild);
+  const favicon=document.createElement("img");
+  favicon.className="wiki-external-favicon";
+  favicon.alt="";
+  favicon.loading="lazy";
+  favicon.decoding="async";
+  favicon.referrerPolicy="no-referrer";
+  const faviconUrl=new URL("/favicon.ico",url.origin);
+  if(faviconUrl.protocol==="http:"&&location.protocol==="https:")faviconUrl.protocol="https:";
+  favicon.src=faviconUrl.href;
+  favicon.addEventListener("error",()=>{
+   const fallback=createAonUiIcon("external","wiki-external-favicon-fallback");
+   favicon.replaceWith(fallback);
+  },{once:true});
+  link.replaceChildren(favicon,label);
+  link.classList.add("wiki-external-link");
+  link.dataset.aonExternalDecorated="true";
+  link.setAttribute("title",hostname);
+  link.setAttribute("aria-label",(isBareUrl?hostname:originalText)+" (외부 사이트, 새 창에서 열림)");
+  link.setAttribute("target","_blank");
+  link.setAttribute("rel","noopener noreferrer");
+ });
+}
+
 function syncDocumentEditControls(){
  const hasDocument=Boolean(currentTitle&&!isHomeRoute()&&!$("document-view").hidden);
  const canEdit=hasDocument && (currentProtection.level!=="admin" || isWikiAdmin);
@@ -46,6 +205,7 @@ function syncDocumentEditControls(){
   $("heading-edit").textContent="편집";
   $("heading-edit").onclick=()=>editPage(currentTitle,currentContent);
  }
+ applyDocumentActionIcons();
 }
 async function refreshIdentity(){
  try{
@@ -885,6 +1045,7 @@ function applyFinalWikiTypographyAndLinkColors(root) {
 
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
+  decorateExternalLinks(root);
   const tableScrollSelector=".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap";
   root.querySelectorAll("table").forEach(table=>{
     if(table.closest("td,th"))return;
@@ -1709,13 +1870,15 @@ async function loadPage(title,pushRoute=true,anchor=""){
    protectionNotice.hidden=false;protectionNotice.replaceChildren();
    const strong=document.createElement("strong");strong.textContent="이 문서는 관리자 편집 보호 상태입니다.";
    const detail=document.createElement("span");detail.textContent=" 일반 회원은 편집할 수 없으며 관리자만 편집할 수 있습니다.";
-   protectionNotice.append(strong,detail);
+   setAonIconLabel(strong,"shield-lock","이 문서는 관리자 편집 보호 상태입니다.");
+  protectionNotice.append(strong,detail);
   }else if(currentProtection.level==="registered"){
    protectionStatus.hidden=false;protectionStatus.textContent="회원 편집 보호";protectionStatus.title=currentProtection.reason||"로그인한 회원만 편집할 수 있습니다.";
    protectionNotice.hidden=false;protectionNotice.replaceChildren();
    const strong=document.createElement("strong");strong.textContent="이 문서는 회원 편집 보호 상태입니다.";
    const detail=document.createElement("span");detail.textContent=" 문서 편집은 로그인한 회원만 할 수 있습니다.";
-   protectionNotice.append(strong,detail);
+   setAonIconLabel(strong,"lock","이 문서는 회원 편집 보호 상태입니다.");
+  protectionNotice.append(strong,detail);
   }else{
    protectionStatus.hidden=true;protectionStatus.textContent="";protectionStatus.title="";
    protectionNotice.hidden=true;protectionNotice.replaceChildren();
@@ -1731,6 +1894,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
+  applyDocumentActionIcons();
   const staging=document.createElement("article");
   staging.innerHTML=String(data.html||"");
   prepareServerRenderedMarkup(staging,displayTitle);

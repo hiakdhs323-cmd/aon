@@ -3339,3 +3339,68 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
     font-size:13px;
   }
 }
+
+
+/* EntryWiki-style external links: favicon + concise host label. */
+#article.wiki-content a.opennamu_link_out.wiki-external-link{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  max-width:100%;
+  vertical-align:-2px;
+  color:var(--wiki-link);
+  text-decoration:none;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+#article.wiki-content .wiki-external-favicon{
+  display:block;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  max-width:14px;
+  object-fit:contain;
+  border:0;
+  border-radius:2px;
+  background:transparent;
+}
+#article.wiki-content .wiki-external-link-label{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+#article.wiki-content .wiki-external-link:hover .wiki-external-link-label{
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+#article.wiki-content .wiki-external-favicon-fallback{
+  display:inline-block;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  color:var(--wiki-muted);
+  vertical-align:-2px;
+}
+.aon-ui-icon{
+  display:inline-block;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  color:currentColor;
+  vertical-align:-2px;
+}
+.aon-has-icon{align-items:center;gap:5px}
+button.aon-has-icon{display:inline-flex;justify-content:center}
+.article-tools button.aon-has-icon{display:inline-flex;align-items:center;justify-content:center}
+.protection-status.aon-has-icon,
+.template-status.aon-has-icon,
+#role-label.aon-has-icon{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.protection-notice strong.aon-has-icon{align-items:center;gap:6px}
+#page-protection.aon-has-icon .aon-ui-icon{color:var(--wiki-warning-text,var(--wiki-warning-border))}
+@media(max-width:560px){
+  #article.wiki-content .wiki-external-favicon{flex-basis:13px;width:13px;height:13px}
+  .aon-ui-icon{width:13px;height:13px;flex-basis:13px}
+}
