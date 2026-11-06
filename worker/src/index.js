@@ -697,7 +697,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
 
   // Normalize both relative and absolute asset URLs. Some cached HTML versions still
   // contain aon69446.p-e.kr URLs; those must never leak into the rendered document.
-  return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
+  const rewritten = String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
     try {
       parsed = new URL(String(rawUrl).trim(), base);
@@ -708,12 +708,70 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
 
-    // Add a fresh cache key to every static asset. This also evicts stale same-host
-    // URLs that were previously cached as aon69446.p-e.kr resources.
-    parsed.searchParams.set("aonfix", "20261106-entrywiki-icons-v2");
-
+    // Add a fresh cache key to every static asset.
+    parsed.searchParams.set("aonfix", "20261106-entrywiki-icons-v3");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
+
+  // Some external sites (including EntryWiki) do not publish /favicon.ico.
+  // Keep a capture-phase fallback in the shell so the green chain badge is still
+  // applied even while a cached browser bundle is being replaced.
+  const compatibility = `
+<style id="aonwiki-entry-link-fallback-v3">
+#article.wiki-content .wiki-external-favicon-fallback{
+  display:inline-block!important;
+  box-sizing:border-box;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  padding:2px;
+  border:0;
+  border-radius:1px;
+  background:#00a63c!important;
+  color:#fff!important;
+  stroke:#fff!important;
+  vertical-align:-2px;
+}
+#article.wiki-content .wiki-external-link.wiki-external-favicon-missing .wiki-external-link-label{
+  color:#00a63c!important;
+}
+</style>
+<script id="aonwiki-entry-link-fallback-v3">
+(function(){
+  if(window.__aonwikiEntryLinkFallbackV3)return;
+  window.__aonwikiEntryLinkFallbackV3=true;
+  document.addEventListener("error",function(event){
+    var image=event.target;
+    if(!image||image.tagName!=="IMG"||!image.classList.contains("wiki-external-favicon"))return;
+    var link=image.closest("a.wiki-external-link");
+    if(!link)return;
+    event.stopImmediatePropagation();
+    link.classList.add("wiki-external-favicon-missing");
+    var svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("class","wiki-external-favicon-fallback");
+    svg.setAttribute("viewBox","0 0 16 16");
+    svg.setAttribute("width","14");
+    svg.setAttribute("height","14");
+    svg.setAttribute("fill","none");
+    svg.setAttribute("stroke","#fff");
+    svg.setAttribute("stroke-width","1.45");
+    svg.setAttribute("stroke-linecap","round");
+    svg.setAttribute("stroke-linejoin","round");
+    svg.setAttribute("aria-hidden","true");
+    [
+      "m6.4 9.6-1.2 1.2a2.1 2.1 0 0 1-3-3l2.1-2.1a2.1 2.1 0 0 1 3 0",
+      "m9.6 6.4 1.2-1.2a2.1 2.1 0 0 1 3 3l-2.1 2.1a2.1 2.1 0 0 1-3 0",
+      "m5.8 10.2 4.4-4.4"
+    ].forEach(function(d){
+      var path=document.createElementNS("http://www.w3.org/2000/svg","path");
+      path.setAttribute("d",d);
+      svg.appendChild(path);
+    });
+    image.replaceWith(svg);
+  },true);
+})();
+</script>`;
+  return rewritten.replace(/<\/head>/i, compatibility + "</head>");
 }
 let frontendShellCache = { value: null, expiresAt: 0 };
 let frontendShellPending = null;
@@ -722,7 +780,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-entrywiki-icons-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-entrywiki-icons-v3", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");

@@ -77,20 +77,25 @@ assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must no
 
 const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
-assert.ok(workerSource.includes('aonfix", "20261106-entrywiki-icons-v2"'), "SSR must serve the new folding stylesheet under a fresh cache key");
+assert.ok(workerSource.includes('aonfix", "20261106-entrywiki-icons-v3"'), "SSR must serve the new folding stylesheet under a fresh cache key");
+assert.ok(workerSource.includes("aonwiki-entry-link-fallback-v3"), "Worker shell must provide the EntryWiki green link fallback while static assets update");
+assert.ok(workerSource.includes("stopImmediatePropagation()"), "Worker fallback must prevent the old generic favicon handler from replacing the green chain icon");
+assert.ok(workerSource.includes("#00a63c"), "Worker fallback badge must use the EntryWiki green color");
+assert.ok(workerSource.includes("m6.4 9.6-1.2 1.2a2.1 2.1"), "Worker fallback must draw a chain-link symbol");
+
 const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
 assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text colors must be marked and preserved");
 assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#20252a!important/s, "light mode must darken text over the existing light label-cell background");
 assert.match(styles, /html\[data-theme="dark"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#f2f3f4!important/s, "dark mode must lighten text without changing the label-cell background");
 assert.doesNotMatch(styles, /auto-bg-(?:light|dark)/, "theme switching must not add synthesized cell backgrounds");
-assert.match(workerSource, /aonfix", "20261106-entrywiki-icons-v2"/, "SSR asset URLs must receive a new cache key");
+assert.match(workerSource, /aonfix", "20261106-entrywiki-icons-v3"/, "SSR asset URLs must receive a new cache key");
 assert.match(workerSource, /targeted-db-v25-theme-text-only:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
 assert.match(styles, /#article\.wiki-content table td:first-child:not\(\[style\*="background"\]\)/, "first-column background must follow the active theme");
-assert.match(workerSource, /aonfix", "20261106-entrywiki-icons-v2"/, "SSR must serve the corrected stylesheet under a fresh cache key");
+assert.match(workerSource, /aonfix", "20261106-entrywiki-icons-v3"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
