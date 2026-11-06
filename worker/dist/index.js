@@ -2966,7 +2966,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261106-theme-text-only-v1");
+    parsed.searchParams.set("aonfix", "20261106-search-page-v1");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -2977,7 +2977,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-theme-text-only-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-search-page-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
@@ -3055,6 +3055,19 @@ var index_default = {
         title = cleanTitle(title);
         if (!title) return new Response("\uC798\uBABB\uB41C \uBB38\uC11C \uC8FC\uC18C\uC785\uB2C8\uB2E4.", { status: 400 });
         return await renderFullWikiDocument(request, env, title);
+      }
+      if (request.method === "GET" && url.pathname.toLowerCase() === "/search") {
+        const { shell } = await loadFrontendShell(env);
+        return new Response(shell, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "X-AonWiki-Render": "search-shell"
+          }
+        });
       }
       if (request.method === "GET" && url.pathname === "/") {
         const { shell } = await loadFrontendShell(env);
@@ -3457,11 +3470,20 @@ var index_default = {
       }
       if (url.pathname === "/api/pages" && request.method === "GET") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
+        const scope = url.searchParams.get("scope") === "title" ? "title" : "all";
         const createdAfter = String(url.searchParams.get("created_after") || "").slice(0, 40);
         let result;
         if (q) {
           const pattern = "%" + q.replace(/[\\%_]/g, "") + "%";
-          result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC LIMIT 100").bind(pattern, pattern).all();
+          const condition = scope === "title" ? "title LIKE ?" : "(title LIKE ? OR content LIKE ?)";
+          const parameters = scope === "title" ? [pattern] : [pattern, pattern];
+          const [count, rows] = await Promise.all([
+            env.DB.prepare("SELECT COUNT(*) AS total FROM pages WHERE " + condition).bind(...parameters).first(),
+            env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE " + condition + " ORDER BY updated_at DESC LIMIT 100").bind(...parameters).all()
+          ]);
+          const pages = rows.results || [];
+          const total = Number(count?.total || 0);
+          return response({ pages, total, scope, truncated: total > pages.length }, 200, cors);
         } else if (createdAfter && !Number.isNaN(Date.parse(createdAfter))) {
           result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE created_at > ? ORDER BY created_at DESC LIMIT 100").bind(createdAfter).all();
         } else {
