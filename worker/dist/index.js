@@ -2966,7 +2966,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261106-search-page-v1");
+    parsed.searchParams.set("aonfix", "20261106-file-search-v1");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -2977,7 +2977,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-search-page-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-file-search-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
@@ -3470,20 +3470,48 @@ var index_default = {
       }
       if (url.pathname === "/api/pages" && request.method === "GET") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
-        const scope = url.searchParams.get("scope") === "title" ? "title" : "all";
+        const requestedScope = url.searchParams.get("scope");
+        const scope = requestedScope === "title" || requestedScope === "files" ? requestedScope : "all";
         const createdAfter = String(url.searchParams.get("created_after") || "").slice(0, 40);
         let result;
         if (q) {
           const pattern = "%" + q.replace(/[\\%_]/g, "") + "%";
-          const condition = scope === "title" ? "title LIKE ?" : "(title LIKE ? OR content LIKE ?)";
-          const parameters = scope === "title" ? [pattern] : [pattern, pattern];
-          const [count, rows] = await Promise.all([
-            env.DB.prepare("SELECT COUNT(*) AS total FROM pages WHERE " + condition).bind(...parameters).first(),
-            env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE " + condition + " ORDER BY updated_at DESC LIMIT 100").bind(...parameters).all()
-          ]);
-          const pages = rows.results || [];
-          const total = Number(count?.total || 0);
-          return response({ pages, total, scope, truncated: total > pages.length }, 200, cors);
+          const pageCondition = scope === "title" ? "title LIKE ?" : "(title LIKE ? OR content LIKE ?)";
+          const pageParameters = scope === "title" ? [pattern] : [pattern, pattern];
+          const shouldSearchPages = scope !== "files";
+          const shouldSearchFiles = scope !== "title";
+          let pageTotal = 0;
+          let pages = [];
+          if (shouldSearchPages) {
+            const [count, rows] = await Promise.all([
+              env.DB.prepare("SELECT COUNT(*) AS total FROM pages WHERE " + pageCondition).bind(...pageParameters).first(),
+              env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE " + pageCondition + " ORDER BY updated_at DESC LIMIT 100").bind(...pageParameters).all()
+            ]);
+            pageTotal = Number(count?.total || 0);
+            pages = rows.results || [];
+          }
+          let fileTotal = 0;
+          let files = [];
+          if (shouldSearchFiles) {
+            await ensureImageSchema(env);
+            const fileCondition = "filename LIKE ? OR EXISTS (SELECT 1 FROM image_aliases WHERE image_aliases.image_id = images.id AND image_aliases.alias LIKE ?)";
+            const [count, rows] = await Promise.all([
+              env.DB.prepare("SELECT COUNT(*) AS total FROM images WHERE " + fileCondition).bind(pattern, pattern).first(),
+              env.DB.prepare("SELECT id, filename, content_type, created_at, (SELECT GROUP_CONCAT(alias, ' \xB7 ') FROM image_aliases WHERE image_aliases.image_id = images.id) AS aliases FROM images WHERE " + fileCondition + " ORDER BY created_at DESC LIMIT 100").bind(pattern, pattern).all()
+            ]);
+            fileTotal = Number(count?.total || 0);
+            files = rows.results || [];
+          }
+          const total = pageTotal + fileTotal;
+          return response({
+            pages,
+            files,
+            total,
+            page_total: pageTotal,
+            file_total: fileTotal,
+            scope,
+            truncated: pageTotal > pages.length || fileTotal > files.length
+          }, 200, cors);
         } else if (createdAfter && !Number.isNaN(Date.parse(createdAfter))) {
           result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE created_at > ? ORDER BY created_at DESC LIMIT 100").bind(createdAfter).all();
         } else {
