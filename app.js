@@ -2343,7 +2343,7 @@ $("heading-edit").onclick=()=>editPage();
 function searchPageUrl(query,scope="all"){
  const params=new URLSearchParams();
  params.set("q",String(query||"").trim());
- params.set("scope",scope==="title"?"title":"all");
+ params.set("scope",scope==="title"?"title":scope==="files"?"files":"all");
  return "/Search?"+params.toString();
 }
 function showSearchView(){
@@ -2400,6 +2400,49 @@ function renderSearchGroup(host,title,pages,query,kind){
  pages.forEach(page=>list.append(makeSearchResultRow(page,query,kind)));
  group.append(heading,list);host.append(group);
 }
+function makeSearchFileRow(file,query){
+ const row=document.createElement("article");row.className="search-result-row search-file-row";
+ const preview=document.createElement("span");preview.className="search-file-preview";
+ preview.setAttribute("aria-hidden","true");
+ if(String(file.content_type||"").startsWith("image/")){
+  const image=document.createElement("img");
+  image.src=new URL("/media/"+encodeURIComponent(file.id),apiBase()).href;
+  image.alt="";image.loading="lazy";image.decoding="async";
+  preview.append(image);
+ }else preview.textContent="▧";
+ const body=document.createElement("div");body.className="search-result-main";
+ const link=document.createElement("a");link.className="search-result-title";
+ link.href=new URL("/media/"+encodeURIComponent(file.id),apiBase()).href;
+ link.target="_blank";link.rel="noopener noreferrer";
+ appendSearchHighlighted(link,file.filename,query);
+ body.append(link);
+ const meta=document.createElement("div");meta.className="search-result-meta";
+ const created=file.created_at?new Date(file.created_at):null;
+ const dateText=created&&!Number.isNaN(created.getTime())
+  ?created.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
+  :"등록 날짜 정보 없음";
+ const type=String(file.content_type||"application/octet-stream").replace(/^image\\//,"").toUpperCase();
+ meta.textContent=type+" 파일 · 등록 "+dateText;
+ body.append(meta);
+ if(file.aliases){
+  const alias=addText(body,"span","이전 이름: "+file.aliases);
+  alias.className="search-result-meta search-file-aliases";
+ }
+ row.append(preview,body);return row;
+}
+function renderSearchFileGroup(host,files,query){
+ if(!files.length)return;
+ const group=document.createElement("section");group.className="search-result-group search-file-group";
+ const heading=document.createElement("h2");heading.className="search-result-group-heading";
+ const badge=document.createElement("span");badge.className="search-group-icon is-file";
+ badge.setAttribute("aria-hidden","true");badge.textContent="▧";
+ const label=document.createElement("span");label.textContent="파일";
+ const number=document.createElement("small");number.textContent=files.length.toLocaleString("ko-KR")+"개";
+ heading.append(badge,label,number);
+ const list=document.createElement("div");list.className="search-result-list";
+ files.forEach(file=>list.append(makeSearchFileRow(file,query)));
+ group.append(heading,list);host.append(group);
+}
 function renderSearchEmpty(host,query){
  const empty=document.createElement("div");empty.className="search-empty-state";
  const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
@@ -2408,7 +2451,7 @@ function renderSearchEmpty(host,query){
  empty.append(icon,title,desc);host.append(empty);
 }
 async function loadSearchPage(query,scope="all",push=false){
- const q=String(query||"").trim().slice(0,100),selectedScope=scope==="title"?"title":"all";
+ const q=String(query||"").trim().slice(0,100),selectedScope=scope==="title"?"title":scope==="files"?"files":"all";
  if(push)history.pushState(null,"",searchPageUrl(q,selectedScope));
  showSearchView();$("query").value=q;$("search-page-query").value=q;$("search-page-scope").value=selectedScope;
  const host=$("search-result-groups");host.replaceChildren();
@@ -2419,25 +2462,28 @@ async function loadSearchPage(query,scope="all",push=false){
   const empty=document.createElement("div");empty.className="search-empty-state";
   const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
   const title=document.createElement("strong");title.textContent="무엇을 찾고 있나요?";
-  const desc=document.createElement("p");desc.textContent="검색어를 입력하면 문서 제목과 본문을 검색합니다.";
+  const desc=document.createElement("p");desc.textContent="문서 제목·본문 또는 업로드된 파일 이름을 검색할 수 있습니다.";
   empty.append(icon,title,desc);host.append(empty);return;
  }
  $("search-result-count").textContent="검색 중입니다…";
  const started=performance.now();
  try{
-  const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope),pages=data.pages||[];
-  const categories=pages.filter(page=>/^분류\s*[:：]/.test(String(page.title||"")));
-  const documents=pages.filter(page=>!/^분류\s*[:：]/.test(String(page.title||"")));
-  const total=Number.isFinite(Number(data.total))?Number(data.total):pages.length;
+  const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope);
+  const pages=data.pages||[],files=data.files||[];
+  const categories=pages.filter(page=>/^분류\\s*[:：]/.test(String(page.title||"")));
+  const documents=pages.filter(page=>!/^분류\\s*[:：]/.test(String(page.title||"")));
+  const pageTotal=Number(data.page_total??pages.length),fileTotal=Number(data.file_total??files.length);
+  const total=Number.isFinite(Number(data.total))?Number(data.total):pageTotal+fileTotal;
   const elapsed=((performance.now()-started)/1000).toFixed(3);
-  $("search-result-count").textContent="전체 "+total.toLocaleString("ko-KR")+"건 / 검색 시간 "+elapsed+"초"+(data.truncated?" (최대 100건 표시)":"");
+  $("search-result-count").textContent="전체 "+total.toLocaleString("ko-KR")+"건 (문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개) / 검색 시간 "+elapsed+"초"+(data.truncated?" (각 항목 최대 100건 표시)":"");
   host.replaceChildren();
-  if(!pages.length){renderSearchEmpty(host,q);return}
+  if(!pages.length&&!files.length){renderSearchEmpty(host,q);return}
   renderSearchGroup(host,"분류",categories,q,"category");
   renderSearchGroup(host,"문서",documents,q,"document");
+  renderSearchFileGroup(host,files,q);
   if(data.truncated){
    const note=document.createElement("p");note.className="search-result-note";
-   note.textContent="검색 결과가 100건을 초과하여 최근 수정된 문서 100개만 표시합니다. 검색어를 더 구체적으로 입력해 보세요.";
+   note.textContent="검색 결과가 100건을 초과하여 문서와 파일 각각 최근 항목 100개만 표시합니다. 검색어를 더 구체적으로 입력해 보세요.";
    host.append(note);
   }
  }catch(error){

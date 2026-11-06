@@ -3195,3 +3195,16 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
 .search-result-note{margin:8px 0 0;padding:9px 10px;border-left:3px solid var(--wiki-warning-border);background:var(--wiki-warning-bg);color:var(--wiki-muted);font-size:11px}
 @media(max-width:700px){.search-view{padding:8px 0 25px}.search-page-heading{padding:15px 14px 13px}.search-page-body{padding:12px 13px 16px}}
 @media(max-width:520px){.search-page-form{grid-template-columns:104px minmax(0,1fr);gap:8px}.search-page-submit{grid-column:1/-1;width:100%}.search-help-panel{align-items:flex-start;flex-wrap:wrap}.search-help-icon{margin-top:1px}.search-help-panel p{flex-basis:calc(100% - 38px)}.search-create-link{margin-left:33px}.search-result-summary{align-items:flex-start;flex-direction:column;gap:2px}.search-result-group-heading{font-size:15px}.search-result-row{gap:8px;padding:10px 3px}.search-result-meta{font-size:10px}}
+
+
+/* Uploaded image files inside search results */
+.search-group-icon.is-file{color:var(--wiki-primary)}
+.search-file-preview{
+  display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;overflow:hidden;
+  border:1px solid var(--wiki-border);border-radius:3px;background:var(--wiki-panel-soft);
+  color:var(--wiki-muted);font-size:17px;
+}
+.search-file-preview img{display:block;width:100%;height:100%;object-fit:cover}
+.search-file-row{align-items:center}
+.search-file-aliases{overflow-wrap:anywhere}
+@media(max-width:520px){.search-file-preview{flex-basis:38px;width:38px;height:38px}}

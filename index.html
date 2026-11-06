@@ -18,7 +18,7 @@
 <title>AonWiki</title>
 <link rel="icon" type="image/svg+xml" href="https://hiakdhs323-cmd.github.io/aon/aonwiki-mark.svg?v=20261106-static-origin-v2">
 <link rel="mask-icon" href="https://hiakdhs323-cmd.github.io/aon/aonwiki-mark.svg?v=20261106-static-origin-v2" color="#00a69c">
-<link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/style.css?v=20261106-search-page-v1">
+<link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/style.css?v=20261106-file-search-v1">
 <!-- AonWiki styles are served from the GitHub Pages origin; do not request the blocked p-e.kr host. -->
 <link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/namumark-beta.css?v=20261106-static-origin-v2">
 
@@ -219,7 +219,7 @@
           <div>
             <p class="search-page-kicker">AONWIKI · SEARCH</p>
             <h1>검색</h1>
-            <p class="search-page-description">문서 제목이나 본문에서 원하는 내용을 찾아보세요.</p>
+            <p class="search-page-description">문서 제목·본문과 업로드된 파일 이름을 함께 찾아보세요.</p>
           </div>
         </header>
         <div class="search-page-body">
@@ -229,6 +229,7 @@
               <select id="search-page-scope" aria-label="검색 범위">
                 <option value="all">전체</option>
                 <option value="title">제목만</option>
+                <option value="files">파일만</option>
               </select>
             </label>
             <label class="search-query-wrap" for="search-page-query">
@@ -239,7 +240,7 @@
           </form>
           <div class="search-help-panel">
             <span class="search-help-icon" aria-hidden="true">?</span>
-            <p><strong>찾는 문서가 없나요?</strong><span>검색 범위를 ‘전체’로 설정하면 문서 본문에 포함된 내용도 찾을 수 있습니다.</span></p>
+            <p><strong>찾는 문서가 없나요?</strong><span>전체 검색은 문서 제목·본문과 업로드된 파일 이름을 함께 찾습니다.</span></p>
             <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 작성</button>
           </div>
           <div class="search-result-summary" aria-live="polite">
@@ -251,7 +252,7 @@
             <div class="search-empty-state">
               <span class="search-empty-icon" aria-hidden="true">⌕</span>
               <strong>검색어를 입력해 주세요.</strong>
-              <p>위 검색창에서 문서 제목 또는 본문을 검색할 수 있습니다.</p>
+              <p>문서 제목·본문 또는 업로드된 파일 이름을 검색할 수 있습니다.</p>
             </div>
           </div>
         </div>
@@ -358,5 +359,5 @@ hover-dark: #a5d6ff
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" crossorigin="anonymous"></script>
-<script defer src="https://hiakdhs323-cmd.github.io/aon/app.js?v=20261106-search-page-v1"></script>
+<script defer src="https://hiakdhs323-cmd.github.io/aon/app.js?v=20261106-file-search-v1"></script>
 </body></html>

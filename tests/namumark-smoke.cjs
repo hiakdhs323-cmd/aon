@@ -84,8 +84,13 @@ assert.ok(htmlSource.includes('id="search-page-form"'), "search page must expose
 assert.ok(appSource.includes("async function loadSearchPage(query,scope="), "search page renderer must exist");
 assert.ok(appSource.includes('location.pathname.toLowerCase()==="/search"'), "direct /Search URLs must load the search view");
 assert.ok(workerSource.includes('url.pathname.toLowerCase() === "/search"'), "Worker must serve the app shell for /Search URLs");
-assert.ok(workerSource.includes('const scope = url.searchParams.get("scope") === "title" ? "title" : "all";'), "search API must support a title-only scope");
-assert.ok(workerSource.includes('SELECT COUNT(*) AS total FROM pages WHERE '), "search API must return exact result counts");
+assert.ok(workerSource.includes('requestedScope === "title" || requestedScope === "files"'), "search API must support title-only and file-only scopes");
+assert.ok(workerSource.includes("filename LIKE ? OR EXISTS (SELECT 1 FROM image_aliases"), "search API must search uploaded filenames and their aliases");
+assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM pages WHERE "), "search API must return exact page result counts");
+assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM images WHERE "), "search API must return exact file result counts");
+assert.ok(appSource.includes("function renderSearchFileGroup(host,files,query)"), "search page must render a separate file results group");
+assert.ok(appSource.includes('new URL("/media/"+encodeURIComponent(file.id),apiBase()).href'), "file results must open the stored media item");
+assert.ok(htmlSource.includes('<option value="files">파일만</option>'), "search scope must expose a files-only option");
 
 const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]\n[[분류:사건 사고]]");
 assert.match(category, /opennamu_category_label/, "category strip label must render");
