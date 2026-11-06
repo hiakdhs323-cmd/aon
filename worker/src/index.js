@@ -701,9 +701,9 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
 
-    if (file === "style.css") {
-      parsed.searchParams.set("aonfix", "20261106-static-assets-origin-v2");
-    }
+    // Add a fresh cache key to every static asset. This also evicts stale same-host
+    // URLs that were previously cached as aon69446.p-e.kr resources.
+    parsed.searchParams.set("aonfix", "20261106-static-assets-origin-v3");
 
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
