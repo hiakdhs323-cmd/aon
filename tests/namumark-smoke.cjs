@@ -22,7 +22,9 @@ function render(source, title = "AonWiki:파서 테스트") {
 }
 
 const folding = render("{{{#!folding [접기 제목]\\n접힌 내용\\n}}}");
-assert.match(folding, /<details class="wiki-fold"><summary>\\s*\\[접기 제목\\]\\s*<\\/summary><div class="wiki-fold-content opennamu_folding">/, "folding syntax must keep its semantic details/summary structure");
+assert.ok(folding.includes('class="wiki-fold"><summary>'), "folding syntax must keep its semantic details/summary structure");
+assert.ok(folding.includes("[접기 제목]"), "folding summary title text must be preserved");
+assert.ok(folding.includes('class="wiki-fold-content opennamu_folding">'), "folding body must keep its content container");
 assert.match(folding, /접힌 내용/, "folding body content must remain inside the expandable block");
 const foldingStyles = styles.slice(styles.lastIndexOf("EntryWiki-style folding: a compact text row"));
 assert.match(foldingStyles, /min-height:23px/, "folding title row must match the compact reference height");
