@@ -2867,11 +2867,12 @@ async function applyTableTextContrast(markup) {
       const lightText = chooseTableTextColor(lightBg, lightFg, "light");
       const darkText = chooseTableTextColor(darkBg, darkFg, "dark");
       const current = el.getAttribute("style") || "";
-      const inheritedBackground = authoredLightBg || authoredDarkBg ? "--aonwiki-table-auto-bg-light:" + lightBg + ";--aonwiki-table-auto-bg-dark:" + darkBg + ";" : "";
       el.setAttribute(
         "style",
-        (current.trim() ? current.trim().replace(/;?$/, ";") : "") + inheritedBackground + "--aonwiki-table-auto-fg-light:" + lightText + ";--aonwiki-table-auto-fg-dark:" + darkText + ";color:var(--aonwiki-table-auto-fg-light,var(--wiki-text));"
+        (current.trim() ? current.trim().replace(/;?$/, ";") : "") + "--aonwiki-table-auto-fg-light:" + lightText + ";--aonwiki-table-auto-fg-dark:" + darkText + ";color:var(--aonwiki-table-auto-fg-light,var(--wiki-text));"
       );
+      if (lightFg || darkFg) el.setAttribute("data-aonwiki-authored-fg", "1");
+      else el.removeAttribute("data-aonwiki-authored-fg");
     }
   });
   return await rewriter.transform(new Response(String(markup || ""), {
@@ -2886,7 +2887,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const color = normalizeAdminLinkColor(linkColors?.[key]);
     if (color) colors[key] = color;
   }
-  const cacheKey = "targeted-db-v24-explicit-cell-backgrounds:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v25-theme-text-only:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -2965,7 +2966,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261106-table-bg-inheritance-v2");
+    parsed.searchParams.set("aonfix", "20261106-theme-text-only-v1");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -2976,7 +2977,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-table-bg-inheritance-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-theme-text-only-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
