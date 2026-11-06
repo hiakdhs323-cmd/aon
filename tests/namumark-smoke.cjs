@@ -64,6 +64,8 @@ const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
+assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
+assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
 assert.match(appSource, /aonwikiAutoText/, "automatic text colors must be tracked");
 assert.match(htmlSource, /document\.documentElement\.dataset\.theme = theme/, "theme must be selected before CSS loads");

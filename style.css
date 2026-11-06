@@ -3102,12 +3102,14 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
 #article.wiki-content .table_safe{margin-block:10px}
 #article.wiki-content .table_safe>table:not(.wiki-bracket-table){
   margin:0;
+  border:1px solid var(--wiki-border-strong);
   border-spacing:0;
   line-height:1.55;
 }
 #article.wiki-content .table_safe>table:not(.wiki-bracket-table) th,
 #article.wiki-content .table_safe>table:not(.wiki-bracket-table) td{
-  padding:5px 8px;
+  padding:4px 7px;
+  line-height:1.55!important;
 }
 #article.wiki-content table tr.aonwiki-table-spacer>td{
   padding:0!important;
