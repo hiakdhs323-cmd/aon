@@ -1069,6 +1069,15 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
   color:var(--aonwiki-table-auto-fg-dark)!important
 }
 
+/* Apply inherited table/row background colors directly to each cell.
+   This keeps authored backgrounds visible even when themes style table cells. */
+html[data-theme="light"] #article.wiki-content [style*="--aonwiki-table-auto-bg-light:"]{
+  background-color:var(--aonwiki-table-auto-bg-light)!important
+}
+html[data-theme="dark"] #article.wiki-content [style*="--aonwiki-table-auto-bg-dark:"]{
+  background-color:var(--aonwiki-table-auto-bg-dark)!important
+}
+
 /* Compact fold panels inside table cells without creating an oversized button. */
 .wiki-content .table_safe td .wiki-fold{
   width:100%;margin:0;border-color:var(--wiki-border);border-radius:2px

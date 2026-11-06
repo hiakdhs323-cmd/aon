@@ -609,15 +609,22 @@ async function applyTableTextContrast(markup) {
     .on("td, th", {
       element(el) {
         const levels = [getInlineStyleProperties(el), rowStack[rowStack.length-1] || {}, tableStack[tableStack.length-1] || {}];
-        const lightBg = getThemeValue(levels,"bg","light") || "#ffffff";
-        const darkBg = getThemeValue(levels,"bg","dark") || "#1a1d20";
+        const authoredLightBg = getThemeValue(levels,"bg","light");
+        const authoredDarkBg = getThemeValue(levels,"bg","dark");
+        const lightBg = authoredLightBg || authoredDarkBg || "#ffffff";
+        const darkBg = authoredDarkBg || authoredLightBg || "#1a1d20";
         const lightFg = getThemeValue(levels,"fg","light");
         const darkFg = getThemeValue(levels,"fg","dark");
         const lightText = chooseTableTextColor(lightBg,lightFg,"light");
         const darkText = chooseTableTextColor(darkBg,darkFg,"dark");
         const current = el.getAttribute("style") || "";
+        const inheritedBackground = authoredLightBg || authoredDarkBg
+          ? "--aonwiki-table-auto-bg-light:" + lightBg + ";" +
+            "--aonwiki-table-auto-bg-dark:" + darkBg + ";"
+          : "";
         el.setAttribute("style",
           (current.trim() ? current.trim().replace(/;?$/,";") : "") +
+          inheritedBackground +
           "--aonwiki-table-auto-fg-light:" + lightText + ";" +
           "--aonwiki-table-auto-fg-dark:" + darkText + ";" +
           "color:var(--aonwiki-table-auto-fg-light,var(--wiki-text));"
@@ -634,7 +641,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v23-table-bg-inheritance-compact-cells:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v24-explicit-cell-backgrounds:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -704,7 +711,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
 
     // Add a fresh cache key to every static asset. This also evicts stale same-host
     // URLs that were previously cached as aon69446.p-e.kr resources.
-    parsed.searchParams.set("aonfix", "20261106-static-assets-origin-v3");
+    parsed.searchParams.set("aonfix", "20261106-table-bg-inheritance-v1");
 
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
@@ -716,7 +723,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-static-assets-origin-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-table-bg-inheritance-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");

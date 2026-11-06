@@ -60,7 +60,14 @@ assert.match(warningNotice, /height:10px/i, "empty parameter row height must be 
 assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must not emit invalid CSS");
 
 const appSource = fs.readFileSync("app.js", "utf8");
+const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
 const htmlSource = fs.readFileSync("index.html", "utf8");
+assert.match(workerSource, /--aonwiki-table-auto-bg-light:/, "server renderer must propagate inherited light-mode cell backgrounds");
+assert.match(workerSource, /--aonwiki-table-auto-bg-dark:/, "server renderer must propagate inherited dark-mode cell backgrounds");
+assert.match(styles, /\[style\*="--aonwiki-table-auto-bg-light:"\][^{}]*\{[^}]*background-color:var\(--aonwiki-table-auto-bg-light\)!important/s, "light theme must apply inherited backgrounds directly to cells");
+assert.match(styles, /\[style\*="--aonwiki-table-auto-bg-dark:"\][^{}]*\{[^}]*background-color:var\(--aonwiki-table-auto-bg-dark\)!important/s, "dark theme must apply inherited backgrounds directly to cells");
+assert.match(workerSource, /aonfix", "20261106-table-bg-inheritance-v1"/, "SSR asset URLs must receive a new cache key");
+assert.match(workerSource, /targeted-db-v24-explicit-cell-backgrounds:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
