@@ -1372,7 +1372,8 @@ try {
         tableParameter["table"] += tableSubParameter["table"];
         tableParameter["tableBg"] = tableSubParameter["tableBg"] || tableParameter["tableBg"];
         tableParameter["col"][tableColNum] += tableSubParameter["col"];
-        if (tableSub[2] === "" && tableSub[3] === "") {
+        const isEmptyParameterRow = tableDataIn.trim() === "" && tableSub[2] !== "";
+        if ((tableSub[2] === "" && tableSub[3] === "") || isEmptyParameterRow) {
           tableTrChange = 1;
         } else {
           tableTrChange = 0;
