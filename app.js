@@ -2421,7 +2421,7 @@ function makeSearchFileRow(file,query){
  const dateText=created&&!Number.isNaN(created.getTime())
   ?created.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
   :"등록 날짜 정보 없음";
- const type=String(file.content_type||"application/octet-stream").replace(/^image\\//,"").toUpperCase();
+ const type=String(file.content_type||"application/octet-stream").replace(/^image\//,"").toUpperCase();
  meta.textContent=type+" 파일 · 등록 "+dateText;
  body.append(meta);
  if(file.aliases){
