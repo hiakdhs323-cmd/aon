@@ -106,7 +106,7 @@ assert.ok(appSource.includes("async function loadSearchPage(query,scope="), "sea
 assert.ok(appSource.includes('location.pathname.toLowerCase()==="/search"'), "direct /Search URLs must load the search view");
 assert.ok(workerSource.includes('url.pathname.toLowerCase() === "/search"'), "Worker must serve the app shell for /Search URLs");
 assert.ok(workerSource.includes('requestedScope === "title" || requestedScope === "files"'), "search API must support title-only and file-only scopes");
-assert.ok(workerSource.includes("filename LIKE ? OR EXISTS (SELECT 1 FROM image_aliases"), "search API must search uploaded filenames and their aliases");
+assert.ok(workerSource.includes("filename LIKE ? ESCAPE") && workerSource.includes("image_aliases.alias LIKE ? ESCAPE"), "search API must search uploaded filenames and their aliases");
 assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM pages WHERE "), "search API must return exact page result counts");
 assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM images WHERE "), "search API must return exact file result counts");
 assert.ok(appSource.includes("function renderSearchFileGroup(host,files,query)"), "search page must render a separate file results group");
