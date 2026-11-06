@@ -67,13 +67,13 @@ assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text c
 assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#20252a!important/s, "light mode must darken text over the existing light label-cell background");
 assert.match(styles, /html\[data-theme="dark"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#f2f3f4!important/s, "dark mode must lighten text without changing the label-cell background");
 assert.doesNotMatch(styles, /auto-bg-(?:light|dark)/, "theme switching must not add synthesized cell backgrounds");
-assert.match(workerSource, /aonfix", "20261106-search-page-v1"/, "SSR asset URLs must receive a new cache key");
+assert.match(workerSource, /aonfix", "20261106-file-search-v1"/, "SSR asset URLs must receive a new cache key");
 assert.match(workerSource, /targeted-db-v25-theme-text-only:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
 assert.match(styles, /#article\.wiki-content table td:first-child:not\(\[style\*="background"\]\)/, "first-column background must follow the active theme");
-assert.match(workerSource, /aonfix", "20261106-search-page-v1"/, "SSR must serve the corrected stylesheet under a fresh cache key");
+assert.match(workerSource, /aonfix", "20261106-file-search-v1"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
