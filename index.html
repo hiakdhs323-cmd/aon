@@ -18,7 +18,7 @@
 <title>AonWiki</title>
 <link rel="icon" type="image/svg+xml" href="https://hiakdhs323-cmd.github.io/aon/aonwiki-mark.svg?v=20261106-static-origin-v2">
 <link rel="mask-icon" href="https://hiakdhs323-cmd.github.io/aon/aonwiki-mark.svg?v=20261106-static-origin-v2" color="#00a69c">
-<link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/style.css?v=20261106-theme-text-only-v1">
+<link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/style.css?v=20261106-search-page-v1">
 <!-- AonWiki styles are served from the GitHub Pages origin; do not request the blocked p-e.kr host. -->
 <link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/namumark-beta.css?v=20261106-static-origin-v2">
 
@@ -212,6 +212,52 @@
         <button id="admin-token-rotate" class="button" type="button">초기 키 폐기 · 랜덤 토큰 발급</button>
       </div>
     </section>
+    <section id="search-view" class="search-view" hidden>
+      <div class="breadcrumbs"><a href="/">AonWiki</a><span aria-hidden="true">›</span><span aria-current="page">검색</span></div>
+      <section class="search-page">
+        <header class="search-page-heading">
+          <div>
+            <p class="search-page-kicker">AONWIKI · SEARCH</p>
+            <h1>검색</h1>
+            <p class="search-page-description">문서 제목이나 본문에서 원하는 내용을 찾아보세요.</p>
+          </div>
+        </header>
+        <div class="search-page-body">
+          <form id="search-page-form" class="search-page-form" role="search">
+            <label class="search-scope-wrap" for="search-page-scope">
+              <span class="search-scope-label">검색 범위</span>
+              <select id="search-page-scope" aria-label="검색 범위">
+                <option value="all">전체</option>
+                <option value="title">제목만</option>
+              </select>
+            </label>
+            <label class="search-query-wrap" for="search-page-query">
+              <span class="search-scope-label">검색어</span>
+              <input id="search-page-query" type="search" maxlength="100" placeholder="검색어를 입력하세요." autocomplete="off">
+            </label>
+            <button type="submit" class="search-page-submit"><span aria-hidden="true">⌕</span> 검색</button>
+          </form>
+          <div class="search-help-panel">
+            <span class="search-help-icon" aria-hidden="true">?</span>
+            <p><strong>찾는 문서가 없나요?</strong><span>검색 범위를 ‘전체’로 설정하면 문서 본문에 포함된 내용도 찾을 수 있습니다.</span></p>
+            <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 작성</button>
+          </div>
+          <div class="search-result-summary" aria-live="polite">
+            <p id="search-result-count">검색어를 입력해 주세요.</p>
+            <span id="search-result-query"></span>
+          </div>
+          <div class="search-result-rule" aria-hidden="true"></div>
+          <div id="search-result-groups" class="search-result-groups" aria-live="polite">
+            <div class="search-empty-state">
+              <span class="search-empty-icon" aria-hidden="true">⌕</span>
+              <strong>검색어를 입력해 주세요.</strong>
+              <p>위 검색창에서 문서 제목 또는 본문을 검색할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="site-footer">AonWiki · 검색 결과는 현재 등록된 문서를 기준으로 표시됩니다.</footer>
+    </section>
     <section id="document-view" class="document-view" hidden>
       <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>
       <section class="article">
@@ -312,5 +358,5 @@ hover-dark: #a5d6ff
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" crossorigin="anonymous"></script>
-<script defer src="https://hiakdhs323-cmd.github.io/aon/app.js?v=20261106-table-bg-inheritance-v1"></script>
+<script defer src="https://hiakdhs323-cmd.github.io/aon/app.js?v=20261106-search-page-v1"></script>
 </body></html>

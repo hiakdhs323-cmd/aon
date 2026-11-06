@@ -154,6 +154,7 @@ function showHome(push=true){
  pageNavigationSequence++;
  if(push)history.pushState(null,"","/");
  currentTitle="";currentContent="";
+ $("search-view").hidden=true;
  $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
  document.body.classList.remove("editor-active");
  $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=!loggedInName;$("delete-page").hidden=true;
@@ -305,6 +306,11 @@ async function loadHome(){
 function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){showHome(true);return}if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}loadPage(title,true,anchor)}
 function readRoute(){
  const hash=location.hash||"";
+ if(location.pathname.toLowerCase()==="/search"){
+  const params=new URLSearchParams(location.search);
+  loadSearchPage(params.get("q")||"",params.get("scope")||"all",false);return;
+ }
+ $("search-view").hidden=true;
  // Legacy hash-based URLs remain readable, but all new links use /w/<title>.
  if(hash.startsWith("#/")){
   if(hash==="#"||hash==="#/"||hash==="#/home"){history.replaceState(null,"","/");showHome(false);return}
@@ -1650,7 +1656,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   else breadcrumbTrail=[title];
  }
  renderBreadcrumbTrail();
- currentTitle=title;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;$("discussion-tab").hidden=true;
+ currentTitle=title;$("search-view").hidden=true;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;$("discussion-tab").hidden=true;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  document.title=displayTitle+" - AonWiki";
  const targets=ensureDocumentViewTargets();
@@ -1927,6 +1933,7 @@ async function editPage(title = currentTitle, content = currentContent) {
   editorReturnTitle = String(currentTitle || editorOriginalTitle || "");
   editorIsNew = !editorOriginalTitle;
   document.title = (editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집") + " - AonWiki";
+  $("search-view").hidden = true;
   $("home-view").hidden = true;
   $("document-view").hidden = true;
   $("editor-view").hidden = false;
@@ -2333,16 +2340,122 @@ $("new").onclick=()=>editPage("","");
 $("home-new").onclick=()=>editPage("","");
 $("edit").onclick=()=>editPage(initialSsrState&&!initialSsrState.exists?"":currentTitle,initialSsrState&&!initialSsrState.exists?"":currentContent);
 $("heading-edit").onclick=()=>editPage();
-async function searchFor(query){
- const q=String(query||"").trim();if(!q)return;
- try{const data=await api("/api/pages?q="+encodeURIComponent(q)),pages=(data.pages||[]).filter(p=>p.title!=="대문");
-  const body=$("dialog-body");body.replaceChildren();$("dialog-title").textContent="검색 결과";
-  if(!pages.length)addText(body,"p","검색 결과가 없습니다.");
-  pages.forEach(page=>{const row=document.createElement("p");const a=document.createElement("a");a.href=routeFor(page.title);a.textContent=page.title;a.onclick=e=>{e.preventDefault();$("dialog").close();openPage(page.title)};row.append(a);body.append(row)});
-  $("dialog-status").textContent="";$("save").textContent="닫기";$("save").onclick=()=>$("dialog").close();$("dialog").showModal()
- }catch(error){$("message").textContent=error.message}
+function searchPageUrl(query,scope="all"){
+ const params=new URLSearchParams();
+ params.set("q",String(query||"").trim());
+ params.set("scope",scope==="title"?"title":"all");
+ return "/Search?"+params.toString();
+}
+function showSearchView(){
+ document.title="검색 - AonWiki";
+ breadcrumbTrail=[];pageNavigationSequence++;
+ currentTitle="";currentContent="";
+ $("home-view").hidden=true;$("document-view").hidden=true;$("editor-view").hidden=true;$("search-view").hidden=false;
+ document.body.classList.remove("editor-active");
+ $("home").classList.remove("active");$("new").classList.remove("active");
+ $("edit").hidden=true;$("heading-edit").hidden=true;$("history").hidden=true;$("history-tab").hidden=true;
+ $("upload").hidden=true;$("file-manager").hidden=true;$("delete-page").hidden=true;
+ $("page-protection").hidden=true;$("protection-status").hidden=true;
+}
+function appendSearchHighlighted(target,text,query){
+ const value=String(text||""),needle=String(query||"").trim();
+ if(!needle){target.textContent=value;return}
+ const lower=value.toLocaleLowerCase("ko-KR"),find=needle.toLocaleLowerCase("ko-KR");
+ let cursor=0,match=lower.indexOf(find);
+ while(match>=0){
+  if(match>cursor)target.append(document.createTextNode(value.slice(cursor,match)));
+  const mark=document.createElement("mark");mark.className="search-match";mark.textContent=value.slice(match,match+needle.length);target.append(mark);
+  cursor=match+needle.length;match=lower.indexOf(find,cursor);
+ }
+ if(cursor<value.length)target.append(document.createTextNode(value.slice(cursor)));
+}
+function makeSearchResultRow(page,query,kind){
+ const row=document.createElement("article");row.className="search-result-row";
+ const icon=document.createElement("span");icon.className="search-result-icon"+(kind==="category"?" is-category":"");
+ icon.setAttribute("aria-hidden","true");icon.textContent=kind==="category"?"▣":"▤";
+ const body=document.createElement("div");body.className="search-result-main";
+ const link=document.createElement("a");link.className="search-result-title";link.href=routeFor(page.title);
+ appendSearchHighlighted(link,page.title,query);
+ link.addEventListener("click",event=>{event.preventDefault();openPage(page.title)});
+ body.append(link);
+ const meta=document.createElement("div");meta.className="search-result-meta";
+ const updated=page.updated_at?new Date(page.updated_at):null;
+ const dateText=updated&&!Number.isNaN(updated.getTime())
+  ?updated.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
+  :"수정 날짜 정보 없음";
+ const titleMatch=String(page.title||"").toLocaleLowerCase("ko-KR").includes(String(query||"").toLocaleLowerCase("ko-KR"));
+ meta.textContent=(kind==="category"?"분류":titleMatch?"제목 일치":"본문 포함")+" · 최근 수정 "+dateText;
+ body.append(meta);row.append(icon,body);return row;
+}
+function renderSearchGroup(host,title,pages,query,kind){
+ if(!pages.length)return;
+ const group=document.createElement("section");group.className="search-result-group";
+ const heading=document.createElement("h2");heading.className="search-result-group-heading";
+ const badge=document.createElement("span");badge.className="search-group-icon"+(kind==="category"?" is-category":"");
+ badge.setAttribute("aria-hidden","true");badge.textContent=kind==="category"?"▣":"▤";
+ const label=document.createElement("span");label.textContent=title;
+ const number=document.createElement("small");number.textContent=pages.length.toLocaleString("ko-KR")+"건";
+ heading.append(badge,label,number);
+ const list=document.createElement("div");list.className="search-result-list";
+ pages.forEach(page=>list.append(makeSearchResultRow(page,query,kind)));
+ group.append(heading,list);host.append(group);
+}
+function renderSearchEmpty(host,query){
+ const empty=document.createElement("div");empty.className="search-empty-state";
+ const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
+ const title=document.createElement("strong");title.textContent="검색 결과가 없습니다.";
+ const desc=document.createElement("p");desc.textContent="‘"+query+"’와 일치하는 문서를 찾지 못했습니다. 다른 검색어나 검색 범위를 사용해 보세요.";
+ empty.append(icon,title,desc);host.append(empty);
+}
+async function loadSearchPage(query,scope="all",push=false){
+ const q=String(query||"").trim().slice(0,100),selectedScope=scope==="title"?"title":"all";
+ if(push)history.pushState(null,"",searchPageUrl(q,selectedScope));
+ showSearchView();$("query").value=q;$("search-page-query").value=q;$("search-page-scope").value=selectedScope;
+ const host=$("search-result-groups");host.replaceChildren();
+ $("search-result-query").textContent=q?"검색어: "+q:"";
+ const createButton=$("search-create-page");createButton.hidden=!q;createButton.onclick=()=>editPage(q,"");
+ if(!q){
+  $("search-result-count").textContent="검색어를 입력해 주세요.";
+  const empty=document.createElement("div");empty.className="search-empty-state";
+  const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
+  const title=document.createElement("strong");title.textContent="무엇을 찾고 있나요?";
+  const desc=document.createElement("p");desc.textContent="검색어를 입력하면 문서 제목과 본문을 검색합니다.";
+  empty.append(icon,title,desc);host.append(empty);return;
+ }
+ $("search-result-count").textContent="검색 중입니다…";
+ const started=performance.now();
+ try{
+  const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope),pages=data.pages||[];
+  const categories=pages.filter(page=>/^분류\s*[:：]/.test(String(page.title||"")));
+  const documents=pages.filter(page=>!/^분류\s*[:：]/.test(String(page.title||"")));
+  const total=Number.isFinite(Number(data.total))?Number(data.total):pages.length;
+  const elapsed=((performance.now()-started)/1000).toFixed(3);
+  $("search-result-count").textContent="전체 "+total.toLocaleString("ko-KR")+"건 / 검색 시간 "+elapsed+"초"+(data.truncated?" (최대 100건 표시)":"");
+  host.replaceChildren();
+  if(!pages.length){renderSearchEmpty(host,q);return}
+  renderSearchGroup(host,"분류",categories,q,"category");
+  renderSearchGroup(host,"문서",documents,q,"document");
+  if(data.truncated){
+   const note=document.createElement("p");note.className="search-result-note";
+   note.textContent="검색 결과가 100건을 초과하여 최근 수정된 문서 100개만 표시합니다. 검색어를 더 구체적으로 입력해 보세요.";
+   host.append(note);
+  }
+ }catch(error){
+  $("search-result-count").textContent="검색을 완료하지 못했습니다.";
+  const message=document.createElement("div");message.className="search-empty-state is-error";
+  const title=document.createElement("strong");title.textContent="검색 중 오류가 발생했습니다.";
+  const desc=document.createElement("p");desc.textContent=error.message||"잠시 후 다시 시도해 주세요.";
+  message.append(title,desc);host.append(message);
+ }
+}
+async function searchFor(query,scope="all"){
+ const q=String(query||"").trim();if(!q){$("query").focus();return}
+ await loadSearchPage(q,scope,true);
 }
 $("search").onsubmit=e=>{e.preventDefault();searchFor($("query").value)};
+$("search-page-form").onsubmit=e=>{
+ e.preventDefault();searchFor($("search-page-query").value,$("search-page-scope").value);
+};
 function diffRevisionLines(beforeText, afterText) {
   const before = String(beforeText || "").split("\n"), after = String(afterText || "").split("\n");
   const n = before.length, m = after.length;

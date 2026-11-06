@@ -79,6 +79,13 @@ assert.match(styles, /line-height:1\.55!important/, "table cell line spacing mus
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
 assert.match(appSource, /aonwikiAutoText/, "automatic text colors must be tracked");
 assert.match(htmlSource, /document\.documentElement\.dataset\.theme = theme/, "theme must be selected before CSS loads");
+assert.ok(htmlSource.includes('id="search-view"'), "standalone search view must exist in the app shell");
+assert.ok(htmlSource.includes('id="search-page-form"'), "search page must expose its own form");
+assert.ok(appSource.includes("async function loadSearchPage(query,scope="), "search page renderer must exist");
+assert.ok(appSource.includes('location.pathname.toLowerCase()==="/search"'), "direct /Search URLs must load the search view");
+assert.ok(workerSource.includes('url.pathname.toLowerCase() === "/search"'), "Worker must serve the app shell for /Search URLs");
+assert.ok(workerSource.includes('const scope = url.searchParams.get("scope") === "title" ? "title" : "all";'), "search API must support a title-only scope");
+assert.ok(workerSource.includes('SELECT COUNT(*) AS total FROM pages WHERE '), "search API must return exact result counts");
 
 const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]\n[[분류:사건 사고]]");
 assert.match(category, /opennamu_category_label/, "category strip label must render");
