@@ -312,26 +312,6 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
 .wiki-content .opennamu_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
 .wiki-content .opennamu_category a{margin:0 4px}
-.wiki-fold{
-  display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
-  margin:8px 0;border:1px solid var(--wiki-border-strong);border-radius:3px;
-  background:var(--wiki-panel);overflow:hidden
-}
-.wiki-fold>summary{
-  display:flex;align-items:center;gap:7px;box-sizing:border-box;width:100%;min-width:0;
-  min-height:30px;padding:5px 9px;border:0;border-radius:0;
-  background:var(--wiki-panel-soft);color:var(--wiki-link);
-  font-size:13px;font-weight:700;line-height:1.45;cursor:pointer;
-  list-style:none;white-space:normal;overflow-wrap:anywhere
-}
-.wiki-fold>summary::-webkit-details-marker{display:none}
-.wiki-fold>summary::before{content:"▸";flex:0 0 auto;font-size:11px;line-height:1}
-.wiki-fold[open]>summary{border-bottom:1px solid var(--wiki-border)}
-.wiki-fold[open]>summary::before{content:"▾"}
-.wiki-fold-content{
-  box-sizing:border-box;min-width:0;max-width:100%;margin:0;padding:9px 11px;
-  border:0;background:var(--wiki-panel);overflow-wrap:anywhere
-}
 .wiki-spoiler{border-radius:2px;background:var(--wiki-text);color:var(--wiki-text);cursor:pointer}
 .wiki-spoiler:hover,.wiki-spoiler:focus{color:var(--wiki-panel)}
 .wiki-content sup,.wiki-content sub{line-height:0}
@@ -535,8 +515,7 @@ html[data-theme="dark"] .notice{background:var(--wiki-panel-soft);border-color:v
 html[data-theme="dark"] .wiki-content blockquote,html[data-theme="dark"] .wiki-content pre,
 html[data-theme="dark"] .wiki-content code,html[data-theme="dark"] .wiki-content th,
 html[data-theme="dark"] .wiki-content .wiki-toc,html[data-theme="dark"] .wiki-content .opennamu_TOC,
-html[data-theme="dark"] .wiki-content .opennamu_TOC_fold,html[data-theme="dark"] .wiki-fold>summary,
-html[data-theme="dark"] .wiki-fold-content{background:var(--wiki-panel-soft);border-color:var(--wiki-border);color:var(--wiki-text)}
+html[data-theme="dark"] .wiki-content .opennamu_TOC_fold{background:var(--wiki-panel-soft);border-color:var(--wiki-border);color:var(--wiki-text)}
 html[data-theme="dark"] .wiki-content th,html[data-theme="dark"] .wiki-content td{border-color:var(--wiki-border-strong)}
 html[data-theme="dark"] .wiki-content h1{border-color:var(--wiki-text)}
 html[data-theme="dark"] .wiki-content h2{border-color:var(--wiki-border-strong)}
@@ -940,7 +919,6 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 .wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_contents *,.wiki-content .opennamu_TOC_list{font-size:12px;line-height:1.5}
 .wiki-content .opennamu_TOC_contents{padding-top:5px;overflow-wrap:anywhere}
 .wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited,.wiki-content table a.opennamu_not_exist_link{color:var(--wiki-danger)!important;text-decoration:underline!important;text-decoration-color:currentColor!important}
-.wiki-content .wiki-fold,.wiki-content .wiki-fold-content{max-width:100%;min-width:0}.wiki-content .wiki-fold-content{overflow:visible}
 .wiki-content .table_safe,.wiki-content .wiki-table-wrap,.wiki-content .wiki-table-scroll,.wiki-content .wiki-table{box-sizing:border-box;min-width:0;max-width:100%}
 .wiki-content .table_safe .wiki-table-wrap,.wiki-content .wiki-table-wrap .table_safe{overflow:visible}
 #editor-highlight .mk-syntax{color:#cf222e;font-weight:650}
@@ -1075,17 +1053,6 @@ html[data-theme="light"] #article.wiki-content table td:first-child:not([style*=
 }
 html[data-theme="dark"] #article.wiki-content table td:first-child:not([style*="background"]):not([data-aonwiki-authored-fg="1"]):not(.aonwiki-table-spacer){
   color:#f2f3f4!important;
-}
-
-/* Compact fold panels inside table cells without creating an oversized button. */
-.wiki-content .table_safe td .wiki-fold{
-  width:100%;margin:0;border-color:var(--wiki-border);border-radius:2px
-}
-.wiki-content .table_safe td .wiki-fold>summary{
-  min-height:26px;padding:4px 7px;font-size:12px
-}
-.wiki-content .table_safe td .wiki-fold-content{
-  padding:7px 8px;font-size:12px
 }
 
 /* Keep explicitly authored NamuMark text colors on links in preview and saved pages. */
@@ -2295,11 +2262,6 @@ html[data-theme="light"] .discussion-empty{
     color:var(--wiki-text);font-size:13px;text-align:left
   }
   #article.wiki-content .opennamu_TOC_fold .opennamu_TOC{border-top:1px solid var(--wiki-border);border-radius:0}
-  #article.wiki-content .wiki-fold{margin:7px 0;border-radius:5px}
-  #article.wiki-content .wiki-fold>summary{
-    min-height:39px;padding:8px 11px;font-size:13px
-  }
-  #article.wiki-content .wiki-fold-content{padding:9px 11px}
   .global-rail{display:flex;flex-direction:column;gap:9px;margin:12px}
   .rail-panel{border-radius:5px}
   .rail-list{max-height:260px;overflow-y:auto}
@@ -2341,28 +2303,22 @@ html[data-theme="light"] .discussion-empty{
   color:var(--wiki-text);font-size:12px;line-height:1.65
 }
 .wiki-content .opennamu_TOC_contents a{color:var(--wiki-link)}
-html[data-theme="light"] .wiki-content .opennamu_TOC,
-html[data-theme="light"] .wiki-content .wiki-fold{
+html[data-theme="light"] .wiki-content .opennamu_TOC{
   background:#fff;border-color:#cbd2d8;color:#20252a
 }
-html[data-theme="light"] .wiki-content .opennamu_TOC_title,
-html[data-theme="light"] .wiki-content .wiki-fold>summary{
+html[data-theme="light"] .wiki-content .opennamu_TOC_title{
   background:#f1f3f5;color:#20252a
 }
-html[data-theme="light"] .wiki-content .opennamu_TOC_contents,
-html[data-theme="light"] .wiki-content .wiki-fold-content{
+html[data-theme="light"] .wiki-content .opennamu_TOC_contents{
   background:#fff;color:#252b30;border-color:#d8dde2
 }
-html[data-theme="dark"] .wiki-content .opennamu_TOC,
-html[data-theme="dark"] .wiki-content .wiki-fold{
+html[data-theme="dark"] .wiki-content .opennamu_TOC{
   background:#151515;border-color:#51565c;color:#f2f3f4
 }
-html[data-theme="dark"] .wiki-content .opennamu_TOC_title,
-html[data-theme="dark"] .wiki-content .wiki-fold>summary{
+html[data-theme="dark"] .wiki-content .opennamu_TOC_title{
   background:#2b2e32;color:#f2f3f4
 }
-html[data-theme="dark"] .wiki-content .opennamu_TOC_contents,
-html[data-theme="dark"] .wiki-content .wiki-fold-content{
+html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
   background:#151515;color:#f2f3f4;border-color:#3b3f43
 }
 @media(max-width:560px){
@@ -2767,19 +2723,6 @@ html[data-theme="dark"] #article.wiki-content .opennamu_TOC_label{color:#f1f3f5!
   outline:2px solid var(--wiki-primary);
   outline-offset:-2px;
 }
-#article.wiki-content .wiki-fold-content{
-  box-sizing:border-box;
-  min-width:0;
-  max-width:100%;
-  margin:0;
-  padding:10px 12px;
-  border:0;
-  background:var(--wiki-panel);
-  color:var(--wiki-text);
-  overflow-wrap:anywhere;
-}
-#article.wiki-content .wiki-fold-content>*:first-child{margin-top:0}
-#article.wiki-content .wiki-fold-content>*:last-child{margin-bottom:0}
 
 /* Bracket-table information boxes and ordinary NamuMark tables. */
 #article.wiki-content .bracket-table-wrap{
@@ -2979,7 +2922,6 @@ html[data-theme="dark"] #editor-highlight .mk-code-fence{color:#a5abb1!important
     padding:9px 10px;
     font-size:13px;
   }
-  #article.wiki-content .wiki-fold-content{padding:9px 10px}
   #article.wiki-content table.wiki-bracket-table{font-size:12px}
   #article.wiki-content table.wiki-bracket-table th,
   #article.wiki-content table.wiki-bracket-table td{padding:5px 6px}
@@ -3064,27 +3006,17 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
 #article.wiki-content details.wiki-fold[open]>summary{
   border-bottom:1px solid var(--wiki-border)!important;
 }
-#article.wiki-content details.wiki-fold>.wiki-fold-content{
-  margin:0;padding:10px 12px;border:0;border-radius:0;
-  background:var(--wiki-panel)!important;color:var(--wiki-text)!important;
-}
 html[data-theme="light"] #article.wiki-content details.wiki-fold{
   border-color:#cbd2d8;background:#fff;
 }
 html[data-theme="light"] #article.wiki-content details.wiki-fold>summary{
   background:#e9edf1!important;color:#20252a!important;
 }
-html[data-theme="light"] #article.wiki-content details.wiki-fold>.wiki-fold-content{
-  background:#fff!important;color:#20252a!important;
-}
 html[data-theme="dark"] #article.wiki-content details.wiki-fold{
   border-color:#51565c;background:#232629;
 }
 html[data-theme="dark"] #article.wiki-content details.wiki-fold>summary{
   background:#2b2e32!important;color:#f1f3f5!important;
-}
-html[data-theme="dark"] #article.wiki-content details.wiki-fold>.wiki-fold-content{
-  background:#232629!important;color:#e7eaed!important;
 }
 @media(max-width:700px){
   #article.wiki-content details.wiki-fold>summary{
@@ -3291,24 +3223,6 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
   border:0!important;
   background:transparent!important;
 }
-#article.wiki-content details.wiki-fold>.wiki-fold-content{
-  box-sizing:border-box;
-  min-width:0;
-  max-width:100%;
-  margin:0;
-  padding:0;
-  border:0!important;
-  border-radius:0;
-  background:transparent!important;
-  color:var(--wiki-text)!important;
-  overflow-wrap:anywhere;
-}
-#article.wiki-content details.wiki-fold>.wiki-fold-content>*:first-child{
-  margin-top:0;
-}
-#article.wiki-content details.wiki-fold>.wiki-fold-content>*:last-child{
-  margin-bottom:0;
-}
 #article.wiki-content .table_safe td details.wiki-fold{
   margin:0;
 }
@@ -3322,6 +3236,106 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
   #article.wiki-content details.wiki-fold>summary{
     min-height:23px;
     padding:0 2px;
+    font-size:13px;
+  }
+}
+
+
+/* =========================================================
+   EntryWiki-style folding: a compact text row with native disclosure
+   ========================================================= */
+#article.wiki-content details.wiki-fold{
+  display:block!important;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  margin:0 0 10px;
+  padding:0;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:var(--wiki-text);
+  box-shadow:none!important;
+  overflow:visible;
+}
+#article.wiki-content details.wiki-fold>summary,
+#article.wiki-content details.wiki-fold>summary:focus,
+#article.wiki-content details.wiki-fold>summary:focus-visible{
+  display:list-item!important;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:23px;
+  margin:0;
+  padding:0;
+  border:0!important;
+  border-radius:0!important;
+  outline:0!important;
+  outline-offset:0;
+  background:transparent!important;
+  color:var(--wiki-text)!important;
+  box-shadow:none!important;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:400;
+  line-height:23px;
+  text-align:center!important;
+  list-style-position:outside!important;
+  list-style-type:disclosure-closed!important;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  cursor:pointer;
+}
+#article.wiki-content details.wiki-fold[open]>summary{
+  list-style-type:disclosure-open!important;
+  border:0!important;
+  background:transparent!important;
+}
+#article.wiki-content details.wiki-fold>summary::-webkit-details-marker{
+  display:inline-block!important;
+}
+#article.wiki-content details.wiki-fold>summary::marker{
+  content:normal!important;
+  color:var(--wiki-muted)!important;
+  font-size:inherit!important;
+}
+#article.wiki-content details.wiki-fold>summary::before,
+#article.wiki-content details.wiki-fold>summary::after{
+  display:none!important;
+  content:none!important;
+}
+#article.wiki-content details.wiki-fold>summary:hover{
+  color:var(--wiki-text)!important;
+  text-decoration:none;
+}
+#article.wiki-content details.wiki-fold>.wiki-fold-content{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  margin:0;
+  padding:0;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:var(--wiki-text)!important;
+  box-shadow:none!important;
+  overflow-wrap:anywhere;
+}
+#article.wiki-content details.wiki-fold>.wiki-fold-content>*:first-child{margin-top:0}
+#article.wiki-content details.wiki-fold>.wiki-fold-content>*:last-child{margin-bottom:0}
+#article.wiki-content .table_safe td details.wiki-fold{margin:0 0 10px}
+#article.wiki-content .table_safe td details.wiki-fold>summary{
+  min-height:23px;
+  line-height:23px;
+  font-size:12px;
+}
+@media(max-width:700px){
+  #article.wiki-content details.wiki-fold>summary{
+    min-height:23px;
+    line-height:23px;
     font-size:13px;
   }
 }
