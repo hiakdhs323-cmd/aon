@@ -694,84 +694,15 @@ function safeJsonForHtml(value) {
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/+$/, "") + "/";
   const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "aonwiki-mark.svg"]);
-
-  // Normalize both relative and absolute asset URLs. Some cached HTML versions still
-  // contain aon69446.p-e.kr URLs; those must never leak into the rendered document.
-  const rewritten = String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
+  return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
-    try {
-      parsed = new URL(String(rawUrl).trim(), base);
-    } catch {
-      return attribute;
-    }
-
+    try { parsed = new URL(String(rawUrl).trim(), base); }
+    catch { return attribute; }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-
-    // Add a fresh cache key to every static asset.
-    parsed.searchParams.set("aonfix", "20261106-entrywiki-icons-v3");
+    parsed.searchParams.set("aonfix", "20261107-namu-parity-v1");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
-
-  // Some external sites (including EntryWiki) do not publish /favicon.ico.
-  // Keep a capture-phase fallback in the shell so the green chain badge is still
-  // applied even while a cached browser bundle is being replaced.
-  const compatibility = `
-<style id="aonwiki-entry-link-fallback-v3">
-#article.wiki-content .wiki-external-favicon-fallback{
-  display:inline-block!important;
-  box-sizing:border-box;
-  flex:0 0 14px;
-  width:14px;
-  height:14px;
-  padding:2px;
-  border:0;
-  border-radius:1px;
-  background:#00a63c!important;
-  color:#fff!important;
-  stroke:#fff!important;
-  vertical-align:-2px;
-}
-#article.wiki-content .wiki-external-link.wiki-external-favicon-missing .wiki-external-link-label{
-  color:#00a63c!important;
-}
-</style>
-<script id="aonwiki-entry-link-fallback-v3">
-(function(){
-  if(window.__aonwikiEntryLinkFallbackV3)return;
-  window.__aonwikiEntryLinkFallbackV3=true;
-  document.addEventListener("error",function(event){
-    var image=event.target;
-    if(!image||image.tagName!=="IMG"||!image.classList.contains("wiki-external-favicon"))return;
-    var link=image.closest("a.wiki-external-link");
-    if(!link)return;
-    event.stopImmediatePropagation();
-    link.classList.add("wiki-external-favicon-missing");
-    var svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
-    svg.setAttribute("class","wiki-external-favicon-fallback");
-    svg.setAttribute("viewBox","0 0 16 16");
-    svg.setAttribute("width","14");
-    svg.setAttribute("height","14");
-    svg.setAttribute("fill","none");
-    svg.setAttribute("stroke","#fff");
-    svg.setAttribute("stroke-width","1.45");
-    svg.setAttribute("stroke-linecap","round");
-    svg.setAttribute("stroke-linejoin","round");
-    svg.setAttribute("aria-hidden","true");
-    [
-      "m6.4 9.6-1.2 1.2a2.1 2.1 0 0 1-3-3l2.1-2.1a2.1 2.1 0 0 1 3 0",
-      "m9.6 6.4 1.2-1.2a2.1 2.1 0 0 1 3 3l-2.1 2.1a2.1 2.1 0 0 1-3 0",
-      "m5.8 10.2 4.4-4.4"
-    ].forEach(function(d){
-      var path=document.createElementNS("http://www.w3.org/2000/svg","path");
-      path.setAttribute("d",d);
-      svg.appendChild(path);
-    });
-    image.replaceWith(svg);
-  },true);
-})();
-</script>`;
-  return rewritten.replace(/<\/head>/i, compatibility + "</head>");
 }
 let frontendShellCache = { value: null, expiresAt: 0 };
 let frontendShellPending = null;
@@ -780,7 +711,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-entrywiki-icons-v3", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-namu-parity-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
@@ -1285,46 +1216,99 @@ export default {
         return response({ pages: result.results || [] }, 200, cors);
       }
       if (url.pathname === "/api/pages" && request.method === "GET") {
-        const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
+        const q = String(url.searchParams.get("q") || "").normalize("NFC").trim().slice(0, 100);
         const requestedScope = url.searchParams.get("scope");
         const scope = requestedScope === "title" || requestedScope === "files" ? requestedScope : "all";
         const createdAfter = String(url.searchParams.get("created_after") || "").slice(0, 40);
+        const limit = Math.min(50, Math.max(5, Number.parseInt(url.searchParams.get("limit") || "25", 10) || 25));
+        const pageOffset = Math.min(100000, Math.max(0, Number.parseInt(url.searchParams.get("page_offset") || "0", 10) || 0));
+        const fileOffset = Math.min(100000, Math.max(0, Number.parseInt(url.searchParams.get("file_offset") || "0", 10) || 0));
         let result;
         if (q) {
-          const pattern = "%" + q.replace(/[\\%_]/g, "") + "%";
-          const pageCondition = scope === "title" ? "title LIKE ?" : "(title LIKE ? OR content LIKE ?)";
-          const pageParameters = scope === "title" ? [pattern] : [pattern, pattern];
+          const terms = [...new Set(q.split(/\s+/).map(value => value.trim()).filter(Boolean))].slice(0, 6);
+          const escapeLike = value => String(value).replace(/[!%_]/g, character => "!" + character);
+          const patterns = terms.map(term => "%" + escapeLike(term) + "%");
+          const phrasePattern = "%" + escapeLike(q) + "%";
+          const prefixPattern = escapeLike(terms[0] || q) + "%";
           const shouldSearchPages = scope !== "files";
           const shouldSearchFiles = scope !== "title";
-
+          const pageCondition = terms.map(() => scope === "title"
+            ? "title LIKE ? ESCAPE '!'"
+            : "(title LIKE ? ESCAPE '!' OR content LIKE ? ESCAPE '!')"
+          ).join(" AND ");
+          const pageParameters = terms.flatMap((term, index) => {
+            const pattern = patterns[index];
+            return scope === "title" ? [pattern] : [pattern, pattern];
+          });
+          const fileCondition = terms.map(() =>
+            "(filename LIKE ? ESCAPE '!' OR EXISTS (SELECT 1 FROM image_aliases WHERE image_aliases.image_id = images.id AND image_aliases.alias LIKE ? ESCAPE '!'))"
+          ).join(" AND ");
+          const fileParameters = terms.flatMap((term, index) => [patterns[index], patterns[index]]);
+          const makeSnippet = source => {
+            let plain = String(source || "")
+              .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, "$2")
+              .replace(/\[\[([^\]]+)\]\]/g, "$1")
+              .replace(/\[https?:\/\/\S+\s+([^\]]+)\]/gi, "$1")
+              .replace(/<[^>]*>/g, " ")
+              .replace(/'{2,5}/g, "")
+              .replace(/^\s*=+.*?=+\s*$/gm, " ")
+              .replace(/[|{}\[\]#]/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+            if (!plain) return "";
+            const lower = plain.toLocaleLowerCase("ko-KR");
+            const positions = terms.map(term => lower.indexOf(term.toLocaleLowerCase("ko-KR"))).filter(index => index >= 0);
+            const matchAt = positions.length ? Math.min(...positions) : 0;
+            const start = Math.max(0, matchAt - 78);
+            const end = Math.min(plain.length, start + 230);
+            return (start > 0 ? "…" : "") + plain.slice(start, end) + (end < plain.length ? "…" : "");
+          };
           let pageTotal = 0;
           let pages = [];
           if (shouldSearchPages) {
             const [count, rows] = await Promise.all([
               env.DB.prepare("SELECT COUNT(*) AS total FROM pages WHERE " + pageCondition).bind(...pageParameters).first(),
-              env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE " + pageCondition + " ORDER BY updated_at DESC LIMIT 100").bind(...pageParameters).all()
+              env.DB.prepare(
+                "SELECT title, content, created_at, updated_at FROM pages WHERE " + pageCondition +
+                " ORDER BY CASE WHEN lower(title) = lower(?) THEN 0 WHEN lower(title) LIKE lower(?) ESCAPE '!' THEN 1 WHEN lower(title) LIKE lower(?) ESCAPE '!' THEN 2 ELSE 3 END, updated_at DESC, title COLLATE NOCASE ASC LIMIT ? OFFSET ?"
+              ).bind(...pageParameters, q, prefixPattern, phrasePattern, limit, pageOffset).all()
             ]);
             pageTotal = Number(count?.total || 0);
-            pages = rows.results || [];
+            pages = (rows.results || []).map(page => {
+              const title = String(page.title || "");
+              const titleLower = title.toLocaleLowerCase("ko-KR");
+              const titleMatch = terms.every(term => titleLower.includes(term.toLocaleLowerCase("ko-KR")));
+              return {
+                title,
+                created_at: page.created_at,
+                updated_at: page.updated_at,
+                match_type: titleMatch ? "title" : "content",
+                snippet: titleMatch ? "" : makeSnippet(page.content)
+              };
+            });
           }
-
           let fileTotal = 0;
           let files = [];
           if (shouldSearchFiles) {
             await ensureImageSchema(env);
-            const fileCondition = "filename LIKE ? OR EXISTS (SELECT 1 FROM image_aliases WHERE image_aliases.image_id = images.id AND image_aliases.alias LIKE ?)";
             const [count, rows] = await Promise.all([
-              env.DB.prepare("SELECT COUNT(*) AS total FROM images WHERE " + fileCondition).bind(pattern, pattern).first(),
-              env.DB.prepare("SELECT id, filename, content_type, created_at, (SELECT GROUP_CONCAT(alias, ' · ') FROM image_aliases WHERE image_aliases.image_id = images.id) AS aliases FROM images WHERE " + fileCondition + " ORDER BY created_at DESC LIMIT 100").bind(pattern, pattern).all()
+              env.DB.prepare("SELECT COUNT(*) AS total FROM images WHERE " + fileCondition).bind(...fileParameters).first(),
+              env.DB.prepare(
+                "SELECT id, filename, content_type, created_at, (SELECT GROUP_CONCAT(alias, ' · ') FROM image_aliases WHERE image_aliases.image_id = images.id) AS aliases FROM images WHERE " + fileCondition +
+                " ORDER BY CASE WHEN lower(filename) = lower(?) THEN 0 WHEN lower(filename) LIKE lower(?) ESCAPE '!' THEN 1 WHEN lower(filename) LIKE lower(?) ESCAPE '!' THEN 2 ELSE 3 END, created_at DESC, filename COLLATE NOCASE ASC LIMIT ? OFFSET ?"
+              ).bind(...fileParameters, q, prefixPattern, phrasePattern, limit, fileOffset).all()
             ]);
             fileTotal = Number(count?.total || 0);
             files = rows.results || [];
           }
-
           const total = pageTotal + fileTotal;
+          const pagesHasMore = pageTotal > pageOffset + pages.length;
+          const filesHasMore = fileTotal > fileOffset + files.length;
           return response({
             pages, files, total, page_total: pageTotal, file_total: fileTotal, scope,
-            truncated: pageTotal > pages.length || fileTotal > files.length
+            limit, page_offset: pageOffset, file_offset: fileOffset,
+            pages_has_more: pagesHasMore, files_has_more: filesHasMore,
+            has_more: pagesHasMore || filesHasMore
           }, 200, cors);
         } else if (createdAfter && !Number.isNaN(Date.parse(createdAfter))) {
           result = await env.DB.prepare("SELECT title, created_at, updated_at FROM pages WHERE created_at > ? ORDER BY created_at DESC LIMIT 100").bind(createdAfter).all();

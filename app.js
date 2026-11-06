@@ -154,46 +154,20 @@ function decorateExternalLinks(root){
   let url;
   try{url=new URL(link.getAttribute("href")||"",location.href)}catch{return}
   if(!/^https?:$/.test(url.protocol))return;
-  const hostname=url.hostname.toLowerCase().replace(/^www\./,"");
-  if(!hostname)return;
-  const originalText=(link.textContent||"").trim();
-  let isBareUrl=!originalText;
-  if(originalText){
-   try{
-    const labelUrl=new URL(originalText);
-    isBareUrl=labelUrl.protocol==="http:"||labelUrl.protocol==="https:";
-   }catch{
-    isBareUrl=originalText===url.hostname||originalText===hostname;
-   }
-  }
-  const label=document.createElement("span");
-  label.className="wiki-external-link-label";
-  if(isBareUrl)label.textContent=hostname;
-  else while(link.firstChild)label.append(link.firstChild);
-  const favicon=document.createElement("img");
-  favicon.className="wiki-external-favicon";
-  favicon.alt="";
-  favicon.loading="lazy";
-  favicon.decoding="async";
-  favicon.referrerPolicy="no-referrer";
-  const faviconUrl=new URL("/favicon.ico",url.origin);
-  if(faviconUrl.protocol==="http:"&&location.protocol==="https:")faviconUrl.protocol="https:";
-  favicon.src=faviconUrl.href;
-  favicon.addEventListener("error",()=>{
-   const fallback=createAonUiIcon("link","wiki-external-favicon-fallback");
-   link.classList.add("wiki-external-favicon-missing");
-   favicon.replaceWith(fallback);
-  },{once:true});
-  link.replaceChildren(favicon,label);
+  const icon=createAonUiIcon("link","wiki-external-link-icon");
+  icon.setAttribute("aria-label","외부 링크");
+  icon.setAttribute("title","외부 사이트로 이동");
+  link.append(icon);
   link.classList.add("wiki-external-link");
   link.dataset.aonExternalDecorated="true";
-  link.setAttribute("title",hostname);
-  link.setAttribute("aria-label",(isBareUrl?hostname:originalText)+" (외부 사이트, 새 창에서 열림)");
   link.setAttribute("target","_blank");
   link.setAttribute("rel","noopener noreferrer");
+  if(!link.hasAttribute("aria-label")){
+   const label=(link.textContent||"").trim();
+   link.setAttribute("aria-label",(label||url.hostname)+" (외부 링크, 새 창에서 열림)");
+  }
  });
 }
-
 function syncDocumentEditControls(){
  const hasDocument=Boolean(currentTitle&&!isHomeRoute()&&!$("document-view").hidden);
  const canEdit=hasDocument && (currentProtection.level!=="admin" || isWikiAdmin);
@@ -993,14 +967,20 @@ function toggleNamumarkBeta() {
   syncNamumarkBetaButton();
 }
 syncNamumarkBetaButton();
-function hasExplicitWikiTextColor(element, root) {
+function getExplicitWikiTextColor(element, root) {
   for (let node = element; node && node !== root; node = node.parentElement) {
-    if (node.style && node.style.getPropertyValue("color").trim()) return true;
-    if (node.tagName === "FONT" && node.hasAttribute("color")) return true;
+    const inlineColor = node.style?.getPropertyValue("color")?.trim();
+    if (inlineColor) return inlineColor;
+    if (node.tagName === "FONT" && node.hasAttribute("color")) {
+      const fontColor = String(node.getAttribute("color") || "").trim();
+      if (fontColor) return fontColor;
+    }
   }
-  return false;
+  return "";
 }
-
+function hasExplicitWikiTextColor(element, root) {
+  return Boolean(getExplicitWikiTextColor(element, root));
+}
 function applyFinalWikiTypographyAndLinkColors(root) {
   if (!root) return;
   const compactNodes=root.querySelectorAll([
@@ -1026,24 +1006,22 @@ function applyFinalWikiTypographyAndLinkColors(root) {
       if(!toc.dataset.aonTocToggleBound){toc.addEventListener("toggle",syncExpanded);toc.dataset.aonTocToggleBound="true";}
     }
   });
-  const hasPageLinkColorRules=[...root.querySelectorAll("style")].some(style=>style.textContent.includes(".aonwiki-page-content a"));
-  const links=root.querySelectorAll([
-    "a.opennamu_not_exist_link","table td a","table th a",
-    ".opennamu_footnote a",".wiki-footnotes a","footnote_title a"
-  ].join(","));
-  for(const link of links){
+  root.querySelectorAll("a").forEach(link=>{
     if(link.classList.contains("opennamu_not_exist_link")){
       link.style.setProperty("color","var(--wiki-danger)","important");
       link.style.setProperty("text-decoration","underline","important");
       link.style.setProperty("text-decoration-color","currentColor","important");
-      continue;
+      return;
     }
-    if(hasExplicitWikiTextColor(link,root)||hasPageLinkColorRules)continue;
-    link.style.setProperty("color","var(--wiki-link)","important");
-  }
+    const explicitColor=getExplicitWikiTextColor(link,root);
+    if(explicitColor){
+      link.style.setProperty("color",explicitColor,"important");
+      return;
+    }
+    link.style.setProperty("color","var(--wiki-body-link)","important");
+  });
   root.dataset.aonFinalPresentation="applied";
 }
-
 function prepareServerRenderedMarkup(root,docTitle){
   sanitizeNamuOutput(root,docTitle);
   decorateExternalLinks(root);
@@ -1176,11 +1154,19 @@ function discussionDate(value){
  const date=value?new Date(value):null;
  return date&&!Number.isNaN(date.getTime())?date.toLocaleString("ko-KR"):"시간 정보 없음";
 }
-function discussionText(host,value,className="discussion-body"){
+function discussionText(host,value,className="discussion-body",docTitle="토론"){
  const box=document.createElement("div");
- box.className=className;
- box.textContent=String(value||"");
+ box.className=className+" wiki-content discussion-wiki-content";
+ const source=String(value||"");
+ box.textContent=source;
  host.append(box);
+ renderNamuMarkup(source,box,docTitle).catch(error=>{
+  box.replaceChildren();
+  const fallback=document.createElement("p");
+  fallback.className="discussion-render-warning";
+  fallback.textContent="토론 내용을 문법으로 표시하지 못했습니다: "+String(error?.message||error);
+  box.append(fallback);
+ });
  return box;
 }
 function prepareDiscussionView(title,route,pushRoute){
@@ -1293,30 +1279,49 @@ async function loadDiscussionList(pushRoute=true,pageTitle=""){
   const topics=data.discussions||[];
   const total=addText(listTitle,"span",Number(data.total||0).toLocaleString("ko-KR")+"개");total.className="discussion-total";
   if(!topics.length){makeDiscussionNotice(list,pageTitle?"이 문서에 등록된 토론이 없습니다. 첫 토론을 시작해 보세요.":"아직 등록된 토론이 없습니다. 첫 토론을 시작해 보세요.");return}
-  topics.forEach(topic=>{
+  const appendTopics=items=>items.forEach(topic=>{
    const row=document.createElement("article");row.className="discussion-list-item";
    const main=document.createElement("div");main.className="discussion-list-main";
    const link=document.createElement("a");link.href="#/discussion/"+topic.id;link.textContent=topic.title;
    link.addEventListener("click",event=>{event.preventDefault();loadDiscussionDetail(topic.id,true)});
-   const meta=document.createElement("div");meta.className="discussion-list-meta";
-   meta.append(document.createTextNode("#"+topic.id+" · "+(topic.author||"알 수 없음")+" · "+discussionDate(topic.last_post_at)));
+   const meta=addText(main,"div","#"+topic.id+" · "+(topic.author||"알 수 없음")+" · "+discussionDate(topic.last_post_at));meta.className="discussion-list-meta";
    if(topic.page_title){meta.append(document.createTextNode(" · "));meta.append(discussionLink(topic.page_title,"문서: "+topic.page_title))}
-   main.append(link,meta);
    const side=document.createElement("div");side.className="discussion-list-side";
    const state=addText(side,"span",topic.status==="closed"?"종료":"진행 중");state.className="discussion-state "+(topic.status==="closed"?"is-closed":"is-open");
    const count=addText(side,"span","답글 "+Number(topic.reply_count||0));count.className="discussion-reply-count";
    side.append(state,count);row.append(main,side);list.append(row);
   });
+  appendTopics(topics);
+  let discussionOffset=topics.length;
+  const discussionTotal=Number(data.total||0);
+  if(discussionOffset<discussionTotal){
+   const more=document.createElement("button");more.type="button";more.className="discussion-load-more";more.textContent="이전 토론 더 보기";
+   more.addEventListener("click",async()=>{
+    if(more.disabled)return;
+    more.disabled=true;more.textContent="불러오는 중…";
+    try{
+     const next=await api("/api/discussions?limit=40&offset="+discussionOffset+(pageTitle?"&title="+encodeURIComponent(pageTitle):""));
+     if(requestId!==pageNavigationSequence)return;
+     const rows=next.discussions||[];
+     appendTopics(rows);discussionOffset+=rows.length;
+     if(discussionOffset>=Number(next.total??discussionTotal))more.remove();
+     else{more.disabled=false;more.textContent="이전 토론 더 보기";}
+     loadGlobalRail();
+    }catch(error){more.disabled=false;more.textContent="다시 시도";makeDiscussionNotice(list,error.message)}
+   });
+   listWrap.append(more);
+  }
  }catch(error){makeDiscussionNotice(list,error.message)}
 }
-function buildDiscussionPostCard(post){
+function buildDiscussionPostCard(post,index=0,docTitle="토론"){
  const card=document.createElement("article");card.className="discussion-post-card";
  const header=document.createElement("div");header.className="discussion-post-header";
+ const number=addText(header,"span",String(index+1));number.className="discussion-post-number";
  const author=addText(header,"strong",post.author||"알 수 없음");
  const meta=addText(header,"span",discussionDate(post.created_at)+(post.edited_at?" · 수정됨":""));
  header.append(author,meta);card.append(header);
- if(Number(post.is_deleted)){discussionText(card,"삭제된 답글입니다.","discussion-body is-deleted");return card}
- discussionText(card,post.body);
+ if(Number(post.is_deleted)){discussionText(card,"삭제된 답글입니다.","discussion-body is-deleted",docTitle);return card}
+ discussionText(card,post.body,"discussion-body",docTitle);
  if(isWikiAdmin||loggedInName===post.author){
   const actions=document.createElement("div");actions.className="discussion-post-actions";
   const edit=document.createElement("button");edit.type="button";edit.className="text-action";edit.textContent="수정";
@@ -1366,7 +1371,7 @@ async function loadDiscussionDetail(id,pushRoute=true){
   const originalHeader=document.createElement("div");originalHeader.className="discussion-post-header";
   addText(originalHeader,"strong",topic.author||"알 수 없음");
   addText(originalHeader,"span",discussionDate(topic.created_at)+" · 원문");
-  original.append(originalHeader);discussionText(original,topic.body);article.append(original);
+  original.append(originalHeader);discussionText(original,topic.body,"discussion-body","토론:"+String(topic.title||topic.page_title||id));article.append(original);
   const controls=document.createElement("div");controls.className="discussion-topic-actions";
   if(isWikiAdmin||loggedInName===topic.author){
    const editTopic=document.createElement("button");editTopic.type="button";editTopic.className="title-button";editTopic.textContent="토론 수정";
@@ -1404,7 +1409,7 @@ async function loadDiscussionDetail(id,pushRoute=true){
   const replyHeading=addText(replySection,"h3","답글");replyHeading.className="discussion-section-title";
   const replyList=document.createElement("div");replyList.className="discussion-post-list";
   if(!posts.length)makeDiscussionNotice(replyList,"아직 답글이 없습니다. 첫 의견을 남겨 보세요.");
-  else posts.forEach(post=>replyList.append(buildDiscussionPostCard(post)));
+  else posts.forEach((post,index)=>replyList.append(buildDiscussionPostCard(post,index,"토론:"+String(topic.title||topic.page_title||id))));
   replySection.append(replyList);article.append(replySection);
   if(topic.status==="open"){
    if(loggedInName||sessionStorage.getItem(TOKEN_SETTING)){
@@ -2543,27 +2548,39 @@ function makeSearchResultRow(page,query,kind){
  appendSearchHighlighted(link,page.title,query);
  link.addEventListener("click",event=>{event.preventDefault();openPage(page.title)});
  body.append(link);
+ if(page.snippet){
+  const snippet=document.createElement("p");snippet.className="search-result-snippet";
+  appendSearchHighlighted(snippet,page.snippet,query);body.append(snippet);
+ }
  const meta=document.createElement("div");meta.className="search-result-meta";
  const updated=page.updated_at?new Date(page.updated_at):null;
  const dateText=updated&&!Number.isNaN(updated.getTime())
   ?updated.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
   :"수정 날짜 정보 없음";
- const titleMatch=String(page.title||"").toLocaleLowerCase("ko-KR").includes(String(query||"").toLocaleLowerCase("ko-KR"));
- meta.textContent=(kind==="category"?"분류":titleMatch?"제목 일치":"본문 포함")+" · 최근 수정 "+dateText;
+ const reason=page.match_type==="title"?"제목 일치":page.match_type==="content"?"본문 일치":kind==="category"?"분류":"문서";
+ meta.textContent=reason+" · 최근 수정 "+dateText;
  body.append(meta);row.append(icon,body);return row;
 }
 function renderSearchGroup(host,title,pages,query,kind){
  if(!pages.length)return;
- const group=document.createElement("section");group.className="search-result-group";
- const heading=document.createElement("h2");heading.className="search-result-group-heading";
- const badge=document.createElement("span");badge.className="search-group-icon"+(kind==="category"?" is-category":"");
- badge.setAttribute("aria-hidden","true");badge.textContent=kind==="category"?"▣":"▤";
- const label=document.createElement("span");label.textContent=title;
- const number=document.createElement("small");number.textContent=pages.length.toLocaleString("ko-KR")+"건";
- heading.append(badge,label,number);
- const list=document.createElement("div");list.className="search-result-list";
+ let group=host.querySelector('.search-result-group[data-search-kind="'+kind+'"]');
+ if(!group){
+  group=document.createElement("section");group.className="search-result-group";group.dataset.searchKind=kind;
+  const heading=document.createElement("h2");heading.className="search-result-group-heading";
+  const badge=document.createElement("span");badge.className="search-group-icon"+(kind==="category"?" is-category":"");
+  badge.setAttribute("aria-hidden","true");badge.textContent=kind==="category"?"▣":"▤";
+  const label=document.createElement("span");label.textContent=title;
+  const number=document.createElement("small");number.textContent="0건";number.className="search-result-group-count";
+  heading.append(badge,label,number);
+  const list=document.createElement("div");list.className="search-result-list";
+  group.append(heading,list);host.append(group);
+ }
+ const list=group.querySelector(".search-result-list");
  pages.forEach(page=>list.append(makeSearchResultRow(page,query,kind)));
- group.append(heading,list);host.append(group);
+ const count=Number(group.dataset.resultCount||0)+pages.length;
+ group.dataset.resultCount=String(count);
+ const number=group.querySelector(".search-result-group-count");
+ if(number)number.textContent=count.toLocaleString("ko-KR")+"건";
 }
 function makeSearchFileRow(file,query){
  const row=document.createElement("article");row.className="search-result-row search-file-row";
@@ -2597,16 +2614,24 @@ function makeSearchFileRow(file,query){
 }
 function renderSearchFileGroup(host,files,query){
  if(!files.length)return;
- const group=document.createElement("section");group.className="search-result-group search-file-group";
- const heading=document.createElement("h2");heading.className="search-result-group-heading";
- const badge=document.createElement("span");badge.className="search-group-icon is-file";
- badge.setAttribute("aria-hidden","true");badge.textContent="▧";
- const label=document.createElement("span");label.textContent="파일";
- const number=document.createElement("small");number.textContent=files.length.toLocaleString("ko-KR")+"개";
- heading.append(badge,label,number);
- const list=document.createElement("div");list.className="search-result-list";
+ let group=host.querySelector('.search-result-group[data-search-kind="files"]');
+ if(!group){
+  group=document.createElement("section");group.className="search-result-group search-file-group";group.dataset.searchKind="files";
+  const heading=document.createElement("h2");heading.className="search-result-group-heading";
+  const badge=document.createElement("span");badge.className="search-group-icon is-file";
+  badge.setAttribute("aria-hidden","true");badge.textContent="▧";
+  const label=document.createElement("span");label.textContent="파일";
+  const number=document.createElement("small");number.textContent="0개";number.className="search-result-group-count";
+  heading.append(badge,label,number);
+  const list=document.createElement("div");list.className="search-result-list";
+  group.append(heading,list);host.append(group);
+ }
+ const list=group.querySelector(".search-result-list");
  files.forEach(file=>list.append(makeSearchFileRow(file,query)));
- group.append(heading,list);host.append(group);
+ const count=Number(group.dataset.resultCount||0)+files.length;
+ group.dataset.resultCount=String(count);
+ const number=group.querySelector(".search-result-group-count");
+ if(number)number.textContent=count.toLocaleString("ko-KR")+"개";
 }
 function renderSearchEmpty(host,query){
  const empty=document.createElement("div");empty.className="search-empty-state";
@@ -2615,14 +2640,46 @@ function renderSearchEmpty(host,query){
  const desc=document.createElement("p");desc.textContent="‘"+query+"’와 일치하는 문서를 찾지 못했습니다. 다른 검색어나 검색 범위를 사용해 보세요.";
  empty.append(icon,title,desc);host.append(empty);
 }
+let activeSearchState={query:"",scope:"all",pageOffset:0,fileOffset:0,hasMore:false,loading:false,requestId:0};
+function getSearchMoreButton(host){
+ let button=$("search-more-results");
+ if(!button){
+  button=document.createElement("button");button.id="search-more-results";button.type="button";
+  button.className="search-load-more";button.textContent="더 많은 검색 결과";
+  button.addEventListener("click",loadMoreSearchResults);
+  host.after(button);
+ }
+ return button;
+}
+function updateSearchMoreButton(host){
+ const button=getSearchMoreButton(host);
+ button.hidden=!activeSearchState.hasMore;
+ button.disabled=activeSearchState.loading;
+ button.textContent=activeSearchState.loading?"검색 결과를 불러오는 중…":"더 많은 검색 결과";
+}
+function appendSearchPageResults(host,data,query){
+ const pages=data.pages||[],files=data.files||[];
+ const categories=pages.filter(page=>/^분류\s*[:：]/.test(String(page.title||"")));
+ const documents=pages.filter(page=>!/^분류\s*[:：]/.test(String(page.title||"")));
+ renderSearchGroup(host,"분류",categories,query,"category");
+ renderSearchGroup(host,"문서",documents,query,"document");
+ renderSearchFileGroup(host,files,query);
+ activeSearchState.pageOffset+=pages.length;
+ activeSearchState.fileOffset+=files.length;
+ activeSearchState.hasMore=Boolean(data.pages_has_more||data.files_has_more||data.has_more);
+}
 async function loadSearchPage(query,scope="all",push=false){
  const q=String(query||"").trim().slice(0,100),selectedScope=scope==="title"?"title":scope==="files"?"files":"all";
  if(push)history.pushState(null,"",searchPageUrl(q,selectedScope));
+ const requestId=activeSearchState.requestId+1;
+ activeSearchState={query:q,scope:selectedScope,pageOffset:0,fileOffset:0,hasMore:false,loading:Boolean(q),requestId};
  showSearchView();$("query").value=q;$("search-page-query").value=q;$("search-page-scope").value=selectedScope;
  const host=$("search-result-groups");host.replaceChildren();
+ const moreButton=getSearchMoreButton(host);moreButton.hidden=true;
  $("search-result-query").textContent=q?"검색어: "+q:"";
  const createButton=$("search-create-page");createButton.hidden=!q;createButton.onclick=()=>editPage(q,"");
  if(!q){
+  activeSearchState.loading=false;
   $("search-result-count").textContent="검색어를 입력해 주세요.";
   const empty=document.createElement("div");empty.className="search-empty-state";
   const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
@@ -2633,25 +2690,21 @@ async function loadSearchPage(query,scope="all",push=false){
  $("search-result-count").textContent="검색 중입니다…";
  const started=performance.now();
  try{
-  const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope);
+  const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope+"&limit=25&page_offset=0&file_offset=0");
+  if(requestId!==activeSearchState.requestId)return;
   const pages=data.pages||[],files=data.files||[];
-  const categories=pages.filter(page=>/^분류\\s*[:：]/.test(String(page.title||"")));
-  const documents=pages.filter(page=>!/^분류\\s*[:：]/.test(String(page.title||"")));
   const pageTotal=Number(data.page_total??pages.length),fileTotal=Number(data.file_total??files.length);
   const total=Number.isFinite(Number(data.total))?Number(data.total):pageTotal+fileTotal;
   const elapsed=((performance.now()-started)/1000).toFixed(3);
-  $("search-result-count").textContent="전체 "+total.toLocaleString("ko-KR")+"건 (문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개) / 검색 시간 "+elapsed+"초"+(data.truncated?" (각 항목 최대 100건 표시)":"");
+  $("search-result-count").textContent="전체 "+total.toLocaleString("ko-KR")+"건 · 문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개 · 관련도순 ("+elapsed+"초)";
   host.replaceChildren();
-  if(!pages.length&&!files.length){renderSearchEmpty(host,q);return}
-  renderSearchGroup(host,"분류",categories,q,"category");
-  renderSearchGroup(host,"문서",documents,q,"document");
-  renderSearchFileGroup(host,files,q);
-  if(data.truncated){
-   const note=document.createElement("p");note.className="search-result-note";
-   note.textContent="검색 결과가 100건을 초과하여 문서와 파일 각각 최근 항목 100개만 표시합니다. 검색어를 더 구체적으로 입력해 보세요.";
-   host.append(note);
-  }
+  if(!pages.length&&!files.length){renderSearchEmpty(host,q);activeSearchState.loading=false;return}
+  appendSearchPageResults(host,data,q);
+  activeSearchState.loading=false;
+  updateSearchMoreButton(host);
  }catch(error){
+  if(requestId!==activeSearchState.requestId)return;
+  activeSearchState.loading=false;
   $("search-result-count").textContent="검색을 완료하지 못했습니다.";
   const message=document.createElement("div");message.className="search-empty-state is-error";
   const title=document.createElement("strong");title.textContent="검색 중 오류가 발생했습니다.";
@@ -2659,10 +2712,79 @@ async function loadSearchPage(query,scope="all",push=false){
   message.append(title,desc);host.append(message);
  }
 }
+async function loadMoreSearchResults(){
+ const state=activeSearchState;
+ if(!state.query||state.loading||!state.hasMore)return;
+ state.loading=true;
+ const host=$("search-result-groups");
+ updateSearchMoreButton(host);
+ try{
+  const data=await api("/api/pages?q="+encodeURIComponent(state.query)+"&scope="+state.scope+"&limit=25&page_offset="+state.pageOffset+"&file_offset="+state.fileOffset);
+  if(state!==activeSearchState)return;
+  appendSearchPageResults(host,data,state.query);
+  state.loading=false;
+  if(!data.pages?.length&&!data.files?.length)state.hasMore=false;
+  updateSearchMoreButton(host);
+ }catch(error){
+  state.loading=false;
+  updateSearchMoreButton(host);
+  const note=document.createElement("p");note.className="search-result-note is-error";
+  note.textContent="추가 검색 결과를 불러오지 못했습니다: "+String(error.message||error);
+  host.append(note);
+ }
+}
 async function searchFor(query,scope="all"){
  const q=String(query||"").trim();if(!q){$("query").focus();return}
  await loadSearchPage(q,scope,true);
 }
+const headerSearchForm=$("search");
+const headerSearchInput=$("query");
+let headerSuggestionTimer=0,headerSuggestionSequence=0;
+let headerSuggestionHost=null;
+if(headerSearchForm&&headerSearchInput){
+ headerSearchForm.classList.add("has-search-suggestions");
+ headerSuggestionHost=document.createElement("div");
+ headerSuggestionHost.className="search-suggestions";
+ headerSuggestionHost.id="search-suggestions";
+ headerSuggestionHost.setAttribute("role","listbox");
+ headerSuggestionHost.hidden=true;
+ headerSearchForm.append(headerSuggestionHost);
+ headerSearchInput.setAttribute("aria-autocomplete","list");
+ headerSearchInput.setAttribute("aria-controls","search-suggestions");
+ headerSearchInput.addEventListener("input",()=>{
+  const query=headerSearchInput.value.trim();
+  const sequence=++headerSuggestionSequence;
+  window.clearTimeout(headerSuggestionTimer);
+  if(query.length<2){headerSuggestionHost.hidden=true;headerSuggestionHost.replaceChildren();return}
+  headerSuggestionTimer=window.setTimeout(async()=>{
+   try{
+    const data=await api("/api/pages?q="+encodeURIComponent(query)+"&scope=title&limit=8&page_offset=0");
+    if(sequence!==headerSuggestionSequence||headerSearchInput.value.trim()!==query)return;
+    headerSuggestionHost.replaceChildren();
+    const pages=(data.pages||[]).slice(0,8);
+    if(!pages.length){headerSuggestionHost.hidden=true;return}
+    pages.forEach(page=>{
+     const item=document.createElement("button");item.type="button";item.className="search-suggestion-item";item.setAttribute("role","option");
+     const title=document.createElement("span");title.className="search-suggestion-title";appendSearchHighlighted(title,page.title,query);
+     const meta=document.createElement("small");meta.textContent="문서";
+     item.append(title,meta);
+     item.addEventListener("click",()=>{headerSuggestionHost.hidden=true;openPage(page.title)});
+     headerSuggestionHost.append(item);
+    });
+    const more=document.createElement("button");more.type="button";more.className="search-suggestion-more";more.textContent="검색 결과 전체 보기";
+    more.addEventListener("click",()=>{headerSuggestionHost.hidden=true;searchFor(query)});
+    headerSuggestionHost.append(more);headerSuggestionHost.hidden=false;
+   }catch(error){headerSuggestionHost.hidden=true}
+  },180);
+ });
+ headerSearchInput.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&!headerSuggestionHost.hidden){headerSuggestionHost.hidden=true;event.stopPropagation()}
+ });
+ document.addEventListener("pointerdown",event=>{
+  if(!headerSearchForm.contains(event.target))headerSuggestionHost.hidden=true;
+ });
+}
+
 $("search").onsubmit=e=>{e.preventDefault();searchFor($("query").value)};
 $("search-page-form").onsubmit=e=>{
  e.preventDefault();searchFor($("search-page-query").value,$("search-page-scope").value);

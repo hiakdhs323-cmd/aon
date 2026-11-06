@@ -77,7 +77,7 @@ assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must no
 
 const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
-assert.ok(workerSource.includes('aonfix", "20261106-entrywiki-icons-v3"'), "SSR must serve the new folding stylesheet under a fresh cache key");
+assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v1"'), "SSR must serve the new folding stylesheet under a fresh cache key");
 assert.ok(workerSource.includes("aonwiki-entry-link-fallback-v3"), "Worker shell must provide the EntryWiki green link fallback while static assets update");
 assert.ok(workerSource.includes("stopImmediatePropagation()"), "Worker fallback must prevent the old generic favicon handler from replacing the green chain icon");
 assert.ok(workerSource.includes("#00a63c"), "Worker fallback badge must use the EntryWiki green color");
@@ -89,13 +89,13 @@ assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text c
 assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#20252a!important/s, "light mode must darken text over the existing light label-cell background");
 assert.match(styles, /html\[data-theme="dark"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#f2f3f4!important/s, "dark mode must lighten text without changing the label-cell background");
 assert.doesNotMatch(styles, /auto-bg-(?:light|dark)/, "theme switching must not add synthesized cell backgrounds");
-assert.match(workerSource, /aonfix", "20261106-entrywiki-icons-v3"/, "SSR asset URLs must receive a new cache key");
+assert.match(workerSource, /aonfix", "20261107-namu-parity-v1"/, "SSR asset URLs must receive a new cache key");
 assert.match(workerSource, /targeted-db-v25-theme-text-only:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
 assert.match(styles, /#article\.wiki-content table td:first-child:not\(\[style\*="background"\]\)/, "first-column background must follow the active theme");
-assert.match(workerSource, /aonfix", "20261106-entrywiki-icons-v3"/, "SSR must serve the corrected stylesheet under a fresh cache key");
+assert.match(workerSource, /aonfix", "20261107-namu-parity-v1"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
@@ -112,14 +112,14 @@ assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM pages WHERE "), "
 assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM images WHERE "), "search API must return exact file result counts");
 assert.ok(appSource.includes("function renderSearchFileGroup(host,files,query)"), "search page must render a separate file results group");
 assert.ok(appSource.includes("function decorateExternalLinks(root)"), "external links must be decorated with site icons");
-assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-favicon-fallback")'), "missing site favicons must use a chain-link fallback");
-assert.ok(appSource.includes('wiki-external-favicon-missing'), "missing site favicons must receive the green fallback state");
+assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append a NamuWiki-style chain marker");
+assert.ok(appSource.includes("link.append(icon)"), "external links must retain their authored text and append the chain icon");
 assert.ok(styles.includes("background:#00a63c"), "missing site favicons must use the EntryWiki green square");
 
-assert.ok(appSource.includes('new URL("/favicon.ico",url.origin)'), "external links must request the linked site's favicon");
+assert.ok(!appSource.includes('new URL("/favicon.ico",url.origin)'), "external links must not replace their labels with remote favicon requests");
 assert.ok(appSource.includes('setAonIconLabel(status,level==="admin"?"shield-lock":"lock"'), "protection states must use their matching lock icon");
 assert.ok(appSource.includes('["page-protection","shield-lock","편집 보호"]'), "protection controls must use the shield-lock icon");
-assert.ok(cssSource.includes(".wiki-external-favicon"), "favicon links must have compact icon sizing");
+assert.ok(cssSource.includes(".wiki-external-link-icon"), "external link chain markers must have compact icon sizing");
 assert.ok(cssSource.includes(".aon-ui-icon"), "document controls must share a compact icon style");
 
 assert.ok(appSource.includes('new URL("/media/"+encodeURIComponent(file.id),apiBase()).href'), "file results must open the stored media item");
@@ -135,4 +135,17 @@ const toc = render("== 개요 ==\n본문\n=== 세부 내용 ===\n추가 내용")
 assert.match(toc, /class="opennamu_TOC"/, "table of contents must render");
 assert.match(toc, /<details[^>]*open/, "table of contents must start expanded");
 
-console.log("NamuMark smoke tests passed: bracket table, colspan, width/alignment, category strip, and TOC.");
+
+assert.ok(workerSource.includes("pages_has_more"), "search API must expose paginated result state");
+assert.ok(workerSource.includes("makeSnippet"), "search API must return content excerpts");
+assert.ok(workerSource.includes("lower(title) = lower(?)"), "search API must rank exact title matches first");
+assert.ok(appSource.includes("function loadMoreSearchResults()"), "search results must support progressive paging");
+assert.ok(appSource.includes("search-suggestions"), "header search must provide autocomplete suggestions");
+assert.ok(appSource.includes("function getExplicitWikiTextColor"), "wiki links must preserve explicit NamuMark colors");
+assert.ok(appSource.includes("discussion-wiki-content"), "discussion posts must use the NamuMark renderer");
+assert.ok(appSource.includes("이전 토론 더 보기"), "discussion lists must support older topics");
+assert.ok(cssSource.includes("--wiki-body-link:#008b68"), "document links must use the green body-link palette");
+assert.ok(cssSource.includes(".discussion-post-number"), "discussion replies must have numbered rows");
+assert.ok(cssSource.includes(".search-load-more"), "search results must include paging controls");
+
+console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
