@@ -78,10 +78,9 @@ assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must no
 const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
 assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v1"'), "SSR must serve the new folding stylesheet under a fresh cache key");
-assert.ok(workerSource.includes("aonwiki-entry-link-fallback-v3"), "Worker shell must provide the EntryWiki green link fallback while static assets update");
-assert.ok(workerSource.includes("stopImmediatePropagation()"), "Worker fallback must prevent the old generic favicon handler from replacing the green chain icon");
-assert.ok(workerSource.includes("#00a63c"), "Worker fallback badge must use the EntryWiki green color");
-assert.ok(workerSource.includes("m6.4 9.6-1.2 1.2a2.1 2.1"), "Worker fallback must draw a chain-link symbol");
+assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append the compact NamuWiki-style chain marker");
+assert.ok(appSource.includes("link.append(icon)"), "external link text must remain unchanged");
+assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v1"'), "Worker must cache-bust new NamuWiki-style assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
