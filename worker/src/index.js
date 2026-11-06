@@ -1,4 +1,5 @@
 import { NamuMark } from "./namumark-parser.js";
+// Keep Worker builds in sync with the regenerated SSR parser bundle.
 function response(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
