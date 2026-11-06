@@ -722,7 +722,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-file-search-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-google-site-verification-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
