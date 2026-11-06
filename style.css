@@ -3374,11 +3374,20 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
 }
 #article.wiki-content .wiki-external-favicon-fallback{
   display:inline-block;
+  box-sizing:border-box;
   flex:0 0 14px;
   width:14px;
   height:14px;
-  color:var(--wiki-muted);
+  padding:2px;
+  border:0;
+  border-radius:1px;
+  background:#00a63c;
+  color:#fff;
+  stroke:#fff;
   vertical-align:-2px;
+}
+#article.wiki-content .wiki-external-link.wiki-external-favicon-missing .wiki-external-link-label{
+  color:#00a63c;
 }
 .aon-ui-icon{
   display:inline-block;

@@ -180,7 +180,8 @@ function decorateExternalLinks(root){
   if(faviconUrl.protocol==="http:"&&location.protocol==="https:")faviconUrl.protocol="https:";
   favicon.src=faviconUrl.href;
   favicon.addEventListener("error",()=>{
-   const fallback=createAonUiIcon("external","wiki-external-favicon-fallback");
+   const fallback=createAonUiIcon("link","wiki-external-favicon-fallback");
+   link.classList.add("wiki-external-favicon-missing");
    favicon.replaceWith(fallback);
   },{once:true});
   link.replaceChildren(favicon,label);
