@@ -845,7 +845,7 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 #article.wiki-content th{background:var(--wiki-panel-soft);color:var(--wiki-text)}
 #article.wiki-content td{color:var(--wiki-text)}
 /* Label/value tables: keep a clear two-column structure without overriding authored cell colors. */
-#article.wiki-content table tr:not([style*="background"])>td:first-child:not([style*="background"]){
+#article.wiki-content table td:first-child:not([style*="background"]){
   width:28%;
   min-width:112px;
   text-align:center;
@@ -1069,13 +1069,12 @@ html[data-theme="dark"] .wiki-content [style*="--aonwiki-table-auto-fg-dark:"]{
   color:var(--aonwiki-table-auto-fg-dark)!important
 }
 
-/* Apply inherited table/row background colors directly to each cell.
-   This keeps authored backgrounds visible even when themes style table cells. */
-html[data-theme="light"] #article.wiki-content [style*="--aonwiki-table-auto-bg-light:"]{
-  background-color:var(--aonwiki-table-auto-bg-light)!important
+/* Theme changes affect table text only; cell/row backgrounds remain authored or theme defaults. */
+html[data-theme="light"] #article.wiki-content table td:first-child:not([style*="background"]):not([data-aonwiki-authored-fg="1"]):not(.aonwiki-table-spacer){
+  color:#20252a!important;
 }
-html[data-theme="dark"] #article.wiki-content [style*="--aonwiki-table-auto-bg-dark:"]{
-  background-color:var(--aonwiki-table-auto-bg-dark)!important
+html[data-theme="dark"] #article.wiki-content table td:first-child:not([style*="background"]):not([data-aonwiki-authored-fg="1"]):not(.aonwiki-table-spacer){
+  color:#f2f3f4!important;
 }
 
 /* Compact fold panels inside table cells without creating an oversized button. */
