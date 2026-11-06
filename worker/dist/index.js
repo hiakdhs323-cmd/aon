@@ -2937,14 +2937,22 @@ function safeJsonForHtml(value) {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
-  const base = frontendOrigin.replace(/\/$/, "") + "/";
-  return html.replace(
-    /((?:href|src)=["'])(style\.css|namumark-beta\.css|app\.js|aonwiki-mark\.svg)([^"']*)(["'])/g,
-    (_, prefix, file, query, suffix) => {
-      const cacheBust = file === "style.css" ? (query ? "&" : "?") + "aonfix=20261106-table-bg-inheritance-compact-v1" : "";
-      return prefix + base + file + query + cacheBust + suffix;
+  const base = frontendOrigin.replace(/\/+$/, "") + "/";
+  const staticAssets = /* @__PURE__ */ new Set(["style.css", "namumark-beta.css", "app.js", "aonwiki-mark.svg"]);
+  return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
+    let parsed;
+    try {
+      parsed = new URL(String(rawUrl).trim(), base);
+    } catch {
+      return attribute;
     }
-  );
+    const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
+    if (!staticAssets.has(file)) return attribute;
+    if (file === "style.css") {
+      parsed.searchParams.set("aonfix", "20261106-static-assets-origin-v2");
+    }
+    return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
+  });
 }
 var frontendShellCache = { value: null, expiresAt: 0 };
 var frontendShellPending = null;
@@ -2953,12 +2961,12 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/", { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261106-static-assets-origin-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
     const value = { shell: rewriteFrontendAssets(shell, origin), origin };
-    frontendShellCache = { value, expiresAt: Date.now() + 5 * 60 * 1e3 };
+    frontendShellCache = { value, expiresAt: Date.now() + 30 * 1e3 };
     return value;
   })().finally(() => {
     frontendShellPending = null;
@@ -3005,7 +3013,7 @@ async function renderFullWikiDocument(request, env, title) {
   html = html.replace('<script defer src="' + origin + "/app.js", "<script>window.__AONWIKI_SSR__=" + safeJsonForHtml(state) + ';<\/script>\n<script defer src="' + origin + "/app.js");
   return new Response(html, {
     status: found ? 200 : 404,
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=30, s-maxage=120", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-AonWiki-Render": "full-document" }
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-AonWiki-Render": "full-document" }
   });
 }
 async function passwordHash(password, salt) {
