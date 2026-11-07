@@ -1996,13 +1996,13 @@ async function loadPage(title,pushRoute=true,anchor=""){
    await renderCategoryPage(name,0,staging,requestId);
    if(requestId!==pageNavigationSequence)return;
    $("article").replaceChildren(...staging.childNodes);
-   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("page-protection").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
+   $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("page-protection").hidden=true;$("official-document").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
   const data=await getRenderedDocument(title);
   if(requestId!==pageNavigationSequence)return;
   if(!data.page){
-   currentContent="";currentProtection={level:"none",reason:""};
+   currentContent="";currentProtection={level:"none",reason:""};currentOfficial=false;currentCanEdit=null;
    $("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;
    $("message").replaceChildren();
    const notice=document.createElement("div");notice.className="missing-page-panel";
