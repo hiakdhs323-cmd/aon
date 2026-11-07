@@ -498,7 +498,7 @@ var NamuMark = class _NamuMark {
     let foldingCount = 0;
     let interCount = 0;
     let interData = {};
-    const middleRegex = /{{{([^{](?:(?!{{{|}}}).|\n)*)?(?:}|<(\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)}}/;
+    const middleRegex = /{{{([^{](?:(?!{{{|}}}).|\n|<(?:\/?(?:slash|render)_[^<>]+)>)*)(?:}|<(\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)}}/;
     let middleCountAll = (this.renderData.match(globalRegExp(middleRegex)) || []).length * 10;
     while (true) {
       const middleDataMatch = this.renderData.match(middleRegex);
@@ -536,8 +536,8 @@ var NamuMark = class _NamuMark {
           continue;
         }
         let wikiData = middleData.replace(/^#!wiki +/g, "");
-        const wikiRegex = /^(?:(?:style=(&quot;(?:(?:(?!&quot;).)*)&quot;|&#x27;(?:(?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
-        const wikiDarkRegex = /^(?:(?:dark-style=(&quot;(?:(?:(?!&quot;).)*)&quot;|&#x27;(?:(?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+        const wikiRegex = /^(?:(?:style=("((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+        const wikiDarkRegex = /^(?:(?:dark-style=("((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
         let wikiDataStyleData = "";
         while (true) {
           let darkOnly = 0;
@@ -555,7 +555,7 @@ var NamuMark = class _NamuMark {
             }
           }
           if (wikiDataStyleMatch) {
-            wikiDataStyle = wikiDataStyleMatch[1];
+            wikiDataStyle = wikiDataStyleMatch.slice(1).find((value) => value !== void 0) || "";
             if (wikiDataStyle) {
               wikiDataStyle = wikiDataStyle.replaceAll("&#x27;", "");
               wikiDataStyle = wikiDataStyle.replaceAll("&quot;", "");
@@ -1471,6 +1471,10 @@ try {
         break;
       }
       const linkDataFull = linkDataMatch[0];
+      const replaceCurrentMatch = (replacement) => {
+        const index = linkDataMatch.index ?? 0;
+        this.renderData = this.renderData.slice(0, index) + replacement + this.renderData.slice(index + linkDataFull.length);
+      };
       let linkData = linkDataMatch.slice(1);
       let linkMain = linkData[0];
       let linkMainOrg = linkMain;
@@ -1600,7 +1604,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>`);
+          replaceCurrentMatch(`<${dataName}></${dataName}>`);
         } else {
           let filePass = 0;
           if (fileTurn !== "") {
@@ -1634,7 +1638,7 @@ try {
           } else {
             dataName = this.getToolDataStorage("", "", linkDataFull);
           }
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>` + linkData[2]);
+          replaceCurrentMatch(`<${dataName}></${dataName}>` + linkData[2]);
         }
       } else if (/^(분류|category):/i.test(linkMain)) {
         linkMain = linkMain.replace(/^(분류|category):/gi, "");
@@ -1664,13 +1668,13 @@ try {
           if (categoryBlur != "") this.dataBacklink["category:" + linkMain]["cat_blur"] = "";
           linkMain = urlPas(linkMain);
           if (this.dataCategory === "") {
-            this.dataCategory = '<div class="opennamu_category" id="cate"><span class="opennamu_category_label">\uBD84\uB958:</span><span class="opennamu_category_links">';
+            this.dataCategory = '<div class="opennamu_category" id="cate"><span class="opennamu_category_label" style="color:var(--wiki-text)!important;">\uBD84\uB958:</span><span class="opennamu_category_links">';
           } else {
             this.dataCategory += " | ";
           }
-          this.dataCategory += `<a class="${categoryBlur} ${linkExist}" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
+          this.dataCategory += `<a class="${categoryBlur} ${linkExist}" style="color:var(--wiki-link)!important;text-decoration:none!important;" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
         }
-        this.renderData = this.renderData.replace(linkRegex, "");
+        replaceCurrentMatch("");
       } else if (/^(?:inter|인터):([^:]+):/i.test(linkMain)) {
         const prefixMatch = linkMain.match(/^(?:inter|인터):([^:]+):/i);
         const prefix = (prefixMatch?.[1] || "").toLowerCase();
@@ -1697,7 +1701,7 @@ try {
         };
         const base = interwikiBases[prefix];
         if (!base || !target.trim()) {
-          this.renderData = this.renderData.replace(linkRegex, linkData[1] || linkDataFull);
+          replaceCurrentMatch(linkData[1] || linkDataFull);
         } else {
           const safeTarget = encodeURIComponent(target.trim().replace(/ /g, "_")).replace(/%2F/gi, "/");
           const safeFragment = fragment ? "#" + encodeURIComponent(fragment) : "";
@@ -1708,7 +1712,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, "<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
+          replaceCurrentMatch("<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
         }
       } else if (/^https?:\/\//i.test(linkMain)) {
         linkMain = this.getToolDataRestore(linkMain, "slash");
@@ -1726,7 +1730,7 @@ try {
           "</a>",
           linkDataFull
         );
-        this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+        replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
       } else {
         linkMain = this.getToolLinkFix(linkMain);
         linkMain = linkMain.replace(/&#x27;/g, "<link_single>");
@@ -1778,7 +1782,7 @@ try {
           "</a>",
           linkDataFull
         );
-        this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+        replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
       }
       linkCountAll -= 1;
     }
@@ -2007,7 +2011,7 @@ try {
           ' <sub><a id="' + headingIdName + '" href="/edit_section/' + headingCount + "/" + urlPas(this.docName) + `">\u270E</a> <a href="javascript:void(0);" onclick="javascript:opennamu_heading_folding('` + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + `', this);">` + headingFolding[0] + "</a></sub></span></h" + headingLevel + ">",
           headingDataOrg
         );
-        const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + "</heading_stack> " + headingDataText + "</" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
+        const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + '</heading_stack> <span class="wiki-heading-text">' + headingDataText + "</span></" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
         this.renderData = this.renderData.replace(headingRegex, headingDataComplete);
       }
       headingCountAll -= 1;
@@ -2030,7 +2034,7 @@ try {
     }
     for (let index = 0; index < results.length; index++) {
       const result = results[index];
-      const content = `<a href="#toc" id="s-${result[1]}">${result[1]}.</a>`;
+      const content = `<a class="wiki-heading-number" style="color:var(--wiki-link)!important;text-decoration:none!important;" href="#toc" id="s-${result[1]}"><span class="wiki-heading-number-label" style="color:var(--wiki-link)!important;">${result[1]}.</span></a>`;
       this.renderData = this.renderData.replace(headingIdRegex, content);
       tocList[index][0] = result[1];
     }
@@ -2044,7 +2048,7 @@ try {
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
-      tocData += (tocIndex === 0 ? "" : "<br>") + '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) + '<span class="opennamu_TOC_list"><a class="opennamu_TOC_link" href="#s-' + element[0] + '">' + element[0] + ". <toc_inside>" + element[1] + "</toc_inside></a></span>";
+      tocData += '<div class="opennamu_TOC_entry">' + '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) + '<a class="opennamu_TOC_link" href="#s-' + element[0] + '"><span class="opennamu_TOC_number">' + element[0] + '.</span> <span class="opennamu_TOC_text"><toc_inside>' + element[1] + "</toc_inside></span></a></div>";
     }
     if (tocData !== "") {
       tocData += "</div></details>";
@@ -2255,20 +2259,80 @@ function response(data, status = 200, headers = {}) {
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers }
   });
 }
-function getCors(request, env) {
-  const origin = request.headers.get("Origin") || "";
-  const allowed = (env.ALLOWED_ORIGIN || "https://hiakdhs323-cmd.github.io").split(",").map((v) => v.trim());
+function getSecurityHeaders() {
   return {
-    "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : allowed[0],
-    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret",
-    "Access-Control-Max-Age": "86400",
-    "Vary": "Origin",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+    "Permissions-Policy": "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Origin-Agent-Cluster": "?1",
+    "X-Permitted-Cross-Domain-Policies": "none",
+    "X-DNS-Prefetch-Control": "off",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
   };
+}
+function getCors(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const allowed = (env.ALLOWED_ORIGIN || "https://hiakdhs323-cmd.github.io").split(",").map((v) => v.trim()).filter(Boolean);
+  const trustedOrigin = origin && allowed.includes(origin) ? origin : allowed[0] || "";
+  return {
+    ...getSecurityHeaders(),
+    ...trustedOrigin ? { "Access-Control-Allow-Origin": trustedOrigin } : {},
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret,X-AonWiki-Request",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin"
+  };
+}
+function isStateChangingMethod(method) {
+  return !["GET", "HEAD", "OPTIONS"].includes(String(method || "").toUpperCase());
+}
+function isTrustedStateChangingRequest(request, env) {
+  if (!isStateChangingMethod(request.method)) return true;
+  if (request.headers.get("X-AonWiki-Request") !== "1") return false;
+  const origin = request.headers.get("Origin");
+  if (origin) {
+    const allowed = (env.ALLOWED_ORIGIN || "").split(",").map((v) => v.trim()).filter(Boolean);
+    const sameOrigin = (() => {
+      try {
+        return origin === new URL(request.url).origin;
+      } catch {
+        return false;
+      }
+    })();
+    if (!sameOrigin && !allowed.includes(origin)) return false;
+  }
+  return true;
+}
+async function readJsonBody(request, maxBytes = 512 * 1024) {
+  const contentType = String(request.headers.get("Content-Type") || "").toLowerCase().split(";")[0].trim();
+  if (contentType !== "application/json" && !contentType.endsWith("+json")) {
+    const error = new Error("JSON \uC694\uCCAD\uC740 application/json \uD615\uC2DD\uC774\uC5B4\uC57C \uD569\uB2C8\uB2E4.");
+    error.status = 415;
+    throw error;
+  }
+  const bytes = await request.arrayBuffer();
+  if (bytes.byteLength > maxBytes) {
+    const error = new Error("JSON \uC694\uCCAD \uBCF8\uBB38\uC774 \uB108\uBB34 \uD07D\uB2C8\uB2E4.");
+    error.status = 413;
+    throw error;
+  }
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(bytes));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      const error = new Error("\uC62C\uBC14\uB978 JSON \uAC1D\uCCB4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4.");
+      error.status = 400;
+      throw error;
+    }
+    return parsed;
+  } catch (error) {
+    if (error?.status) throw error;
+    const invalid = new Error("\uC62C\uBC14\uB978 JSON \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4.");
+    invalid.status = 400;
+    throw invalid;
+  }
 }
 function cleanTitle(value) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
@@ -2373,6 +2437,7 @@ function anonymousEditorIdentity(request) {
   return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
 }
 var pageProtectionSchemaPromise = null;
+var officialDocumentSchemaPromise = null;
 var pageAliasSchemaPromise = null;
 var pageLinkColorsSchemaPromise = null;
 var imageSchemaPromise = null;
@@ -2384,6 +2449,15 @@ async function ensurePageProtectionSchema(env) {
     });
   }
   await pageProtectionSchemaPromise;
+}
+async function ensureOfficialDocumentSchema(env) {
+  if (!officialDocumentSchemaPromise) {
+    officialDocumentSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS official_documents (title TEXT PRIMARY KEY NOT NULL, marked_by TEXT NOT NULL, updated_at TEXT NOT NULL)").run().catch((error) => {
+      officialDocumentSchemaPromise = null;
+      throw error;
+    });
+  }
+  await officialDocumentSchemaPromise;
 }
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "\uBB38\uC11C\uB97C \uD3B8\uC9D1\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." };
@@ -2474,17 +2548,31 @@ function makeAdminToken() {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+function imageFileHash(value) {
+  let hash = 2166136261;
+  const input = String(value || "");
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const parts = [];
+  for (let i = 0; i < 7; i++) {
+    const mixed = Math.imul(hash ^ 2654435769 * (i + 1), 2246822507);
+    parts.push((mixed >>> 0).toString(16).padStart(8, "0"));
+  }
+  return parts.join("").slice(0, 56);
+}
 function imageNameMatches(filename, hash, extension) {
   const value = String(filename || "");
   const dot = value.lastIndexOf(".");
   const base = dot > 0 ? value.slice(0, dot) : value;
   const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
-  return namuFileHash(base).toLowerCase() === hash.toLowerCase() && ext === String(extension || "").toLowerCase();
+  return imageFileHash(base).toLowerCase() === String(hash || "").toLowerCase() && ext === String(extension || "").toLowerCase();
 }
 var SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE".split(" "));
 var SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
 function sanitizeServerWikiStyle(raw) {
-  const allowed = /* @__PURE__ */ new Set(["color", "background", "background-color", "font-size", "font-weight", "font-style", "text-align", "text-decoration", "text-transform", "line-height", "letter-spacing", "word-spacing", "width", "max-width", "min-width", "height", "max-height", "min-height", "margin", "margin-left", "margin-right", "margin-top", "margin-bottom", "padding", "border", "border-color", "border-width", "border-style", "border-radius", "border-collapse", "float", "clear", "display", "vertical-align", "white-space", "list-style-type", "image-rendering", "object-fit", "overflow", "overflow-wrap", "box-shadow", "opacity"]);
+  const allowed = /* @__PURE__ */ new Set(["color", "background", "background-color", "font-size", "font-weight", "font-style", "text-align", "text-decoration", "text-transform", "line-height", "letter-spacing", "word-spacing", "width", "max-width", "min-width", "height", "max-height", "min-height", "margin", "margin-left", "margin-right", "margin-top", "margin-bottom", "padding", "border", "border-top", "border-right", "border-bottom", "border-left", "border-color", "border-top-color", "border-right-color", "border-bottom-color", "border-left-color", "border-width", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width", "border-style", "border-top-style", "border-right-style", "border-bottom-style", "border-left-style", "border-radius", "border-collapse", "float", "clear", "display", "vertical-align", "white-space", "list-style-type", "image-rendering", "object-fit", "overflow", "overflow-wrap", "box-shadow", "opacity"]);
   const themeVariable = /^--aonwiki-table-(?:(?:bg|fg|border)-(?:light|dark)|auto-fg-(?:light|dark))$/;
   const safeColor = /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i;
   const output = [];
@@ -2543,12 +2631,12 @@ function extractAdminLinkColors(source) {
 }
 function buildAdminLinkColorMarkup(html, colors) {
   const selectors = {
-    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link)',
-    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link)',
-    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):visited',
-    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):visited',
-    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):hover',
-    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):hover'
+    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
+    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
+    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):visited',
+    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):visited',
+    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):hover',
+    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):hover'
   };
   const rules = [];
   for (const [key, selector] of Object.entries(selectors)) {
@@ -2556,6 +2644,7 @@ function buildAdminLinkColorMarkup(html, colors) {
     if (color) rules.push(selector + "{color:" + color + " !important}");
   }
   if (!rules.length) return String(html || "");
+  rules.push('html[data-theme="light"] .aonwiki-page-content a.wiki-heading-number, html[data-theme="dark"] .aonwiki-page-content a.wiki-heading-number, html[data-theme="light"] .aonwiki-page-content a.wiki-heading-number:visited, html[data-theme="dark"] .aonwiki-page-content a.wiki-heading-number:visited, html[data-theme="light"] .aonwiki-page-content a.wiki-heading-number:hover, html[data-theme="dark"] .aonwiki-page-content a.wiki-heading-number:hover {color:var(--wiki-link) !important}');
   rules.push('.aonwiki-page-content span[style*="color"] a, .aonwiki-page-content span[style*="color"] a:visited, .aonwiki-page-content span[style*="color"] a:hover{color:inherit !important}');
   return "<style>" + rules.join("\n") + '</style><div class="aonwiki-page-content">' + String(html || "") + "</div>";
 }
@@ -2590,17 +2679,18 @@ function collectIncludeTargets(source) {
   }
   return targets;
 }
-function collectCategoryTargets(source) {
-  const targets = [];
-  for (const match of String(source || "").matchAll(/\[\[(?:분류|category):([^\]|]+)(?:\|[^\]]*)?\]\]/gi)) {
-    const name = String(match[1] || "").trim();
-    if (name) targets.push(name);
-  }
-  return targets;
-}
 function collectWikiLinkTargets(source) {
   const targets = /* @__PURE__ */ new Set();
-  for (const match of String(source || "").matchAll(/\[\[([^\]]+)\]\]/g)) {
+  const text = String(source || "");
+  for (const match of text.matchAll(/\[\[(?:파일|file):([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)) {
+    const name = String(match[1] || "").trim();
+    if (name) targets.add("file:" + name);
+  }
+  for (const match of text.matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)) {
+    const name = String(match[1] || "").trim();
+    if (name) targets.add("category:" + name);
+  }
+  for (const match of text.matchAll(/\[\[([^\]]+)\]\]/g)) {
     let target = String(match[1] || "").split("|")[0].trim();
     if (!target || target.startsWith("#") || /^https?:\/\//i.test(target)) continue;
     const hash = target.indexOf("#");
@@ -2617,9 +2707,10 @@ function collectWikiLinkTargets(source) {
   return [...targets];
 }
 async function buildNamuServerDatabase(env, title, content) {
-  const records = /* @__PURE__ */ new Map([[title, { title, data: String(content || "") }]]);
+  const source = String(content || "");
+  const records = /* @__PURE__ */ new Map([[title, { title, data: source }]]);
   const visitedIncludes = /* @__PURE__ */ new Set([title]);
-  let pendingIncludes = collectIncludeTargets(content);
+  let pendingIncludes = collectIncludeTargets(source);
   let includedCount = 0;
   const maxIncludes = 50;
   for (let depth = 0; depth < 4 && pendingIncludes.length && includedCount < maxIncludes; depth++) {
@@ -2639,39 +2730,50 @@ async function buildNamuServerDatabase(env, title, content) {
       if (includedCount >= maxIncludes) break;
     }
   }
-  const allMarkup = [String(content || ""), ...[...records.values()].map((item) => item.data || "")].join("\n");
+  const allMarkup = [...records.values()].map((item) => item.data || "").join("\n");
   const linkTargets = new Set(collectWikiLinkTargets(allMarkup));
   const categoryAliases = new Set(
-    collectCategoryTargets(allMarkup).map((name) => "category:" + name)
+    [...linkTargets].filter((name) => name.startsWith("category:"))
   );
   for (const alias of categoryAliases) linkTargets.delete(alias);
-  const documentTargets = [...linkTargets].filter((name) => !name.startsWith("file:") && !records.has(name));
-  const documentQueries = [];
+  const documentTargets = [...linkTargets].filter((name) => !name.startsWith("file:") && !records.has(name)).slice(0, 900);
+  const documentRows = [];
   for (let index = 0; index < documentTargets.length; index += 90) {
     const batch = documentTargets.slice(index, index + 90);
     const placeholders = batch.map(() => "?").join(",");
-    documentQueries.push(
-      env.DB.prepare("SELECT title FROM pages WHERE title IN (" + placeholders + ")").bind(...batch).all()
-    );
+    const result = await env.DB.prepare(
+      "SELECT title FROM pages WHERE title IN (" + placeholders + ")"
+    ).bind(...batch).all();
+    documentRows.push(...result.results || []);
   }
-  const imageQueries = [];
-  if (/\[\[(?:파일|file):/i.test(allMarkup)) {
+  const fileTargets = [...linkTargets].filter((name) => name.startsWith("file:")).map((name) => name.slice(5)).filter(Boolean).slice(0, 500);
+  const imageRows = [];
+  const imageAliasRows = [];
+  if (fileTargets.length) {
     await ensureImageSchema(env);
-    imageQueries.push(
-      env.DB.prepare("SELECT filename FROM images").all(),
-      env.DB.prepare("SELECT alias FROM image_aliases").all()
-    );
-  }
-  const [pageCount, ...lookups] = await Promise.all([
-    env.DB.prepare("SELECT COUNT(*) AS total FROM pages").first(),
-    ...documentQueries,
-    ...imageQueries
-  ]);
-  for (const result of lookups) {
-    for (const row of result.results || []) {
-      const key = row.title || "file:" + (row.filename || row.alias);
-      if (key) records.set(key, { title: key, data: "" });
+    for (let index = 0; index < fileTargets.length; index += 90) {
+      const batch = fileTargets.slice(index, index + 90);
+      const placeholders = batch.map(() => "?").join(",");
+      const [images, aliases] = await Promise.all([
+        env.DB.prepare("SELECT filename FROM images WHERE filename IN (" + placeholders + ")").bind(...batch).all(),
+        env.DB.prepare("SELECT alias FROM image_aliases WHERE alias IN (" + placeholders + ")").bind(...batch).all()
+      ]);
+      imageRows.push(...images.results || []);
+      imageAliasRows.push(...aliases.results || []);
     }
+  }
+  const pageCount = /\[pagecount\]/i.test(allMarkup) ? await getCachedNamuPageCount(env) : { total: 0 };
+  for (const row of documentRows) {
+    const key = row.title;
+    if (key) records.set(key, { title: key, data: "" });
+  }
+  for (const row of imageRows) {
+    const key = "file:" + row.filename;
+    if (row.filename) records.set(key, { title: key, data: "" });
+  }
+  for (const row of imageAliasRows) {
+    const key = "file:" + row.alias;
+    if (row.alias) records.set(key, { title: key, data: "" });
   }
   for (const categoryTitle of categoryAliases) {
     records.set(categoryTitle, { title: categoryTitle, data: "" });
@@ -2681,8 +2783,28 @@ async function buildNamuServerDatabase(env, title, content) {
     lookup: new Map(records)
   };
 }
+var namuPageCountCache = { value: null, expiresAt: 0 };
+var namuPageCountPending = null;
+async function getCachedNamuPageCount(env) {
+  if (namuPageCountCache.value && namuPageCountCache.expiresAt > Date.now()) {
+    return namuPageCountCache.value;
+  }
+  if (namuPageCountPending) return namuPageCountPending;
+  namuPageCountPending = env.DB.prepare("SELECT COUNT(*) AS total FROM pages").first().then((row) => {
+    const value = { total: Number(row?.total) || 0 };
+    namuPageCountCache = { value, expiresAt: Date.now() + 60 * 1e3 };
+    return value;
+  }).finally(() => {
+    namuPageCountPending = null;
+  });
+  return namuPageCountPending;
+}
 async function sanitizeServerWikiHtml(markup) {
-  const input = new Response(String(markup || ""), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  const source = String(markup || "");
+  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\\b|\\bon[a-z]+\\s*=|(?:href|src|poster)\\s*=\\s*["']\\s*(?:javascript|data|vbscript):/i.test(source)) {
+    return source;
+  }
+  const input = new Response(source, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   const rewritten = new HTMLRewriter().on("*", {
     element(element) {
       const tag = String(element.tagName || "").toUpperCase();
@@ -2768,10 +2890,15 @@ async function ensureNamuRenderCacheSchema(env) {
   }
   await namuRenderCacheSchemaPromise;
 }
-async function clearPersistentNamuRenderCache(env) {
+async function clearPersistentNamuRenderCache(env, title = "") {
   try {
     await ensureNamuRenderCacheSchema(env);
-    await env.DB.prepare("DELETE FROM namu_render_cache").run();
+    const target = cleanTitle(title);
+    if (target) {
+      await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(target).run();
+    } else {
+      await env.DB.prepare("DELETE FROM namu_render_cache").run();
+    }
   } catch (error) {
     console.warn("AonWiki persistent render cache clear failed:", error);
   }
@@ -2879,15 +3006,37 @@ async function applyTableTextContrast(markup) {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   })).text();
 }
+async function expandAonIncludes(env, source) {
+  let text = String(source || "");
+  const seen = /* @__PURE__ */ new Set(["\uC544\uC628"]);
+  for (let depth = 0; depth < 3; depth++) {
+    const matches = [...text.matchAll(/\[include\(([^)]+)\)\]/gi)];
+    const names = [...new Set(matches.map((match) => String(match[1] || "").trim()).filter((name) => name && !name.includes("=") && !seen.has(name)))];
+    if (!names.length) break;
+    const placeholders = names.map(() => "?").join(",");
+    const result = await env.DB.prepare("SELECT title, content FROM pages WHERE title IN (" + placeholders + ")").bind(...names).all();
+    const rows = new Map((result.results || []).map((row) => [String(row.title), String(row.content || "")]));
+    for (const name of names) seen.add(name);
+    let changed = false;
+    text = text.replace(/\[include\(([^)]+)\)\]/gi, (match, rawName) => {
+      const name = String(rawName || "").trim();
+      if (!name || name.includes("=") || !rows.has(name)) return match;
+      changed = true;
+      return "\n" + rows.get(name) + "\n";
+    });
+    if (!changed) break;
+  }
+  return text;
+}
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
-  const extracted = extractAdminLinkColors(source);
-  const text = extracted.content;
+  const sourceText = String(source || "");
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) {
     const color = normalizeAdminLinkColor(linkColors?.[key]);
     if (color) colors[key] = color;
   }
-  const cacheKey = "targeted-db-v25-theme-text-only:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v37-render-parser:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -2895,7 +3044,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     try {
       await ensureNamuRenderCacheSchema(env);
       const stored = await env.DB.prepare("SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?").bind(title).first();
-      if (stored && stored.source_hash === cacheKey) {
+      if (stored && (stored.source_hash === cacheKey || String(stored.source_hash || "").endsWith(":" + sourceDigest))) {
         let metadata = {};
         try {
           metadata = JSON.parse(stored.metadata_json || "{}");
@@ -2908,11 +3057,14 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     } catch (error) {
       console.warn("AonWiki persistent render cache read failed:", error);
     }
-    const database = await buildNamuServerDatabase(env, title, text);
-    const parser = new NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
+    const renderSource = title === "\uC544\uC628" ? await expandAonIncludes(env, sourceText) : sourceText;
+    const extracted = extractAdminLinkColors(renderSource);
+    const renderText = extracted.content;
+    const database = await buildNamuServerDatabase(env, title, renderText);
+    const parser = new NamuMark(renderText, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
-    const contrastedHtml = await applyTableTextContrast(cleanHtml);
+    const contrastedHtml = /<table\b/i.test(cleanHtml) ? await applyTableTextContrast(cleanHtml) : cleanHtml;
     const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1e3 });
     if (namuRenderCache.size > 100) {
@@ -2956,7 +3108,7 @@ function safeJsonForHtml(value) {
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/+$/, "") + "/";
-  const staticAssets = /* @__PURE__ */ new Set(["style.css", "namumark-beta.css", "app.js", "aonwiki-mark.svg"]);
+  const staticAssets = /* @__PURE__ */ new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "aonwiki-mark.svg"]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
     try {
@@ -2966,8 +3118,8 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-namu-parity-v5");
-    return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
+    parsed.searchParams.set("aonfix", "20261107-security-hardening-v3");
+    return name + "=" + quote + "/aon/" + file + parsed.search + parsed.hash + quote;
   });
 }
 var frontendShellCache = { value: null, expiresAt: 0 };
@@ -2977,7 +3129,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-namu-parity-v5", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-security-hardening-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
@@ -3010,26 +3162,31 @@ async function renderFullWikiDocument(request, env, title) {
     await ensurePageProtectionSchema(env);
     protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(actualTitle).first();
   }
+  await ensureOfficialDocumentSchema(env);
+  const official = found ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(actualTitle).first() : null;
   const titleText = found ? actualTitle : actualTitle + " (\uBB38\uC11C \uC5C6\uC74C)";
   const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "\uC544\uC9C1 \uC791\uC131\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
+  const ssrUser = await currentUser(request, env);
+  const ssrEditDenied = found && ssrUser ? await checkPageEditPermission(env, ssrUser, actualTitle) : null;
   const state = {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
+    official: Boolean(official),
+    canEdit: found ? ssrUser ? !ssrEditDenied : false : false,
     exists: found
   };
   const protectionLabel = protection?.level === "admin" ? "\uAD00\uB9AC\uC790 \uD3B8\uC9D1 \uBCF4\uD638" : protection?.level === "registered" ? "\uD68C\uC6D0 \uD3B8\uC9D1 \uBCF4\uD638" : "";
-  const officialTemplate = found && /^(?:틀|template):/i.test(actualTitle);
   const protectionMessage = protectionLabel ? protection?.reason || (protection.level === "admin" ? "\uC774 \uBB38\uC11C\uB294 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uB3C4\uB85D \uBCF4\uD638\uB418\uC5B4 \uC788\uC2B5\uB2C8\uB2E4." : "\uC774 \uBB38\uC11C\uB294 \uB85C\uADF8\uC778\uD55C \uD68C\uC6D0\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : "";
-  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml2(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml2(description) + '">\n<meta property="og:title" content="' + escapeHtml2(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml2(description) + '">\n<link rel="canonical" href="' + escapeHtml2(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml2(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml2(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', officialTemplate ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml2(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml2(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml2(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml2(description) + '">\n<meta property="og:title" content="' + escapeHtml2(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml2(description) + '">\n<link rel="canonical" href="' + escapeHtml2(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml2(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml2(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml2(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml2(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
   if (!found) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
   }
-  html = html.replace('<script defer src="' + origin + "/app.js", "<script>window.__AONWIKI_SSR__=" + safeJsonForHtml(state) + ';<\/script>\n<script defer src="' + origin + "/app.js");
+  html = html.replace('<script defer src="' + origin + "/app.js", '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + '<\/script>\n<script defer src="/aon/app.js');
   return new Response(html, {
     status: found ? 200 : 404,
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-AonWiki-Render": "full-document" }
+    headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
   });
 }
 async function passwordHash(password, salt) {
@@ -3042,9 +3199,26 @@ var index_default = {
     const url = new URL(request.url);
     const cors = getCors(request, env);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    if (isStateChangingMethod(request.method) && url.pathname.startsWith("/api/") && !isTrustedStateChangingRequest(request, env)) return response({ error: "\uBCF4\uC548\uC0C1 \uD5C8\uC6A9\uB418\uC9C0 \uC54A\uC740 \uC694\uCCAD\uC785\uB2C8\uB2E4." }, 403, cors);
     const declaredLength = Number(request.headers.get("Content-Length") || 0);
     if (declaredLength > 2 * 1024 * 1024) return response({ error: "\uC694\uCCAD \uBCF8\uBB38\uC740 2MB \uC774\uD558\uB9CC \uD5C8\uC6A9\uB429\uB2C8\uB2E4." }, 413, cors);
+    if (isStateChangingMethod(request.method) && !request.headers.get("Content-Length")) {
+      const probe = await request.clone().arrayBuffer();
+      if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "\uC694\uCCAD \uBCF8\uBB38\uC740 2MB \uC774\uD558\uB9CC \uD5C8\uC6A9\uB429\uB2C8\uB2E4." }, 413, cors);
+    }
     try {
+      const staticFiles = /* @__PURE__ */ new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "aonwiki-mark.svg"]);
+      const assetName = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : "";
+      if (request.method === "GET" && staticFiles.has(assetName)) {
+        const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+        const assetUrl = origin + "/" + assetName + url.search;
+        const assetResponse = await fetch(assetUrl, { headers: { "Accept": request.headers.get("Accept") || "*/*", "Cache-Control": "no-cache" } });
+        const headers = new Headers(getSecurityHeaders());
+        headers.set("Content-Type", assetResponse.headers.get("Content-Type") || "application/octet-stream");
+        headers.set("Cache-Control", "public, max-age=300, must-revalidate");
+        headers.set("X-AonWiki-Asset-Proxy", "1");
+        return new Response(assetResponse.body, { status: assetResponse.status, headers });
+      }
       if (request.method === "GET" && url.pathname.startsWith("/w/")) {
         let title = "";
         try {
@@ -3101,7 +3275,7 @@ var index_default = {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run();
         const alreadyGranted = await env.DB.prepare("SELECT user_id FROM wiki_admins LIMIT 1").first();
         if (alreadyGranted) return response({ error: "\uCD5C\uCD08 \uAD00\uB9AC\uC790 \uB4F1\uB85D\uC740 \uC774\uBBF8 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4." }, 409, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         if (username.toLocaleLowerCase() !== "\uC544\uC628") return response({ error: "\uCD5C\uCD08 \uAD00\uB9AC\uC790 \uB4F1\uB85D \uB300\uC0C1\uC740 \uC544\uC628 \uACC4\uC815\uC73C\uB85C \uC81C\uD55C\uB429\uB2C8\uB2E4." }, 403, cors);
         const target = await env.DB.prepare("SELECT id, username FROM users WHERE username = ? COLLATE NOCASE").bind("\uC544\uC628").first();
@@ -3137,7 +3311,7 @@ var index_default = {
       if (url.pathname === "/api/home" && request.method === "PUT") {
         const user = await currentUser(request, env);
         if (!user?.isAdmin) return response({ error: "\uB300\uBB38\uC744 \uC218\uC815\uD558\uB824\uBA74 \uC704\uD0A4 \uAD00\uB9AC\uC790 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 403, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const settings = {
           home_title: String(body.title || "AonWiki").trim().slice(0, 80),
           home_tagline: String(body.tagline || "").trim().slice(0, 200),
@@ -3157,7 +3331,7 @@ var index_default = {
       if (url.pathname === "/api/page/protection" && request.method === "PUT") {
         const user = await currentUser(request, env);
         if (!user?.isAdmin) return response({ error: "\uD3B8\uC9D1 \uBCF4\uD638\uB97C \uC124\uC815\uD558\uB824\uBA74 \uC704\uD0A4 \uAD00\uB9AC\uC790 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 403, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = cleanTitle(body.title);
         const level = String(body.level || "none");
         const reason = String(body.reason || "").trim().slice(0, 300);
@@ -3174,6 +3348,24 @@ var index_default = {
         await env.DB.prepare("INSERT INTO page_protections (title, level, reason, protected_by, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET level = excluded.level, reason = excluded.reason, protected_by = excluded.protected_by, updated_at = excluded.updated_at").bind(title, level, reason, user.username, now).run();
         return response({ ok: true, title, protection: { level, reason, protectedBy: user.username, updatedAt: now } }, 200, cors);
       }
+      if (url.pathname === "/api/page/official" && request.method === "PUT") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "\uACF5\uC2DD \uBB38\uC11C\uB97C \uC9C0\uC815\uD558\uAC70\uB098 \uD574\uC81C\uD558\uB824\uBA74 \uC704\uD0A4 \uAD00\uB9AC\uC790 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 403, cors);
+        const body = await readJsonBody(request);
+        const title = cleanTitle(body.title);
+        const official = Boolean(body.official);
+        if (!title || title === "\uB300\uBB38") return response({ error: "\uACF5\uC2DD \uBB38\uC11C\uB85C \uC9C0\uC815\uD560 \uC218 \uC5C6\uB294 \uBB38\uC11C\uC785\uB2C8\uB2E4." }, 400, cors);
+        const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "\uBB38\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        await ensureOfficialDocumentSchema(env);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        if (!official) {
+          await env.DB.prepare("DELETE FROM official_documents WHERE title = ?").bind(title).run();
+          return response({ ok: true, title, official: false, officialMarkedBy: user.username, officialUpdatedAt: now }, 200, cors);
+        }
+        await env.DB.prepare("INSERT INTO official_documents (title, marked_by, updated_at) VALUES (?, ?, ?) ON CONFLICT(title) DO UPDATE SET marked_by = excluded.marked_by, updated_at = excluded.updated_at").bind(title, user.username, now).run();
+        return response({ ok: true, title, official: true, officialMarkedBy: user.username, officialUpdatedAt: now }, 200, cors);
+      }
       if (url.pathname === "/api/page" && request.method === "DELETE") {
         const user = await currentUser(request, env);
         if (!user?.isAdmin) return response({ error: "\uBB38\uC11C\uB97C \uC0AD\uC81C\uD558\uB824\uBA74 \uC704\uD0A4 \uAD00\uB9AC\uC790 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 403, cors);
@@ -3183,7 +3375,7 @@ var index_default = {
         await ensurePageLinkColorsSchema(env);
         await env.DB.prepare("DELETE FROM page_link_colors WHERE title = ?").bind(title).run();
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env);
+        await clearPersistentNamuRenderCache(env, title);
         await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
         return response({ ok: true, title }, 200, cors);
       }
@@ -3191,6 +3383,7 @@ var index_default = {
         return response({ ok: true, service: "AonWiki API" }, 200, cors);
       }
       if (url.pathname === "/api/account/password" && request.method === "POST") {
+        if (await authRateLimited(request, env, "password-change", 5, 15 * 60 * 1e3)) return response({ error: "\uBE44\uBC00\uBC88\uD638 \uBCC0\uACBD \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 15\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         const authorization = request.headers.get("Authorization") || "";
         if (!authorization.startsWith("Bearer ")) return response({ error: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 401, cors);
         const sessionTokenHash = await sha256(authorization.slice(7));
@@ -3199,7 +3392,7 @@ var index_default = {
           "SELECT users.id, users.username, users.salt, users.password_hash FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
         ).bind(sessionTokenHash, now).first();
         if (!user) return response({ error: "\uC77C\uBC18 \uACC4\uC815\uC73C\uB85C \uB85C\uADF8\uC778\uD55C \uB4A4 \uBE44\uBC00\uBC88\uD638\uB97C \uBCC0\uACBD\uD558\uC138\uC694." }, 401, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const currentPassword = String(body.currentPassword || "");
         const newPassword = String(body.newPassword || "");
         if (newPassword.length < 8 || newPassword.length > 200) {
@@ -3231,7 +3424,7 @@ var index_default = {
         if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1e3)) return response({ error: "\uAC00\uC785 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uD55C \uC2DC\uAC04 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
         if (!/^[A-Za-z0-9가-힣_-]{2,20}$/.test(username)) return response({ error: "\uC544\uC774\uB514\uB294 \uD55C\uAE00/\uC601\uBB38/\uC22B\uC790/_/- 2~20\uC790\uB85C \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
@@ -3247,11 +3440,32 @@ var index_default = {
         if (await authRateLimited(request, env, "login", 20, 15 * 60 * 1e3)) return response({ error: "\uB85C\uADF8\uC778 \uC2DC\uB3C4\uAC00 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 15\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
-        const body = await request.json();
-        const username = String(body.username || "").trim();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS login_account_attempts (username TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
+        const body = await readJsonBody(request);
+        const username = String(body.username || "").trim().slice(0, 40);
         const password = String(body.password || "");
+        const key = username.toLocaleLowerCase("ko-KR");
         const user = await env.DB.prepare("SELECT id,username,salt,password_hash FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
-        if (!user || await passwordHash(password, user.salt) !== user.password_hash) return response({ error: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 401, cors);
+        let accountRate = null;
+        let accountAge = Infinity;
+        if (user) {
+          accountRate = await env.DB.prepare("SELECT attempts, window_started_at FROM login_account_attempts WHERE username = ?").bind(key).first();
+          accountAge = accountRate ? Date.now() - Date.parse(accountRate.window_started_at) : Infinity;
+          if (accountRate && accountAge >= 0 && accountAge < 15 * 60 * 1e3 && Number(accountRate.attempts) >= 10) return response({ error: "\uB85C\uADF8\uC778 \uC2DC\uB3C4\uAC00 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 15\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
+        }
+        const passwordValid = Boolean(user && await passwordHash(password, user.salt) === user.password_hash);
+        if (!passwordValid) {
+          if (user) {
+            const now = (/* @__PURE__ */ new Date()).toISOString();
+            if (!accountRate || accountAge < 0 || accountAge >= 15 * 60 * 1e3) {
+              await env.DB.prepare("INSERT INTO login_account_attempts (username, attempts, window_started_at) VALUES (?, 1, ?) ON CONFLICT(username) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at").bind(key, now).run();
+            } else {
+              await env.DB.prepare("UPDATE login_account_attempts SET attempts = attempts + 1 WHERE username = ?").bind(key).run();
+            }
+          }
+          return response({ error: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 401, cors);
+        }
+        await env.DB.prepare("DELETE FROM login_account_attempts WHERE username = ?").bind(key).run();
         const token = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, "0")).join("");
         const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token), user.id, expires).run();
@@ -3304,7 +3518,7 @@ var index_default = {
         if (!user) return response({ error: "\uD1A0\uB860\uC744 \uC2DC\uC791\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
         if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1e3)) return response({ error: "\uD1A0\uB860 \uC0DD\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = String(body.title || "").trim().replace(/[\x00-\x1f\x7f]/g, "").slice(0, 120);
         const content = String(body.body || "").trim().slice(0, 1e4);
         const pageTitle = cleanTitle(body.pageTitle || "");
@@ -3323,7 +3537,7 @@ var index_default = {
         if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC791\uC131\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
         if (await authRateLimited(request, env, "discussion-reply", 15, 5 * 60 * 1e3)) return response({ error: "\uB2F5\uAE00 \uC791\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = Number(body.id);
         const content = String(body.body || "").trim().slice(0, 6e3);
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
@@ -3340,7 +3554,7 @@ var index_default = {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "\uD1A0\uB860 \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = Number(body.id);
         const action = String(body.action || "");
         if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen", "edit"].includes(action)) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBCC0\uACBD \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
@@ -3365,7 +3579,7 @@ var index_default = {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC218\uC815\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = Number(body.id);
         const content = String(body.body || "").trim().slice(0, 6e3);
         if (!Number.isSafeInteger(id) || id < 1 || !content) return response({ error: "\uC62C\uBC14\uB978 \uB2F5\uAE00 \uC218\uC815 \uC694\uCCAD\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
@@ -3724,7 +3938,7 @@ var index_default = {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1e3)) {
           return response({ error: "\uBBF8\uB9AC\uBCF4\uAE30 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         }
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = cleanTitle(body.title || "\uBBF8\uB9AC\uBCF4\uAE30") || "\uBBF8\uB9AC\uBCF4\uAE30";
         const content = String(body.content || "");
         if (content.length > 2e5) return response({ error: "\uBBF8\uB9AC\uBCF4\uAE30 \uBB38\uC11C\uB294 200,000\uC790 \uC774\uD558\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4." }, 413, cors);
@@ -3754,8 +3968,12 @@ var index_default = {
           if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
         }
         await ensurePageProtectionSchema(env);
+        await ensureOfficialDocumentSchema(env);
         const protection = page ? await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first() : null;
-        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "" } : null }, 200, cors);
+        const official = page ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(page.title).first() : null;
+        const user = await currentUser(request, env);
+        const editPermission = page && user ? await checkPageEditPermission(env, user, page.title) : null;
+        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: user ? !editPermission : null, editDeniedReason: editPermission?.error || "", official: Boolean(official), officialMarkedBy: official?.marked_by || "", officialUpdatedAt: official?.updated_at || "" } : null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
@@ -3783,7 +4001,7 @@ var index_default = {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "\uBC84\uC804\uC744 \uBCF5\uC6D0\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
         if (await authRateLimited(request, env, "revision-restore", 20, 60 * 1e3)) return response({ error: "\uBCF5\uC6D0 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
-        const body = await request.json(), id = Number(body.id), title = cleanTitle(body.title);
+        const body = await readJsonBody(request), id = Number(body.id), title = cleanTitle(body.title);
         if (!title || !Number.isSafeInteger(id) || id < 1) return response({ error: "\uBB38\uC11C \uC81C\uBAA9 \uB610\uB294 \uBC84\uC804 \uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 400, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
@@ -3802,7 +4020,7 @@ var index_default = {
         await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?").bind(content, now, title).run();
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, "\uC774\uC804 \uBC84\uC804 #" + id + " \uBCF5\uC6D0").run();
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env);
+        await clearPersistentNamuRenderCache(env, title);
         return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
@@ -3811,7 +4029,7 @@ var index_default = {
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-page-edit", 20, 10 * 60 * 1e3)) {
           return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD3B8\uC9D1 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 10\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         }
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = cleanTitle(body.title);
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
@@ -3858,7 +4076,7 @@ var index_default = {
           await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?").bind(content, now, title).run();
         }
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env);
+        await clearPersistentNamuRenderCache(env, title);
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, summary).run();
         if (user.isAdmin) await savePageLinkColors(env, title, extractedLinkColors, user.username);
         return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
@@ -3920,7 +4138,7 @@ var index_default = {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "\uD30C\uC77C \uC774\uB984\uC744 \uBCC0\uACBD\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
         await ensureImageSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = String(body.id || "");
         if (!/^[a-f0-9-]{36}$/i.test(id)) return response({ error: "\uC798\uBABB\uB41C \uD30C\uC77C \uC2DD\uBCC4\uC790\uC785\uB2C8\uB2E4." }, 400, cors);
         const image = await env.DB.prepare("SELECT id, filename, content_type, owner FROM images WHERE id = ?").bind(id).first();
@@ -3989,14 +4207,19 @@ var index_default = {
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
-        headers.set("Cache-Control", "public, max-age=3600");
+        headers.set("Content-Length", String(bytes.byteLength));
+        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("ETag", '"' + key + '"');
         headers.set("X-Content-Type-Options", "nosniff");
+        if (request.headers.get("If-None-Match") === '"' + key + '"') return new Response(null, { status: 304, headers });
         if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
         return new Response(bytes, { headers });
       }
       return response({ error: "\uC694\uCCAD\uD55C \uACBD\uB85C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
     } catch (error) {
       console.error("AonWiki API error", error);
+      const status = Number(error?.status);
+      if (status >= 400 && status < 500) return response({ error: String(error?.message || "\uC798\uBABB\uB41C \uC694\uCCAD\uC785\uB2C8\uB2E4.") }, status, cors);
       return response({ error: "\uC11C\uBC84 \uB0B4\uBD80 \uC624\uB958" }, 500, cors);
     }
   }

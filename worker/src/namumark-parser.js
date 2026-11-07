@@ -233,49 +233,7 @@ var NamuMark = class _NamuMark {
       return data;
     });
     __publicField(this, "getToolCssSafe", (data) => {
-      // Preserve semicolon-separated declarations while allowing only safe,
-      // presentation-only CSS properties.
-      const allowedProperties = new Set([
-        "color", "background", "background-color",
-        "font-size", "font-weight", "font-style", "font-family",
-        "text-align", "text-decoration", "text-transform",
-        "line-height", "letter-spacing", "word-spacing",
-        "width", "max-width", "min-width", "height", "max-height", "min-height",
-        "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
-        "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
-        "border", "border-top", "border-right", "border-bottom", "border-left",
-        "border-color", "border-top-color", "border-right-color",
-        "border-bottom-color", "border-left-color",
-        "border-width", "border-top-width", "border-right-width",
-        "border-bottom-width", "border-left-width",
-        "border-style", "border-top-style", "border-right-style",
-        "border-bottom-style", "border-left-style",
-        "border-radius", "border-collapse",
-        "float", "clear", "display", "vertical-align",
-        "white-space", "list-style", "list-style-type",
-        "overflow", "overflow-x", "overflow-y", "overflow-wrap",
-        "opacity", "box-sizing"
-      ]);
-      const forbiddenValue = (value) => {
-        const lower = String(value || "").toLowerCase();
-        return /[{}<>]/.test(lower) ||
-          lower.includes("url(") ||
-          lower.includes("expression(") ||
-          lower.includes("javascript:") ||
-          lower.includes("@import");
-      };
-      const declarations = [];
-      for (const declaration of String(data || "").split(";")) {
-        const colon = declaration.indexOf(":");
-        if (colon < 1) continue;
-        const property = declaration.slice(0, colon).trim().toLowerCase();
-        let value = declaration.slice(colon + 1).trim();
-        if (!allowedProperties.has(property) || !value || forbiddenValue(value)) continue;
-        value = value.replace(/!important/gi, "").trim();
-        if (!value || forbiddenValue(value)) continue;
-        declarations.push(property + ":" + value);
-      }
-      return declarations.length ? declarations.join(";") + ";" : "";
+      return data.replaceAll(";", "");
     });
     __publicField(this, "getToolJSSafe", (data) => {
       data = data.replaceAll("\n", "\\\\n");
@@ -581,8 +539,8 @@ var NamuMark = class _NamuMark {
           continue;
         }
         let wikiData = middleData.replace(/^#!wiki +/g, "");
-        const wikiRegex = /^(?:(?:style=(?:"((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
-        const wikiDarkRegex = /^(?:(?:dark-style=(?:"((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+        const wikiRegex = /^(?:(?:style=("((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+        const wikiDarkRegex = /^(?:(?:dark-style=("((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
         let wikiDataStyleData = "";
         while (true) {
           let darkOnly = 0;
@@ -600,7 +558,7 @@ var NamuMark = class _NamuMark {
             }
           }
           if (wikiDataStyleMatch) {
-            wikiDataStyle = wikiDataStyleMatch.slice(1).find(value => value !== undefined) || "";
+            wikiDataStyle = wikiDataStyleMatch.slice(1).find((value) => value !== void 0) || "";
             if (wikiDataStyle) {
               wikiDataStyle = wikiDataStyle.replaceAll("&#x27;", "");
               wikiDataStyle = wikiDataStyle.replaceAll("&quot;", "");
@@ -625,7 +583,6 @@ var NamuMark = class _NamuMark {
             break;
           }
         }
-        // NamuMark wiki-style blocks are authored inline. Keep side-specific
         wikiData = this.getToolDataRevert(wikiData).replace(/(^\n|\n$)/g, "");
         interData["inter_data_" + interCount] = wikiData;
         middleDataPass = "<inter_data_" + interCount + ">";
@@ -971,24 +928,16 @@ try {
         let tableParameterData;
         if (tableParameterEqualIndex >= 0) {
           const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
-          tableParameterData = tableParameter.slice(tableParameterEqualIndex + 1).trim();
+          tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
           if (tableParameterName == "tablebgcolor") {
             const tableBgStyle = this.getToolThemeColorStyle("background", "bg", tableParameterData);
             tableParameterAll["table"] += tableBgStyle;
             tableParameterAll["tableBg"] += tableBgStyle;
           } else if (tableParameterName == "tablewidth") {
-            const width = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
-            if (width) {
-              tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
-              tableParameterAll["table"] += "width:100%;";
-            }
-          } else if (tableParameterName == "tableheight") {
-            const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
-            if (height) tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
-          } else if (tableParameterName == "rowheight") {
-            const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
-            if (height) tableParameterAll["tr"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
-          }
+            tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
+            tableParameterAll["table"] += "width:100%;";
+          } else if (tableParameterName == "tableheight") tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          else if (tableParameterName == "rowheight") tableParameterAll["tr"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "tablealign") {
             if (tableParameterData == "right") tableParameterAll["div"] += "float:right;max-width:100%;";
             else if (tableParameterData == "center") {
@@ -996,29 +945,21 @@ try {
               tableParameterAll["table"] += "margin-left:auto;margin-right:auto;";
             }
           } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterData.replace(/[^a-zA-Z0-9 _-]/g, "");
-          else if (tableParameterName == "tabletextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["table"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
+          else if (tableParameterName == "tabletextalign") tableParameterAll["table"] += "text-align:" + tableParameterData + " !important;";
           else if (tableParameterName == "tablecolor") tableParameterAll["table"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "tablebordercolor")
             tableParameterAll["table"] += this.getToolThemeColorStyle("border", "border", tableParameterData);
           else if (tableParameterName == "rowbgcolor") tableParameterAll["tr"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
-          else if (tableParameterName == "rowtextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["tr"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
+          else if (tableParameterName == "rowtextalign") tableParameterAll["tr"] += "text-align:" + tableParameterData + " !important;";
           else if (tableParameterName == "rowcolor") tableParameterAll["tr"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "colcolor") tableParameterAll["col"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "colbgcolor")
             tableParameterAll["col"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
-          else if (tableParameterName == "coltextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["col"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
+          else if (tableParameterName == "coltextalign") tableParameterAll["col"] += "text-align:" + tableParameterData + " !important;";
           else if (tableParameterName == "bgcolor") tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "color") tableParameterAll["td"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
-          else if (tableParameterName == "width") {
-            const width = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
-            if (width) tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
-          }
+          else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "height") {
-            const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
-            if (!height) {
-              doAnyThing += "&lt;" + tableParameter + "&gt;";
-              continue;
-            }
             const heightStyle = "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
             if (data.trim() === "") tableParameterAll["tr"] += heightStyle;
             else tableParameterAll["td"] += heightStyle;
@@ -1038,7 +979,7 @@ try {
             else if (tableParameter == ":") tableParameterAll["td"] += "text-align: center !important;";
             else if (tableParameter == ")") tableParameterAll["td"] += "text-align: right !important;";
           } else if (tableParameter.match(/^(?:(?:#((?:[0-9a-f-A-F]{3}){1,2}))|(\w+))$/)) {
-            tableParameterData = tableParameter.trim();
+            tableParameterData = this.getToolCssSafe(tableParameter);
             tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           } else {
             doAnyThing += "&lt;" + tableParameter + "&gt;";
@@ -1156,7 +1097,7 @@ try {
         tableColNum += colspanInt;
       }
       appendTableRow();
-      tableDataEnd = '<table class="wiki-table ' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
+      tableDataEnd = '<table class="' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
       tableDataEnd = '<div class="table_safe" style="' + tableParameter["div"] + '">' + tableDataEnd + "</div>";
       this.renderData = this.renderData.replace(tableRegex, "\n<front_br>" + tableDataEnd + "\n");
       tableCountAll -= 1;
@@ -1290,7 +1231,7 @@ try {
         const followingSource = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
         const hasFollowingContent = followingSource.length > 0;
         const listEndDivider = isUnorderedList && hasFollowingContent ? '<hr class="wiki-list-end-divider" role="separator">' : "";
-        const replacement = '\n<front_br><ul class="' + (isUnorderedList ? "wiki-unordered-list" : "wiki-numbered-list") + '" style="' + (isUnorderedList ? "" : "list-style:none;") + '">' + listDataStr + "</ul>" + listEndDivider + "<back_br>\n";
+        const replacement = '\n<front_br><ul class="' + (isUnorderedList ? "wiki-unordered-list" : "wiki-numbered-list") + '">' + listDataStr + "</ul>" + listEndDivider + "<back_br>\n";
         this.renderData = this.renderData.slice(0, listDataMatch.index || 0) + replacement + this.renderData.slice(listEnd);
       }
       listCountMax -= 1;
@@ -1521,20 +1462,8 @@ try {
   }
   // re.sub fix
   manageLink() {
-    // A file link used as the label of an external link must contribute only
-    // its image content. Keeping the file page anchor would create invalid
-    // nested <a> elements and make browsers discard the outer destination.
-    const unwrapNestedFileImages = (value) => String(value || "").replace(
-      /<(render_[0-9]+[^<>]*)><\/\1>/g,
-      (match, storageName) => {
-        const media = this.dataTempStorage["meta_" + storageName];
-        if (!media || media.type !== "file-image") return match;
-        const dataName = this.getToolDataStorage(media.html, "", match);
-        return `<${dataName}></${dataName}>`;
-      }
-    );
     this.renderData = this.renderData.replaceAll("[[]]", "");
-    const linkRegex = /\[\[((?:(?!\[\[|\]\]|\||<|>).|<(?:\/?(?:slash|render)_(?:[0-9]+)(?:[^<>]+))>)+)(?:\|((?:(?!\[\[|\]\]|\|).)+))?\]\](\n?)/;
+    const linkRegex = /\[\[((?:(?!\[\[|\]\]|\||<|>).|<(?:\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)+)(?:\|((?:(?!\[\[|\]\]|\|).)+))?\]\](\n?)/;
     let imageCount = 0;
     let linkCountAll = (this.renderData.match(globalRegExp(linkRegex)) || []).length * 4;
     while (true) {
@@ -1545,6 +1474,10 @@ try {
         break;
       }
       const linkDataFull = linkDataMatch[0];
+      const replaceCurrentMatch = (replacement) => {
+        const index = linkDataMatch.index ?? 0;
+        this.renderData = this.renderData.slice(0, index) + replacement + this.renderData.slice(index + linkDataFull.length);
+      };
       let linkData = linkDataMatch.slice(1);
       let linkMain = linkData[0];
       let linkMainOrg = linkMain;
@@ -1674,7 +1607,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>`);
+          replaceCurrentMatch(`<${dataName}></${dataName}>`);
         } else {
           let filePass = 0;
           if (fileTurn !== "") {
@@ -1708,14 +1641,7 @@ try {
           } else {
             dataName = this.getToolDataStorage("", "", linkDataFull);
           }
-          if (filePass === 1) {
-            let imageOnlyHtml = '<img style="' + fileStyle + '" alt="' + linkSub + '" src="' + linkMain + '">';
-            if (fileAlign === "center") {
-              imageOnlyHtml = `<div style="text-align:center;">${imageOnlyHtml}</div>`;
-            }
-            this.dataTempStorage["meta_" + dataName] = { type: "file-image", html: imageOnlyHtml };
-          }
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>` + linkData[2]);
+          replaceCurrentMatch(`<${dataName}></${dataName}>` + linkData[2]);
         }
       } else if (/^(분류|category):/i.test(linkMain)) {
         linkMain = linkMain.replace(/^(분류|category):/gi, "");
@@ -1751,7 +1677,7 @@ try {
           }
           this.dataCategory += `<a class="${categoryBlur} ${linkExist}" style="color:var(--wiki-link)!important;text-decoration:none!important;" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
         }
-        this.renderData = this.renderData.replace(linkRegex, "");
+        replaceCurrentMatch("");
       } else if (/^(?:inter|인터):([^:]+):/i.test(linkMain)) {
         const prefixMatch = linkMain.match(/^(?:inter|인터):([^:]+):/i);
         const prefix = (prefixMatch?.[1] || "").toLowerCase();
@@ -1778,7 +1704,7 @@ try {
         };
         const base = interwikiBases[prefix];
         if (!base || !target.trim()) {
-          this.renderData = this.renderData.replace(linkRegex, linkData[1] || linkDataFull);
+          replaceCurrentMatch(linkData[1] || linkDataFull);
         } else {
           const safeTarget = encodeURIComponent(target.trim().replace(/ /g, "_")).replace(/%2F/gi, "/");
           const safeFragment = fragment ? "#" + encodeURIComponent(fragment) : "";
@@ -1789,7 +1715,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, "<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
+          replaceCurrentMatch("<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
         }
       } else if (/^https?:\/\//i.test(linkMain)) {
         linkMain = this.getToolDataRestore(linkMain, "slash");
@@ -1798,7 +1724,7 @@ try {
         linkMain = linkMain.replace(/"/g, "&quot;");
         linkMain = linkMain.replace(/</g, "&lt;");
         linkMain = linkMain.replace(/>/g, "&gt;");
-        let linkSub = unwrapNestedFileImages(linkData[1] || "");
+        let linkSub = linkData[1] || "";
         const linkSubStorage = linkSub ? "" : linkMainOrg;
         const linkClass = "opennamu_link_out";
         const addStr = linkData[2] || "";
@@ -1807,7 +1733,7 @@ try {
           "</a>",
           linkDataFull
         );
-        this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+        replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
       } else {
         linkMain = this.getToolLinkFix(linkMain);
         linkMain = linkMain.replace(/&#x27;/g, "<link_single>");
@@ -1859,7 +1785,7 @@ try {
           "</a>",
           linkDataFull
         );
-        this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+        replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
       }
       linkCountAll -= 1;
     }
@@ -1979,7 +1905,7 @@ try {
       } else if (useBold === "change") {
         dataName = this.getToolDataStorage("", "", match);
       } else {
-        dataName = this.getToolDataStorage("<strong>", "</strong>", match);
+        dataName = this.getToolDataStorage("<b>", "</b>", match);
       }
       return `<${dataName}>${data}</${dataName}>`;
     };
@@ -2088,7 +2014,7 @@ try {
           ' <sub><a id="' + headingIdName + '" href="/edit_section/' + headingCount + "/" + urlPas(this.docName) + `">\u270E</a> <a href="javascript:void(0);" onclick="javascript:opennamu_heading_folding('` + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + `', this);">` + headingFolding[0] + "</a></sub></span></h" + headingLevel + ">",
           headingDataOrg
         );
-        const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + "</heading_stack> <span class=\"wiki-heading-text\">" + headingDataText + "</span></" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
+        const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + '</heading_stack> <span class="wiki-heading-text">' + headingDataText + "</span></" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
         this.renderData = this.renderData.replace(headingRegex, headingDataComplete);
       }
       headingCountAll -= 1;
@@ -2125,7 +2051,7 @@ try {
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
-      tocData += '<div class="opennamu_TOC_entry">' + '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) + '<a class="opennamu_TOC_link" href="#s-' + element[0] + '"><span class="opennamu_TOC_number">' + element[0] + '.</span> <span class="opennamu_TOC_text"><toc_inside>' + element[1] + '</toc_inside></span></a></div>';
+      tocData += '<div class="opennamu_TOC_entry">' + '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) + '<a class="opennamu_TOC_link" href="#s-' + element[0] + '"><span class="opennamu_TOC_number">' + element[0] + '.</span> <span class="opennamu_TOC_text"><toc_inside>' + element[1] + "</toc_inside></span></a></div>";
     }
     if (tocData !== "") {
       tocData += "</div></details>";

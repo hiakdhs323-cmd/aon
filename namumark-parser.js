@@ -524,7 +524,7 @@ var NamuMarkBundle = (() => {
       let foldingCount = 0;
       let interCount = 0;
       let interData = {};
-      const middleRegex = /{{{([^{](?:(?!{{{|}}}).|\n)*)?(?:}|<(\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)}}/;
+      const middleRegex = /{{{([^{](?:(?!{{{|}}}).|\n|<(?:\/?(?:slash|render)_[^<>]+)>)*)(?:}|<(\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)}}/;
       let middleCountAll = (this.renderData.match(globalRegExp(middleRegex)) || []).length * 10;
       while (true) {
         const middleDataMatch = this.renderData.match(middleRegex);
@@ -562,8 +562,8 @@ var NamuMarkBundle = (() => {
             continue;
           }
           let wikiData = middleData.replace(/^#!wiki +/g, "");
-          const wikiRegex = /^(?:(?:style=(&quot;(?:(?:(?!&quot;).)*)&quot;|&#x27;(?:(?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
-          const wikiDarkRegex = /^(?:(?:dark-style=(&quot;(?:(?:(?!&quot;).)*)&quot;|&#x27;(?:(?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+          const wikiRegex = /^(?:(?:style=("((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+          const wikiDarkRegex = /^(?:(?:dark-style=("((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
           let wikiDataStyleData = "";
           while (true) {
             let darkOnly = 0;
@@ -581,7 +581,7 @@ var NamuMarkBundle = (() => {
               }
             }
             if (wikiDataStyleMatch) {
-              wikiDataStyle = wikiDataStyleMatch[1];
+              wikiDataStyle = wikiDataStyleMatch.slice(1).find((value) => value !== void 0) || "";
               if (wikiDataStyle) {
                 wikiDataStyle = wikiDataStyle.replaceAll("&#x27;", "");
                 wikiDataStyle = wikiDataStyle.replaceAll("&quot;", "");
@@ -1497,6 +1497,10 @@ try {
           break;
         }
         const linkDataFull = linkDataMatch[0];
+        const replaceCurrentMatch = (replacement) => {
+          const index = linkDataMatch.index ?? 0;
+          this.renderData = this.renderData.slice(0, index) + replacement + this.renderData.slice(index + linkDataFull.length);
+        };
         let linkData = linkDataMatch.slice(1);
         let linkMain = linkData[0];
         let linkMainOrg = linkMain;
@@ -1626,7 +1630,7 @@ try {
               "</a>",
               linkDataFull
             );
-            this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>`);
+            replaceCurrentMatch(`<${dataName}></${dataName}>`);
           } else {
             let filePass = 0;
             if (fileTurn !== "") {
@@ -1660,7 +1664,7 @@ try {
             } else {
               dataName = this.getToolDataStorage("", "", linkDataFull);
             }
-            this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>` + linkData[2]);
+            replaceCurrentMatch(`<${dataName}></${dataName}>` + linkData[2]);
           }
         } else if (/^(분류|category):/i.test(linkMain)) {
           linkMain = linkMain.replace(/^(분류|category):/gi, "");
@@ -1690,13 +1694,13 @@ try {
             if (categoryBlur != "") this.dataBacklink["category:" + linkMain]["cat_blur"] = "";
             linkMain = urlPas(linkMain);
             if (this.dataCategory === "") {
-              this.dataCategory = '<div class="opennamu_category" id="cate"><span class="opennamu_category_label">\uBD84\uB958:</span><span class="opennamu_category_links">';
+              this.dataCategory = '<div class="opennamu_category" id="cate"><span class="opennamu_category_label" style="color:var(--wiki-text)!important;">\uBD84\uB958:</span><span class="opennamu_category_links">';
             } else {
               this.dataCategory += " | ";
             }
-            this.dataCategory += `<a class="${categoryBlur} ${linkExist}" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
+            this.dataCategory += `<a class="${categoryBlur} ${linkExist}" style="color:var(--wiki-link)!important;text-decoration:none!important;" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
           }
-          this.renderData = this.renderData.replace(linkRegex, "");
+          replaceCurrentMatch("");
         } else if (/^(?:inter|인터):([^:]+):/i.test(linkMain)) {
           const prefixMatch = linkMain.match(/^(?:inter|인터):([^:]+):/i);
           const prefix = (prefixMatch?.[1] || "").toLowerCase();
@@ -1723,7 +1727,7 @@ try {
           };
           const base = interwikiBases[prefix];
           if (!base || !target.trim()) {
-            this.renderData = this.renderData.replace(linkRegex, linkData[1] || linkDataFull);
+            replaceCurrentMatch(linkData[1] || linkDataFull);
           } else {
             const safeTarget = encodeURIComponent(target.trim().replace(/ /g, "_")).replace(/%2F/gi, "/");
             const safeFragment = fragment ? "#" + encodeURIComponent(fragment) : "";
@@ -1734,7 +1738,7 @@ try {
               "</a>",
               linkDataFull
             );
-            this.renderData = this.renderData.replace(linkRegex, "<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
+            replaceCurrentMatch("<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
           }
         } else if (/^https?:\/\//i.test(linkMain)) {
           linkMain = this.getToolDataRestore(linkMain, "slash");
@@ -1752,7 +1756,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+          replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
         } else {
           linkMain = this.getToolLinkFix(linkMain);
           linkMain = linkMain.replace(/&#x27;/g, "<link_single>");
@@ -1804,7 +1808,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+          replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
         }
         linkCountAll -= 1;
       }
@@ -2033,7 +2037,7 @@ try {
             ' <sub><a id="' + headingIdName + '" href="/edit_section/' + headingCount + "/" + urlPas(this.docName) + `">\u270E</a> <a href="javascript:void(0);" onclick="javascript:opennamu_heading_folding('` + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + `', this);">` + headingFolding[0] + "</a></sub></span></h" + headingLevel + ">",
             headingDataOrg
           );
-          const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + "</heading_stack> " + headingDataText + "</" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
+          const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + '</heading_stack> <span class="wiki-heading-text">' + headingDataText + "</span></" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
           this.renderData = this.renderData.replace(headingRegex, headingDataComplete);
         }
         headingCountAll -= 1;
@@ -2056,7 +2060,7 @@ try {
       }
       for (let index = 0; index < results.length; index++) {
         const result = results[index];
-        const content = `<a href="#toc" id="s-${result[1]}">${result[1]}.</a>`;
+        const content = `<a class="wiki-heading-number" style="color:var(--wiki-link)!important;text-decoration:none!important;" href="#toc" id="s-${result[1]}"><span class="wiki-heading-number-label" style="color:var(--wiki-link)!important;">${result[1]}.</span></a>`;
         this.renderData = this.renderData.replace(headingIdRegex, content);
         tocList[index][0] = result[1];
       }
@@ -2070,7 +2074,7 @@ try {
       }
       for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
         const element = tocList[tocIndex];
-        tocData += (tocIndex === 0 ? "" : "<br>") + '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) + '<span class="opennamu_TOC_list"><a class="opennamu_TOC_link" href="#s-' + element[0] + '">' + element[0] + ". <toc_inside>" + element[1] + "</toc_inside></a></span>";
+        tocData += '<div class="opennamu_TOC_entry">' + '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) + '<a class="opennamu_TOC_link" href="#s-' + element[0] + '"><span class="opennamu_TOC_number">' + element[0] + '.</span> <span class="opennamu_TOC_text"><toc_inside>' + element[1] + "</toc_inside></span></a></div>";
       }
       if (tocData !== "") {
         tocData += "</div></details>";
