@@ -233,3 +233,6 @@ assert.ok(htmlSource.includes("theme.js?v=20261107-security-hardening-v1"), "the
 assert.ok(htmlSource.includes("integrity=\"sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==\""), "KaTeX must use SRI");
 assert.ok(htmlSource.includes("integrity=\"sha512-rdhY3cbXURo13l/WU9VlaRyaIYeJ/KBakckXIvJNAQde8DgpOmE+Zf7ha4vdqVjTtwQt69bD2wH2LXob/LB7Q==\""), "highlight.js must use SRI");
 assert.ok(appSource.includes("X-AonWiki-Request"), "frontend API client must attach the anti-CSRF header");
+assert.ok(workerSource.includes("login_account_attempts") && workerSource.includes("accountRate"), "login throttling must include an account-aware bucket in addition to the IP bucket");
+assert.ok(workerSource.includes('password-change", 5, 15 * 60 * 1000'), "password changes must be rate limited");
+
