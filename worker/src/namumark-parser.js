@@ -626,30 +626,6 @@ var NamuMark = class _NamuMark {
           }
         }
         // NamuMark wiki-style blocks are authored inline. Keep side-specific
-        // border declarations authoritative so the imported NamuWiki skin cannot
-        // accidentally flatten an explicitly requested border-top.
-        if (wikiDataStyleData) {
-          // Keep an explicitly authored border-top independent from the border
-          // shorthand. Emit the three longhand declarations as well, so a
-          // later border shorthand from a skin cannot collapse the requested
-          // top border. This is parser output, not a skin/CSS override.
-          wikiDataStyleData = wikiDataStyleData.replace(
-            /(^|;)\s*border-top\s*:\s*([^;]+?)(?=;|$)/i,
-            (match, prefix, value) => {
-              const normalized = value.trim().replace(/\s*!important\s*$/i, "").trim();
-              const parts = normalized.match(/^(?:(thin|medium|thick|0|[0-9.]+(?:px|em|rem|%|pt|pc|cm|mm|in))\s+)?(?:(none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset)\s+)?(.+)$/i);
-              if (!parts) return prefix + "border-top:" + normalized + " !important";
-              const width = parts[1] || "";
-              const style = parts[2] || "";
-              const color = parts[3] || "";
-              let expanded = prefix + "border-top:" + normalized + " !important;";
-              if (width) expanded += "border-top-width:" + width + " !important;";
-              if (style) expanded += "border-top-style:" + style + " !important;";
-              if (color) expanded += "border-top-color:" + color + " !important";
-              return expanded;
-            }
-          );
-        }
         wikiData = this.getToolDataRevert(wikiData).replace(/(^\n|\n$)/g, "");
         interData["inter_data_" + interCount] = wikiData;
         middleDataPass = "<inter_data_" + interCount + ">";
