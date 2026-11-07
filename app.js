@@ -1523,6 +1523,35 @@ async function loadSpecialPage(type,pushRoute=true){
  addText(copy,"p",config.description).className="discussion-intro";
  heading.append(copy);article.append(heading);
  if(type==="license"){
+  const toolbar=document.createElement("div");toolbar.className="special-list-toolbar";
+  if(isWikiAdmin){
+   const editButton=document.createElement("button");editButton.type="button";editButton.className="button";editButton.textContent="라이선스 편집";
+   editButton.onclick=async()=>{
+    try{
+     const data=await api("/api/page?title="+encodeURIComponent("라이선스"));
+     editPage("라이선스",data.page?.content||"");
+    }catch{
+     editPage("", "");
+     $("editor-title").value="라이선스";
+     $("editor-title").readOnly=true;
+     $("editor-title").disabled=false;
+     editorOriginalTitle="";
+     editorIsNew=true;
+     $("editor-heading").textContent="라이선스 작성";
+     $("editor-breadcrumb").textContent="라이선스 작성";
+    }
+   };
+   toolbar.append(editButton);
+  }
+  if(isWikiAdmin)article.append(toolbar);
+  try{
+   const data=await api("/api/page?title="+encodeURIComponent("라이선스"));
+   if(data.page?.content){
+    const contentHost=document.createElement("div");contentHost.className="wiki-content";
+    await renderNamuMarkup(data.page.content,contentHost,"라이선스");
+    article.append(contentHost);return;
+   }
+  }catch{}
   const panel=document.createElement("section");panel.className="special-info-panel";
   addText(panel,"h3","이용 전 확인 사항");
   addText(panel,"p","AonWiki의 공통 라이선스 정책은 현재 이 문서에서 별도로 지정되어 있지 않습니다. 개별 문서에 저작권·라이선스 표시가 있다면 해당 표시를 먼저 확인하세요.");
@@ -2244,7 +2273,7 @@ $("editor-form").onsubmit = async event => {
   const saveButton = $("editor-save");
   status.textContent = "";
   if (!title) { status.textContent = "문서 제목을 입력하세요."; return; }
-  if (title === "대문") { status.textContent = "대문은 시작 화면이므로 일반 문서로 등록할 수 없습니다."; return; }
+  if (title === "대문" && !isWikiAdmin) { status.textContent = "대문은 위키 관리자만 편집할 수 있습니다."; return; }
   if (content.length > 200000) { status.textContent = "문서는 200,000자 이하로 작성해 주세요."; return; }
   saveButton.disabled = true;
   saveButton.textContent = "저장 중…";
