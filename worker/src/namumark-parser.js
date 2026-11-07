@@ -1212,7 +1212,7 @@ try {
           else if (doType == "roman_small") changeText = intToRoman(listNum[doType][listLen - 1]).toLowerCase();
           else if (doType == "alpha_big") changeText = intToAlpha(listNum[doType][listLen - 1]).toUpperCase();
           else changeText = intToAlpha(listNum[doType][listLen - 1]).toLowerCase();
-          return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none"><span class="opennamu_list_number">' + changeText + '.</span> <span class="opennamu_list_text">' + listData + "</span></li>";
+          return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none"><span style="color:var(--wiki-link)!important;">' + changeText + '.</span> <span style="color:var(--wiki-text)!important;">' + listData + "</span></li>";
         }
       };
     };
@@ -1231,7 +1231,7 @@ try {
         const followingSource = this.renderData.slice(listEnd).replace(/<front_br>|<back_br>/g, "").trim();
         const hasFollowingContent = followingSource.length > 0;
         const listEndDivider = isUnorderedList && hasFollowingContent ? '<hr class="wiki-list-end-divider" role="separator">' : "";
-        const replacement = '\n<front_br><ul class="' + (isUnorderedList ? "wiki-unordered-list" : "wiki-numbered-list") + '">' + listDataStr + "</ul>" + listEndDivider + "<back_br>\n";
+        const replacement = '\n<front_br><ul class="' + (isUnorderedList ? "wiki-unordered-list" : "wiki-numbered-list") + '" style="' + (isUnorderedList ? "" : "list-style:none;") + '">' + listDataStr + "</ul>" + listEndDivider + "<back_br>\n";
         this.renderData = this.renderData.slice(0, listDataMatch.index || 0) + replacement + this.renderData.slice(listEnd);
       }
       listCountMax -= 1;
