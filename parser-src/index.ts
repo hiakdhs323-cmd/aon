@@ -2671,9 +2671,9 @@ try {
           "<heading_stack>" +
           headingStackStr +
           "</heading_stack>" +
-          " " +
+          ' <span class="wiki-heading-text">' +
           headingDataText +
-          "</" +
+          "</span></" +
           dataName +
           ">" +
           '<div id="' +
@@ -2716,7 +2716,7 @@ try {
 
     for (let index = 0; index < results.length; index++) {
       const result = results[index];
-      const content = `<a href="#toc" id="s-${result[1]}">${result[1]}.</a>`;
+      const content = `<a class="wiki-heading-number" style="color:var(--wiki-link)!important;text-decoration:none!important;" href="#toc" id="s-${result[1]}"><span class="wiki-heading-number-label" style="color:var(--wiki-link)!important;">${result[1]}.</span></a>`;
       this.renderData = this.renderData.replace(headingIdRegex, content);
       tocList[index][0] = result[1];
     }
@@ -2734,10 +2734,11 @@ try {
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
-      tocData += (tocIndex === 0 ? "" : "<br>") +
-        '<span style="margin-left: 10px;"></span>'.repeat(element[0].split(".").length - 1) +
-        '<span class="opennamu_TOC_list"><a class="opennamu_TOC_link" href="#s-' + element[0] + '">' +
-        element[0] + ". <toc_inside>" + element[1] + "</toc_inside></a></span>";
+      tocData += '<div class="opennamu_TOC_entry">' +
+        '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) +
+        '<a class="opennamu_TOC_link" href="#s-' + element[0] + '">' +
+        '<span class="opennamu_TOC_number">' + element[0] + '.</span> ' +
+        '<span class="opennamu_TOC_text"><toc_inside>' + element[1] + "</toc_inside></span></a></div>";
     }
     if (tocData !== "") {
       tocData += "</div></details>";
