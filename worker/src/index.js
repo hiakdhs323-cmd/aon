@@ -1009,24 +1009,35 @@ export default {
         return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
       }
 
+      
       if (url.pathname === "/api/discussions" && request.method === "GET") {
         await ensureDiscussionSchema(env);
         const pageTitle = cleanTitle(url.searchParams.get("title"));
-        const query = String(url.searchParams.get("q") || "").trim().slice(0, 80);
+        const query = String(url.searchParams.get("q") || "").normalize("NFC").trim().slice(0, 80);
+        const requestedStatus = String(url.searchParams.get("status") || "all");
+        const status = requestedStatus === "open" || requestedStatus === "closed" ? requestedStatus : "all";
         const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
         const offset = Math.min(100000, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
         const conditions = ["deleted_at = ''"];
         const values = [];
         if (pageTitle) { conditions.push("page_title = ?"); values.push(pageTitle); }
-        if (query) { conditions.push("(title LIKE ? OR body LIKE ?)"); values.push("%" + query.replace(/[\\%_]/g, "") + "%", "%" + query.replace(/[\\%_]/g, "") + "%"); }
+        if (status !== "all") { conditions.push("status = ?"); values.push(status); }
+        if (query) {
+          const terms = [...new Set(query.split(/\\s+/).filter(Boolean))].slice(0, 6);
+          for (const term of terms) {
+            const pattern = "%" + term.replace(/[\\\\%_]/g, "") + "%";
+            conditions.push("(title LIKE ? OR body LIKE ?)");
+            values.push(pattern, pattern);
+          }
+        }
         const where = conditions.join(" AND ");
         const [items, count] = await Promise.all([
           env.DB.prepare("SELECT id, page_title, title, author, created_at, updated_at, last_post_at, reply_count, status FROM discussions WHERE " + where + " ORDER BY last_post_at DESC, id DESC LIMIT ? OFFSET ?").bind(...values, limit, offset).all(),
           env.DB.prepare("SELECT COUNT(*) AS total FROM discussions WHERE " + where).bind(...values).first()
         ]);
-        return response({ discussions: items.results || [], total: Number(count?.total || 0), limit, offset, pageTitle }, 200, cors);
+        return response({ discussions: items.results || [], total: Number(count?.total || 0), limit, offset, pageTitle, query, status }, 200, cors);
       }
-      if (url.pathname === "/api/discussion" && request.method === "GET") {
+if (url.pathname === "/api/discussion" && request.method === "GET") {
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 토론 번호가 아닙니다." }, 400, cors);

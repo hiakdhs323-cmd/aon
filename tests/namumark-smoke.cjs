@@ -147,4 +147,7 @@ assert.ok(cssSource.includes("--wiki-body-link:#008b68"), "document links must u
 assert.ok(cssSource.includes(".discussion-post-number"), "discussion replies must have numbered rows");
 assert.ok(cssSource.includes(".search-load-more"), "search results must include paging controls");
 
-console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
+
+assert.ok(workerSource.includes('requestedStatus === "open" || requestedStatus === "closed"'), "discussion API must filter active and closed topics");
+assert.ok(workerSource.includes('conditions.push("status = ?")'), "discussion status filter must be parameterized");
+\nconsole.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");

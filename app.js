@@ -157,7 +157,7 @@ function decorateExternalLinks(root){
   const icon=createAonUiIcon("link","wiki-external-link-icon");
   icon.setAttribute("aria-label","외부 링크");
   icon.setAttribute("title","외부 사이트로 이동");
-  link.append(icon);
+  link.prepend(icon);
   link.classList.add("wiki-external-link");
   link.dataset.aonExternalDecorated="true";
   link.setAttribute("target","_blank");
