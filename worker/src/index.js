@@ -1833,6 +1833,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       return response({ error: "요청한 경로를 찾을 수 없습니다." }, 404, cors);
     } catch (error) {
       console.error("AonWiki API error", error);
+      const status = Number(error?.status);
+      if (status >= 400 && status < 500) return response({ error: String(error?.message || "잘못된 요청입니다.") }, status, cors);
       return response({ error: "서버 내부 오류" }, 500, cors);
     }
   }
