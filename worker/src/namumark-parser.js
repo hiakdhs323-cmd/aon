@@ -971,16 +971,24 @@ try {
         let tableParameterData;
         if (tableParameterEqualIndex >= 0) {
           const tableParameterName = tableParameter.slice(0, tableParameterEqualIndex).replace(/\s+/g, "").toLowerCase();
-          tableParameterData = this.getToolCssSafe(tableParameter.slice(tableParameterEqualIndex + 1).trim());
+          tableParameterData = tableParameter.slice(tableParameterEqualIndex + 1).trim();
           if (tableParameterName == "tablebgcolor") {
             const tableBgStyle = this.getToolThemeColorStyle("background", "bg", tableParameterData);
             tableParameterAll["table"] += tableBgStyle;
             tableParameterAll["tableBg"] += tableBgStyle;
           } else if (tableParameterName == "tablewidth") {
-            tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
-            tableParameterAll["table"] += "width:100%;";
-          } else if (tableParameterName == "tableheight") tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
-          else if (tableParameterName == "rowheight") tableParameterAll["tr"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+            const width = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
+            if (width) {
+              tableParameterAll["div"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";max-width:100%;box-sizing:border-box;";
+              tableParameterAll["table"] += "width:100%;";
+            }
+          } else if (tableParameterName == "tableheight") {
+            const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
+            if (height) tableParameterAll["table"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          } else if (tableParameterName == "rowheight") {
+            const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
+            if (height) tableParameterAll["tr"] += "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          }
           else if (tableParameterName == "tablealign") {
             if (tableParameterData == "right") tableParameterAll["div"] += "float:right;max-width:100%;";
             else if (tableParameterData == "center") {
@@ -988,21 +996,26 @@ try {
               tableParameterAll["table"] += "margin-left:auto;margin-right:auto;";
             }
           } else if (tableParameterName == "tableclass") tableParameterAll["class"] = tableParameterData.replace(/[^a-zA-Z0-9 _-]/g, "");
-          else if (tableParameterName == "tabletextalign") tableParameterAll["table"] += "text-align:" + tableParameterData + " !important;";
+          else if (tableParameterName == "tabletextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["table"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
           else if (tableParameterName == "tablecolor") tableParameterAll["table"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "tablebordercolor")
             tableParameterAll["table"] += this.getToolThemeColorStyle("border", "border", tableParameterData);
           else if (tableParameterName == "rowbgcolor") tableParameterAll["tr"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
-          else if (tableParameterName == "rowtextalign") tableParameterAll["tr"] += "text-align:" + tableParameterData + " !important;";
+          else if (tableParameterName == "rowtextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["tr"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
           else if (tableParameterName == "rowcolor") tableParameterAll["tr"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "colcolor") tableParameterAll["col"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "colbgcolor")
             tableParameterAll["col"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
-          else if (tableParameterName == "coltextalign") tableParameterAll["col"] += "text-align:" + tableParameterData + " !important;";
+          else if (tableParameterName == "coltextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["col"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
           else if (tableParameterName == "bgcolor") tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "color") tableParameterAll["td"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
           else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
           else if (tableParameterName == "height") {
+            const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
+            if (!height) {
+              doAnyThing += "&lt;" + tableParameter + "&gt;";
+              continue;
+            }
             const heightStyle = "height:" + this.getToolPxAddCheck(tableParameterData) + ";";
             if (data.trim() === "") tableParameterAll["tr"] += heightStyle;
             else tableParameterAll["td"] += heightStyle;
@@ -1022,7 +1035,7 @@ try {
             else if (tableParameter == ":") tableParameterAll["td"] += "text-align: center !important;";
             else if (tableParameter == ")") tableParameterAll["td"] += "text-align: right !important;";
           } else if (tableParameter.match(/^(?:(?:#((?:[0-9a-f-A-F]{3}){1,2}))|(\w+))$/)) {
-            tableParameterData = this.getToolCssSafe(tableParameter);
+            tableParameterData = tableParameter.trim();
             tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           } else {
             doAnyThing += "&lt;" + tableParameter + "&gt;";
