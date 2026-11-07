@@ -1267,7 +1267,7 @@ function prepareDiscussionView(title,route,pushRoute){
  $("home").classList.remove("active");
  $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;
  $("file-manager").hidden=true;$("delete-page").hidden=true;
- $("heading-edit").hidden=true;$("page-protection").hidden=true;
+ $("heading-edit").hidden=true;$("page-protection").hidden=true;$("official-document").hidden=true;
  $("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
  $("template-status").hidden=true;$("protection-status").hidden=true;$("protection-notice").hidden=true;
  $("title").textContent=title;$("crumb").textContent=title;$("message").textContent="";
@@ -2003,7 +2003,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   if(requestId!==pageNavigationSequence)return;
   if(!data.page){
    currentContent="";currentProtection={level:"none",reason:""};currentOfficial=false;currentCanEdit=null;
-   $("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;
+   $("protection-status").hidden=true;$("protection-notice").hidden=true;$("protection-notice").replaceChildren();$("page-protection").hidden=true;$("official-document").hidden=true;
    $("message").replaceChildren();
    const notice=document.createElement("div");notice.className="missing-page-panel";
    const title=document.createElement("strong");title.textContent="아직 작성되지 않은 문서입니다.";
@@ -2800,7 +2800,7 @@ function showSearchView(){
  $("home").classList.remove("active");$("new").classList.remove("active");
  $("edit").hidden=true;$("heading-edit").hidden=true;$("history").hidden=true;$("history-tab").hidden=true;
  $("upload").hidden=true;$("file-manager").hidden=true;$("delete-page").hidden=true;
- $("page-protection").hidden=true;$("protection-status").hidden=true;
+ $("page-protection").hidden=true;$("official-document").hidden=true;$("protection-status").hidden=true;
 }
 function appendSearchHighlighted(target,text,query){
  const value=String(text||""),needle=String(query||"").trim();
