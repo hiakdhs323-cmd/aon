@@ -3346,8 +3346,8 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
 :root{--wiki-body-link:#00a69c;--wiki-body-link-hover:#43c9b5}
 html[data-theme="dark"]{--wiki-body-link:#35c6ad;--wiki-body-link-hover:#75ddc9}
 html[data-theme="light"]{--wiki-body-link:#008b68;--wiki-body-link-hover:#006d53}
-#article.wiki-content a:not(.opennamu_not_exist_link){color:var(--wiki-body-link);text-decoration:none}
-#article.wiki-content a:not(.opennamu_not_exist_link):hover{
+#article.wiki-content a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"]){color:var(--wiki-body-link);text-decoration:none}
+#article.wiki-content a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"]):hover{
  color:var(--wiki-body-link-hover);text-decoration:underline;text-underline-offset:2px
 }
 #article.wiki-content .wiki-external-link-icon{
