@@ -971,7 +971,9 @@ syncNamumarkBetaButton();
 function getExplicitWikiTextColor(element, root) {
   for (let node = element; node && node !== root; node = node.parentElement) {
     const inlineColor = node.style?.getPropertyValue("color")?.trim();
-    if (inlineColor) return inlineColor;
+    // The Worker injects this variable for automatic table contrast. It is not
+    // an author-selected color and must not override the normal green link style.
+    if (inlineColor && !inlineColor.includes("--aonwiki-table-auto-fg-")) return inlineColor;
     if (node.tagName === "FONT" && node.hasAttribute("color")) {
       const fontColor = String(node.getAttribute("color") || "").trim();
       if (fontColor) return fontColor;

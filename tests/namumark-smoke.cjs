@@ -149,6 +149,7 @@ assert.ok(workerSource.includes("lower(title) = lower(?)"), "search API must ran
 assert.ok(appSource.includes("function loadMoreSearchResults()"), "search results must support progressive paging");
 assert.ok(appSource.includes("search-suggestions"), "header search must provide autocomplete suggestions");
 assert.ok(appSource.includes("function getExplicitWikiTextColor"), "wiki links must preserve explicit NamuMark colors");
+assert.ok(appSource.includes('!inlineColor.includes("--aonwiki-table-auto-fg-")'), "automatic table contrast must not be mistaken for an authored link color");
 assert.ok(appSource.includes("discussion-wiki-content"), "discussion posts must use the NamuMark renderer");
 assert.ok(appSource.includes("이전 토론 더 보기"), "discussion lists must support older topics");
 assert.ok(cssSource.includes("--wiki-body-link:#008b68"), "document links must use the green body-link palette");
