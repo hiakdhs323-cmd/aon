@@ -17,7 +17,7 @@ function getSecurityHeaders() {
     "X-Permitted-Cross-Domain-Policies": "none",
     "X-DNS-Prefetch-Control": "off",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdnjs.cloudflare.com; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdnjs.cloudflare.com https://namu.wiki; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
   };
 }
 function getCors(request, env) {
@@ -860,7 +860,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     catch { return attribute; }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-security-hardening-v2");
+    parsed.searchParams.set("aonfix", "20261107-security-hardening-v3");
     return name + "=" + quote + "/aon/" + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -871,7 +871,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-security-hardening-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-security-hardening-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
