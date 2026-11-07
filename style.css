@@ -3896,3 +3896,206 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   }
   .discussion-inline-edit-form{padding:9px}
 }
+
+
+/* Discussion layout: mobile-first sizing and stable rendered-content loading. */
+.discussion-render-pending{
+  min-height:2.2em;
+  color:var(--wiki-muted);
+}
+.discussion-render-pending-label{
+  display:inline-flex;
+  align-items:center;
+  min-height:1.8em;
+  color:var(--wiki-muted);
+  font-size:12px;
+}
+.discussion-wiki-content[aria-busy="true"]{
+  overflow:hidden;
+}
+.discussion-code-wrap{
+  isolation:isolate;
+  contain:layout paint;
+}
+.discussion-code-highlight{
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+.discussion-code-highlight code{
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+}
+.discussion-code-wrap textarea.discussion-markup-input{
+  box-sizing:border-box;
+  max-width:100%;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+@media(max-width:820px){
+  #article.wiki-content:has(.discussion-page-heading){
+    min-width:0;
+    width:100%;
+  }
+  .discussion-page-heading,
+  .discussion-list-section,
+  .discussion-replies,
+  .discussion-original,
+  .discussion-create-form,
+  .discussion-reply-form,
+  .discussion-inline-edit-form{
+    box-sizing:border-box;
+    min-width:0;
+    max-width:100%;
+  }
+  .discussion-page-heading>div,
+  .discussion-page-heading .discussion-intro,
+  .discussion-list-main,
+  .discussion-list-main>a{
+    min-width:0;
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+  .discussion-create-form,
+  .discussion-reply-form{
+    width:100%;
+    padding:12px;
+  }
+  .discussion-field,
+  .discussion-field input,
+  .discussion-field textarea,
+  .discussion-code-wrap,
+  .discussion-inline-edit-form .discussion-field{
+    box-sizing:border-box;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+  .discussion-list-item{
+    box-sizing:border-box;
+    min-width:0;
+    gap:8px;
+  }
+  .discussion-list-side{
+    flex-wrap:wrap;
+    min-width:0;
+  }
+  .discussion-original,
+  .discussion-post-card{
+    overflow-wrap:anywhere;
+  }
+  .discussion-post-header{
+    min-width:0;
+    flex-wrap:wrap;
+  }
+  .discussion-post-actions,
+  .discussion-topic-actions,
+  .discussion-form-actions{
+    flex-wrap:wrap;
+  }
+  .discussion-code-highlight,
+  .discussion-code-highlight code,
+  .discussion-code-wrap textarea.discussion-markup-input{
+    font-size:13px!important;
+    line-height:1.65!important;
+    letter-spacing:normal!important;
+    tab-size:2;
+  }
+}
+@media(max-width:560px){
+  .discussion-page-heading{
+    gap:9px;
+    margin-bottom:12px;
+    padding-bottom:11px;
+  }
+  .discussion-page-heading h2{
+    font-size:19px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  .discussion-intro{
+    font-size:11px;
+    line-height:1.55;
+    overflow-wrap:anywhere;
+  }
+  .discussion-create-form,
+  .discussion-reply-form{
+    margin:0 0 13px;
+    padding:10px;
+    border-radius:4px;
+  }
+  .discussion-field{
+    margin:9px 0;
+  }
+  .discussion-field input{
+    min-height:40px;
+    font-size:16px;
+  }
+  .discussion-code-wrap textarea.discussion-markup-input{
+    min-height:168px;
+    padding:9px!important;
+    font-size:13px!important;
+    line-height:1.65!important;
+    white-space:pre-wrap;
+  }
+  .discussion-code-highlight{
+    padding:9px!important;
+    font-size:13px!important;
+    line-height:1.65!important;
+    white-space:pre-wrap;
+  }
+  .discussion-form-actions{
+    display:flex;
+    width:100%;
+    justify-content:stretch;
+    gap:7px;
+  }
+  .discussion-form-actions button{
+    min-height:38px;
+  }
+  .discussion-create-form .discussion-form-actions button,
+  .discussion-inline-edit-form .discussion-form-actions button{
+    flex:1 1 0;
+  }
+  .discussion-original,
+  .discussion-post-card{
+    padding:9px!important;
+    border-radius:4px;
+  }
+  .discussion-body,
+  .discussion-wiki-content{
+    max-width:100%;
+    min-width:0;
+    font-size:13px!important;
+    line-height:1.7!important;
+    overflow-wrap:anywhere;
+  }
+  .discussion-list-item{
+    padding:10px 2px;
+  }
+  .discussion-list-main>a{
+    font-size:13px;
+    line-height:1.5;
+  }
+  .discussion-list-meta{
+    font-size:10px;
+    line-height:1.5;
+  }
+  .discussion-breadcrumb{
+    flex-wrap:wrap;
+    overflow-wrap:anywhere;
+  }
+}
+@media(max-width:380px){
+  .discussion-code-wrap textarea.discussion-markup-input,
+  .discussion-code-highlight{
+    font-size:12px!important;
+  }
+  .discussion-page-actions .primary-button,
+  .discussion-create-form button,
+  .discussion-reply-form button{
+    font-size:12px;
+  }
+}
