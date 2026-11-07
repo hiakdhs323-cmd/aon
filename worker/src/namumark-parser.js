@@ -2011,7 +2011,7 @@ try {
         if (this.docSet["docType"] !== "view") headingIdName = this.docSet["docInclude"] + "edit_load_" + headingCount;
         const dataName = this.getToolDataStorage(
           "<h" + headingLevel + '><span id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '_sub" style="opacity: ' + headingFolding[2] + '">',
-          ' <sub><a id="' + headingIdName + '" href="/edit_section/' + headingCount + "/" + urlPas(this.docName) + `">\u270E</a> <a href="javascript:void(0);" onclick="javascript:opennamu_heading_folding('` + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + `', this);">` + headingFolding[0] + "</a></sub></span></h" + headingLevel + ">",
+          ' <sub><a id="' + headingIdName + '" href="/edit_section/' + headingCount + "/" + urlPas(this.docName) + '">\u270E</a> <a href="#" data-opennamu-action="heading-fold">' + headingFolding[0] + "</a></sub></span></h" + headingLevel + ">",
           headingDataOrg
         );
         const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + '</heading_stack> <span class="wiki-heading-text">' + headingDataText + "</span></" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
