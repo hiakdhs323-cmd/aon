@@ -436,7 +436,19 @@ function collectCategoryTargets(source) {
 }
 function collectWikiLinkTargets(source) {
   const targets = new Set();
-  for (const match of String(source || "").matchAll(/\[\[([^\]]+)\]\]/g)) {
+  const text = String(source || "");
+  // Nested links are legal in NamuMark, e.g. [[Page|{{{#!wiki ... [[파일:x.png]] ...}}}]].
+  // The generic [[...]] matcher stops at the inner ]] and therefore misses the
+  // file target entirely. Collect file/category targets independently first.
+  for (const match of text.matchAll(/\[\[(?:파일|file):([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)) {
+    const name = String(match[1] || "").trim();
+    if (name) targets.add("file:" + name);
+  }
+  for (const match of text.matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)) {
+    const name = String(match[1] || "").trim();
+    if (name) targets.add("category:" + name);
+  }
+  for (const match of text.matchAll(/\[\[([^\]]+)\]\]/g)) {
     let target = String(match[1] || "").split("|")[0].trim();
     if (!target || target.startsWith("#") || /^https?:\/\//i.test(target)) continue;
     const hash = target.indexOf("#");
