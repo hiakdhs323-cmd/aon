@@ -220,3 +220,16 @@ assert.ok(cssSource.includes(".opennamu_footnote"), "footnote CSS must remain pr
 assert.ok(cssSource.includes('a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"])'), "footnote markers must keep their native link appearance");
 assert.ok(workerSource.includes('aonfix", "20261107-discussion-mobile-v2"'), "SSR must refresh the latest NamuWiki-style assets");
 console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
+
+assert.ok(workerSource.includes("X-AonWiki-Request"), "state-changing API requests must require the AonWiki anti-CSRF header");
+assert.ok(workerSource.includes("async function readJsonBody") && workerSource.includes("application/json"), "JSON API bodies must use a bounded application/json parser");
+assert.ok(workerSource.includes("Content-Security-Policy") && workerSource.includes("frame-ancestors 'none'"), "Worker responses must send CSP and framing protection");
+assert.ok(workerSource.includes("Strict-Transport-Security"), "Worker responses must send HSTS");
+assert.ok(workerSource.includes("Cross-Origin-Opener-Policy"), "Worker responses must isolate the browsing context");
+assert.ok(workerSource.includes('id="aonwiki-ssr-state" type="application/json"'), "SSR state must not be executable inline JavaScript");
+assert.ok(appSource.includes("function appendSanitizedServerHtml") && !appSource.includes("target.innerHTML = String(data.html || \"\")"), "rendered API HTML must pass through a client-side allowlist sanitizer before DOM insertion");
+assert.ok(appSource.includes('name==="srcdoc"') && appSource.includes("allowedFrameHosts"), "client renderer must strip executable attributes and restrict iframe hosts");
+assert.ok(htmlSource.includes("theme.js?v=20261107-security-hardening-v1"), "theme bootstrap must be an external script");
+assert.ok(htmlSource.includes("integrity=\"sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==\""), "KaTeX must use SRI");
+assert.ok(htmlSource.includes("integrity=\"sha512-rdhY3cbXURo13l/WU9VlaRyaIYeJ/KBakckXIvJNAQde8DgpOmE+Zf7ha4vdqVjTtwQt69bD2wH2LXob/LB7Q==\""), "highlight.js must use SRI");
+assert.ok(appSource.includes("X-AonWiki-Request"), "frontend API client must attach the anti-CSRF header");
