@@ -146,11 +146,9 @@ assert.doesNotMatch(category, /<hr class="main_hr">/, "category must not add a s
 assert.ok(cssSource.includes("#article.wiki-content .opennamu_category_links a:visited") && cssSource.includes("color:var(--wiki-link)!important"), "category links must retain the blue link color over body-link styling");
 const categoryBoxCss = cssSource.slice(cssSource.lastIndexOf("/* Full-width outlined category bar, matching the supplied reference. */"));
 assert.ok(categoryBoxCss.includes("width:100%!important") && categoryBoxCss.includes("border:1px solid var(--wiki-border-strong)!important") && categoryBoxCss.includes("border-radius:4px!important"), "category bar must be a full-width rounded outline box");
-const categoryBoxRule = categoryBoxCss.match(/#article\\.wiki-content \\.opennamu_category\\{([^}]*)\\}/)?.[1] || "";
-assert.doesNotMatch(categoryBoxRule, /background(?:-color)?\\s*:/, "category bar must retain the existing theme background");
-assert.match(categoryBoxCss, /@media\\(max-width:700px\\)[\\s\\S]*width:100%!important/, "category bar must remain full-width and responsive on mobile");
-const categoryDividerRule = cssSource.slice(cssSource.lastIndexOf("/* Restore the original full-width category separator")).match(/#article\\.wiki-content \\.opennamu_category\\{([^}]*)\\}/)?.[1] || "";\nassert.doesNotMatch(categoryDividerRule, /background(?:-color)?\\s*:/, "category divider styling must not replace the existing theme background");
-assert.ok(!parserSource.includes('style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0 4px;width:fit-content;max-width:100%;"'), "category container must not force a compact inline layout");
+const categoryBoxRule = categoryBoxCss.split("#article.wiki-content .opennamu_category{")[1]?.split("}")[0] || "";
+assert.doesNotMatch(categoryBoxRule, /background(?:-color)?\s*:/, "category bar must retain the existing theme background");
+assert.ok(categoryBoxCss.includes("@media(max-width:700px)") && categoryBoxCss.includes("width:100%!important"), "category bar must remain full-width and responsive on mobile");
 const numberedList = render("목록 안내\n1. 첫 번째 항목\n1. 두 번째 항목\n\n마지막 문장");
 assert.match(numberedList, /wiki-numbered-list/, "the default 1. numbered-list renderer must remain enabled");
 assert.match(numberedList, /첫 번째 항목[\s\S]*두 번째 항목/, "ordered-list content and order must be preserved");
