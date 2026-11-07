@@ -30,7 +30,7 @@ const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwik
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
 const initialSsrState=(()=>{const node=document.getElementById("aonwiki-ssr-state");if(!node)return null;try{return JSON.parse(node.textContent||"null")}catch(error){console.warn("AonWiki SSR state parsing failed",error);return null}})();
-let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=typeof initialSsrState?.canEdit==="boolean"?initialSsrState.canEdit:null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 let currentDiscussionView=false;
 const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){
