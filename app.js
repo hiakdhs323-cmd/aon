@@ -1300,6 +1300,7 @@ async function loadDiscussionList(pushRoute=true,pageTitle="",filters={}){
    const row=document.createElement("article");row.className="discussion-list-item";
    const main=document.createElement("div");main.className="discussion-list-main";
    const link=document.createElement("a");link.href="#/discussion/"+topic.id;link.textContent=topic.title;link.addEventListener("click",event=>{event.preventDefault();loadDiscussionDetail(topic.id,true)});
+   main.append(link);
    const meta=addText(main,"div","#"+topic.id+" · "+(topic.author||"알 수 없음")+" · "+discussionDate(topic.last_post_at));meta.className="discussion-list-meta";
    if(topic.page_title){meta.append(document.createTextNode(" · "));meta.append(discussionLink(topic.page_title,"문서: "+topic.page_title))}
    const side=document.createElement("div");side.className="discussion-list-side";

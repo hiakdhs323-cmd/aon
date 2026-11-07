@@ -160,6 +160,7 @@ assert.ok(workerSource.includes('requestedStatus === "open" || requestedStatus =
 assert.ok(workerSource.includes('conditions.push("status = ?")'), "discussion status filter must be parameterized");
 
 assert.ok(appSource.includes("discussion-search-toolbar"), "discussion list must provide a search and status filter");
+assert.ok(appSource.includes("main.append(link)"), "discussion list must actually render each topic title link");
 assert.ok(appSource.includes('quote.textContent="인용"'), "discussion replies must support quoting");
 assert.ok(workerSource.includes('requestedStatus === "open" || requestedStatus === "closed"'), "discussion API must filter active and closed topics");
 assert.ok(cssSource.includes(".discussion-search-toolbar"), "discussion search controls must be styled");
