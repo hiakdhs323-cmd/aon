@@ -1168,16 +1168,26 @@ function discussionDate(value){
 }
 function discussionText(host,value,className="discussion-body",docTitle="토론"){
  const box=document.createElement("div");
- box.className=className+" wiki-content discussion-wiki-content";
- const source=String(value||"");
- box.textContent=source;
+ box.className=className+" wiki-content discussion-wiki-content discussion-render-pending";
+ box.setAttribute("aria-busy","true");
+ const pending=document.createElement("span");
+ pending.className="discussion-render-pending-label";
+ pending.setAttribute("role","status");
+ pending.textContent="토론 내용을 불러오는 중…";
+ box.append(pending);
  host.append(box);
- renderNamuMarkup(source,box,docTitle).catch(error=>{
+ const source=String(value||"");
+ renderNamuMarkup(source,box,docTitle).then(()=>{
+  box.classList.remove("discussion-render-pending");
+ }).catch(error=>{
+  box.classList.remove("discussion-render-pending");
   box.replaceChildren();
   const fallback=document.createElement("p");
   fallback.className="discussion-render-warning";
   fallback.textContent="토론 내용을 문법으로 표시하지 못했습니다: "+String(error?.message||error);
   box.append(fallback);
+ }).finally(()=>{
+  box.removeAttribute("aria-busy");
  });
  return box;
 }
@@ -2551,6 +2561,7 @@ function createDiscussionSyntaxEditor(options={}){
   pre.scrollTop=textarea.scrollTop;
   pre.scrollLeft=textarea.scrollLeft;
  });
+ textarea.addEventListener("compositionupdate",update);
  textarea.addEventListener("compositionend",update);
  wrap.append(pre,textarea);
  update();
