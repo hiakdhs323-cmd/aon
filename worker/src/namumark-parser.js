@@ -1212,7 +1212,7 @@ try {
           else if (doType == "roman_small") changeText = intToRoman(listNum[doType][listLen - 1]).toLowerCase();
           else if (doType == "alpha_big") changeText = intToAlpha(listNum[doType][listLen - 1]).toUpperCase();
           else changeText = intToAlpha(listNum[doType][listLen - 1]).toLowerCase();
-          return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none">' + changeText + ". " + listData + "</li>";
+          return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none"><span class="opennamu_list_number">' + changeText + '.</span> <span class="opennamu_list_text">' + listData + "</span></li>";
         }
       };
     };
