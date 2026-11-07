@@ -165,9 +165,9 @@ const toc = render("== 개요 ==\n본문\n=== 세부 내용 ===\n추가 내용")
 assert.match(toc, /class="opennamu_TOC"/, "table of contents must render");
 assert.match(toc, /<details[^>]*open/, "table of contents must start expanded");
 assert.match(toc, /class="opennamu_TOC_entry"/, "TOC entries must use independent block rows");
-assert.ok(toc.includes('class="opennamu_TOC_number">1.</span>'), "TOC section number must have a separate colorable element");
-assert.ok(toc.includes('class="opennamu_TOC_number">1.</span> <span class="opennamu_TOC_text">'), "TOC number and title must have visible separation");
-assert.ok(toc.includes('class="opennamu_TOC_text">개요</span>'), "TOC title text must have its own theme-aware element");
+assert.match(toc, /class="opennamu_TOC_number"[^>]*>1\.<\/span>/, "TOC section number must have a separate colorable element");
+assert.match(toc, /class="opennamu_TOC_number"[^>]*>1\.<\/span> <span class="opennamu_TOC_text"/, "TOC number and title must have visible separation");
+assert.match(toc, /class="opennamu_TOC_text"[^>]*>개요<\/span>/, "TOC title text must have its own theme-aware element");
 assert.match(toc, /class="opennamu_TOC_indent"/, "nested TOC headings must use dedicated indentation elements");
 assert.match(styles, /min-width:174px!important/, "TOC must use the compact reference panel width");
 assert.ok(styles.includes("font-size:18px!important"), "TOC heading label must use the enlarged typography");
