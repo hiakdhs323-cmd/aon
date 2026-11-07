@@ -1610,7 +1610,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         }
         await ensurePageProtectionSchema(env);
         const protection = page ? await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first() : null;
-        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "" } : null }, 200, cors);
+        const user = await currentUser(request, env);
+        const editPermission = page && user ? await checkPageEditPermission(env, user, page.title) : null;
+        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: !editPermission, editDeniedReason: editPermission?.error || "" } : null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
