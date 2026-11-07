@@ -4099,3 +4099,97 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
     font-size:12px;
   }
 }
+
+
+/* Keep the discussion syntax overlay pixel-aligned with the editable textarea. */
+.discussion-code-wrap{
+  display:block;
+  position:relative;
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+}
+.discussion-code-highlight,
+.discussion-code-highlight code,
+.discussion-code-wrap textarea.discussion-markup-input{
+  box-sizing:border-box!important;
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace!important;
+  font-size:13px!important;
+  font-weight:400!important;
+  font-style:normal!important;
+  line-height:1.6!important;
+  letter-spacing:normal!important;
+  font-kerning:none;
+  font-variant-ligatures:none;
+  tab-size:4;
+  text-indent:0!important;
+  text-transform:none!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+}
+.discussion-code-highlight{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:9px 10px!important;
+  overflow:hidden!important;
+  border:0!important;
+  pointer-events:none;
+}
+.discussion-code-wrap textarea.discussion-markup-input{
+  position:relative!important;
+  z-index:1!important;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  min-height:132px;
+  height:auto;
+  margin:0!important;
+  padding:9px 10px!important;
+  resize:vertical;
+  overflow:auto;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  background:transparent!important;
+  color:transparent!important;
+  -webkit-text-fill-color:transparent!important;
+  caret-color:var(--wiki-text)!important;
+}
+.discussion-code-wrap textarea.discussion-markup-input::-webkit-scrollbar{
+  width:0!important;
+  height:0!important;
+  display:none!important;
+}
+.article-title-link{
+  color:inherit!important;
+  text-decoration:none!important;
+  cursor:pointer;
+}
+.article-title-link:hover{
+  color:var(--wiki-link)!important;
+  text-decoration:underline!important;
+  text-underline-offset:3px;
+}
+.breadcrumbs a.breadcrumb-current-link{
+  color:var(--wiki-link)!important;
+  text-decoration:underline;
+  text-decoration-color:color-mix(in srgb,var(--wiki-link) 42%,transparent);
+  text-underline-offset:3px;
+}
+@media(max-width:700px){
+  .discussion-code-wrap textarea.discussion-markup-input{
+    min-height:156px;
+    padding:9px!important;
+    font-size:13px!important;
+    line-height:1.65!important;
+  }
+  .discussion-code-highlight{
+    padding:9px!important;
+    font-size:13px!important;
+    line-height:1.65!important;
+  }
+}
