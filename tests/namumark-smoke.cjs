@@ -287,7 +287,7 @@ assert.ok(pagesWorkflowSource.includes("cancel-in-progress: true"), "Pages deplo
 console.log("NamuMark smoke tests passed: renderer, security, auth-schema caching and deployment workflow.");
 
 const rewrittenSsrAppScript = '<script defer src="/aon/app.js?aonfix=20261107-security-hardening-v3&v=1"></script>';
-const ssrAppScriptPattern = /<script defer src=(["'])(?:\\/aon)?\\/app\\.js[^"']*\\1><\\/script>/i;
+const ssrAppScriptPattern = /<script defer src=["'](?:\/aon)?\/app\.js[^"']*["']><\/script>/i;
 const rewrittenSsrAppMatch = rewrittenSsrAppScript.match(ssrAppScriptPattern);
 assert.ok(rewrittenSsrAppMatch, "SSR injection matcher must recognize the rewritten same-origin /aon/app.js URL");
 assert.ok(workerSource.includes("const appScriptMatch = html.match(appScriptPattern)"), "full-document SSR must locate the rewritten app.js script before injecting state");

@@ -1038,7 +1038,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
   if (!found) { html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden'); html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>'); }
-  const appScriptPattern = /<script defer src=(["'])(?:\/aon)?\/app\.js[^"']*\\1><\\/script>/i;
+  const appScriptPattern = /<script defer src=["'](?:\/aon)?\/app\.js[^"']*["']><\/script>/i;
   const appScriptMatch = html.match(appScriptPattern);
   if (!appScriptMatch) throw new Error("프런트엔드 app.js 스크립트 위치를 찾을 수 없습니다.");
   const ssrStateScript = '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + '</script>';
