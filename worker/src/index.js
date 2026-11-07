@@ -1065,17 +1065,23 @@ export default {
         const username = String(body.username || "").trim().slice(0, 40);
         const password = String(body.password || "");
         const key = username.toLocaleLowerCase("ko-KR");
-        const accountRate = await env.DB.prepare("SELECT attempts, window_started_at FROM login_account_attempts WHERE username = ?").bind(key).first();
-        const accountAge = accountRate ? Date.now() - Date.parse(accountRate.window_started_at) : Infinity;
-        if (accountRate && accountAge >= 0 && accountAge < 15 * 60 * 1000 && Number(accountRate.attempts) >= 10) return response({ error: "로그인 시도가 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
         const user = await env.DB.prepare("SELECT id,username,salt,password_hash FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        let accountRate = null;
+        let accountAge = Infinity;
+        if (user) {
+          accountRate = await env.DB.prepare("SELECT attempts, window_started_at FROM login_account_attempts WHERE username = ?").bind(key).first();
+          accountAge = accountRate ? Date.now() - Date.parse(accountRate.window_started_at) : Infinity;
+          if (accountRate && accountAge >= 0 && accountAge < 15 * 60 * 1000 && Number(accountRate.attempts) >= 10) return response({ error: "로그인 시도가 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
+        }
         const passwordValid = Boolean(user && await passwordHash(password,user.salt) === user.password_hash);
         if (!passwordValid) {
-          const now = new Date().toISOString();
-          if (!accountRate || accountAge < 0 || accountAge >= 15 * 60 * 1000) {
-            await env.DB.prepare("INSERT INTO login_account_attempts (username, attempts, window_started_at) VALUES (?, 1, ?) ON CONFLICT(username) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at").bind(key, now).run();
-          } else {
-            await env.DB.prepare("UPDATE login_account_attempts SET attempts = attempts + 1 WHERE username = ?").bind(key).run();
+          if (user) {
+            const now = new Date().toISOString();
+            if (!accountRate || accountAge < 0 || accountAge >= 15 * 60 * 1000) {
+              await env.DB.prepare("INSERT INTO login_account_attempts (username, attempts, window_started_at) VALUES (?, 1, ?) ON CONFLICT(username) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at").bind(key, now).run();
+            } else {
+              await env.DB.prepare("UPDATE login_account_attempts SET attempts = attempts + 1 WHERE username = ?").bind(key).run();
+            }
           }
           return response({error:"아이디 또는 비밀번호가 올바르지 않습니다."},401,cors);
         }
@@ -1085,7 +1091,6 @@ export default {
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
         return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
       }
-
       
       if (url.pathname === "/api/discussions" && request.method === "GET") {
         await ensureDiscussionSchema(env);
