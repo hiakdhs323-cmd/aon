@@ -246,6 +246,7 @@ assert.ok(cssSource.includes(".admin-protection-button") && cssSource.includes("
 assert.ok(htmlSource.includes('id="official-status"') && htmlSource.includes('id="official-document"'), "article title bar must expose official document status and admin control");
 
 assert.ok(namumarkSource.includes("wikiDataStyleMatch.slice(1).find"), "wiki style syntax must accept quoted style values");
+assert.ok(namumarkSource.includes("render)_[^<>]+"), "wiki style blocks must support nested NamuMark blocks");
 assert.ok(!workerSource.includes("const officialTemplate = found && /^(?:틀|template):/i.test(actualTitle);"), "template pages must not be auto-marked official");
 assert.ok(workerSource.includes("state.official && /^(?:틀|template):/i.test(actualTitle)"), "official template badge requires explicit official marking");
 assert.ok(appSource.includes("currentOfficial&&/^(?:틀|template):/i.test(title)"), "client official template badge requires explicit official state");
