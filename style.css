@@ -3607,3 +3607,38 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
     max-width:100%!important
   }
 }
+
+
+/* Final spacing and fixed compact width to match the supplied TOC reference. */
+#article.wiki-content details.opennamu_TOC,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+  box-sizing:border-box!important;
+  width:174px!important;
+  min-width:174px!important;
+  max-width:100%!important;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
+#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+  padding-left:17px!important;
+  padding-right:17px!important;
+}
+#article.wiki-content .opennamu_TOC_entry{
+  line-height:1.55!important;
+}
+#article.wiki-content .opennamu_TOC_number{
+  margin-right:1px;
+}
+#article.wiki-content .opennamu_TOC_link{
+  white-space:normal!important;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+@media(max-width:700px){
+  #article.wiki-content details.opennamu_TOC,
+  html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
+  html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+    width:min(174px,100%)!important;
+    min-width:0!important;
+  }
+}
