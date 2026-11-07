@@ -85,6 +85,7 @@ assert.ok(appSource.includes("link.prepend(icon)"), "external link icon must pre
 assert.ok(workerSource.includes('aonfix", "20261107-security-hardening-v3"'), "Worker must cache-bust the current frontend assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
+const themeSource = fs.readFileSync("theme.js", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
 assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text colors must be marked and preserved");
 assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#20252a!important/s, "light mode must darken text over the existing light label-cell background");
@@ -109,7 +110,7 @@ assert.match(workerSource, /a\.wiki-heading-number:hover \{color:var\(--wiki-lin
 assert.match(styles, /#article\.wiki-content a\.wiki-heading-number[^{}]*\{color:var\(--wiki-link\)!important/, "heading number color must outrank body-link styling");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
 assert.match(appSource, /aonwikiAutoText/, "automatic text colors must be tracked");
-assert.match(htmlSource, /document\.documentElement\.dataset\.theme = theme/, "theme must be selected before CSS loads");
+assert.match(themeSource, /document\.documentElement\.dataset\.theme = theme/, "theme bootstrap must select the theme before CSS loads");
 assert.ok(htmlSource.includes('id="search-view"'), "standalone search view must exist in the app shell");
 assert.ok(htmlSource.includes('id="search-page-form"'), "search page must expose its own form");
 assert.ok(appSource.includes("async function loadSearchPage(query,scope="), "search page renderer must exist");
