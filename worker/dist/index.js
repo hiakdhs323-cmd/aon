@@ -2966,7 +2966,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-namu-parity-v1");
+    parsed.searchParams.set("aonfix", "20261107-namu-parity-v2");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -2977,7 +2977,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-namu-parity-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-namu-parity-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
@@ -3260,7 +3260,9 @@ var index_default = {
       if (url.pathname === "/api/discussions" && request.method === "GET") {
         await ensureDiscussionSchema(env);
         const pageTitle = cleanTitle(url.searchParams.get("title"));
-        const query = String(url.searchParams.get("q") || "").trim().slice(0, 80);
+        const query = String(url.searchParams.get("q") || "").normalize("NFC").trim().slice(0, 80);
+        const requestedStatus = String(url.searchParams.get("status") || "all");
+        const status = requestedStatus === "open" || requestedStatus === "closed" ? requestedStatus : "all";
         const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
         const offset = Math.min(1e5, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
         const conditions = ["deleted_at = ''"];
@@ -3269,16 +3271,24 @@ var index_default = {
           conditions.push("page_title = ?");
           values.push(pageTitle);
         }
+        if (status !== "all") {
+          conditions.push("status = ?");
+          values.push(status);
+        }
         if (query) {
-          conditions.push("(title LIKE ? OR body LIKE ?)");
-          values.push("%" + query.replace(/[\\%_]/g, "") + "%", "%" + query.replace(/[\\%_]/g, "") + "%");
+          const terms = [...new Set(query.split(/\\s+/).filter(Boolean))].slice(0, 6);
+          for (const term of terms) {
+            const pattern = "%" + term.replace(/[\\\\%_]/g, "") + "%";
+            conditions.push("(title LIKE ? OR body LIKE ?)");
+            values.push(pattern, pattern);
+          }
         }
         const where = conditions.join(" AND ");
         const [items, count] = await Promise.all([
           env.DB.prepare("SELECT id, page_title, title, author, created_at, updated_at, last_post_at, reply_count, status FROM discussions WHERE " + where + " ORDER BY last_post_at DESC, id DESC LIMIT ? OFFSET ?").bind(...values, limit, offset).all(),
           env.DB.prepare("SELECT COUNT(*) AS total FROM discussions WHERE " + where).bind(...values).first()
         ]);
-        return response({ discussions: items.results || [], total: Number(count?.total || 0), limit, offset, pageTitle }, 200, cors);
+        return response({ discussions: items.results || [], total: Number(count?.total || 0), limit, offset, pageTitle, query, status }, 200, cors);
       }
       if (url.pathname === "/api/discussion" && request.method === "GET") {
         await ensureDiscussionSchema(env);
