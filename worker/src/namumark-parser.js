@@ -233,10 +233,8 @@ var NamuMark = class _NamuMark {
       return data;
     });
     __publicField(this, "getToolCssSafe", (data) => {
-      // Keep declaration separators intact. The previous implementation removed
-      // every semicolon, which turned valid multi-property NamuMark styles such
-      // as "border:thin solid gray;border-top:thick solid orange" into one
-      // invalid CSS declaration.
+      // Preserve semicolon-separated declarations while allowing only safe,
+      // presentation-only CSS properties.
       const allowedProperties = new Set([
         "color", "background", "background-color",
         "font-size", "font-weight", "font-style", "font-family",
@@ -258,17 +256,23 @@ var NamuMark = class _NamuMark {
         "overflow", "overflow-x", "overflow-y", "overflow-wrap",
         "opacity", "box-sizing"
       ]);
-      const source = String(data || "");
+      const forbiddenValue = (value) => {
+        const lower = String(value || "").toLowerCase();
+        return /[{}<>]/.test(lower) ||
+          lower.includes("url(") ||
+          lower.includes("expression(") ||
+          lower.includes("javascript:") ||
+          lower.includes("@import");
+      };
       const declarations = [];
-      for (const declaration of source.split(";")) {
-        const match = declaration.match(/^\\s*([a-zA-Z][a-zA-Z0-9-]*)\\s*:\\s*([\\s\\S]*?)\\s*$/);
-        if (!match) continue;
-        const property = match[1].toLowerCase();
-        let value = match[2].trim();
-        if (!allowedProperties.has(property) || !value) continue;
-        if (/[{}<>]/.test(value) || /(?:url|expression|javascript|@import)\\s*\\(/i.test(value)) continue;
-        if (/!important/i.test(value)) value = value.replace(/!important/gi, "").trim();
-        if (!value) continue;
+      for (const declaration of String(data || "").split(";")) {
+        const colon = declaration.indexOf(":");
+        if (colon < 1) continue;
+        const property = declaration.slice(0, colon).trim().toLowerCase();
+        let value = declaration.slice(colon + 1).trim();
+        if (!allowedProperties.has(property) || !value || forbiddenValue(value)) continue;
+        value = value.replace(/!important/gi, "").trim();
+        if (!value || forbiddenValue(value)) continue;
         declarations.push(property + ":" + value);
       }
       return declarations.length ? declarations.join(";") + ";" : "";
