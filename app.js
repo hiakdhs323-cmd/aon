@@ -821,7 +821,7 @@ function sanitizeNamuStylesheet(raw) {
 }
 function sanitizeNamuOutput(root, docTitle) {
   const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
-  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan fn_target frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
+  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
   [...root.querySelectorAll("*")].forEach(node => {
     const tag = node.tagName;
     if (["SCRIPT","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)) {
@@ -871,11 +871,13 @@ function sanitizeNamuOutput(root, docTitle) {
       }
     }
     if (tag === "A") {
-      if (parserAction.includes("opennamu_heading_folding")) {
+      const legacyHeadingFold = /^javascript:opennamu_heading_folding\\('[a-f0-9_]+', this\\);?$/i.test(parserAction);
+      if (parserAction === "heading-fold" || legacyHeadingFold) {
         const heading = node.closest("h1,h2,h3,h4,h5,h6");
         const section = heading ? heading.nextElementSibling : null;
         if (section && section.id && section.id.includes("opennamu_heading_")) {
           node.removeAttribute("href");
+          node.removeAttribute("data-opennamu-action");
           node.setAttribute("role", "button");
           node.setAttribute("tabindex", "0");
           const toggleSection = event => {
@@ -890,6 +892,8 @@ function sanitizeNamuOutput(root, docTitle) {
           node.addEventListener("keydown", event => {
             if (event.key === "Enter" || event.key === " ") toggleSection(event);
           });
+        } else {
+          node.removeAttribute("data-opennamu-action");
         }
       }
       const href = node.getAttribute("href") || "";
@@ -1236,7 +1240,7 @@ function appendSanitizedServerHtml(target,html){
    if(!allowedTags.has(tag)){node.replaceWith(...node.childNodes);continue}
    for(const attr of [...node.attributes]){
     const name=attr.name.toLowerCase(),value=attr.value;
-    if(name.startsWith("on")||name==="srcdoc"||name==="formaction"||name==="action"||name==="xlink:href"||!["alt","allow","allowfullscreen","class","colspan","fn_target","frameborder","height","href","id","lang","loading","open","poster","referrerpolicy","rel","rowspan","src","style","tabindex","target","title","type","width","align","valign","controls","loop","muted"].includes(name)){node.removeAttribute(attr.name);continue}
+    if(name.startsWith("on")||name==="srcdoc"||name==="formaction"||name==="action"||name==="xlink:href"||!["alt","allow","allowfullscreen","class","colspan","data-opennamu-action","fn_target","frameborder","height","href","id","lang","loading","open","poster","referrerpolicy","rel","rowspan","src","style","tabindex","target","title","type","width","align","valign","controls","loop","muted"].includes(name)){node.removeAttribute(attr.name);continue}
     if(urlAttrs.has(name)&&!safeUrl(value,tag,name)){node.removeAttribute(attr.name);continue}
    }
    if(tag==="IFRAME"){

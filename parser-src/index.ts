@@ -2648,11 +2648,7 @@ try {
             "/" +
             urlPas(this.docName) +
             '">✎</a> ' +
-            '<a href="javascript:void(0);" onclick="javascript:opennamu_heading_folding(\'' +
-            this.docSet["docInclude"] +
-            "opennamu_heading_" +
-            headingCount +
-            "', this);\">" +
+            '<a href="#" data-opennamu-action="heading-fold">' +
             headingFolding[0] +
             "</a></sub>" +
             "</span></h" +

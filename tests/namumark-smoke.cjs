@@ -260,3 +260,10 @@ assert.ok(appSource.includes("function renderClientParsedDocument(") && appSourc
 assert.ok(appSource.includes('dataset.clientRenderPending==="true"'), "full-document SSR must route empty Aon content to the client renderer");
 assert.ok(workerSource.includes("buildAonClientRenderPayload") && workerSource.includes('page.title === "아온"'), "Aon page GET renders must prepare parser input instead of running the CPU-heavy Worker parser");
 assert.ok(workerSource.includes("clientRenderPending = found && actualTitle === \"아온\""), "Aon full-document SSR must skip Worker-side parsing");
+assert.ok(workerSource.includes('"namumark-parser.js"') && workerSource.includes('url.pathname.slice(1)'), "Worker must proxy the parser bundle on same-origin root and /aon paths");
+assert.ok(workerSource.includes('"namumark-parser.js", "aonwiki-mark.svg"'), "SSR asset rewriting must route the parser bundle through the Worker");
+assert.ok(workerSource.includes("script-src-attr 'none'") && workerSource.includes("https://aon69446.p-e.kr"), "Worker CSP must allow the custom origin but keep inline event handlers disabled");
+assert.ok(htmlSource.includes("script-src-attr 'none'") && htmlSource.includes("https://aon69446.p-e.kr"), "HTML CSP must use the same strict script policy");
+assert.ok(parserSource.includes('data-opennamu-action="heading-fold"') && !parserSource.includes('onclick="javascript:opennamu_heading_folding'), "heading folding markup must not emit inline JavaScript handlers");
+assert.ok(appSource.includes('parserAction === "heading-fold"') && appSource.includes('"data-opennamu-action"'), "client sanitizer must preserve and bind the safe heading-fold action");
+assert.ok(workerSource.includes('setAttribute("data-opennamu-action","heading-fold")'), "Worker sanitizer must convert legacy heading onclick markup to a safe data action");

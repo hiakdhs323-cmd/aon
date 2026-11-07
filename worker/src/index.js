@@ -17,7 +17,7 @@ function getSecurityHeaders() {
     "X-Permitted-Cross-Domain-Policies": "none",
     "X-DNS-Prefetch-Control": "off",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://aon69446.p-e.kr https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; script-src-elem 'self' https://aon69446.p-e.kr https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
   };
 }
 function getCors(request, env) {
@@ -618,7 +618,7 @@ async function sanitizeServerWikiHtml(markup) {
       for(const [rawName,rawValue] of [...element.attributes]){
         const name=String(rawName).toLowerCase(),value=String(rawValue||"");
         if(name==="onclick"){
-          if(tag==="A"&&value.includes("opennamu_heading_folding"))element.setAttribute("data-opennamu-action",value);
+          if(tag==="A"&&/^javascript:opennamu_heading_folding\\('[a-f0-9_]+', this\\);?$/i.test(value))element.setAttribute("data-opennamu-action","heading-fold");
           element.removeAttribute(rawName);continue;
         }
         if(name.startsWith("on")||!SERVER_WIKI_ATTRS.has(name)){
@@ -923,7 +923,7 @@ function safeJsonForHtml(value) {
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/+$/, "") + "/";
-  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "aonwiki-mark.svg"]);
+  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "aonwiki-mark.svg"]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
     try { parsed = new URL(String(rawUrl).trim(), base); }
@@ -1040,8 +1040,9 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
-      const staticFiles = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "aonwiki-mark.svg"]);
-      const assetName = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : "";
+      const staticFiles = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "aonwiki-mark.svg"]);
+      const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
+      const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
         const assetUrl = origin + "/" + assetName + url.search;
