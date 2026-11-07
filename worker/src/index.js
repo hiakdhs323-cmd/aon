@@ -140,7 +140,7 @@ async function ensurePageProtectionSchema(env) {
 }
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "문서를 편집하려면 로그인하세요." };
-  if (title === "대문") return { status: 403, error: "대문은 편집하거나 복원할 수 없습니다." };
+  if (title === "대문" && !user.isAdmin) return { status: 403, error: "대문은 위키 관리자만 편집하거나 복원할 수 있습니다." };
   await ensurePageProtectionSchema(env);
   const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
   if (protection?.level === "admin" && !user.isAdmin) {
