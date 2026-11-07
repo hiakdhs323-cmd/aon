@@ -270,7 +270,7 @@ function ensureDocumentViewTargets(){
  let message=$("message");
  if(!message){message=document.createElement("div");message.id="message";message.className="notice";message.setAttribute("role","status");view.append(message)}
  let article=$("article");
- if(!article){article=document.createElement("article");article.id="article";article.className="wiki-content";view.append(article)}
+ if(!article){article=document.createElement("article");article.id="article";article.className="wiki-content wiki";article.setAttribute("data-wiki","");view.append(article)}
  return {title,crumb,message,article,protection:$("page-protection"),headingEdit:$("heading-edit")};
 }
 function setArticleTitleLink(host,title,label){
