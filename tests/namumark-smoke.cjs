@@ -130,6 +130,14 @@ assert.match(category, /분류:/, "category label must say 분류:");
 assert.match(category, /일반 틀[\s\S]* \| [\s\S]*사건 사고/, "category links must be separated by a pipe");
 assert.doesNotMatch(category, /opennamu_category_button|\(-\)/, "category strip must not show +/- control or minus text");
 assert.doesNotMatch(category, /<hr class="main_hr">/, "category must not add a stray horizontal rule");
+const numberedList = render("목록 안내\n1. 첫 번째 항목\n2. 두 번째 항목\n\n마지막 문장");
+assert.match(numberedList, /wiki-numbered-list/, "the default 1. numbered-list renderer must remain enabled");
+assert.match(numberedList, /첫 번째 항목[\s\S]*두 번째 항목/, "ordered-list content and order must be preserved");
+const footnotes = render("본문[* 각주 내용]\n\n[각주]");
+assert.match(footnotes, /class="opennamu_footnote"/, "the default footnote block must remain enabled");
+assert.match(footnotes, /footnote_title/, "footnote content must remain in its semantic element");
+assert.match(footnotes, /각주 내용/, "original footnote text must be preserved");
+assert.match(footnotes, /rfn_1/, "footnote backlink target must remain present");
 const toc = render("== 개요 ==\n본문\n=== 세부 내용 ===\n추가 내용");
 assert.match(toc, /class="opennamu_TOC"/, "table of contents must render");
 assert.match(toc, /<details[^>]*open/, "table of contents must start expanded");
@@ -150,4 +158,10 @@ assert.ok(cssSource.includes(".search-load-more"), "search results must include 
 
 assert.ok(workerSource.includes('requestedStatus === "open" || requestedStatus === "closed"'), "discussion API must filter active and closed topics");
 assert.ok(workerSource.includes('conditions.push("status = ?")'), "discussion status filter must be parameterized");
-\nconsole.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
+\nassert.ok(appSource.includes("discussion-search-toolbar"), "discussion list must provide a search and status filter");
+assert.ok(appSource.includes('quote.textContent="인용"'), "discussion replies must support quoting");
+assert.ok(workerSource.includes('requestedStatus === "open" || requestedStatus === "closed"'), "discussion API must filter active and closed topics");
+assert.ok(cssSource.includes(".discussion-search-toolbar"), "discussion search controls must be styled");
+assert.ok(cssSource.includes("wiki-numbered-list"), "numbered-list CSS must remain present");
+assert.ok(cssSource.includes(".opennamu_footnote"), "footnote CSS must remain present");
+console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");

@@ -3460,3 +3460,18 @@ button.aon-has-icon{display:inline-flex;justify-content:center}
  .search-result-row{gap:6px;padding:8px 2px}
  .search-result-snippet{font-size:11px}
 }
+
+.discussion-search-toolbar{display:flex;align-items:center;gap:7px;margin:10px 0 8px}
+.discussion-search-toolbar input{flex:1;min-width:0;height:34px;padding:6px 9px;border:1px solid var(--wiki-border-strong);border-radius:0;background:var(--wiki-panel);color:var(--wiki-text);font-size:12px}
+.discussion-search-toolbar select{min-width:100px;height:34px;padding:5px 8px;border:1px solid var(--wiki-border-strong);border-radius:0;background:var(--wiki-panel);color:var(--wiki-text);font-size:12px}
+.discussion-filter-label{display:flex;align-items:center}
+.discussion-search-submit{min-height:34px;padding:5px 13px;border:1px solid var(--wiki-border-strong);border-radius:0;background:var(--wiki-panel-soft);color:var(--wiki-text);font-size:12px}
+.discussion-search-submit:hover{border-color:var(--wiki-primary);color:var(--wiki-body-link)}
+.discussion-post-actions{align-items:center}
+@media(max-width:560px){
+ .discussion-search-toolbar{flex-wrap:wrap}
+ .discussion-search-toolbar input{flex:1 1 100%}
+ .discussion-filter-label{flex:1}
+ .discussion-search-toolbar select{width:100%}
+ .discussion-search-submit{flex:0 0 auto}
+}
