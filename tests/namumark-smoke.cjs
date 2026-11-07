@@ -236,3 +236,11 @@ assert.ok(appSource.includes("X-AonWiki-Request"), "frontend API client must att
 assert.ok(workerSource.includes("login_account_attempts") && workerSource.includes("accountRate"), "login throttling must include an account-aware bucket in addition to the IP bucket");
 assert.ok(workerSource.includes('password-change", 5, 15 * 60 * 1000'), "password changes must be rate limited");
 
+
+assert.ok(workerSource.includes("official_documents"), "official document state must be persisted in D1");
+assert.ok(workerSource.includes('/api/page/official'), "official document API must exist");
+assert.ok(workerSource.includes("officialMarkedBy"), "official document metadata must be returned");
+assert.ok(appSource.includes('data.page.canEdit === false'), "edit button visibility must honor the server's effective edit permission");
+assert.ok(appSource.includes('official-document'), "administrator official-document controls must exist");
+assert.ok(cssSource.includes(".admin-protection-button") && cssSource.includes(".admin-official-button"), "protection and official controls must use the compact wiki-style admin button treatment");
+assert.ok(htmlSource.includes('id="official-status"') && htmlSource.includes('id="official-document"'), "article title bar must expose official document status and admin control");
