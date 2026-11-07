@@ -3,27 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdnjs.cloudflare.com; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
 <meta name="google-site-verification" content="XC70o4SpEu-g6fbl-xXCa1grgyoh2YvWFT2ekmdw0lU">
 <meta name="theme-color" content="#111315">
-<script>
-(() => {
-  let theme = "dark";
-  try {
-    theme = localStorage.getItem("aonwiki-theme-v2") === "light" ? "light" : "dark";
-  } catch (_) {}
-  document.documentElement.dataset.theme = theme;
-  const colorMeta = document.querySelector('meta[name="theme-color"]');
-  if (colorMeta) colorMeta.content = theme === "dark" ? "#111315" : "#ffffff";
-})();
-</script>
+<script src="https://hiakdhs323-cmd.github.io/aon/theme.js?v=20261107-security-hardening-v1"></script>
 <title>AonWiki</title>
 <link rel="icon" type="image/svg+xml" href="https://hiakdhs323-cmd.github.io/aon/aonwiki-mark.svg?v=20261106-static-origin-v2">
 <link rel="mask-icon" href="https://hiakdhs323-cmd.github.io/aon/aonwiki-mark.svg?v=20261106-static-origin-v2" color="#00a69c">
-<link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/style.css?v=20261107-discussion-links-input-v3">
+<link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/style.css?v=20261107-security-hardening-v1">
 <!-- AonWiki styles are served from the GitHub Pages origin; do not request the blocked p-e.kr host. -->
 <link rel="stylesheet" href="https://hiakdhs323-cmd.github.io/aon/namumark-beta.css?v=20261106-static-origin-v2">
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" crossorigin="anonymous">
 </head>
 <body>
@@ -357,8 +348,8 @@ hover-dark: #a5d6ff
   <div class="dialog-actions"><button id="save" class="button button-primary" type="button">저장</button></div>
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" crossorigin="anonymous"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" crossorigin="anonymous"></script>
-<script defer src="https://hiakdhs323-cmd.github.io/aon/app.js?v=20261107-discussion-links-input-v3"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js" integrity="sha512-rdhY3cbXURo13l/WU9VlaRyaIYeJ/KBakckXIvJNAQde8DgpOmE+Zf7ha4vdqVjTtwQt69bD2wH2LXob/LB7Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js" integrity="sha512-axd5V66bnXpNVQzm1c7u1M614TVRXXtouyWCE+eMYl8ALK8ePJEs96Xtx7VVrPBc0UraCn63U1+ARFI3ofW+aA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="https://hiakdhs323-cmd.github.io/aon/app.js?v=20261107-security-hardening-v1"></script>
 </body></html>
