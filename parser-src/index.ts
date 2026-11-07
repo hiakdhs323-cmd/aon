@@ -1865,6 +1865,15 @@ try {
 
       // link split
       const linkDataFull = linkDataMatch[0];
+      // linkDataMatch already identifies the first match. Replace it by index
+      // rather than running the complex nested-link regex a second time.
+      const replaceCurrentMatch = (replacement: string) => {
+        const index = linkDataMatch.index ?? 0;
+        this.renderData =
+          this.renderData.slice(0, index) +
+          replacement +
+          this.renderData.slice(index + linkDataFull.length);
+      };
       let linkData = linkDataMatch.slice(1);
 
       let linkMain = linkData[0];
@@ -2027,7 +2036,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>`);
+          replaceCurrentMatch(`<${dataName}></${dataName}>`);
         } else {
           let filePass = 0;
           if (fileTurn !== "") {
@@ -2075,7 +2084,7 @@ try {
             dataName = this.getToolDataStorage("", "", linkDataFull);
           }
 
-          this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>` + linkData[2]);
+          replaceCurrentMatch(`<${dataName}></${dataName}>` + linkData[2]);
         }
       }
       // category 처리
@@ -2129,7 +2138,7 @@ try {
           this.dataCategory += `<a class="${categoryBlur} ${linkExist}" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
         }
 
-        this.renderData = this.renderData.replace(linkRegex, "");
+        replaceCurrentMatch("");
       }
       // interwiki links
       else if (/^(?:inter|인터):([^:]+):/i.test(linkMain)) {
@@ -2158,7 +2167,7 @@ try {
         };
         const base = interwikiBases[prefix];
         if (!base || !target.trim()) {
-          this.renderData = this.renderData.replace(linkRegex, linkData[1] || linkDataFull);
+          replaceCurrentMatch(linkData[1] || linkDataFull);
         } else {
           const safeTarget = encodeURIComponent(target.trim().replace(/ /g, "_")).replace(/%2F/gi, "/");
           const safeFragment = fragment ? "#" + encodeURIComponent(fragment) : "";
@@ -2171,7 +2180,7 @@ try {
             "</a>",
             linkDataFull
           );
-          this.renderData = this.renderData.replace(linkRegex, "<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
+          replaceCurrentMatch("<" + dataName + ">" + label + "</" + dataName + ">" + linkData[2]);
         }
       }
       // out link 처리
@@ -2198,7 +2207,7 @@ try {
           "</a>",
           linkDataFull
         );
-        this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+        replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
       }
       // in link 처리
       else {
@@ -2269,7 +2278,7 @@ try {
           "</a>",
           linkDataFull
         );
-        this.renderData = this.renderData.replace(linkRegex, `<${dataName}>${linkSub}</${dataName}>` + addStr);
+        replaceCurrentMatch(`<${dataName}>${linkSub}</${dataName}>` + addStr);
       }
 
       linkCountAll -= 1;
