@@ -539,8 +539,8 @@ var NamuMark = class _NamuMark {
           continue;
         }
         let wikiData = middleData.replace(/^#!wiki +/g, "");
-        const wikiRegex = /^(?:(?:style=(&quot;(?:(?:(?!&quot;).)*)&quot;|&#x27;(?:(?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
-        const wikiDarkRegex = /^(?:(?:dark-style=(&quot;(?:(?:(?!&quot;).)*)&quot;|&#x27;(?:(?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+        const wikiRegex = /^(?:(?:style=(?:"((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
+        const wikiDarkRegex = /^(?:(?:dark-style=(?:"((?:(?!").)*)"|'((?:(?!').)*)'|&quot;((?:(?!&quot;).)*)&quot;|&#x27;((?:(?!&#x27;).)*)&#x27;)))(?:\n| +)/i;
         let wikiDataStyleData = "";
         while (true) {
           let darkOnly = 0;
@@ -558,7 +558,7 @@ var NamuMark = class _NamuMark {
             }
           }
           if (wikiDataStyleMatch) {
-            wikiDataStyle = wikiDataStyleMatch[1];
+            wikiDataStyle = wikiDataStyleMatch.slice(1).find(value => value !== undefined) || "";
             if (wikiDataStyle) {
               wikiDataStyle = wikiDataStyle.replaceAll("&#x27;", "");
               wikiDataStyle = wikiDataStyle.replaceAll("&quot;", "");
