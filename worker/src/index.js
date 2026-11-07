@@ -638,10 +638,15 @@ async function ensureNamuRenderCacheSchema(env) {
   }
   await namuRenderCacheSchemaPromise;
 }
-async function clearPersistentNamuRenderCache(env) {
+async function clearPersistentNamuRenderCache(env, title = "") {
   try {
     await ensureNamuRenderCacheSchema(env);
-    await env.DB.prepare("DELETE FROM namu_render_cache").run();
+    const target = cleanTitle(title);
+    if (target) {
+      await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(target).run();
+    } else {
+      await env.DB.prepare("DELETE FROM namu_render_cache").run();
+    }
   } catch (error) {
     console.warn("AonWiki persistent render cache clear failed:", error);
   }
@@ -752,7 +757,8 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v37-render-parser:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const sourceDigest = namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v37-render-parser:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -760,7 +766,10 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     try {
       await ensureNamuRenderCacheSchema(env);
       const stored = await env.DB.prepare("SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?").bind(title).first();
-      if (stored && stored.source_hash === cacheKey) {
+      // Cache entries from earlier renderer versions are still valid when the
+      // source+color digest matches. Do not invalidate every document merely
+      // because the parser implementation/version changed.
+      if (stored && (stored.source_hash === cacheKey || String(stored.source_hash || "").endsWith(":" + sourceDigest))) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
         const value = { html: String(stored.html || ""), metadata };
@@ -1087,7 +1096,7 @@ export default {
         await ensurePageLinkColorsSchema(env);
         await env.DB.prepare("DELETE FROM page_link_colors WHERE title = ?").bind(title).run();
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env);
+        await clearPersistentNamuRenderCache(env, title);
         await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
         return response({ ok: true, title }, 200, cors);
       }
@@ -1743,7 +1752,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?").bind(content, now, title).run();
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, "이전 버전 #" + id + " 복원").run();
-        invalidateNamuServerIndexes();await clearPersistentNamuRenderCache(env);
+        invalidateNamuServerIndexes();
+        await clearPersistentNamuRenderCache(env, title);
         return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
@@ -1806,7 +1816,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         }
 
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env);
+        await clearPersistentNamuRenderCache(env, title);
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, summary).run();
         if (user.isAdmin) await savePageLinkColors(env, title, extractedLinkColors, user.username);
