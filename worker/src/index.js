@@ -793,7 +793,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
   const sourceDigest = namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
-  const cacheKey = "targeted-db-v37-render-parser:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "targeted-db-v38-nested-file-link:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -804,7 +804,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       // Cache entries from earlier renderer versions are still valid when the
       // source+color digest matches. Do not invalidate every document merely
       // because the parser implementation/version changed.
-      if (stored && (stored.source_hash === cacheKey || String(stored.source_hash || "").endsWith(":" + sourceDigest))) {
+      if (stored && stored.source_hash === cacheKey) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
         const value = { html: String(stored.html || ""), metadata };
