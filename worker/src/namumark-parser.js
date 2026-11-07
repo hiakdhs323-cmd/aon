@@ -1534,7 +1534,7 @@ try {
       }
     );
     this.renderData = this.renderData.replaceAll("[[]]", "");
-    const linkRegex = /\[\[((?:(?!\[\[|\]\]|\||<|>).|<(?:\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)+)(?:\|((?:(?!\[\[|\]\]|\|).)+))?\]\](\n?)/;
+    const linkRegex = /\[\[((?:(?!\[\[|\]\]|\||<|>).|<(?:\/?(?:slash|render)_(?:[0-9]+)(?:[^<>]+))>)+)(?:\|((?:(?!\[\[|\]\]|\|).)+))?\]\](\n?)/;
     let imageCount = 0;
     let linkCountAll = (this.renderData.match(globalRegExp(linkRegex)) || []).length * 4;
     while (true) {
