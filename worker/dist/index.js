@@ -2966,7 +2966,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-namu-parity-v3");
+    parsed.searchParams.set("aonfix", "20261107-namu-parity-v4");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -2977,7 +2977,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-namu-parity-v3", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-namu-parity-v4", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
