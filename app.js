@@ -1314,7 +1314,7 @@ async function loadDiscussionList(pushRoute=true,pageTitle="",filters={}){
   }
  }catch(error){makeDiscussionNotice(list,error.message)}
 }
-function buildDiscussionPostCard(post,index=0,docTitle="토론"){
+function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true){
  const card=document.createElement("article");card.className="discussion-post-card";
  const header=document.createElement("div");header.className="discussion-post-header";
  const number=addText(header,"span",String(index+1));number.className="discussion-post-number";
@@ -1323,23 +1323,28 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론"){
  header.append(author,meta);card.append(header);
  if(Number(post.is_deleted)){discussionText(card,"삭제된 답글입니다.","discussion-body is-deleted",docTitle);return card}
  discussionText(card,post.body,"discussion-body",docTitle);
- if(isWikiAdmin||loggedInName===post.author){
-  const actions=document.createElement("div");actions.className="discussion-post-actions";
-  const edit=document.createElement("button");edit.type="button";edit.className="text-action";edit.textContent="수정";
-  edit.addEventListener("click",async()=>{
-   const next=prompt("답글 수정",post.body);
-   if(next===null)return;
-   try{await api("/api/discussion/post",{method:"PATCH",body:JSON.stringify({id:post.id,body:next})});await loadDiscussionDetail(post.discussion_id,false)}
-   catch(error){alert(error.message)}
+ const actions=document.createElement("div");actions.className="discussion-post-actions";
+ if(allowQuote&&(loggedInName||sessionStorage.getItem(TOKEN_SETTING))){
+  const quote=document.createElement("button");quote.type="button";quote.className="text-action";quote.textContent="인용";
+  quote.addEventListener("click",()=>{
+   const textarea=document.querySelector(".discussion-reply-form textarea");if(!textarea)return;
+   const quoted=String(post.body||"").split(/\r?\n/).map(line=>"> "+line).join("\n");
+   const prefix=textarea.value.trim()?"\n\n":"";
+   const addition=prefix+"> "+String(post.author||"사용자")+"님의 의견\n"+quoted+"\n\n";
+   const position=textarea.selectionStart??textarea.value.length;
+   textarea.value=textarea.value.slice(0,position)+addition+textarea.value.slice(position);
+   textarea.focus();const caret=position+addition.length;textarea.setSelectionRange(caret,caret);
   });
-  const remove=document.createElement("button");remove.type="button";remove.className="text-action danger-text";remove.textContent="삭제";
-  remove.addEventListener("click",async()=>{
-   if(!confirm("이 답글을 삭제할까요?"))return;
-   try{await api("/api/discussion/post?id="+post.id,{method:"DELETE"});await loadDiscussionDetail(post.discussion_id,false);loadGlobalRail()}
-   catch(error){alert(error.message)}
-  });
-  actions.append(edit,remove);card.append(actions);
+  actions.append(quote);
  }
+ if(isWikiAdmin||loggedInName===post.author){
+  const edit=document.createElement("button");edit.type="button";edit.className="text-action";edit.textContent="수정";
+  edit.addEventListener("click",async()=>{const next=prompt("답글 수정",post.body);if(next===null)return;try{await api("/api/discussion/post",{method:"PATCH",body:JSON.stringify({id:post.id,body:next})});await loadDiscussionDetail(post.discussion_id,false)}catch(error){alert(error.message)}});
+  const remove=document.createElement("button");remove.type="button";remove.className="text-action danger-text";remove.textContent="삭제";
+  remove.addEventListener("click",async()=>{if(!confirm("이 답글을 삭제할까요?"))return;try{await api("/api/discussion/post?id="+post.id,{method:"DELETE"});await loadDiscussionDetail(post.discussion_id,false);loadGlobalRail()}catch(error){alert(error.message)}});
+  actions.append(edit,remove);
+ }
+ if(actions.childElementCount)card.append(actions);
  return card;
 }
 async function loadDiscussionDetail(id,pushRoute=true){
@@ -1410,7 +1415,7 @@ async function loadDiscussionDetail(id,pushRoute=true){
   const replyHeading=addText(replySection,"h3","답글");replyHeading.className="discussion-section-title";
   const replyList=document.createElement("div");replyList.className="discussion-post-list";
   if(!posts.length)makeDiscussionNotice(replyList,"아직 답글이 없습니다. 첫 의견을 남겨 보세요.");
-  else posts.forEach((post,index)=>replyList.append(buildDiscussionPostCard(post,index,"토론:"+String(topic.title||topic.page_title||id))));
+  else posts.forEach((post,index)=>replyList.append(buildDiscussionPostCard(post,index,"토론:"+String(topic.title||topic.page_title||id),topic.status==="open")));
   replySection.append(replyList);article.append(replySection);
   if(topic.status==="open"){
    if(loggedInName||sessionStorage.getItem(TOKEN_SETTING)){
