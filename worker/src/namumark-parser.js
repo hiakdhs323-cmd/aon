@@ -1667,7 +1667,7 @@ try {
           if (categoryBlur != "") this.dataBacklink["category:" + linkMain]["cat_blur"] = "";
           linkMain = urlPas(linkMain);
           if (this.dataCategory === "") {
-            this.dataCategory = '<div class="opennamu_category" id="cate" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0 4px;width:fit-content;max-width:100%;"><span class="opennamu_category_label" style="color:var(--wiki-text)!important;">\uBD84\uB958:</span><span class="opennamu_category_links">';
+            this.dataCategory = '<div class="opennamu_category" id="cate"><span class="opennamu_category_label" style="color:var(--wiki-text)!important;">\uBD84\uB958:</span><span class="opennamu_category_links">';
           } else {
             this.dataCategory += " | ";
           }
