@@ -3482,3 +3482,128 @@ button.aon-has-icon{display:inline-flex;justify-content:center}
  .discussion-search-toolbar select{width:100%}
  .discussion-search-submit{flex:0 0 auto}
 }
+
+
+/* Reference-style table of contents: compact bordered panel with separated number/title colors. */
+#article.wiki-content details.opennamu_TOC,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+  display:block!important;
+  box-sizing:border-box;
+  width:fit-content!important;
+  min-width:174px!important;
+  max-width:100%!important;
+  margin:8px 0 15px!important;
+  padding:0!important;
+  overflow:hidden;
+  border:1px solid var(--wiki-border-strong)!important;
+  border-radius:0!important;
+  background:var(--wiki-panel)!important;
+  color:var(--wiki-text)!important;
+  box-shadow:none!important;
+  font-size:14px!important;
+  line-height:1.55!important;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title{
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  box-sizing:border-box;
+  min-height:0!important;
+  width:100%;
+  margin:0!important;
+  padding:11px 13px 7px!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--wiki-text)!important;
+  font-size:17px!important;
+  font-weight:700!important;
+  line-height:1.35!important;
+  text-align:left!important;
+  cursor:pointer;
+  list-style:none!important;
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::-webkit-details-marker{display:none!important}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::marker{content:""!important;font-size:0!important}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title .opennamu_TOC_label{
+  display:block;flex:1 1 auto;min-width:0;margin:0!important;
+  color:var(--wiki-text)!important;text-align:left!important
+}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title .opennamu_TOC_toggle{display:none!important}
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::after{
+  content:"";
+  display:block;
+  flex:0 0 8px;
+  width:8px;height:8px;
+  margin:0 3px 4px 12px;
+  border-right:1.5px solid var(--wiki-muted);
+  border-bottom:1.5px solid var(--wiki-muted);
+  transform:rotate(45deg);
+  transition:transform .15s ease;
+}
+#article.wiki-content details.opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+  margin-bottom:0;
+  transform:rotate(-45deg)
+}
+#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
+html[data-theme="light"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
+html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+  box-sizing:border-box;
+  min-width:0;max-width:100%;
+  margin:0!important;
+  padding:7px 13px 11px!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--wiki-text)!important;
+  font-size:14px!important;
+  line-height:1.55!important;
+  overflow-wrap:anywhere
+}
+#article.wiki-content .opennamu_TOC_entry{
+  display:block;
+  min-width:0;
+  margin:0!important;
+  padding:0!important;
+  font-size:14px!important;
+  line-height:1.55!important;
+  white-space:normal
+}
+#article.wiki-content .opennamu_TOC_indent{
+  display:inline-block;
+  width:20px;
+  height:1px;
+  vertical-align:baseline
+}
+#article.wiki-content .opennamu_TOC_link,
+#article.wiki-content .opennamu_TOC_link:visited{
+  display:inline;
+  color:var(--wiki-text)!important;
+  font-size:14px!important;
+  line-height:1.55!important;
+  text-decoration:none!important
+}
+#article.wiki-content .opennamu_TOC_number{
+  color:var(--wiki-link)!important;
+  font-size:14px!important;
+  font-weight:400;
+  font-variant-numeric:tabular-nums
+}
+#article.wiki-content .opennamu_TOC_text{
+  color:var(--wiki-text)!important;
+  font-size:14px!important;
+  font-weight:400
+}
+#article.wiki-content .opennamu_TOC_link:hover,
+#article.wiki-content .opennamu_TOC_link:focus{
+  text-decoration:underline!important;
+  text-underline-offset:2px
+}
+@media(max-width:700px){
+  #article.wiki-content details.opennamu_TOC{
+    width:fit-content!important;
+    min-width:0!important;
+    max-width:100%!important
+  }
+}
