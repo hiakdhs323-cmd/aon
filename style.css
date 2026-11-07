@@ -3642,3 +3642,22 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
     min-width:0!important;
   }
 }
+
+
+/* Larger TOC typography while preserving the compact reference panel geometry. */
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
+#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title .opennamu_TOC_label{
+  font-size:18px!important;
+  line-height:1.4!important;
+}
+#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+  font-size:15px!important;
+  line-height:1.65!important;
+}
+#article.wiki-content .opennamu_TOC_entry,
+#article.wiki-content .opennamu_TOC_link,
+#article.wiki-content .opennamu_TOC_number,
+#article.wiki-content .opennamu_TOC_text{
+  font-size:15px!important;
+  line-height:1.65!important;
+}
