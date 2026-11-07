@@ -282,12 +282,28 @@ function makeAdminToken() {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+// Must stay byte-for-byte compatible with the hash emitted by NamuMark's [[파일:...]] renderer.
+function imageFileHash(value) {
+  let hash = 2166136261;
+  const input = String(value || "");
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const parts = [];
+  for (let i = 0; i < 7; i++) {
+    const mixed = Math.imul(hash ^ (2654435769 * (i + 1)), 2246822507);
+    parts.push((mixed >>> 0).toString(16).padStart(8, "0"));
+  }
+  return parts.join("").slice(0, 56);
+}
 function imageNameMatches(filename, hash, extension) {
   const value = String(filename || "");
   const dot = value.lastIndexOf(".");
   const base = dot > 0 ? value.slice(0, dot) : value;
   const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
-  return namuFileHash(base).toLowerCase() === hash.toLowerCase() && ext === String(extension || "").toLowerCase();
+  return imageFileHash(base).toLowerCase() === String(hash || "").toLowerCase()
+    && ext === String(extension || "").toLowerCase();
 }
 
 
@@ -1966,8 +1982,11 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
-        headers.set("Cache-Control", "public, max-age=3600");
+        headers.set("Content-Length", String(bytes.byteLength));
+        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("ETag", '"' + key + '"');
         headers.set("X-Content-Type-Options", "nosniff");
+        if (request.headers.get("If-None-Match") === '"' + key + '"') return new Response(null, { status: 304, headers });
         if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
         return new Response(bytes, { headers });
       }
