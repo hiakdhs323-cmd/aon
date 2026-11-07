@@ -130,7 +130,7 @@ assert.match(category, /분류:/, "category label must say 분류:");
 assert.match(category, /일반 틀[\s\S]* \| [\s\S]*사건 사고/, "category links must be separated by a pipe");
 assert.doesNotMatch(category, /opennamu_category_button|\(-\)/, "category strip must not show +/- control or minus text");
 assert.doesNotMatch(category, /<hr class="main_hr">/, "category must not add a stray horizontal rule");
-const numberedList = render("목록 안내\n1. 첫 번째 항목\n2. 두 번째 항목\n\n마지막 문장");
+const numberedList = render("목록 안내\n1. 첫 번째 항목\n1. 두 번째 항목\n\n마지막 문장");
 assert.match(numberedList, /wiki-numbered-list/, "the default 1. numbered-list renderer must remain enabled");
 assert.match(numberedList, /첫 번째 항목[\s\S]*두 번째 항목/, "ordered-list content and order must be preserved");
 const footnotes = render("본문[* 각주 내용]\n\n[각주]");
