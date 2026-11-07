@@ -1013,6 +1013,10 @@ function applyFinalWikiTypographyAndLinkColors(root) {
       link.style.setProperty("text-decoration-color","currentColor","important");
       return;
     }
+    const footnoteRegion=link.closest(".opennamu_footnote,.wiki-footnotes,.opennamu_spead_footnote,.opennamu_popup_footnote,footnote_title");
+    const footnoteId=String(link.id||"");
+    const footnoteHref=String(link.getAttribute("href")||"");
+    if(footnoteRegion||/(?:^|_)r?fn_/.test(footnoteId)||/(?:^|#).*?(?:^|_)r?fn_/.test(footnoteHref))return;
     const explicitColor=getExplicitWikiTextColor(link,root);
     if(explicitColor){
       link.style.setProperty("color",explicitColor,"important");

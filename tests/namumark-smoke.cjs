@@ -79,7 +79,7 @@ const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
 assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v2"'), "SSR must serve the new folding stylesheet under a fresh cache key");
 assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append the compact NamuWiki-style chain marker");
-assert.ok(appSource.includes("link.append(icon)"), "external link text must remain unchanged");
+assert.ok(appSource.includes("link.prepend(icon)"), "external link icon must precede the unchanged label");
 assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v2"'), "Worker must cache-bust new NamuWiki-style assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
@@ -112,7 +112,7 @@ assert.ok(workerSource.includes("SELECT COUNT(*) AS total FROM images WHERE "), 
 assert.ok(appSource.includes("function renderSearchFileGroup(host,files,query)"), "search page must render a separate file results group");
 assert.ok(appSource.includes("function decorateExternalLinks(root)"), "external links must be decorated with site icons");
 assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append a NamuWiki-style chain marker");
-assert.ok(appSource.includes("link.append(icon)"), "external links must retain their authored text and append the chain icon");
+assert.ok(appSource.includes("link.prepend(icon)"), "external links must retain their authored text and prepend the chain icon");
 assert.ok(styles.includes("background:#00a63c"), "missing site favicons must use the EntryWiki green square");
 
 assert.ok(!appSource.includes('new URL("/favicon.ico",url.origin)'), "external links must not replace their labels with remote favicon requests");
