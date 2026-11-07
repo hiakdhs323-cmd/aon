@@ -871,7 +871,7 @@ function sanitizeNamuOutput(root, docTitle) {
       }
     }
     if (tag === "A") {
-      const legacyHeadingFold = /^javascript:opennamu_heading_folding\\('[a-f0-9_]+', this\\);?$/i.test(parserAction);
+      const legacyHeadingFold = /^javascript:opennamu_heading_folding\('[a-f0-9_]+', this\);?$/i.test(parserAction);
       if (parserAction === "heading-fold" || legacyHeadingFold) {
         const heading = node.closest("h1,h2,h3,h4,h5,h6");
         const section = heading ? heading.nextElementSibling : null;

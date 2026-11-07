@@ -618,7 +618,7 @@ async function sanitizeServerWikiHtml(markup) {
       for(const [rawName,rawValue] of [...element.attributes]){
         const name=String(rawName).toLowerCase(),value=String(rawValue||"");
         if(name==="onclick"){
-          if(tag==="A"&&/^javascript:opennamu_heading_folding\\('[a-f0-9_]+', this\\);?$/i.test(value))element.setAttribute("data-opennamu-action","heading-fold");
+          if(tag==="A"&&/^javascript:opennamu_heading_folding\('[a-f0-9_]+', this\);?$/i.test(value))element.setAttribute("data-opennamu-action","heading-fold");
           element.removeAttribute(rawName);continue;
         }
         if(name.startsWith("on")||!SERVER_WIKI_ATTRS.has(name)){
