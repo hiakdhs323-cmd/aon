@@ -811,7 +811,8 @@ async function expandAonIncludes(env, source) {
 }
 
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
-  const extracted = extractAdminLinkColors(source);
+  const renderSource = title === "아온" ? await expandAonIncludes(env, source) : String(source || "");
+  const extracted = extractAdminLinkColors(renderSource);
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
