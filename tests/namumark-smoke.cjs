@@ -186,6 +186,10 @@ assert.ok(appSource.includes('!inlineColor.includes("--aonwiki-table-auto-fg-")'
 assert.ok(appSource.includes('node.hasAttribute?.("data-aonwiki-authored-fg")'), "explicit table foreground colors must be preserved in both themes");
 assert.ok(appSource.includes("discussion-wiki-content"), "discussion posts must use the NamuMark renderer");
 assert.ok(appSource.includes("function createDiscussionSyntaxEditor"), "discussion input fields must use the live NamuMark syntax highlighter");
+assert.ok(appSource.includes("discussion-render-pending-label") && !appSource.includes("box.textContent=source"), "discussion posts must not flash raw NamuMark before server rendering completes");
+assert.ok(appSource.includes('textarea.addEventListener("compositionupdate",update)'), "discussion syntax colors must refresh during Korean IME composition");
+assert.ok(cssSource.includes(".discussion-render-pending") && cssSource.includes("@media(max-width:560px)"), "discussion render loading state and narrow mobile layout must be styled");
+assert.ok(cssSource.includes(".discussion-code-wrap textarea.discussion-markup-input") && cssSource.includes("overscroll-behavior:contain"), "discussion syntax editor must keep its mobile scrolling contained");
 assert.ok(appSource.includes("bodyLabel.append(bodyEditor.wrap)"), "new discussion body must use the highlighted editor");
 assert.ok(appSource.includes("form.append(replyEditor.wrap,footer,status)"), "discussion replies must use the highlighted editor");
 assert.ok(appSource.includes("textarea.dispatchEvent(new Event(\"input\",{bubbles:true}))"), "quoted text must refresh live syntax highlighting");
