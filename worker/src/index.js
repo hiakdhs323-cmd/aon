@@ -625,7 +625,7 @@ async function sanitizeServerWikiHtml(markup) {
   // NamuMark already escapes source text before generating its trusted HTML.
   // Skip the expensive HTMLRewriter pass when there is no construct that
   // requires sanitization; this is important on the 10 ms Free-plan CPU cap.
-  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\\b|\\bon[a-z]+\\s*=|(?:href|src|poster)\\s*=\\s*["']\\s*(?:javascript|data|vbscript):/i.test(source)) {
+  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\b|\bon[a-z]+\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=\s*/i.test(source)) {
     return source;
   }
   const input=new Response(source,{headers:{"Content-Type":"text/html; charset=utf-8"}});
@@ -957,20 +957,128 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     return name + "=" + quote + "/aon/" + file + parsed.search + parsed.hash + quote;
   });
 }
-let frontendShellCache = { value: null, expiresAt: 0 };
+const FRONTEND_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
+  let lastResponse = null;
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const upstream = await fetch(url, init);
+      if (!FRONTEND_TRANSIENT_STATUSES.has(upstream.status)) return upstream;
+      lastResponse = upstream;
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt + 1 < attempts) {
+      await new Promise(resolve => setTimeout(resolve, 120 * (attempt + 1)));
+    }
+  }
+  if (lastResponse) return lastResponse;
+  throw lastError || new Error("프런트엔드 서버에 연결할 수 없습니다.");
+}
+
+let frontendShellCache = { value: null, expiresAt: 0, staleUntil: 0 };
 let frontendShellPending = null;
+const frontendAssetCache = new Map();
+const frontendAssetPending = new Map();
+
+function makeFrontendAssetResponse(entry, cacheState) {
+  const headers = new Headers(getSecurityHeaders());
+  headers.set("Content-Type", entry.contentType || "application/octet-stream");
+  headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+  headers.set("X-AonWiki-Asset-Proxy", "1");
+  headers.set("X-AonWiki-Asset-Cache", cacheState);
+  return new Response(entry.body.slice(), { status: 200, headers });
+}
+
+async function loadFrontendAsset(assetUrl, acceptHeader) {
+  const now = Date.now();
+  const cached = frontendAssetCache.get(assetUrl);
+  if (cached && cached.expiresAt > now) return { entry: cached, cacheState: "HIT" };
+  if (frontendAssetPending.has(assetUrl)) return frontendAssetPending.get(assetUrl);
+
+  const pending = (async () => {
+    let upstream;
+    try {
+      upstream = await fetchFrontendWithRetry(assetUrl, {
+        headers: { "Accept": acceptHeader || "*/*" },
+        cf: { cacheTtl: 3600, cacheEverything: true }
+      });
+    } catch (error) {
+      if (cached && cached.staleUntil > Date.now()) {
+        console.warn("AonWiki static asset using stale cache after upstream network failure:", assetUrl);
+        return { entry: cached, cacheState: "STALE" };
+      }
+      throw error;
+    }
+
+    if (!upstream.ok) {
+      if (FRONTEND_TRANSIENT_STATUSES.has(upstream.status) && cached && cached.staleUntil > Date.now()) {
+        console.warn("AonWiki static asset using stale cache after upstream HTTP failure:", upstream.status, assetUrl);
+        return { entry: cached, cacheState: "STALE" };
+      }
+      return { status: upstream.status };
+    }
+
+    const body = new Uint8Array(await upstream.arrayBuffer());
+    const entry = {
+      body,
+      contentType: upstream.headers.get("Content-Type") || "application/octet-stream",
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      staleUntil: Date.now() + 24 * 60 * 60 * 1000
+    };
+    if (body.byteLength <= 2 * 1024 * 1024) {
+      frontendAssetCache.set(assetUrl, entry);
+      while (frontendAssetCache.size > 8) {
+        const oldest = frontendAssetCache.keys().next().value;
+        if (oldest) frontendAssetCache.delete(oldest);
+        else break;
+      }
+    }
+    return { entry, cacheState: "MISS" };
+  })().finally(() => frontendAssetPending.delete(assetUrl));
+
+  frontendAssetPending.set(assetUrl, pending);
+  return pending;
+}
+
 async function loadFrontendShell(env) {
   if (frontendShellCache.value && frontendShellCache.expiresAt > Date.now()) return frontendShellCache.value;
   if (frontendShellPending) return frontendShellPending;
+  const staleShell = frontendShellCache.value && frontendShellCache.staleUntil > Date.now()
+    ? frontendShellCache.value
+    : null;
+
   frontendShellPending = (async () => {
-    const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-security-hardening-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
-    if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
-    const shell = await shellResponse.text();
-    if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
-    const value = { shell: rewriteFrontendAssets(shell, origin), origin };
-    frontendShellCache = { value, expiresAt: Date.now() + 30 * 1000 };
-    return value;
+    try {
+      const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+      const shellResponse = await fetchFrontendWithRetry(
+        origin + "/?aonwiki-shell=20261107-upstream-resilience-v1",
+        { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
+      );
+      if (!shellResponse.ok) {
+        const error = new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
+        error.status = shellResponse.status;
+        throw error;
+      }
+      const shell = await shellResponse.text();
+      if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
+      const value = { shell: rewriteFrontendAssets(shell, origin), origin };
+      frontendShellCache = {
+        value,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+        staleUntil: Date.now() + 24 * 60 * 60 * 1000
+      };
+      return value;
+    } catch (error) {
+      const transient = !Number(error?.status) || FRONTEND_TRANSIENT_STATUSES.has(Number(error.status));
+      if (staleShell && transient) {
+        console.warn("AonWiki serving the last known-good frontend shell:", error?.message || error);
+        frontendShellCache.expiresAt = Date.now() + 15 * 1000;
+        return staleShell;
+      }
+      throw error;
+    }
   })().finally(() => { frontendShellPending = null; });
   return frontendShellPending;
 }
@@ -1073,12 +1181,28 @@ export default {
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
         const assetUrl = origin + "/" + assetName + url.search;
-        const assetResponse = await fetch(assetUrl, { headers: { "Accept": request.headers.get("Accept") || "*/*", "Cache-Control": "no-cache" } });
-        const headers = new Headers(getSecurityHeaders());
-        headers.set("Content-Type", assetResponse.headers.get("Content-Type") || "application/octet-stream");
-        headers.set("Cache-Control", "public, max-age=300, must-revalidate");
-        headers.set("X-AonWiki-Asset-Proxy", "1");
-        return new Response(assetResponse.body, { status: assetResponse.status, headers });
+        try {
+          const result = await loadFrontendAsset(assetUrl, request.headers.get("Accept") || "*/*");
+          if (result.entry) return makeFrontendAssetResponse(result.entry, result.cacheState);
+          const status = Number(result.status) || 502;
+          const message = status >= 500
+            ? "정적 리소스 서버가 일시적으로 응답하지 않습니다."
+            : "정적 리소스를 찾을 수 없습니다.";
+          const headers = new Headers(getSecurityHeaders());
+          headers.set("Content-Type", "text/plain; charset=utf-8");
+          headers.set("Cache-Control", "no-store");
+          headers.set("Retry-After", "2");
+          headers.set("X-AonWiki-Asset-Proxy", "1");
+          return new Response(message, { status, headers });
+        } catch (error) {
+          console.error("AonWiki static asset proxy failed:", assetName, error?.message || error);
+          const headers = new Headers(getSecurityHeaders());
+          headers.set("Content-Type", "text/plain; charset=utf-8");
+          headers.set("Cache-Control", "no-store");
+          headers.set("Retry-After", "2");
+          headers.set("X-AonWiki-Asset-Proxy", "1");
+          return new Response("정적 리소스 서버에 일시적으로 연결할 수 없습니다.", { status: 503, headers });
+        }
       }
       if (request.method === "GET" && url.pathname.startsWith("/w/")) {
         let title = "";
@@ -2112,9 +2236,15 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       }
       return response({ error: "요청한 경로를 찾을 수 없습니다." }, 404, cors);
     } catch (error) {
-      console.error("AonWiki API error", error);
       const status = Number(error?.status);
+      console.error("AonWiki request failed", {
+        method: request.method,
+        path: url.pathname,
+        status: status || 500,
+        message: String(error?.message || error || "unknown")
+      });
       if (status >= 400 && status < 500) return response({ error: String(error?.message || "잘못된 요청입니다.") }, status, cors);
+      if (status >= 500) return response({ error: "프런트엔드 리소스를 일시적으로 불러오지 못했습니다. 잠시 후 다시 시도하세요." }, 503, cors);
       return response({ error: "서버 내부 오류" }, 500, cors);
     }
   }

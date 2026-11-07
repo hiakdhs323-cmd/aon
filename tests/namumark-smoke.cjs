@@ -269,6 +269,29 @@ assert.ok(parserSource.includes('data-opennamu-action="heading-fold"') && !parse
 assert.ok(appSource.includes('parserAction === "heading-fold"') && appSource.includes('"data-opennamu-action"'), "client sanitizer must preserve and bind the safe heading-fold action");
 assert.ok(workerSource.includes('setAttribute("data-opennamu-action","heading-fold")'), "Worker sanitizer must convert legacy heading onclick markup to a safe data action");
 
+const serverSanitizerBlock = workerSource.match(/async function sanitizeServerWikiHtml\([\s\S]*?(?=\nconst namuRenderCache)/)?.[0] || "";
+const sanitizerGuardLine = serverSanitizerBlock.split(/\r?\n/).find(line => line.includes(".test(source)")) || "";
+assert.ok(sanitizerGuardLine.includes("\\bon[a-z]+\\s*="), "server sanitizer fast-path must detect inline event attributes");
+assert.ok(!sanitizerGuardLine.includes("\\\\bon"), "server sanitizer fast-path must not double-escape word boundaries");
+const sanitizerGuardLiteral = sanitizerGuardLine.match(/if \(!(.+)\.test\(source\)\)/)?.[1] || "";
+assert.ok(sanitizerGuardLiteral.startsWith("/") && sanitizerGuardLiteral.endsWith("/i"), "server sanitizer guard must remain a case-insensitive regex literal");
+const sanitizerGuard = new RegExp(sanitizerGuardLiteral.slice(1, sanitizerGuardLiteral.lastIndexOf("/")), "i");
+for (const unsafeMarkup of [
+  '<img src="x" onerror="alert(1)">',
+  '<a onclick="alert(1)">문서</a>',
+  '<body onload="alert(1)">',
+  '<iframe srcdoc="<script>alert(1)</script>"></iframe>',
+  '<form><input formaction="javascript:alert(1)"></form>'
+]) assert.ok(sanitizerGuard.test(unsafeMarkup), "server sanitizer must activate for unsafe HTML: " + unsafeMarkup);
+assert.ok(!sanitizerGuard.test("<p>일반 문서 내용</p>"), "server sanitizer fast-path must skip ordinary safe markup");
+assert.ok(workerSource.includes("fetchFrontendWithRetry") && workerSource.includes("FRONTEND_TRANSIENT_STATUSES"), "frontend upstream requests must retry transient HTTP failures");
+assert.ok(workerSource.includes("frontendAssetCache") && workerSource.includes('cacheState: "STALE"'), "static assets must retain a last-known-good response during upstream outages");
+assert.ok(workerSource.includes("staleUntil: Date.now() + 24 * 60 * 60 * 1000"), "frontend shell and static assets must have a bounded stale fallback window");
+assert.ok(workerSource.includes("cf: { cacheTtl: 3600, cacheEverything: true }"), "static frontend assets must use Cloudflare edge caching");
+assert.ok(workerSource.includes("X-AonWiki-Asset-Cache"), "asset proxy responses must expose cache state for troubleshooting");
+assert.ok(workerSource.includes("프런트엔드 리소스를 일시적으로 불러오지 못했습니다."), "upstream shell errors must return a clear 503 response");
+
+
 const authRateLimitBody = workerSource.match(/async function authRateLimited[\s\S]*?(?=async function ensureAdminTokenTable)/)?.[0] || "";
 assert.ok(workerSource.includes("let authRateLimitSchemaPromise = null"), "rate-limit schema initialization must be cached per Worker isolate");
 assert.ok(workerSource.includes("async function ensureAuthRateLimitSchema"), "rate-limit schema must have a retryable initializer");
