@@ -159,7 +159,7 @@ assert.match(footnotes, /footnote_title/, "footnote content must remain in its s
 assert.match(footnotes, /각주 내용/, "original footnote text must be preserved");
 assert.match(footnotes, /rfn_1/, "footnote backlink target must remain present");
 const headingColors = render("== 개요 ==\n본문");
-assert.match(headingColors, /class="wiki-heading-number"[^>]*>1\.<\/a>/, "heading section number must be rendered as its own link");
+assert.match(headingColors, /class="wiki-heading-number"[^>]*><span class="wiki-heading-number-label"[^>]*>1\.<\/span><\/a>/, "heading section number must be rendered as its own themed link");
 assert.match(headingColors, /class="wiki-heading-text">개요<\/span>/, "heading title must be separated from its section number");
 const toc = render("== 개요 ==\n본문\n=== 세부 내용 ===\n추가 내용");
 assert.match(toc, /class="opennamu_TOC"/, "table of contents must render");
