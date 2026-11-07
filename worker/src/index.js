@@ -790,7 +790,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
     // Table contrast requires a second HTMLRewriter pass. Documents without
     // tables do not need it.
-    const contrastedHtml = /<table\\b/i.test(cleanHtml)
+    const contrastedHtml = /<table\b/i.test(cleanHtml)
       ? await applyTableTextContrast(cleanHtml)
       : cleanHtml;
     const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
