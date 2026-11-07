@@ -25,6 +25,7 @@ const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
 const initialSsrState=window.__AONWIKI_SSR__||null;
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+let currentDiscussionView=false;
 const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){
  const name=String(title||"").trim();
@@ -263,6 +264,18 @@ function ensureDocumentViewTargets(){
  if(!article){article=document.createElement("article");article.id="article";article.className="wiki-content";view.append(article)}
  return {title,crumb,message,article,protection:$("page-protection"),headingEdit:$("heading-edit")};
 }
+function setArticleTitleLink(host,title,label){
+ if(!host)return;
+ const link=document.createElement("a");
+ link.className="article-title-link";
+ link.href=routeFor(title);
+ link.textContent=String(label||title);
+ link.addEventListener("click",event=>{
+  event.preventDefault();
+  openPage(title);
+ });
+ host.replaceChildren(link);
+}
 function renderBreadcrumbTrail(){
  const host=document.querySelector("#document-view .breadcrumbs");
  if(!host)return;
@@ -273,17 +286,20 @@ function renderBreadcrumbTrail(){
  breadcrumbTrail.forEach((title,index)=>{
   const sep=document.createElement("span");sep.textContent="›";sep.setAttribute("aria-hidden","true");host.append(sep);
   const isCurrent=index===breadcrumbTrail.length-1;
-  const label=document.createElement(isCurrent?"span":"a");
-  if(isCurrent){label.id="crumb";label.setAttribute("aria-current","page")}
+  const label=document.createElement("a");
+  label.href=routeFor(title);
   label.textContent=title;
-  if(!isCurrent){
-   label.href=routeFor(title);
-   label.addEventListener("click",event=>{event.preventDefault();breadcrumbTrail=breadcrumbTrail.slice(0,index+1);loadPage(title,true)});
-  }
+  if(isCurrent){label.id="crumb";label.setAttribute("aria-current","page");label.className="breadcrumb-current-link"}
+  label.addEventListener("click",event=>{
+   event.preventDefault();
+   breadcrumbTrail=breadcrumbTrail.slice(0,index+1);
+   openPage(title);
+  });
   host.append(label);
  });
 }
 function showHome(push=true){
+ currentDiscussionView=false;
  document.title="AonWiki";
  breadcrumbTrail=[];
  pageNavigationSequence++;
@@ -438,7 +454,7 @@ async function loadHome(){
     makeHomeEmpty(categoriesHost,"분류 목록을 불러오지 못했습니다.");
   }
 }
-function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){showHome(true);return}if(title===currentTitle){if(anchor)scrollToAnchor(anchor);return}loadPage(title,true,anchor)}
+function openPage(title,anchor=""){title=String(title||"").trim();if(!title)return;if(title==="대문"){showHome(true);return}if(title===currentTitle&&!currentDiscussionView){if(anchor)scrollToAnchor(anchor);return}currentDiscussionView=false;loadPage(title,true,anchor)}
 function readRoute(){
  const hash=location.hash||"";
  if(location.pathname.toLowerCase()==="/search"){
@@ -1192,6 +1208,7 @@ function discussionText(host,value,className="discussion-body",docTitle="토론"
  return box;
 }
 function prepareDiscussionView(title,route,pushRoute){
+ currentDiscussionView=true;
  const requestId=++pageNavigationSequence;
  if(pushRoute)history.pushState(null,"",route);
  breadcrumbTrail=[];
@@ -1897,6 +1914,7 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
   }
 }
 async function loadPage(title,pushRoute=true,anchor=""){
+ currentDiscussionView=false;
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
  const requestId=++pageNavigationSequence;
  if(pushRoute){
@@ -1916,7 +1934,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
  const targets=ensureDocumentViewTargets();
  const templateStatus=$("template-status");
  if(templateStatus)templateStatus.hidden=true;
- targets.title.textContent=displayTitle;targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();
+ setArticleTitleLink(targets.title,title,displayTitle);targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();
  if(targets.protection)targets.protection.hidden=true;
  if(targets.headingEdit)targets.headingEdit.hidden=false;
  window.scrollTo({top:0,behavior:"auto"});
