@@ -24,7 +24,7 @@ const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwik
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
 const initialSsrState=(()=>{const node=document.getElementById("aonwiki-ssr-state");if(!node)return null;try{return JSON.parse(node.textContent||"null")}catch(error){console.warn("AonWiki SSR state parsing failed",error);return null}})();
-let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 let currentDiscussionView=false;
 const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){
@@ -126,6 +126,7 @@ function setAonIconLabel(element,iconName,label){
 function applyDocumentActionIcons(){
  const controls=[
   ["page-protection","shield-lock","편집 보호"],
+  ["official-document","file","공식 문서 지정"],
   ["heading-edit","edit","편집"],
   ["edit","edit",($("edit")?.textContent||"편집").trim()||"편집"],
   ["discussion-tab","message","토론"],
@@ -141,6 +142,8 @@ function applyDocumentActionIcons(){
   const level=currentProtection.level;
   setAonIconLabel(status,level==="admin"?"shield-lock":"lock",level==="admin"?"관리자 편집 보호":"회원 편집 보호");
  }
+ const official=$("official-status");
+ if(official&&!official.hidden)setAonIconLabel(official,"file","공식 문서");
  const template=$("template-status");
  if(template&&!template.hidden)setAonIconLabel(template,"file","공식 틀 문서");
  const role=$("role-label");
@@ -2018,7 +2021,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("discussion-tab").hidden=false;
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
-  const canEditDocument = Boolean(isWikiAdmin || currentProtection.level !== "admin");
+  const canEditDocument = data.page?.canEdit === false ? false : Boolean(isWikiAdmin || currentProtection.level !== "admin");
   $("edit").hidden=!canEditDocument;
   $("heading-edit").hidden=!canEditDocument || (!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin);
   $("delete-page").hidden=!isWikiAdmin||currentProtection.level==="admin";
@@ -2046,8 +2049,12 @@ async function loadPage(title,pushRoute=true,anchor=""){
    const label=document.createElement("strong");label.textContent="보호 사유: ";
    reason.append(label,document.createTextNode(currentProtection.reason));protectionNotice.append(reason);
   }
+  currentOfficial=Boolean(data.page.official);
+  currentCanEdit=data.page.canEdit;
   $("page-protection").hidden=!isWikiAdmin;
-  $("heading-edit").hidden=(currentProtection.level==="admin"&&!isWikiAdmin)||(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin)||(currentProtection.level==="registered"&&!loggedInName&&!isWikiAdmin);
+  $("official-document").hidden=!isWikiAdmin;
+  $("official-document").textContent=currentOfficial?"공식 문서 해제":"공식 문서 지정";
+  $("heading-edit").hidden=!canEditDocument || (!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin);
   $("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
@@ -2224,6 +2231,18 @@ $("page-protection").onclick=()=>{
  select.value=currentProtection.level||"none";
  const label=[...$("dialog-body").querySelectorAll("label")].find(node=>node.textContent==="편집 보호 수준");
  const oldInput=$("protection-level");if(oldInput)oldInput.replaceWith(select);else if(label)label.after(select);
+};
+$("official-document").onclick=async()=>{
+ if(!isWikiAdmin||!currentTitle)return;
+ const next=!currentOfficial;
+ try{
+  const result=await api("/api/page/official",{method:"PUT",body:JSON.stringify({title:currentTitle,official:next})});
+  currentOfficial=Boolean(result.official);
+  $("official-document").textContent=currentOfficial?"공식 문서 해제":"공식 문서 지정";
+  $("official-status").hidden=!currentOfficial;
+  if(currentOfficial)setAonIconLabel($("official-status"),"file","공식 문서");
+  applyDocumentActionIcons();
+ }catch(error){alert(error.message)}
 };
 $("delete-page").onclick=async()=>{
  if(!isWikiAdmin||!currentTitle)return;
