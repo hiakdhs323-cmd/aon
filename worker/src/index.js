@@ -756,8 +756,8 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     catch { return attribute; }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-security-hardening-v1");
-    return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
+    parsed.searchParams.set("aonfix", "20261107-security-hardening-v2");
+    return name + "=" + quote + "/" + file + parsed.search + parsed.hash + quote;
   });
 }
 let frontendShellCache = { value: null, expiresAt: 0 };
@@ -829,7 +829,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
   if (!found) { html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden'); html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>'); }
-  html = html.replace('<script defer src="' + origin + '/app.js', '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + '</script>' + "\n" + '<script defer src="' + origin + '/app.js');
+  html = html.replace('<script defer src="' + origin + '/app.js', '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + '</script>' + "\n" + '<script defer src="/app.js');
   return new Response(html, {
     status: found ? 200 : 404,
     headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
@@ -854,6 +854,17 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
+      const staticFiles = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "aonwiki-mark.svg"]);
+      if (request.method === "GET" && staticFiles.has(url.pathname.slice(1))) {
+        const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+        const assetUrl = origin + "/" + url.pathname.slice(1) + url.search;
+        const assetResponse = await fetch(assetUrl, { headers: { "Accept": request.headers.get("Accept") || "*/*", "Cache-Control": "no-cache" } });
+        const headers = new Headers(getSecurityHeaders());
+        headers.set("Content-Type", assetResponse.headers.get("Content-Type") || "application/octet-stream");
+        headers.set("Cache-Control", "public, max-age=300, must-revalidate");
+        headers.set("X-AonWiki-Asset-Proxy", "1");
+        return new Response(assetResponse.body, { status: assetResponse.status, headers });
+      }
       if (request.method === "GET" && url.pathname.startsWith("/w/")) {
         let title = "";
         try { title = decodeURIComponent(url.pathname.slice(3)); }
