@@ -787,6 +787,29 @@ async function applyTableTextContrast(markup) {
   })).text();
 }
 
+async function expandAonIncludes(env, source) {
+  let text = String(source || "");
+  const seen = new Set(["아온"]);
+  for (let depth = 0; depth < 3; depth++) {
+    const matches = [...text.matchAll(/\\[include\\(([^\\)]+)\\)\\]/gi)];
+    const names = [...new Set(matches.map(match => String(match[1] || "").trim()).filter(name => name && !name.includes("=") && !seen.has(name)))];
+    if (!names.length) break;
+    const placeholders = names.map(() => "?").join(",");
+    const result = await env.DB.prepare("SELECT title, content FROM pages WHERE title IN (" + placeholders + ")").bind(...names).all();
+    const rows = new Map((result.results || []).map(row => [String(row.title), String(row.content || "")]));
+    for (const name of names) seen.add(name);
+    let changed = false;
+    text = text.replace(/\\[include\\(([^\\)]+)\\)\\]/gi, (match, rawName) => {
+      const name = String(rawName || "").trim();
+      if (!name || name.includes("=") || !rows.has(name)) return match;
+      changed = true;
+      return "\n" + rows.get(name) + "\n";
+    });
+    if (!changed) break;
+  }
+  return text;
+}
+
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const extracted = extractAdminLinkColors(source);
   const text = extracted.content;
