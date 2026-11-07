@@ -4223,3 +4223,20 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
 #article.wiki-content.wiki[data-wiki] img{max-width:100%}
 #article.wiki-content.wiki[data-wiki] .wiki-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 @media screen and (max-width:727.98px){#article.wiki-content.wiki[data-wiki]{font-size:15px}.wiki[data-wiki] .wiki-table{max-width:none}.wiki[data-wiki] .wiki-table-wrap{margin-left:calc(-1 * var(--article-padding-x,0px));margin-right:calc(-1 * var(--article-padding-x,0px));padding-left:var(--article-padding-x,0px);padding-right:var(--article-padding-x,0px)}}
+
+
+/* AonWiki compatibility: table-local broken links and real emphasis. */
+.wiki-table a.opennamu_not_exist_link,
+.wiki-bracket-table a.opennamu_not_exist_link,
+.wiki-table .opennamu_not_exist_link,
+.wiki-bracket-table .opennamu_not_exist_link {
+  color: #d1242f !important;
+}
+.wiki-table strong,
+.wiki-table b,
+.wiki-bracket-table strong,
+.wiki-bracket-table b,
+.wiki-content strong,
+.wiki-content b {
+  font-weight: 700 !important;
+}
