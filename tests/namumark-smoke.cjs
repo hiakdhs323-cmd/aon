@@ -185,6 +185,12 @@ assert.ok(appSource.includes("function getExplicitWikiTextColor"), "wiki links m
 assert.ok(appSource.includes('!inlineColor.includes("--aonwiki-table-auto-fg-")'), "automatic table contrast must not be mistaken for an authored link color");
 assert.ok(appSource.includes('node.hasAttribute?.("data-aonwiki-authored-fg")'), "explicit table foreground colors must be preserved in both themes");
 assert.ok(appSource.includes("discussion-wiki-content"), "discussion posts must use the NamuMark renderer");
+assert.ok(appSource.includes("let currentDiscussionView=false"), "navigation must distinguish document view from discussion view");
+assert.ok(appSource.includes("if(title===currentTitle&&!currentDiscussionView)"), "the linked source document must open even when its title matches the previous document");
+assert.ok(appSource.includes("function setArticleTitleLink"), "the current document title must be a navigable link");
+assert.ok(appSource.includes('label.className="breadcrumb-current-link"'), "the current breadcrumb document must render as a link");
+assert.ok(cssSource.includes(".article-title-link") && cssSource.includes(".breadcrumb-current-link"), "current document links must have visible link styling");
+assert.ok(cssSource.includes("scrollbar-width:none") && cssSource.includes("font-variant-ligatures:none"), "discussion syntax overlay must avoid scrollbar and font-metric misalignment");
 assert.ok(appSource.includes("function createDiscussionSyntaxEditor"), "discussion input fields must use the live NamuMark syntax highlighter");
 assert.ok(appSource.includes("discussion-render-pending-label") && !appSource.includes("box.textContent=source"), "discussion posts must not flash raw NamuMark before server rendering completes");
 assert.ok(appSource.includes('textarea.addEventListener("compositionupdate",update)'), "discussion syntax colors must refresh during Korean IME composition");
