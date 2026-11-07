@@ -2387,7 +2387,7 @@ async function ensurePageProtectionSchema(env) {
 }
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "\uBB38\uC11C\uB97C \uD3B8\uC9D1\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." };
-  if (title === "\uB300\uBB38") return { status: 403, error: "\uB300\uBB38\uC740 \uD3B8\uC9D1\uD558\uAC70\uB098 \uBCF5\uC6D0\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." };
+  if (title === "\uB300\uBB38" && !user.isAdmin) return { status: 403, error: "\uB300\uBB38\uC740 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD558\uAC70\uB098 \uBCF5\uC6D0\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." };
   await ensurePageProtectionSchema(env);
   const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
   if (protection?.level === "admin" && !user.isAdmin) {
