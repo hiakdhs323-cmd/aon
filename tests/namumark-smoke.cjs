@@ -285,3 +285,14 @@ assert.ok(buildWorkflowSource.includes('git commit -m "Build generated NamuMark 
 assert.ok(pagesWorkflowSource.includes("cancel-in-progress: true"), "Pages deployments must cancel stale in-flight deploys when generated bundles arrive");
 
 console.log("NamuMark smoke tests passed: renderer, security, auth-schema caching and deployment workflow.");
+
+const rewrittenSsrAppScript = '<script defer src="/aon/app.js?aonfix=20261107-security-hardening-v3&v=1"></script>';
+const ssrAppScriptPattern = /<script defer src=(["'])(?:\\/aon)?\\/app\\.js[^"']*\\1><\\/script>/i;
+const rewrittenSsrAppMatch = rewrittenSsrAppScript.match(ssrAppScriptPattern);
+assert.ok(rewrittenSsrAppMatch, "SSR injection matcher must recognize the rewritten same-origin /aon/app.js URL");
+assert.ok(workerSource.includes("const appScriptMatch = html.match(appScriptPattern)"), "full-document SSR must locate the rewritten app.js script before injecting state");
+assert.ok(workerSource.includes("const ssrStateScript = '<script id=\"aonwiki-ssr-state\" type=\"application/json\">'"), "full-document SSR must inject its page state before the application script");
+assert.ok(workerSource.includes('if (!appScriptMatch) throw new Error("프런트엔드 app.js 스크립트 위치를 찾을 수 없습니다.")'), "SSR must fail visibly instead of returning a page with missing bootstrap state");
+assert.ok(appSource.includes('if(document.body.dataset.ssrPage==="true"){') && appSource.includes("requestAnimationFrame(readRoute)"), "SSR pages without state must fall back to loading the URL route");
+const injectedSsrHtml = rewrittenSsrAppScript.replace(ssrAppScriptPattern, '<script id="aonwiki-ssr-state" type="application/json">{}</script>\\n' + rewrittenSsrAppMatch[0]);
+assert.ok(injectedSsrHtml.indexOf('id="aonwiki-ssr-state"') < injectedSsrHtml.indexOf('/aon/app.js'), "SSR state must be inserted before app.js executes");

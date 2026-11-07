@@ -3618,17 +3618,24 @@ $("file").onchange=async()=>{
 };
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
-if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){
- if($("article")?.dataset.clientRenderPending==="true"){
-  if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
-  else requestAnimationFrame(()=>loadPage(currentTitle,false,location.hash?location.hash.slice(1):""));
+if(document.body.dataset.ssrPage==="true"){
+ if(initialSsrState?.exists){
+  if($("article")?.dataset.clientRenderPending==="true"){
+   if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
+   else requestAnimationFrame(()=>loadPage(currentTitle,false,location.hash?location.hash.slice(1):""));
+  }else{
+   prepareServerRenderedMarkup($("article"),currentTitle);
+   if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
+   else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
+  }
  }else{
-  prepareServerRenderedMarkup($("article"),currentTitle);
-  if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
-  else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
+  // A missing or malformed SSR state must never leave an inert document shell.
+  // Re-read the canonical /w/<title> route through the normal API path.
+  requestAnimationFrame(readRoute);
  }
+}else{
+ readRoute();
 }
-if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity().catch(()=>{}).finally(()=>syncDocumentEditControls());
 loadGlobalRail();
 startLivePageWatcher();
