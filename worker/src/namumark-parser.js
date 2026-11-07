@@ -2033,7 +2033,7 @@ try {
     }
     for (let index = 0; index < results.length; index++) {
       const result = results[index];
-      const content = `<a class="wiki-heading-number" href="#toc" id="s-${result[1]}">${result[1]}.</a>`;
+      const content = `<a class="wiki-heading-number" style="color:var(--wiki-link)!important;text-decoration:none!important;" href="#toc" id="s-${result[1]}"><span class="wiki-heading-number-label" style="color:var(--wiki-link)!important;">${result[1]}.</span></a>`;
       this.renderData = this.renderData.replace(headingIdRegex, content);
       tocList[index][0] = result[1];
     }
