@@ -583,6 +583,15 @@ var NamuMark = class _NamuMark {
             break;
           }
         }
+        // NamuMark wiki-style blocks are authored inline. Keep side-specific
+        // border declarations authoritative so the imported NamuWiki skin cannot
+        // accidentally flatten an explicitly requested border-top.
+        if (wikiDataStyleData) {
+          wikiDataStyleData = wikiDataStyleData.replace(
+            /(^|;)\s*border-top\s*:\s*([^;]+?)(?=;|$)/i,
+            (match, prefix, value) => prefix + "border-top:" + value.trim() + " !important"
+          );
+        }
         wikiData = this.getToolDataRevert(wikiData).replace(/(^\n|\n$)/g, "");
         interData["inter_data_" + interCount] = wikiData;
         middleDataPass = "<inter_data_" + interCount + ">";
