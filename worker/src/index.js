@@ -6,20 +6,73 @@ function response(data, status = 200, headers = {}) {
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers }
   });
 }
-function getCors(request, env) {
-  const origin = request.headers.get("Origin") || "";
-  const allowed = (env.ALLOWED_ORIGIN || "https://hiakdhs323-cmd.github.io").split(",").map(v => v.trim());
+function getSecurityHeaders() {
   return {
-    "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : allowed[0],
-    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret",
-    "Access-Control-Max-Age": "86400",
-    "Vary": "Origin",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Permissions-Policy": "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Origin-Agent-Cluster": "?1",
+    "X-Permitted-Cross-Domain-Policies": "none",
+    "X-DNS-Prefetch-Control": "off",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdnjs.cloudflare.com; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
   };
+}
+function getCors(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const allowed = (env.ALLOWED_ORIGIN || "https://hiakdhs323-cmd.github.io").split(",").map(v => v.trim()).filter(Boolean);
+  const trustedOrigin = origin && allowed.includes(origin) ? origin : (allowed[0] || "");
+  return {
+    ...getSecurityHeaders(),
+    ...(trustedOrigin ? { "Access-Control-Allow-Origin": trustedOrigin } : {}),
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret,X-AonWiki-Request",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin"
+  };
+}
+function isStateChangingMethod(method) {
+  return !["GET", "HEAD", "OPTIONS"].includes(String(method || "").toUpperCase());
+}
+function isTrustedStateChangingRequest(request, env) {
+  if (!isStateChangingMethod(request.method)) return true;
+  if (request.headers.get("X-AonWiki-Request") !== "1") return false;
+  const origin = request.headers.get("Origin");
+  if (origin) {
+    const allowed = (env.ALLOWED_ORIGIN || "").split(",").map(v => v.trim()).filter(Boolean);
+    if (!allowed.includes(origin)) return false;
+  }
+  return true;
+}
+async function readJsonBody(request, maxBytes = 512 * 1024) {
+  const contentType = String(request.headers.get("Content-Type") || "").toLowerCase().split(";")[0].trim();
+  if (contentType !== "application/json" && !contentType.endsWith("+json")) {
+    const error = new Error("JSON 요청은 application/json 형식이어야 합니다.");
+    error.status = 415;
+    throw error;
+  }
+  const bytes = await request.arrayBuffer();
+  if (bytes.byteLength > maxBytes) {
+    const error = new Error("JSON 요청 본문이 너무 큽니다.");
+    error.status = 413;
+    throw error;
+  }
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(bytes));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      const error = new Error("올바른 JSON 객체가 필요합니다.");
+      error.status = 400;
+      throw error;
+    }
+    return parsed;
+  } catch (error) {
+    if (error?.status) throw error;
+    const invalid = new Error("올바른 JSON 요청이 아닙니다.");
+    invalid.status = 400;
+    throw invalid;
+  }
 }
 function cleanTitle(value) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
@@ -643,7 +696,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v35-discussion-links-input:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v36-security-hardening:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -696,14 +749,14 @@ function safeJsonForHtml(value) {
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/+$/, "") + "/";
-  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "aonwiki-mark.svg"]);
+  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "aonwiki-mark.svg"]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
     try { parsed = new URL(String(rawUrl).trim(), base); }
     catch { return attribute; }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-discussion-links-input-v3");
+    parsed.searchParams.set("aonfix", "20261107-security-hardening-v1");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -714,7 +767,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-discussion-links-input-v3", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-security-hardening-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
@@ -776,10 +829,10 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
   if (!found) { html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden'); html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>'); }
-  html = html.replace('<script defer src="' + origin + '/app.js', '<script>window.__AONWIKI_SSR__=' + safeJsonForHtml(state) + ';</script>' + "\n" + '<script defer src="' + origin + '/app.js');
+  html = html.replace('<script defer src="' + origin + '/app.js', '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + '</script>' + "\n" + '<script defer src="' + origin + '/app.js');
   return new Response(html, {
     status: found ? 200 : 404,
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-AonWiki-Render": "full-document" }
+    headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
   });
 }
 
@@ -793,8 +846,13 @@ export default {
     const url = new URL(request.url);
     const cors = getCors(request, env);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    if (isStateChangingMethod(request.method) && url.pathname.startsWith("/api/") && !isTrustedStateChangingRequest(request, env)) return response({ error: "보안상 허용되지 않은 요청입니다." }, 403, cors);
     const declaredLength = Number(request.headers.get("Content-Length") || 0);
     if (declaredLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
+    if (isStateChangingMethod(request.method) && !request.headers.get("Content-Length")) {
+      const probe = await request.clone().arrayBuffer();
+      if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
+    }
     try {
       if (request.method === "GET" && url.pathname.startsWith("/w/")) {
         let title = "";
@@ -849,7 +907,7 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run();
         const alreadyGranted = await env.DB.prepare("SELECT user_id FROM wiki_admins LIMIT 1").first();
         if (alreadyGranted) return response({ error: "최초 관리자 등록은 이미 완료되었습니다." }, 409, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         if (username.toLocaleLowerCase() !== "아온") return response({ error: "최초 관리자 등록 대상은 아온 계정으로 제한됩니다." }, 403, cors);
         const target = await env.DB.prepare("SELECT id, username FROM users WHERE username = ? COLLATE NOCASE").bind("아온").first();
@@ -886,7 +944,7 @@ export default {
       if (url.pathname === "/api/home" && request.method === "PUT") {
         const user = await currentUser(request, env);
         if (!user?.isAdmin) return response({ error: "대문을 수정하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const settings = {
           home_title: String(body.title || "AonWiki").trim().slice(0, 80),
           home_tagline: String(body.tagline || "").trim().slice(0, 200),
@@ -907,7 +965,7 @@ export default {
       if (url.pathname === "/api/page/protection" && request.method === "PUT") {
         const user = await currentUser(request, env);
         if (!user?.isAdmin) return response({ error: "편집 보호를 설정하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = cleanTitle(body.title);
         const level = String(body.level || "none");
         const reason = String(body.reason || "").trim().slice(0, 300);
@@ -951,7 +1009,7 @@ export default {
         ).bind(sessionTokenHash, now).first();
         if (!user) return response({ error: "일반 계정으로 로그인한 뒤 비밀번호를 변경하세요." }, 401, cors);
 
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const currentPassword = String(body.currentPassword || "");
         const newPassword = String(body.newPassword || "");
         if (newPassword.length < 8 || newPassword.length > 200) {
@@ -985,7 +1043,7 @@ export default {
         if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1000)) return response({ error: "가입 요청이 너무 많습니다. 한 시간 뒤 다시 시도하세요." }, 429, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
         if (!/^[A-Za-z0-9가-힣_-]{2,20}$/.test(username)) return response({error:"아이디는 한글/영문/숫자/_/- 2~20자로 입력하세요."},400,cors);
@@ -1001,7 +1059,7 @@ export default {
         if (await authRateLimited(request, env, "login", 20, 15 * 60 * 1000)) return response({ error: "로그인 시도가 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
         const user = await env.DB.prepare("SELECT id,username,salt,password_hash FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
@@ -1054,7 +1112,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         if (!user) return response({ error: "토론을 시작하려면 로그인하세요." }, 401, cors);
         if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1000)) return response({ error: "토론 생성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = String(body.title || "").trim().replace(/[\x00-\x1f\x7f]/g, "").slice(0, 120);
         const content = String(body.body || "").trim().slice(0, 10000);
         const pageTitle = cleanTitle(body.pageTitle || "");
@@ -1073,7 +1131,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         if (!user) return response({ error: "답글을 작성하려면 로그인하세요." }, 401, cors);
         if (await authRateLimited(request, env, "discussion-reply", 15, 5 * 60 * 1000)) return response({ error: "답글 작성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = Number(body.id);
         const content = String(body.body || "").trim().slice(0, 6000);
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 토론 번호가 아닙니다." }, 400, cors);
@@ -1090,7 +1148,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "토론 상태를 변경하려면 로그인하세요." }, 401, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = Number(body.id);
         const action = String(body.action || "");
         if (!Number.isSafeInteger(id) || id < 1 || !["close", "reopen", "edit"].includes(action)) return response({ error: "올바른 토론 변경 요청이 아닙니다." }, 400, cors);
@@ -1115,7 +1173,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "답글을 수정하려면 로그인하세요." }, 401, cors);
         await ensureDiscussionSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = Number(body.id);
         const content = String(body.body || "").trim().slice(0, 6000);
         if (!Number.isSafeInteger(id) || id < 1 || !content) return response({ error: "올바른 답글 수정 요청이 아닙니다." }, 400, cors);
@@ -1485,7 +1543,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
           return response({ error: "미리보기 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         }
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = cleanTitle(body.title || "미리보기") || "미리보기";
         const content = String(body.content || "");
         if (content.length > 200000) return response({ error: "미리보기 문서는 200,000자 이하만 지원합니다." }, 413, cors);
@@ -1544,7 +1602,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "버전을 복원하려면 로그인하세요." }, 401, cors);
         if (await authRateLimited(request, env, "revision-restore", 20, 60 * 1000)) return response({ error: "복원 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
-        const body = await request.json(), id = Number(body.id), title = cleanTitle(body.title);
+        const body = await readJsonBody(request), id = Number(body.id), title = cleanTitle(body.title);
         if (!title || !Number.isSafeInteger(id) || id < 1) return response({ error: "문서 제목 또는 버전 번호가 올바르지 않습니다." }, 400, cors);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS revisions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL, editor TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
@@ -1574,7 +1632,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-page-edit", 20, 10 * 60 * 1000)) {
           return response({ error: "비로그인 편집 요청이 너무 많습니다. 10분 뒤 다시 시도하세요." }, 429, cors);
         }
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const title = cleanTitle(body.title);
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
@@ -1695,7 +1753,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const user = await currentUser(request, env);
         if (!user) return response({ error: "파일 이름을 변경하려면 로그인하세요." }, 401, cors);
         await ensureImageSchema(env);
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const id = String(body.id || "");
         if (!/^[a-f0-9-]{36}$/i.test(id)) return response({ error: "잘못된 파일 식별자입니다." }, 400, cors);
         const image = await env.DB.prepare("SELECT id, filename, content_type, owner FROM images WHERE id = ?").bind(id).first();
