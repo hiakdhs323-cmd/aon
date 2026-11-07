@@ -184,6 +184,7 @@ function anonymousEditorIdentity(request) {
   return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
 }
 let pageProtectionSchemaPromise = null;
+let officialDocumentSchemaPromise = null;
 let pageAliasSchemaPromise = null;
 let pageLinkColorsSchemaPromise = null;
 let imageSchemaPromise = null;
@@ -193,6 +194,13 @@ async function ensurePageProtectionSchema(env) {
       .catch(error => { pageProtectionSchemaPromise = null; throw error; });
   }
   await pageProtectionSchemaPromise;
+}
+async function ensureOfficialDocumentSchema(env) {
+  if (!officialDocumentSchemaPromise) {
+    officialDocumentSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS official_documents (title TEXT PRIMARY KEY NOT NULL, marked_by TEXT NOT NULL, updated_at TEXT NOT NULL)").run()
+      .catch(error => { officialDocumentSchemaPromise = null; throw error; });
+  }
+  await officialDocumentSchemaPromise;
 }
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "문서를 편집하려면 로그인하세요." };
@@ -807,6 +815,7 @@ async function renderFullWikiDocument(request, env, title) {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
+    official: Boolean(official),
     exists: found
   };
   const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
@@ -823,6 +832,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + '</h1>')
     .replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + '</span>')
     .replace('<span id="template-status" class="template-status" hidden>공식 틀 문서</span>', officialTemplate ? '<span id="template-status" class="template-status">공식 틀 문서</span>' : '<span id="template-status" class="template-status" hidden>공식 틀 문서</span>')
+    .replace('<span id="official-status" class="official-status" hidden>공식 문서</span>', state.official ? '<span id="official-status" class="official-status">공식 문서</span>' : '<span id="official-status" class="official-status" hidden>공식 문서</span>')
     .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
     .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
     .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
@@ -997,6 +1007,25 @@ export default {
         await env.DB.prepare("INSERT INTO page_protections (title, level, reason, protected_by, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET level = excluded.level, reason = excluded.reason, protected_by = excluded.protected_by, updated_at = excluded.updated_at")
           .bind(title, level, reason, user.username, now).run();
         return response({ ok: true, title, protection: { level, reason, protectedBy: user.username, updatedAt: now } }, 200, cors);
+      }
+      if (url.pathname === "/api/page/official" && request.method === "PUT") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "공식 문서를 지정하거나 해제하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        const body = await readJsonBody(request);
+        const title = cleanTitle(body.title);
+        const official = Boolean(body.official);
+        if (!title || title === "대문") return response({ error: "공식 문서로 지정할 수 없는 문서입니다." }, 400, cors);
+        const page = await env.DB.prepare("SELECT title FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "문서를 찾을 수 없습니다." }, 404, cors);
+        await ensureOfficialDocumentSchema(env);
+        const now = new Date().toISOString();
+        if (!official) {
+          await env.DB.prepare("DELETE FROM official_documents WHERE title = ?").bind(title).run();
+          return response({ ok: true, title, official: false, officialMarkedBy: user.username, officialUpdatedAt: now }, 200, cors);
+        }
+        await env.DB.prepare("INSERT INTO official_documents (title, marked_by, updated_at) VALUES (?, ?, ?) ON CONFLICT(title) DO UPDATE SET marked_by = excluded.marked_by, updated_at = excluded.updated_at")
+          .bind(title, user.username, now).run();
+        return response({ ok: true, title, official: true, officialMarkedBy: user.username, officialUpdatedAt: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "DELETE") {
         const user = await currentUser(request, env);
@@ -1609,10 +1638,12 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           if (alias) page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(alias.title).first();
         }
         await ensurePageProtectionSchema(env);
+        await ensureOfficialDocumentSchema(env);
         const protection = page ? await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first() : null;
+        const official = page ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(page.title).first() : null;
         const user = await currentUser(request, env);
         const editPermission = page && user ? await checkPageEditPermission(env, user, page.title) : null;
-        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: !editPermission, editDeniedReason: editPermission?.error || "" } : null }, 200, cors);
+        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: user ? !editPermission : null, editDeniedReason: editPermission?.error || "", official: Boolean(official), officialMarkedBy: official?.marked_by || "", officialUpdatedAt: official?.updated_at || "" } : null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
