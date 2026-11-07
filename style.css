@@ -3725,26 +3725,27 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
 }
 
 
-/* Restore the original full-width category separator at the end of the article. */
+/* Full-width outlined category bar, matching the supplied reference. */
 #article.wiki-content .opennamu_category{
   display:block!important;
-  box-sizing:border-box;
+  box-sizing:border-box!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
-  margin:20px 0 10px!important;
-  padding:9px 0!important;
-  border:0!important;
-  border-top:1px solid var(--wiki-border)!important;
-  border-radius:0!important;
-  /* Keep the existing theme-controlled category background; do not paint a new fill. */
+  margin:10px 0 12px!important;
+  padding:5px 8px!important;
+  border:1px solid var(--wiki-border-strong)!important;
+  border-radius:4px!important;
+  /* Intentionally no background declaration: retain the existing theme background. */
+  color:var(--wiki-text)!important;
   font-size:12px!important;
-  line-height:1.65!important;
+  line-height:1.6!important;
   overflow-wrap:anywhere;
+  word-break:normal;
 }
 #article.wiki-content .opennamu_category_label{
   display:inline!important;
-  margin:0 6px 0 0!important;
+  margin:0 5px 0 0!important;
   color:var(--wiki-text)!important;
   font-size:12px!important;
   font-weight:500!important;
@@ -3766,7 +3767,7 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   background:transparent!important;
   color:var(--wiki-link)!important;
   font-size:12px!important;
-  line-height:1.65!important;
+  line-height:1.6!important;
   text-decoration:none!important;
   overflow-wrap:anywhere;
 }
@@ -3778,9 +3779,12 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
 }
 @media(max-width:700px){
   #article.wiki-content .opennamu_category{
+    display:block!important;
     width:100%!important;
-    margin:16px 0 9px!important;
-    padding:8px 0!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:10px 0 12px!important;
+    padding:6px 8px!important;
     line-height:1.7!important;
   }
   #article.wiki-content .opennamu_category_label,
