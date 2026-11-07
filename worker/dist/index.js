@@ -2350,8 +2350,20 @@ function namuFileHash(data) {
   }
   return parts.join("").slice(0, 56);
 }
+var authRateLimitSchemaPromise = null;
+var adminTokenSchemaPromise = null;
+var wikiAdminSchemaPromise = null;
+async function ensureAuthRateLimitSchema(env) {
+  if (!authRateLimitSchemaPromise) {
+    authRateLimitSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS auth_rate_limits (ip TEXT NOT NULL, action TEXT NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL, PRIMARY KEY(ip, action))").run().catch((error) => {
+      authRateLimitSchemaPromise = null;
+      throw error;
+    });
+  }
+  await authRateLimitSchemaPromise;
+}
 async function authRateLimited(request, env, action, limit, windowMs) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS auth_rate_limits (ip TEXT NOT NULL, action TEXT NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL, PRIMARY KEY(ip, action))").run();
+  await ensureAuthRateLimitSchema(env);
   const ip = String(request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const row = await env.DB.prepare("SELECT attempts, window_started_at FROM auth_rate_limits WHERE ip = ? AND action = ?").bind(ip, action).first();
@@ -2365,8 +2377,25 @@ async function authRateLimited(request, env, action, limit, windowMs) {
   return false;
 }
 async function ensureAdminTokenTable(env) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_tokens (id TEXT PRIMARY KEY NOT NULL, token_hash TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_auth_attempts (ip TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
+  if (!adminTokenSchemaPromise) {
+    adminTokenSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_tokens (id TEXT PRIMARY KEY NOT NULL, token_hash TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_auth_attempts (ip TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
+    })().catch((error) => {
+      adminTokenSchemaPromise = null;
+      throw error;
+    });
+  }
+  await adminTokenSchemaPromise;
+}
+async function ensureWikiAdminSchema(env) {
+  if (!wikiAdminSchemaPromise) {
+    wikiAdminSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run().catch((error) => {
+      wikiAdminSchemaPromise = null;
+      throw error;
+    });
+  }
+  await wikiAdminSchemaPromise;
 }
 function constantTimeEqual(left, right) {
   const a = String(left || ""), b = String(right || "");
@@ -2417,7 +2446,7 @@ async function currentUser(request, env) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const user = await env.DB.prepare("SELECT users.id, users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
   if (user) {
-    await env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run();
+    await ensureWikiAdminSchema(env);
     const admin = await env.DB.prepare("SELECT user_id FROM wiki_admins WHERE user_id = ?").bind(user.id).first();
     return { username: user.username, role: admin ? "admin" : "user", isAdmin: Boolean(admin) };
   }
