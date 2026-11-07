@@ -1156,7 +1156,7 @@ try {
         tableColNum += colspanInt;
       }
       appendTableRow();
-      tableDataEnd = '<table class="' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
+      tableDataEnd = '<table class="wiki-table ' + tableParameter["class"] + '" style="' + tableParameter["table"] + '">' + tableCaption + tableDataEnd + "</table>";
       tableDataEnd = '<div class="table_safe" style="' + tableParameter["div"] + '">' + tableDataEnd + "</div>";
       this.renderData = this.renderData.replace(tableRegex, "\n<front_br>" + tableDataEnd + "\n");
       tableCountAll -= 1;
@@ -1960,7 +1960,7 @@ try {
       } else if (useBold === "change") {
         dataName = this.getToolDataStorage("", "", match);
       } else {
-        dataName = this.getToolDataStorage("<b>", "</b>", match);
+        dataName = this.getToolDataStorage("<strong>", "</strong>", match);
       }
       return `<${dataName}>${data}</${dataName}>`;
     };
