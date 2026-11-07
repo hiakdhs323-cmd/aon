@@ -815,11 +815,14 @@ async function renderFullWikiDocument(request, env, title) {
     : null;
   const titleText = found ? actualTitle : actualTitle + " (문서 없음)";
   const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "아직 작성되지 않은 문서입니다.";
+  const ssrUser = await currentUser(request, env);
+  const ssrEditDenied = found && ssrUser ? await checkPageEditPermission(env, ssrUser, actualTitle) : null;
   const state = {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
+    canEdit: found ? (ssrUser ? !ssrEditDenied : false) : false,
     exists: found
   };
   const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
