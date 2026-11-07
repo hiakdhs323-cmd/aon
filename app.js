@@ -457,8 +457,9 @@ function readRoute(){
   }
   if(hash==="#/discussions"||hash.startsWith("#/discussions?")){
    const query=hash.includes("?")?hash.slice(hash.indexOf("?")+1):"";
-   const pageTitle=new URLSearchParams(query).get("title")||"";
-   loadDiscussionList(false,pageTitle);return
+   const params=new URLSearchParams(query);
+   const pageTitle=params.get("title")||"";
+   loadDiscussionList(false,pageTitle,{q:params.get("q")||"",status:params.get("status")||"all"});return
   }
   if(hash.startsWith("#/discussion/")){
    const id=Number(hash.slice("#/discussion/".length));
@@ -1251,8 +1252,10 @@ function buildDiscussionCreateForm(pageTitle=""){
  });
  return form;
 }
+let lastDiscussionListState={pageTitle:"",q:"",status:"all"};
 async function loadDiscussionList(pushRoute=true,pageTitle="",filters={}){
  const query=String(filters.q||"").trim().slice(0,80);
+ lastDiscussionListState={pageTitle:String(pageTitle||""),q:query,status:filters.status==="open"||filters.status==="closed"?filters.status:"all"};
  const status=filters.status==="open"||filters.status==="closed"?filters.status:"all";
  const title=pageTitle?pageTitle+" — 문서 토론":"최근 토론";
  document.title=title+" - AonWiki";
@@ -1372,8 +1375,15 @@ async function loadDiscussionDetail(id,pushRoute=true){
   state.className="discussion-state "+(topic.status==="closed"?"is-closed":"is-open");
   article.append(head);
   const nav=document.createElement("div");nav.className="discussion-breadcrumb";
-  const back=document.createElement("a");back.href="#/discussions"+(topic.page_title?"?title="+encodeURIComponent(topic.page_title):"");back.textContent="‹ 토론 목록";
-  back.addEventListener("click",event=>{event.preventDefault();loadDiscussionList(true,topic.page_title||"")});
+   const back=document.createElement("a");
+   const backParams=new URLSearchParams();
+   const backTitle=lastDiscussionListState.pageTitle||topic.page_title||"";
+   if(backTitle)backParams.set("title",backTitle);
+   if(lastDiscussionListState.q)backParams.set("q",lastDiscussionListState.q);
+   if(lastDiscussionListState.status!=="all")backParams.set("status",lastDiscussionListState.status);
+   back.href="#/discussions"+(backParams.toString()?"?"+backParams.toString():"");
+   back.textContent="‹ 토론 목록";
+   back.addEventListener("click",event=>{event.preventDefault();loadDiscussionList(true,lastDiscussionListState.pageTitle||topic.page_title||"",lastDiscussionListState)});
   nav.append(back);
   if(topic.page_title){nav.append(document.createTextNode(" · "));nav.append(discussionLink(topic.page_title,"연결 문서: "+topic.page_title))}
   article.append(nav);
