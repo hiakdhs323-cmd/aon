@@ -11,13 +11,19 @@ function applyWikiTheme(theme) {
   }
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = selected === "dark" ? "#050505" : "#ffffff";
-  refreshWikiTableContrast(document);
+  // Theme switching is a purely client-side operation. Never let table
+  // contrast recalculation break the document or trigger a server-render error.
+  try { refreshWikiTableContrast(document); } catch (error) { console.warn("AonWiki theme contrast refresh skipped:", error); }
 }
-applyWikiTheme(localStorage.getItem(THEME_SETTING) || "dark");
-$("theme-toggle").addEventListener("click", () => {
-  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-  localStorage.setItem(THEME_SETTING, next);
-  applyWikiTheme(next);
+try { applyWikiTheme(localStorage.getItem(THEME_SETTING) || "dark"); } catch (error) { applyWikiTheme("dark"); }
+$("theme-toggle")?.addEventListener("click", () => {
+  try {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    localStorage.setItem(THEME_SETTING, next);
+    applyWikiTheme(next);
+  } catch (error) {
+    console.warn("AonWiki theme switch failed:", error);
+  }
 });
 
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
