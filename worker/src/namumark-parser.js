@@ -2047,7 +2047,7 @@ try {
     }
     for (let tocIndex = 0; tocIndex < tocList.length; tocIndex++) {
       const element = tocList[tocIndex];
-      tocData += '<div class="opennamu_TOC_entry">' + '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) + '<a class="opennamu_TOC_link" href="#s-' + element[0] + '"><span class="opennamu_TOC_number">' + element[0] + '.</span><span class="opennamu_TOC_text"><toc_inside>' + element[1] + '</toc_inside></span></a></div>';
+      tocData += '<div class="opennamu_TOC_entry">' + '<span class="opennamu_TOC_indent"></span>'.repeat(element[0].split(".").length - 1) + '<a class="opennamu_TOC_link" href="#s-' + element[0] + '"><span class="opennamu_TOC_number">' + element[0] + '.</span> <span class="opennamu_TOC_text"><toc_inside>' + element[1] + '</toc_inside></span></a></div>';
     }
     if (tocData !== "") {
       tocData += "</div></details>";
