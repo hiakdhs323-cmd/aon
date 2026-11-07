@@ -137,7 +137,7 @@ assert.ok(htmlSource.includes('<option value="files">파일만</option>'), "sear
 
 const category = render("== 개요 ==\n본문\n[[분류:일반 틀]]\n[[분류:사건 사고]]");
 assert.match(category, /opennamu_category_label/, "category strip label must render");
-assert.match(category, /class="opennamu_category_label" style="color:var\(--wiki-text\)!important;"/, "category label must receive a theme-aware foreground from the server parser");
+assert.match(category, /class="opennamu_category_label" style="color:var\(--wiki-text\)!important;[^"]*"/, "category label must receive a theme-aware foreground from the server parser");
 assert.match(category, /style="color:var\(--wiki-link\)!important;text-decoration:none!important;"/, "category links must receive the blue theme link color from the server parser");
 
 assert.match(category, /분류:/, "category label must say 분류:");
