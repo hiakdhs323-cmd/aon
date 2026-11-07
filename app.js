@@ -23,7 +23,7 @@ $("theme-toggle").addEventListener("click", () => {
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
-const initialSsrState=window.__AONWIKI_SSR__||null;
+const initialSsrState=(()=>{const node=document.getElementById("aonwiki-ssr-state");if(!node)return null;try{return JSON.parse(node.textContent||"null")}catch(error){console.warn("AonWiki SSR state parsing failed",error);return null}})();
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 let currentDiscussionView=false;
 const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
@@ -32,7 +32,7 @@ function routeFor(title,anchor=""){
  if(!name||name==="대문")return "/";
  return "/w/"+encodeURIComponent(name)+(anchor?"#"+encodeURIComponent(anchor):"");
 }
-async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const res=await fetch(apiBase()+path,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
+async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);const method=String(options.method||"GET").toUpperCase();if(method!=="GET"&&method!=="HEAD"&&method!=="OPTIONS")headers.set("X-AonWiki-Request","1");if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const target=new URL(path,apiBase()+"/");if(target.origin!==new URL(apiBase()+"/").origin)throw new Error("허용되지 않은 API 주소입니다.");const res=await fetch(target.href,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 let isWikiAdmin=false;
 let currentRole="anonymous";
 const AON_UI_ICON_SHAPES = {
@@ -1112,6 +1112,53 @@ function prepareServerRenderedMarkup(root,docTitle){
     });
   }
 }
+function appendSanitizedServerHtml(target,html){
+ const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
+ const allowedTags=new Set(["A","ABBR","B","BDI","BDO","BLOCKQUOTE","BR","CAPTION","CENTER","CODE","COL","COLGROUP","DD","DEL","DETAILS","DIV","DL","DT","EM","FIGCAPTION","FIGURE","FONT","FOOTNOTE_TITLE","H1","H2","H3","H4","H5","H6","HR","I","IFRAME","IMG","INS","KBD","LI","MARK","OL","P","PRE","Q","RUBY","RT","RP","S","SAMP","SMALL","SPAN","STRIKE","STRONG","SUB","SUMMARY","SUP","TABLE","TBODY","TD","TFOOT","TH","THEAD","TR","TT","U","UL","VAR","VIDEO","AUDIO","SOURCE"]);
+ const blockedTags=new Set(["SCRIPT","STYLE","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META","BASE","SVG","MATH","APPLET"]);
+ const allowedFrameHosts=new Set(["www.youtube.com","youtube.com","www.instagram.com","www.facebook.com","www.tiktok.com","twitframe.com","tv.kakao.com","tv.naver.com","embed.nicovideo.jp","player.vimeo.com"]);
+ const urlAttrs=new Set(["href","src","poster"]);
+ const safeUrl=(value,tag,name)=>{
+  const raw=String(value||"").trim();
+  if(!raw||/^(?:javascript|vbscript|data|file|blob):/i.test(raw))return false;
+  try{
+   const parsed=new URL(raw,location.href);
+   if(name==="href"){
+    return raw.startsWith("#")||["http:","https:","mailto:","tel:"].includes(parsed.protocol);
+   }
+   if(tag==="IFRAME")return parsed.protocol==="https:"&&allowedFrameHosts.has(parsed.hostname);
+   return parsed.protocol==="http:"||parsed.protocol==="https:"||raw.startsWith("/");
+  }catch{return false}
+ };
+ const walk=root=>{
+  for(const node of [...root.children]){
+   const tag=node.tagName;
+   if(blockedTags.has(tag)){node.remove();continue}
+   if(!allowedTags.has(tag)){node.replaceWith(...node.childNodes);continue}
+   for(const attr of [...node.attributes]){
+    const name=attr.name.toLowerCase(),value=attr.value;
+    if(name.startsWith("on")||name==="srcdoc"||name==="formaction"||name==="action"||name==="xlink:href"||!["alt","allow","allowfullscreen","class","colspan","fn_target","frameborder","height","href","id","lang","loading","open","poster","referrerpolicy","rel","rowspan","src","style","tabindex","target","title","type","width","align","valign","controls","loop","muted"].includes(name)){node.removeAttribute(attr.name);continue}
+    if(urlAttrs.has(name)&&!safeUrl(value,tag,name)){node.removeAttribute(attr.name);continue}
+   }
+   if(tag==="IFRAME"){
+    const src=node.getAttribute("src")||"";
+    if(!safeUrl(src,tag,"src")){node.remove();continue}
+    node.setAttribute("loading","lazy");node.setAttribute("referrerpolicy","strict-origin-when-cross-origin");node.setAttribute("allowfullscreen","");
+   }
+   if(tag==="A"){
+    const href=node.getAttribute("href")||"";
+    if(/^https?:\/\//i.test(href)){node.setAttribute("target","_blank");node.setAttribute("rel","noopener noreferrer")}
+   }
+   if(node.hasAttribute("id")&&/^(?:__proto__|constructor|prototype|location|top|parent|frames|self|opener|name|length)$/i.test(node.getAttribute("id")||""))node.removeAttribute("id");
+   if(node.hasAttribute("name"))node.removeAttribute("name");
+   walk(node);
+  }
+ };
+ walk(parsed.body);
+ const fragment=document.createDocumentFragment();
+ while(parsed.body.firstChild)fragment.appendChild(parsed.body.firstChild);
+ target.replaceChildren(fragment);
+}
 const serverRenderVersions = new WeakMap();
 async function renderNamuMarkup(source, target, docTitle = currentTitle || "대문") {
   if (!target || !(target instanceof Element)) throw new TypeError("SSR 대상 요소가 필요합니다.");
@@ -1127,7 +1174,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
       })
     });
     if (serverRenderVersions.get(target) !== version) return;
-    target.innerHTML = String(data.html || "");
+    appendSanitizedServerHtml(target,data.html);
     prepareServerRenderedMarkup(target, docTitle);
     target.dataset.renderEngine = data.engine || "namumark-worker";
   } catch (error) {
@@ -2007,7 +2054,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
   applyDocumentActionIcons();
   const staging=document.createElement("article");
-  staging.innerHTML=String(data.html||"");
+  appendSanitizedServerHtml(staging,data.html);
   prepareServerRenderedMarkup(staging,displayTitle);
   if(requestId!==pageNavigationSequence)return;
   const article=$("article");
