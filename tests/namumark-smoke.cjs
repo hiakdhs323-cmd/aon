@@ -145,6 +145,7 @@ assert.doesNotMatch(category, /opennamu_category_button|\(-\)/, "category strip 
 assert.doesNotMatch(category, /<hr class="main_hr">/, "category must not add a stray horizontal rule");
 assert.ok(cssSource.includes("#article.wiki-content .opennamu_category_links a:visited") && cssSource.includes("color:var(--wiki-link)!important"), "category links must retain the blue link color over body-link styling");
 assert.ok(cssSource.includes("#article.wiki-content .opennamu_category{") && cssSource.includes("width:100%!important") && cssSource.includes("border-top:1px solid var(--wiki-border)!important"), "category divider must span the full article width");
+assert.doesNotMatch(cssSource.slice(cssSource.lastIndexOf("/* Restore the original full-width category separator")), /(?:^|[;{])\s*background(?:-color)?\s*:/, "category divider styling must not replace the existing theme background");
 assert.ok(!parserSource.includes('style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0 4px;width:fit-content;max-width:100%;"'), "category container must not force a compact inline layout");
 const numberedList = render("목록 안내\n1. 첫 번째 항목\n1. 두 번째 항목\n\n마지막 문장");
 assert.match(numberedList, /wiki-numbered-list/, "the default 1. numbered-list renderer must remain enabled");
