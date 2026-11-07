@@ -1009,7 +1009,10 @@ try {
           else if (tableParameterName == "coltextalign" && ["left", "center", "right", "justify"].includes(tableParameterData.toLowerCase())) tableParameterAll["col"] += "text-align:" + tableParameterData.toLowerCase() + " !important;";
           else if (tableParameterName == "bgcolor") tableParameterAll["td"] += this.getToolThemeColorStyle("background", "bg", tableParameterData);
           else if (tableParameterName == "color") tableParameterAll["td"] += this.getToolThemeColorStyle("color", "fg", tableParameterData);
-          else if (tableParameterName == "width") tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          else if (tableParameterName == "width") {
+            const width = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
+            if (width) tableParameterAll["td"] += "width:" + this.getToolPxAddCheck(tableParameterData) + ";";
+          }
           else if (tableParameterName == "height") {
             const height = tableParameterData.match(/^(?:[0-9]+(?:\.[0-9]+)?)(?:px|%|em|rem|vw|vh)?$/i);
             if (!height) {
