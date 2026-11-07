@@ -85,6 +85,8 @@ assert.ok(appSource.includes("link.prepend(icon)"), "external link icon must pre
 assert.ok(workerSource.includes('aonfix", "20261107-security-hardening-v3"'), "Worker must cache-bust the current frontend assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
+const buildWorkflowSource = fs.readFileSync(".github/workflows/build-namumark.yml", "utf8");
+const pagesWorkflowSource = fs.readFileSync(".github/workflows/pages.yml", "utf8");
 const themeSource = fs.readFileSync("theme.js", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
 assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text colors must be marked and preserved");
@@ -220,7 +222,6 @@ assert.ok(cssSource.includes("wiki-numbered-list"), "numbered-list CSS must rema
 assert.ok(cssSource.includes(".opennamu_footnote"), "footnote CSS must remain present");
 assert.ok(cssSource.includes('a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"])'), "footnote markers must keep their native link appearance");
 assert.ok(workerSource.includes('aonfix", "20261107-security-hardening-v3"'), "SSR must refresh the latest NamuWiki-style assets");
-console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
 
 assert.ok(workerSource.includes("X-AonWiki-Request"), "state-changing API requests must require the AonWiki anti-CSRF header");
 assert.ok(workerSource.includes("async function readJsonBody") && workerSource.includes("application/json"), "JSON API bodies must use a bounded application/json parser");
@@ -267,3 +268,20 @@ assert.ok(htmlSource.includes("script-src-attr 'none'") && htmlSource.includes("
 assert.ok(parserSource.includes('data-opennamu-action="heading-fold"') && !parserSource.includes('onclick="javascript:opennamu_heading_folding'), "heading folding markup must not emit inline JavaScript handlers");
 assert.ok(appSource.includes('parserAction === "heading-fold"') && appSource.includes('"data-opennamu-action"'), "client sanitizer must preserve and bind the safe heading-fold action");
 assert.ok(workerSource.includes('setAttribute("data-opennamu-action","heading-fold")'), "Worker sanitizer must convert legacy heading onclick markup to a safe data action");
+
+const authRateLimitBody = workerSource.match(/async function authRateLimited[\s\S]*?(?=async function ensureAdminTokenTable)/)?.[0] || "";
+assert.ok(workerSource.includes("let authRateLimitSchemaPromise = null"), "rate-limit schema initialization must be cached per Worker isolate");
+assert.ok(workerSource.includes("async function ensureAuthRateLimitSchema"), "rate-limit schema must have a retryable initializer");
+assert.doesNotMatch(authRateLimitBody, /CREATE TABLE IF NOT EXISTS/, "hot rate-limit checks must not execute DDL on every request");
+const adminTokenSchemaBody = workerSource.match(/async function ensureAdminTokenTable[\s\S]*?(?=async function ensureWikiAdminSchema)/)?.[0] || "";
+assert.ok(adminTokenSchemaBody.includes("adminTokenSchemaPromise") && adminTokenSchemaBody.includes("adminTokenSchemaPromise = null"), "admin-token schema setup must be cached and retry after failures");
+const wikiAdminSchemaBody = workerSource.match(/async function currentUser[\s\S]*?(?=function anonymousEditorIdentity)/)?.[0] || "";
+assert.ok(wikiAdminSchemaBody.includes("await ensureWikiAdminSchema(env)"), "member role lookup must use cached wiki-admin schema initialization");
+assert.doesNotMatch(wikiAdminSchemaBody, /CREATE TABLE IF NOT EXISTS/, "authenticated requests must not issue wiki-admin DDL repeatedly");
+
+assert.ok(buildWorkflowSource.includes('      - "index.html"') && buildWorkflowSource.includes('      - "style.css"'), "frontend shell and stylesheet changes must run regression tests");
+assert.ok(buildWorkflowSource.includes("cancel-in-progress: false"), "parser builds must be serialized to prevent concurrent generated-bundle pushes");
+assert.ok(buildWorkflowSource.includes('git commit -m "Build generated NamuMark bundles"'), "generated bundles must trigger the final Pages deployment instead of being skipped");
+assert.ok(pagesWorkflowSource.includes("cancel-in-progress: true"), "Pages deployments must cancel stale in-flight deploys when generated bundles arrive");
+
+console.log("NamuMark smoke tests passed: renderer, security, auth-schema caching and deployment workflow.");

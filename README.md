@@ -1,68 +1,58 @@
 # AonWiki
 
-AonWiki serves complete article HTML documents from Cloudflare Workers. The Worker loads the shared HTML shell, reads the requested article from D1, parses and sanitizes the markup on the server, and returns a complete HTML document for direct `/w/<encoded-title>` requests. GitHub Pages remains the static asset origin; D1 stores article text and revision metadata.
+AonWiki is a NamuMark-based wiki. The public frontend is served by GitHub Pages, while a Cloudflare Worker handles document delivery, the API, security checks, and database access.
 
 ## Architecture
 
-- **Frontend:** HTML, CSS, JavaScript in this repository; deployed with GitHub Actions to GitHub Pages.
-- **API:** Cloudflare Worker in `worker/src/index.js`.
-- **Database:** Cloudflare D1. Article content and revision metadata are stored in D1.
-- **Images:** Cloudflare R2. The Worker validates uploads and serves stored images.
-- **Editor access:** one administrator token stored as a Cloudflare Worker secret. Readers can browse; only token holders can save pages or upload images.
+- **Frontend:** `index.html`, `app.js`, `style.css`, and related assets in the repository. GitHub Pages publishes the site.
+- **NamuMark source:** `parser-src/`. The build workflow generates a browser bundle at `namumark-parser.js` and a Worker-side module at `worker/src/namumark-parser.js`.
+- **Worker:** `worker/src/index.js`. The reproducible, bundled production entrypoint is `worker/dist/index.js`.
+- **Database:** Cloudflare D1, bound to the Worker as `DB`. The production database is named `aon`.
+- **Production hostname:** `aon69446.p-e.kr`. The Worker loads the static HTML shell and assets from `https://hiakdhs323-cmd.github.io/aon`.
 
-This is an independent wiki implementation. Its production NamuMark engine runs in the Cloudflare Worker; the browser-side beta engine switch is no longer part of the user interface.
+D1 stores wiki pages, revision metadata, member/session data, discussions, page protections, official-document status, image records, and persistent render-cache data. The repository contains no production credentials.
 
-## Deploy the GitHub Pages frontend
+## Rendering
 
-1. Open this repository's **Settings → Pages**.
-2. Set the build/deployment source to **GitHub Actions**.
-3. Pushes to `main` run `.github/workflows/pages.yml`.
-4. The site URL should be `https://hiakdhs323-cmd.github.io/aon/` after the workflow succeeds.
+Most documents are parsed and sanitized in the Worker before a complete `/w/<encoded-title>` HTML document is returned.
 
-## Set up the Cloudflare API
+The `아온` document uses a bounded hybrid path. The Worker expands its includes and prepares only the referenced document/link data; the browser runs the NamuMark parser. This avoids doing the expensive parse inside the Worker's constrained request CPU budget. The normal Worker-side renderer remains in use for other documents and API previews.
 
-Requirements: Node.js LTS and Wrangler CLI.
+Static parser and frontend assets are proxied through the Worker on the custom hostname. This keeps scripts same-origin and allows the strict Content Security Policy to reject inline event handlers.
+
+## Build and deployment
+
+Two GitHub Actions workflows are used:
+
+- `.github/workflows/build-namumark.yml` checks JavaScript, builds both parser bundles, runs `tests/namumark-smoke.cjs`, and generates `worker/dist/index.js`. Generated bundles are committed back to `main`.
+- `.github/workflows/pages.yml` deploys the frontend to GitHub Pages. The generated-bundle commit also triggers Pages deployment so the live browser parser cannot remain behind the source parser.
+
+The Worker is deployed separately from the GitHub Pages frontend. Deploy the generated `worker/dist/index.js` bundle as the `aon` Worker while preserving its existing production bindings:
+
+- `DB`: D1 database `aon`
+- `ALLOWED_ORIGIN`: `https://hiakdhs323-cmd.github.io,https://aon69446.p-e.kr`
+- `FRONTEND_ORIGIN`: `https://hiakdhs323-cmd.github.io/aon`
+
+Do not replace production bindings or secrets with empty values during an upload. The custom domain and 100% traffic deployment are configured on the Cloudflare side.
+
+## Local validation
+
+Run these commands from the repository root with Node.js 22 or later:
 
 ```bash
-npm install -g wrangler
-wrangler login
-wrangler d1 create aonwiki
-wrangler r2 bucket create aonwiki-images
+node --check app.js
+npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=iife --global-name=NamuMarkBundle --target=es2020 --outfile=namumark-parser.js
+npx --yes esbuild@0.25.0 parser-src/index.ts --bundle --format=esm --target=es2020 --outfile=worker/src/namumark-parser.js
+node tests/namumark-smoke.cjs
+npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --outfile=worker/dist/index.js
+node --check worker/dist/index.js
 ```
 
-Copy the D1 database ID printed by the first command into `wrangler.toml`, replacing `REPLACE_WITH_D1_DATABASE_ID`. Then initialize the database and set an administrator token:
+The smoke suite includes parser behavior, rendering, theme/CSS contracts, security headers, sanitization, and deployment-workflow regression checks. It is also run automatically by GitHub Actions before generated bundles are committed.
 
-```bash
-wrangler d1 execute aonwiki --remote --file=worker/schema.sql
-wrangler secret put ADMIN_TOKEN
-wrangler deploy
-```
+## Operational notes
 
-Use a long, random token. Do not put it in source files, commit it to GitHub, or share it publicly. The token is an administrator credential.
-
-After deployment, open the site, choose **설정**, and enter the Worker URL (usually `https://aonwiki-api.<your-account>.workers.dev`) and the token. The token is kept in the current browser session only.
-
-## Current starter features
-
-- Article list/search and article reading
-- Article creation/editing and revision history
-- Wiki-style links: `[[문서 제목]]` or `[[문서 제목|표시 문구]]`
-- Section headings: `== 문단 제목 ==`
-- Image uploads for PNG, JPEG, GIF, and WebP, up to 5 MiB per file
-- Image storage in R2; article text and revision metadata in D1
-- Responsive layout for desktop and mobile
-
-## Security and limits
-
-- Public visitors can read articles. Only the administrator token can write articles or upload images.
-- This starter does **not** yet provide individual member accounts, per-user permissions, moderation queues, or a complete NamuMark implementation.
-- The Worker checks file type and size, but file extensions alone are not a guarantee that an uploaded file is safe. Only upload images you have permission to publish.
-- Cloudflare free plans have storage, request, and runtime limits; they are not unlimited. Check the current Cloudflare dashboard for actual quotas.
-- Configure `ALLOWED_ORIGIN` in `wrangler.toml` to match the exact origin of your GitHub Pages site if you move the repository to another owner/name.
-
-
-## Full-document rendering deployment
-
-The Worker must receive the site hostname requests, not only API requests. In Cloudflare, attach the hostname used by the wiki (for example, `aon69446.p-e.kr`) to this Worker as a Custom Domain or route the hostname's traffic to the Worker. Keep the GitHub Pages URL as the asset origin. Set the Worker variable `FRONTEND_ORIGIN` to `https://hiakdhs323-cmd.github.io/aon` if the default differs.
-
-Direct article URLs use `/w/<URL-encoded-title>`. The Worker returns the complete HTML document, including the page shell, article title, metadata, and parsed article body. The old JSON `/api/render` endpoint remains for editor previews and API compatibility; it is not the article page delivery path.
+- Keep article and user data in D1; do not commit exports, access tokens, or secrets to the repository.
+- Preserve the existing cache invalidation behavior when editing or restoring a page.
+- Do not add inline script event attributes. Use delegated or explicitly registered event listeners and `data-*` action markers.
+- A Worker deployment rollback changes code, not D1 data. Database changes must remain backward-compatible with the code versions that may be rolled back to.

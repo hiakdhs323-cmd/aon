@@ -6,11 +6,18 @@ on:
       - "parser-src/**"
       - "worker/src/index.js"
       - "app.js"
+      - "index.html"
+      - "style.css"
+      - "theme.js"
+      - "worker/schema.sql"
       - ".github/workflows/build-namumark.yml"
       - "tests/**"
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: namumark-build-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,6 +48,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No parser changes."
           else
-            git commit -m "Build browser NamuMark parser [skip ci]"
+            git commit -m "Build generated NamuMark bundles"
             git push
           fi
