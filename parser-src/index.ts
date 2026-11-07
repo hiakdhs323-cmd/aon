@@ -2129,13 +2129,13 @@ try {
           if (this.dataCategory === "") {
             this.dataCategory =
               '<div class="opennamu_category" id="cate">' +
-              '<span class="opennamu_category_label">분류:</span>' +
+              '<span class="opennamu_category_label" style="color:var(--wiki-text)!important;">분류:</span>' +
               '<span class="opennamu_category_links">';
           } else {
             this.dataCategory += " | ";
           }
 
-          this.dataCategory += `<a class="${categoryBlur} ${linkExist}" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
+          this.dataCategory += `<a class="${categoryBlur} ${linkExist}" style="color:var(--wiki-link)!important;text-decoration:none!important;" title="${linkSub}" href="/w/category:${linkMain}">${linkSub}</a>`;
         }
 
         replaceCurrentMatch("");
