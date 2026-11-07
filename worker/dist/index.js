@@ -2830,7 +2830,7 @@ async function getCachedNamuPageCount(env) {
 }
 async function sanitizeServerWikiHtml(markup) {
   const source = String(markup || "");
-  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\\b|\\bon[a-z]+\\s*=|(?:href|src|poster)\\s*=\\s*["']\\s*(?:javascript|data|vbscript):/i.test(source)) {
+  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\b|\bon[a-z]+\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=\s*/i.test(source)) {
     return source;
   }
   const input = new Response(source, { headers: { "Content-Type": "text/html; charset=utf-8" } });
@@ -3167,20 +3167,117 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     return name + "=" + quote + "/aon/" + file + parsed.search + parsed.hash + quote;
   });
 }
-var frontendShellCache = { value: null, expiresAt: 0 };
+var FRONTEND_TRANSIENT_STATUSES = /* @__PURE__ */ new Set([429, 500, 502, 503, 504]);
+async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
+  let lastResponse = null;
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const upstream = await fetch(url, init);
+      if (!FRONTEND_TRANSIENT_STATUSES.has(upstream.status)) return upstream;
+      lastResponse = upstream;
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt + 1 < attempts) {
+      await new Promise((resolve) => setTimeout(resolve, 120 * (attempt + 1)));
+    }
+  }
+  if (lastResponse) return lastResponse;
+  throw lastError || new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uC11C\uBC84\uC5D0 \uC5F0\uACB0\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+}
+var frontendShellCache = { value: null, expiresAt: 0, staleUntil: 0 };
 var frontendShellPending = null;
+var frontendAssetCache = /* @__PURE__ */ new Map();
+var frontendAssetPending = /* @__PURE__ */ new Map();
+function makeFrontendAssetResponse(entry, cacheState) {
+  const headers = new Headers(getSecurityHeaders());
+  headers.set("Content-Type", entry.contentType || "application/octet-stream");
+  headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+  headers.set("X-AonWiki-Asset-Proxy", "1");
+  headers.set("X-AonWiki-Asset-Cache", cacheState);
+  return new Response(entry.body.slice(), { status: 200, headers });
+}
+async function loadFrontendAsset(assetUrl, acceptHeader) {
+  const now = Date.now();
+  const cached = frontendAssetCache.get(assetUrl);
+  if (cached && cached.expiresAt > now) return { entry: cached, cacheState: "HIT" };
+  if (frontendAssetPending.has(assetUrl)) return frontendAssetPending.get(assetUrl);
+  const pending = (async () => {
+    let upstream;
+    try {
+      upstream = await fetchFrontendWithRetry(assetUrl, {
+        headers: { "Accept": acceptHeader || "*/*" },
+        cf: { cacheTtl: 3600, cacheEverything: true }
+      });
+    } catch (error) {
+      if (cached && cached.staleUntil > Date.now()) {
+        console.warn("AonWiki static asset using stale cache after upstream network failure:", assetUrl);
+        return { entry: cached, cacheState: "STALE" };
+      }
+      throw error;
+    }
+    if (!upstream.ok) {
+      if (FRONTEND_TRANSIENT_STATUSES.has(upstream.status) && cached && cached.staleUntil > Date.now()) {
+        console.warn("AonWiki static asset using stale cache after upstream HTTP failure:", upstream.status, assetUrl);
+        return { entry: cached, cacheState: "STALE" };
+      }
+      return { status: upstream.status };
+    }
+    const body = new Uint8Array(await upstream.arrayBuffer());
+    const entry = {
+      body,
+      contentType: upstream.headers.get("Content-Type") || "application/octet-stream",
+      expiresAt: Date.now() + 5 * 60 * 1e3,
+      staleUntil: Date.now() + 24 * 60 * 60 * 1e3
+    };
+    if (body.byteLength <= 2 * 1024 * 1024) {
+      frontendAssetCache.set(assetUrl, entry);
+      while (frontendAssetCache.size > 8) {
+        const oldest = frontendAssetCache.keys().next().value;
+        if (oldest) frontendAssetCache.delete(oldest);
+        else break;
+      }
+    }
+    return { entry, cacheState: "MISS" };
+  })().finally(() => frontendAssetPending.delete(assetUrl));
+  frontendAssetPending.set(assetUrl, pending);
+  return pending;
+}
 async function loadFrontendShell(env) {
   if (frontendShellCache.value && frontendShellCache.expiresAt > Date.now()) return frontendShellCache.value;
   if (frontendShellPending) return frontendShellPending;
+  const staleShell = frontendShellCache.value && frontendShellCache.staleUntil > Date.now() ? frontendShellCache.value : null;
   frontendShellPending = (async () => {
-    const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-security-hardening-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
-    if (!shellResponse.ok) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
-    const shell = await shellResponse.text();
-    if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
-    const value = { shell: rewriteFrontendAssets(shell, origin), origin };
-    frontendShellCache = { value, expiresAt: Date.now() + 30 * 1e3 };
-    return value;
+    try {
+      const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+      const shellResponse = await fetchFrontendWithRetry(
+        origin + "/?aonwiki-shell=20261107-upstream-resilience-v1",
+        { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
+      );
+      if (!shellResponse.ok) {
+        const error = new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
+        error.status = shellResponse.status;
+        throw error;
+      }
+      const shell = await shellResponse.text();
+      if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      const value = { shell: rewriteFrontendAssets(shell, origin), origin };
+      frontendShellCache = {
+        value,
+        expiresAt: Date.now() + 5 * 60 * 1e3,
+        staleUntil: Date.now() + 24 * 60 * 60 * 1e3
+      };
+      return value;
+    } catch (error) {
+      const transient = !Number(error?.status) || FRONTEND_TRANSIENT_STATUSES.has(Number(error.status));
+      if (staleShell && transient) {
+        console.warn("AonWiki serving the last known-good frontend shell:", error?.message || error);
+        frontendShellCache.expiresAt = Date.now() + 15 * 1e3;
+        return staleShell;
+      }
+      throw error;
+    }
   })().finally(() => {
     frontendShellPending = null;
   });
@@ -3264,12 +3361,26 @@ var index_default = {
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
         const assetUrl = origin + "/" + assetName + url.search;
-        const assetResponse = await fetch(assetUrl, { headers: { "Accept": request.headers.get("Accept") || "*/*", "Cache-Control": "no-cache" } });
-        const headers = new Headers(getSecurityHeaders());
-        headers.set("Content-Type", assetResponse.headers.get("Content-Type") || "application/octet-stream");
-        headers.set("Cache-Control", "public, max-age=300, must-revalidate");
-        headers.set("X-AonWiki-Asset-Proxy", "1");
-        return new Response(assetResponse.body, { status: assetResponse.status, headers });
+        try {
+          const result = await loadFrontendAsset(assetUrl, request.headers.get("Accept") || "*/*");
+          if (result.entry) return makeFrontendAssetResponse(result.entry, result.cacheState);
+          const status = Number(result.status) || 502;
+          const message = status >= 500 ? "\uC815\uC801 \uB9AC\uC18C\uC2A4 \uC11C\uBC84\uAC00 \uC77C\uC2DC\uC801\uC73C\uB85C \uC751\uB2F5\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." : "\uC815\uC801 \uB9AC\uC18C\uC2A4\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
+          const headers = new Headers(getSecurityHeaders());
+          headers.set("Content-Type", "text/plain; charset=utf-8");
+          headers.set("Cache-Control", "no-store");
+          headers.set("Retry-After", "2");
+          headers.set("X-AonWiki-Asset-Proxy", "1");
+          return new Response(message, { status, headers });
+        } catch (error) {
+          console.error("AonWiki static asset proxy failed:", assetName, error?.message || error);
+          const headers = new Headers(getSecurityHeaders());
+          headers.set("Content-Type", "text/plain; charset=utf-8");
+          headers.set("Cache-Control", "no-store");
+          headers.set("Retry-After", "2");
+          headers.set("X-AonWiki-Asset-Proxy", "1");
+          return new Response("\uC815\uC801 \uB9AC\uC18C\uC2A4 \uC11C\uBC84\uC5D0 \uC77C\uC2DC\uC801\uC73C\uB85C \uC5F0\uACB0\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.", { status: 503, headers });
+        }
       }
       if (request.method === "GET" && url.pathname.startsWith("/w/")) {
         let title = "";
@@ -4271,9 +4382,15 @@ var index_default = {
       }
       return response({ error: "\uC694\uCCAD\uD55C \uACBD\uB85C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
     } catch (error) {
-      console.error("AonWiki API error", error);
       const status = Number(error?.status);
+      console.error("AonWiki request failed", {
+        method: request.method,
+        path: url.pathname,
+        status: status || 500,
+        message: String(error?.message || error || "unknown")
+      });
       if (status >= 400 && status < 500) return response({ error: String(error?.message || "\uC798\uBABB\uB41C \uC694\uCCAD\uC785\uB2C8\uB2E4.") }, status, cors);
+      if (status >= 500) return response({ error: "\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uB9AC\uC18C\uC2A4\uB97C \uC77C\uC2DC\uC801\uC73C\uB85C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 503, cors);
       return response({ error: "\uC11C\uBC84 \uB0B4\uBD80 \uC624\uB958" }, 500, cors);
     }
   }
