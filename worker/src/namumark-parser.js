@@ -1212,7 +1212,7 @@ try {
           else if (doType == "roman_small") changeText = intToRoman(listNum[doType][listLen - 1]).toLowerCase();
           else if (doType == "alpha_big") changeText = intToAlpha(listNum[doType][listLen - 1]).toUpperCase();
           else changeText = intToAlpha(listNum[doType][listLen - 1]).toLowerCase();
-          return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none"><span class="wiki-list-number">' + changeText + '.</span> <span class="wiki-list-text">' + listData + "</span></li>";
+          return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none">' + changeText + ". " + listData + "</li>";
         }
       };
     };
@@ -2010,7 +2010,7 @@ try {
           ' <sub><a id="' + headingIdName + '" href="/edit_section/' + headingCount + "/" + urlPas(this.docName) + `">\u270E</a> <a href="javascript:void(0);" onclick="javascript:opennamu_heading_folding('` + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + `', this);">` + headingFolding[0] + "</a></sub></span></h" + headingLevel + ">",
           headingDataOrg
         );
-        const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + "</heading_stack> " + headingDataText + "</" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
+        const headingDataComplete = "\n<front_br>" + (headingCount != 1 ? "</div>" : "") + "<" + dataName + "><heading_stack>" + headingStackStr + "</heading_stack> <span class=\"wiki-heading-text\">" + headingDataText + "</span></" + dataName + '><div id="' + this.docSet["docInclude"] + "opennamu_heading_" + headingCount + '" style="display: ' + headingFolding[1] + ';"><back_br>\n';
         this.renderData = this.renderData.replace(headingRegex, headingDataComplete);
       }
       headingCountAll -= 1;
@@ -2033,7 +2033,7 @@ try {
     }
     for (let index = 0; index < results.length; index++) {
       const result = results[index];
-      const content = `<a href="#toc" id="s-${result[1]}">${result[1]}.</a>`;
+      const content = `<a class="wiki-heading-number" href="#toc" id="s-${result[1]}">${result[1]}.</a>`;
       this.renderData = this.renderData.replace(headingIdRegex, content);
       tocList[index][0] = result[1];
     }
