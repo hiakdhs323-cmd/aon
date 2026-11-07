@@ -931,7 +931,8 @@ function sanitizeNamuOutput(root, docTitle) {
     }
     if (tag === "IMG") {
       const src = node.getAttribute("src") || "";
-      if (src.startsWith("/image/") || src.startsWith("/media/")) node.setAttribute("src", apiBase() + src);
+      // Server-rendered media paths are relative to the Worker, while the wiki UI is hosted on GitHub Pages.
+      if (src.startsWith("/image/") || src.startsWith("/media/")) node.setAttribute("src", new URL(src, apiBase() + "/").href);
       node.setAttribute("loading", "lazy");
       node.setAttribute("decoding", "async");
       node.addEventListener("error", () => {
