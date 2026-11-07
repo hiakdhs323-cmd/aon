@@ -241,6 +241,8 @@ assert.ok(workerSource.includes("official_documents"), "official document state 
 assert.ok(workerSource.includes('/api/page/official'), "official document API must exist");
 assert.ok(workerSource.includes("officialMarkedBy"), "official document metadata must be returned");
 assert.ok(appSource.includes('data.page.canEdit === false'), "edit button visibility must honor the server's effective edit permission");
+assert.ok(appSource.includes('currentCanEdit=initialSsrState?.canEdit===true?true:null'), "SSR false edit state must be re-evaluated after client authentication");
+assert.ok(appSource.includes('const permissionFallback=authenticated && (currentProtection.level!==\"admin\" || isWikiAdmin)'), "authenticated refresh must preserve edit controls according to page protection");
 assert.ok(appSource.includes('official-document'), "administrator official-document controls must exist");
 assert.ok(cssSource.includes(".admin-protection-button") && cssSource.includes(".admin-official-button"), "protection and official controls must use the compact wiki-style admin button treatment");
 assert.ok(htmlSource.includes('id="official-status"') && htmlSource.includes('id="official-document"'), "article title bar must expose official document status and admin control");
