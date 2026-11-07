@@ -38,7 +38,49 @@ function routeFor(title,anchor=""){
  if(!name||name==="대문")return "/";
  return "/w/"+encodeURIComponent(name)+(anchor?"#"+encodeURIComponent(anchor):"");
 }
-async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);const method=String(options.method||"GET").toUpperCase();if(method!=="GET"&&method!=="HEAD"&&method!=="OPTIONS")headers.set("X-AonWiki-Request","1");if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const target=new URL(path,apiBase()+"/");if(target.origin!==new URL(apiBase()+"/").origin)throw new Error("허용되지 않은 API 주소입니다.");const res=await fetch(target.href,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
+async function api(path,options={}){
+ const headers=new Headers(options.headers||{});
+ const token=sessionStorage.getItem(TOKEN_SETTING);
+ if(token)headers.set("Authorization","Bearer "+token);
+ const method=String(options.method||"GET").toUpperCase();
+ if(method!=="GET"&&method!=="HEAD"&&method!=="OPTIONS")headers.set("X-AonWiki-Request","1");
+ if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");
+ const target=new URL(path,apiBase()+"/");
+ if(target.origin!==new URL(apiBase()+"/").origin)throw new Error("허용되지 않은 API 주소입니다.");
+ const canRetry=["GET","HEAD"].includes(method);
+ let lastError=null;
+ for(let attempt=0;attempt<(canRetry?3:1);attempt++){
+  try{
+   const requestOptions={...options,headers};
+   if(canRetry&&attempt>0)requestOptions.cache="no-store";
+   const res=await fetch(target.href,requestOptions);
+   const raw=await res.text();
+   let data={};
+   try{data=raw?JSON.parse(raw):{}}catch{
+    if(res.ok&&attempt+1<(canRetry?3:1)){await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)));continue}
+   }
+   if(!res.ok){
+    const transient=[429,502,503,504].includes(res.status);
+    const retryAfter=Math.min(2000,Math.max(100,Number(res.headers.get("Retry-After")||0)*1000));
+    if(transient&&canRetry&&attempt+1<3){
+     await new Promise(resolve=>setTimeout(resolve,retryAfter||200*(attempt+1)));
+     continue;
+    }
+    const detail=[data.error,data.detail].filter(Boolean).join(" — ");
+    throw new Error(detail||("요청 실패 ("+res.status+")"));
+   }
+   return data;
+  }catch(error){
+   lastError=error;
+   if(canRetry&&attempt+1<3){
+    await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)));
+    continue;
+   }
+   throw error;
+  }
+ }
+ throw lastError||new Error("요청 실패");
+}
 let isWikiAdmin=false;
 let currentRole="anonymous";
 let identityResolved=false;
