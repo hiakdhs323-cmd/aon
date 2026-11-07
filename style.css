@@ -235,6 +235,11 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .wiki-content h2{margin:23px 0 10px;padding:0 0 5px;border-bottom:1px solid var(--wiki-border-strong);font-size:20px;font-weight:600;color:var(--wiki-text)}
 .wiki-content .wiki-heading-number{color:var(--wiki-link)!important;text-decoration:none}
 .wiki-content .wiki-heading-text{color:var(--wiki-text)!important}
+#article.wiki-content a.wiki-heading-number,
+#article.wiki-content a.wiki-heading-number:visited,
+#article.wiki-content a.wiki-heading-number:hover,
+#article.wiki-content a.wiki-heading-number:focus{color:var(--wiki-link)!important;text-decoration:none!important}
+#article.wiki-content .wiki-heading-text{color:var(--wiki-text)!important}
 .wiki-content h3{margin:19px 0 8px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:17px;font-weight:600}
 .wiki-content h4{margin:19px 0 8px;padding:0 0 4px;border-bottom:1px solid var(--wiki-border);font-size:19px;font-weight:600}
 .wiki-content h5{margin:17px 0 7px;font-size:17px;font-weight:700}
