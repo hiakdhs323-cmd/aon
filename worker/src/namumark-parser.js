@@ -233,7 +233,45 @@ var NamuMark = class _NamuMark {
       return data;
     });
     __publicField(this, "getToolCssSafe", (data) => {
-      return data.replaceAll(";", "");
+      // Keep declaration separators intact. The previous implementation removed
+      // every semicolon, which turned valid multi-property NamuMark styles such
+      // as "border:thin solid gray;border-top:thick solid orange" into one
+      // invalid CSS declaration.
+      const allowedProperties = new Set([
+        "color", "background", "background-color",
+        "font-size", "font-weight", "font-style", "font-family",
+        "text-align", "text-decoration", "text-transform",
+        "line-height", "letter-spacing", "word-spacing",
+        "width", "max-width", "min-width", "height", "max-height", "min-height",
+        "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+        "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+        "border", "border-top", "border-right", "border-bottom", "border-left",
+        "border-color", "border-top-color", "border-right-color",
+        "border-bottom-color", "border-left-color",
+        "border-width", "border-top-width", "border-right-width",
+        "border-bottom-width", "border-left-width",
+        "border-style", "border-top-style", "border-right-style",
+        "border-bottom-style", "border-left-style",
+        "border-radius", "border-collapse",
+        "float", "clear", "display", "vertical-align",
+        "white-space", "list-style", "list-style-type",
+        "overflow", "overflow-x", "overflow-y", "overflow-wrap",
+        "opacity", "box-sizing"
+      ]);
+      const source = String(data || "");
+      const declarations = [];
+      for (const declaration of source.split(";")) {
+        const match = declaration.match(/^\\s*([a-zA-Z][a-zA-Z0-9-]*)\\s*:\\s*([\\s\\S]*?)\\s*$/);
+        if (!match) continue;
+        const property = match[1].toLowerCase();
+        let value = match[2].trim();
+        if (!allowedProperties.has(property) || !value) continue;
+        if (/[{}<>]/.test(value) || /(?:url|expression|javascript|@import)\\s*\\(/i.test(value)) continue;
+        if (/!important/i.test(value)) value = value.replace(/!important/gi, "").trim();
+        if (!value) continue;
+        declarations.push(property + ":" + value);
+      }
+      return declarations.length ? declarations.join(";") + ";" : "";
     });
     __publicField(this, "getToolJSSafe", (data) => {
       data = data.replaceAll("\n", "\\\\n");
