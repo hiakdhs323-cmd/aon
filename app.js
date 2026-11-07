@@ -30,7 +30,7 @@ const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwik
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
 const initialSsrState=(()=>{const node=document.getElementById("aonwiki-ssr-state");if(!node)return null;try{return JSON.parse(node.textContent||"null")}catch(error){console.warn("AonWiki SSR state parsing failed",error);return null}})();
-let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=typeof initialSsrState?.canEdit==="boolean"?initialSsrState.canEdit:null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=initialSsrState?.canEdit===true?true:null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 let currentDiscussionView=false;
 const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){
@@ -180,8 +180,13 @@ function decorateExternalLinks(root){
 }
 function syncDocumentEditControls(){
  const hasDocument=Boolean(currentTitle&&!isHomeRoute()&&!$("document-view").hidden);
- const canEdit=hasDocument && (currentCanEdit!==null ? currentCanEdit : (currentProtection.level!=="admin" || isWikiAdmin));
- const canShowHeadingEdit=canEdit && (Boolean(loggedInName)||Boolean(sessionStorage.getItem(TOKEN_SETTING))||isWikiAdmin);
+ // SSR cannot read sessionStorage, so an authenticated refresh can legitimately
+ // arrive with canEdit=false even though the current browser session may edit.
+ // Treat that SSR-only false as unknown until the client identity is restored.
+ const authenticated=Boolean(loggedInName||sessionStorage.getItem(TOKEN_SETTING)||isWikiAdmin);
+ const permissionFallback=authenticated && (currentProtection.level!=="admin" || isWikiAdmin);
+ const canEdit=hasDocument && (currentCanEdit===true ? true : permissionFallback);
+ const canShowHeadingEdit=canEdit && authenticated;
  $("edit").hidden=!canEdit;
  $("heading-edit").hidden=!canShowHeadingEdit;
  if(hasDocument){
@@ -2031,9 +2036,10 @@ async function loadPage(title,pushRoute=true,anchor=""){
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
   currentCanEdit=typeof data.page.canEdit==="boolean" ? data.page.canEdit : null;
-  const canEditDocument = currentCanEdit!==null ? currentCanEdit : Boolean(isWikiAdmin || currentProtection.level !== "admin");
+  const authenticated=Boolean(loggedInName||sessionStorage.getItem(TOKEN_SETTING)||isWikiAdmin);
+  const canEditDocument = currentCanEdit===true || (authenticated && (currentProtection.level !== "admin" || isWikiAdmin));
   $("edit").hidden=!canEditDocument;
-  $("heading-edit").hidden=!canEditDocument || (!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin);
+  $("heading-edit").hidden=!canEditDocument || !authenticated;
   $("delete-page").hidden=!isWikiAdmin||currentProtection.level==="admin";
   const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
   if(currentProtection.level==="admin"){
