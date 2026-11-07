@@ -185,6 +185,12 @@ assert.ok(appSource.includes("function getExplicitWikiTextColor"), "wiki links m
 assert.ok(appSource.includes('!inlineColor.includes("--aonwiki-table-auto-fg-")'), "automatic table contrast must not be mistaken for an authored link color");
 assert.ok(appSource.includes('node.hasAttribute?.("data-aonwiki-authored-fg")'), "explicit table foreground colors must be preserved in both themes");
 assert.ok(appSource.includes("discussion-wiki-content"), "discussion posts must use the NamuMark renderer");
+assert.ok(appSource.includes("function createDiscussionSyntaxEditor"), "discussion input fields must use the live NamuMark syntax highlighter");
+assert.ok(appSource.includes("bodyLabel.append(bodyEditor.wrap)"), "new discussion body must use the highlighted editor");
+assert.ok(appSource.includes("form.append(replyEditor.wrap,footer,status)"), "discussion replies must use the highlighted editor");
+assert.ok(appSource.includes("textarea.dispatchEvent(new Event(\"input\",{bubbles:true}))"), "quoted text must refresh live syntax highlighting");
+assert.ok(appSource.includes("buildDiscussionBodyEditForm"), "editing discussion topics and replies must use the highlighted editor");
+assert.ok(cssSource.includes(".discussion-code-highlight") && cssSource.includes("textarea.discussion-markup-input"), "discussion highlight overlay must be styled for desktop and mobile");
 assert.ok(appSource.includes("이전 토론 더 보기"), "discussion lists must support older topics");
 assert.ok(cssSource.includes("--wiki-body-link:#008b68"), "document links must use the green body-link palette");
 assert.ok(cssSource.includes(".discussion-post-number"), "discussion replies must have numbered rows");
