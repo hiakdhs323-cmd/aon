@@ -1184,6 +1184,33 @@ function prepareServerRenderedMarkup(root,docTitle){
     });
   }
 }
+function renderClientParsedDocument(clientRender, target, docTitle) {
+ const Parser=window.NamuMarkBundle?.NamuMark;
+ if(typeof Parser!=="function")throw new Error("브라우저 NamuMark 파서를 불러오지 못했습니다.");
+ const records=Array.isArray(clientRender?.records)?clientRender.records:[];
+ const lookup=new Map();
+ for(const record of records){
+  if(record&&typeof record.title==="string"&&record.title)lookup.set(record.title,{title:record.title,data:String(record.data||"")});
+ }
+ const pageCount=Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
+ const database={data:new Array(pageCount),lookup};
+ const parser=new Parser(String(clientRender?.source||""),{
+  docName:String(docTitle||"아온"),
+  useTocSet:"default",
+  docType:"view"
+ },database);
+ const parsed=parser.parse();
+ appendSanitizedServerHtml(target,parsed[0]||"");
+ prepareServerRenderedMarkup(target,docTitle);
+ const colors=clientRender?.linkColors||{};
+ const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
+ const color=String(colors[theme]||"").trim();
+ if(color&&/^(?:#[0-9a-f]{3,8}|[a-z]{1,20}|rgba?\([\d.% ,/+-]+\)|hsla?\([\d.% ,/+-]+\))$/i.test(color)){
+  target.querySelectorAll("a:not(.opennamu_not_exist_link):not(.wiki-heading-number)").forEach(link=>link.style.setProperty("color",color,"important"));
+ }
+ target.dataset.renderEngine="namumark-client";
+}
+
 function appendSanitizedServerHtml(target,html){
  const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
  const allowedTags=new Set(["A","ABBR","B","BDI","BDO","BLOCKQUOTE","BR","CAPTION","CENTER","CODE","COL","COLGROUP","DD","DEL","DETAILS","DIV","DL","DT","EM","FIGCAPTION","FIGURE","FONT","FOOTNOTE_TITLE","H1","H2","H3","H4","H5","H6","HR","I","IFRAME","IMG","INS","KBD","LI","MARK","OL","P","PRE","Q","RUBY","RT","RP","S","SAMP","SMALL","SPAN","STRIKE","STRONG","SUB","SUMMARY","SUP","TABLE","TBODY","TD","TFOOT","TH","THEAD","TR","TT","U","UL","VAR","VIDEO","AUDIO","SOURCE"]);
@@ -2134,14 +2161,18 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
   applyDocumentActionIcons();
   const staging=document.createElement("article");
-  appendSanitizedServerHtml(staging,data.html);
-  prepareServerRenderedMarkup(staging,displayTitle);
+  if(data.clientRender){
+   renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
+  }else{
+   appendSanitizedServerHtml(staging,data.html);
+   prepareServerRenderedMarkup(staging,displayTitle);
+  }
   if(requestId!==pageNavigationSequence)return;
   const article=$("article");
   article.replaceChildren(...staging.childNodes);
   article.classList.add("namumark-rendered");
   article.classList.remove("namumark-beta-active");
-  article.dataset.renderEngine=data.engine||"worker-ssr";
+  article.dataset.renderEngine=data.engine||staging.dataset.renderEngine||"worker-ssr";
   requestAnimationFrame(()=>{
    if(requestId!==pageNavigationSequence)return;
    if(anchor)scrollToAnchor(anchor);
@@ -3584,9 +3615,14 @@ $("file").onchange=async()=>{
 window.addEventListener("popstate",readRoute);
 window.addEventListener("hashchange",readRoute);
 if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){
- prepareServerRenderedMarkup($("article"),currentTitle);
- if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
- else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
+ if($("article")?.dataset.clientRenderPending==="true"){
+  if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
+  else requestAnimationFrame(()=>loadPage(currentTitle,false,location.hash?location.hash.slice(1):""));
+ }else{
+  prepareServerRenderedMarkup($("article"),currentTitle);
+  if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
+  else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
+ }
 }
 if(document.body.dataset.ssrPage!=="true")readRoute();
 refreshIdentity().catch(()=>{}).finally(()=>syncDocumentEditControls());

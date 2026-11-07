@@ -254,3 +254,9 @@ assert.ok(parserSource.includes("render)_[^<>]+"), "wiki style blocks must suppo
 assert.ok(!workerSource.includes("const officialTemplate = found && /^(?:틀|template):/i.test(actualTitle);"), "template pages must not be auto-marked official");
 assert.ok(workerSource.includes("state.official && /^(?:틀|template):/i.test(actualTitle)"), "official template badge requires explicit official marking");
 assert.ok(appSource.includes("currentOfficial&&/^(?:틀|template):/i.test(title)"), "client official template badge requires explicit official state");
+
+assert.ok(htmlSource.includes("namumark-parser.js?v=20261107-client-render-fallback-v1"), "browser NamuMark parser bundle must load before app.js");
+assert.ok(appSource.includes("function renderClientParsedDocument(") && appSource.includes("data.clientRender"), "client-side parser fallback must render server-prepared NamuMark input");
+assert.ok(appSource.includes('data-client-render-pending==="true"'), "full-document SSR must route empty Aon content to the client renderer");
+assert.ok(workerSource.includes("buildAonClientRenderPayload") && workerSource.includes('page.title === "아온"'), "Aon page GET renders must prepare parser input instead of running the CPU-heavy Worker parser");
+assert.ok(workerSource.includes("clientRenderPending = found && actualTitle === \"아온\""), "Aon full-document SSR must skip Worker-side parsing");

@@ -814,6 +814,26 @@ async function expandAonIncludes(env, source) {
   return text;
 }
 
+async function buildAonClientRenderPayload(env, title, source, linkColors = {}) {
+  // Keep the constrained Worker responsible only for source expansion and
+  // database-backed link/image existence. The browser performs the expensive
+  // NamuMark parsing without the Worker's 10 ms CPU ceiling.
+  const expandedSource = await expandAonIncludes(env, source);
+  const extracted = extractAdminLinkColors(expandedSource);
+  const renderSource = extracted.content;
+  const database = await buildNamuServerDatabase(env, title, renderSource);
+  const records = [...database.lookup.values()].map(item => ({
+    title: String(item.title || ""),
+    data: String(item.data || "")
+  }));
+  return {
+    source: renderSource,
+    records,
+    pageCount: Number(database.data?.length) || 0,
+    linkColors: linkColors || {}
+  };
+}
+
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   // Build the cache key from the unexpanded page source. This lets warm cache
   // hits return before any transclusion D1 reads or parser preparation.
@@ -946,7 +966,10 @@ async function renderFullWikiDocument(request, env, title) {
   const found = Boolean(page);
   const actualTitle = found ? page.title : title;
   const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
-  const rendered = found ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "", linkColors) : { html: "" };
+  const clientRenderPending = found && actualTitle === "아온";
+  const rendered = found && !clientRenderPending
+    ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "", linkColors)
+    : { html: "" };
   let protection = null;
   if (found) {
     await ensurePageProtectionSchema(env);
@@ -966,7 +989,8 @@ async function renderFullWikiDocument(request, env, title) {
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
     canEdit: found ? (ssrUser ? !ssrEditDenied : false) : false,
-    exists: found
+    exists: found,
+    clientRenderPending
   };
   const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
   const protectionMessage = protectionLabel
@@ -985,7 +1009,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
     .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
     .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
-    .replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + '</article>')
+    .replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + rendered.html + '</article>')
     .replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"')
     .replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
@@ -1729,7 +1753,12 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           }
           if (!page) return { page: null, html: "", engine: "namumark-worker" };
           const linkColors = await getPageLinkColors(env, page.title);
-          const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
+          const clientRender = page.title === "아온"
+            ? await buildAonClientRenderPayload(env, page.title, page.content || "", linkColors)
+            : null;
+          const rendered = clientRender
+            ? { html: "" }
+            : await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
           return {
             page: {
               title: page.title,
@@ -1742,7 +1771,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
               protectionUpdatedAt: page.protectionUpdatedAt || ""
             },
             html: rendered.html,
-            engine: "namumark-worker"
+            clientRender,
+            engine: clientRender ? "namumark-client" : "namumark-worker"
           };
         })().then(value => {
           namuPageResponseCache.set(title, { value, expiresAt: Date.now() + 30 * 1000 });
