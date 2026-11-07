@@ -1531,7 +1531,7 @@ async function loadSpecialPage(type,pushRoute=true){
      const data=await api("/api/page?title="+encodeURIComponent("라이선스"));
      editPage("라이선스",data.page?.content||"");
     }catch{
-     editPage("", "");
+     await editPage("", "");
      $("editor-title").value="라이선스";
      $("editor-title").readOnly=true;
      $("editor-title").disabled=false;
