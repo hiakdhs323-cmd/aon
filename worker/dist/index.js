@@ -3230,7 +3230,11 @@ async function renderFullWikiDocument(request, env, title) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
   }
-  html = html.replace('<script defer src="' + origin + "/app.js", '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + '<\/script>\n<script defer src="/aon/app.js');
+  const appScriptPattern = /<script defer src=["'](?:\/aon)?\/app\.js[^"']*["']><\/script>/i;
+  const appScriptMatch = html.match(appScriptPattern);
+  if (!appScriptMatch) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC app.js \uC2A4\uD06C\uB9BD\uD2B8 \uC704\uCE58\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+  const ssrStateScript = '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + "<\/script>";
+  html = html.replace(appScriptPattern, ssrStateScript + "\n" + appScriptMatch[0]);
   return new Response(html, {
     status: found ? 200 : 404,
     headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
