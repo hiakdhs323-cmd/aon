@@ -77,10 +77,10 @@ assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must no
 
 const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
-assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v5"'), "SSR must serve the new folding stylesheet under a fresh cache key");
+assert.ok(workerSource.includes('aonfix", "20261107-heading-theme-v1"'), "SSR must serve the new folding stylesheet under a fresh cache key");
 assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append the compact NamuWiki-style chain marker");
 assert.ok(appSource.includes("link.prepend(icon)"), "external link icon must precede the unchanged label");
-assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v5"'), "Worker must cache-bust new NamuWiki-style assets");
+assert.ok(workerSource.includes('aonfix", "20261107-heading-theme-v1"'), "Worker must cache-bust new NamuWiki-style assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
@@ -88,16 +88,18 @@ assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text c
 assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#20252a!important/s, "light mode must darken text over the existing light label-cell background");
 assert.match(styles, /html\[data-theme="dark"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#f2f3f4!important/s, "dark mode must lighten text without changing the label-cell background");
 assert.doesNotMatch(styles, /auto-bg-(?:light|dark)/, "theme switching must not add synthesized cell backgrounds");
-assert.match(workerSource, /aonfix", "20261107-namu-parity-v5"/, "SSR asset URLs must receive a new cache key");
-assert.match(workerSource, /targeted-db-v25-theme-text-only:/, "server render cache must invalidate old table markup");
+assert.match(workerSource, /aonfix", "20261107-heading-theme-v1"/, "SSR asset URLs must receive a new cache key");
+assert.match(workerSource, /targeted-db-v26-heading-theme-aware:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
 assert.match(styles, /#article\.wiki-content table td:first-child:not\(\[style\*="background"\]\)/, "first-column background must follow the active theme");
-assert.match(workerSource, /aonfix", "20261107-namu-parity-v5"/, "SSR must serve the corrected stylesheet under a fresh cache key");
+assert.match(workerSource, /aonfix", "20261107-heading-theme-v1"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
-assert.match(styles, /\.wiki-content h2\{[^}]*color:var\(--wiki-link\)/, "level-2 == headings must retain the blue link color");
+assert.match(styles, /\.wiki-content h2\{[^}]*color:var\(--wiki-text\)/, "level-2 heading text must follow the active theme");
+assert.match(styles, /\.wiki-content \.wiki-heading-number\{color:var\(--wiki-link\)!important\}/, "heading numbers must use the blue link palette");
+assert.match(styles, /\.wiki-content \.wiki-heading-text\{color:var\(--wiki-text\)!important\}/, "heading titles must follow the active theme");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
 assert.match(appSource, /aonwikiAutoText/, "automatic text colors must be tracked");
 assert.match(htmlSource, /document\.documentElement\.dataset\.theme = theme/, "theme must be selected before CSS loads");
@@ -139,6 +141,9 @@ assert.match(footnotes, /class="opennamu_footnote"/, "the default footnote block
 assert.match(footnotes, /footnote_title/, "footnote content must remain in its semantic element");
 assert.match(footnotes, /각주 내용/, "original footnote text must be preserved");
 assert.match(footnotes, /rfn_1/, "footnote backlink target must remain present");
+const headingColors = render("== 개요 ==\n본문");
+assert.match(headingColors, /class="wiki-heading-number"[^>]*>1\.<\/a>/, "heading section number must be rendered as its own link");
+assert.match(headingColors, /class="wiki-heading-text">개요<\/span>/, "heading title must be separated from its section number");
 const toc = render("== 개요 ==\n본문\n=== 세부 내용 ===\n추가 내용");
 assert.match(toc, /class="opennamu_TOC"/, "table of contents must render");
 assert.match(toc, /<details[^>]*open/, "table of contents must start expanded");
@@ -171,5 +176,5 @@ assert.ok(cssSource.includes(".discussion-search-toolbar"), "discussion search c
 assert.ok(cssSource.includes("wiki-numbered-list"), "numbered-list CSS must remain present");
 assert.ok(cssSource.includes(".opennamu_footnote"), "footnote CSS must remain present");
 assert.ok(cssSource.includes('a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"])'), "footnote markers must keep their native link appearance");
-assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v5"'), "SSR must refresh the latest NamuWiki-style assets");
+assert.ok(workerSource.includes('aonfix", "20261107-heading-theme-v1"'), "SSR must refresh the latest NamuWiki-style assets");
 console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
