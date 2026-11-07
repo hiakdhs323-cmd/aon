@@ -500,10 +500,12 @@ async function buildNamuServerDatabase(env, title, content) {
     }
   }
 
-  const allMarkup = [source, ...[...records.values()].map(item => item.data || "")].join("\n");
+  const allMarkup = [...records.values()].map(item => item.data || "").join("\n");
   const linkTargets = new Set(collectWikiLinkTargets(allMarkup));
+  // collectWikiLinkTargets already extracts category aliases; reuse that set
+  // instead of scanning the same markup with a second category-only regex.
   const categoryAliases = new Set(
-    collectCategoryTargets(allMarkup).map(name => "category:" + name)
+    [...linkTargets].filter(name => name.startsWith("category:"))
   );
   for (const alias of categoryAliases) linkTargets.delete(alias);
 
@@ -553,7 +555,9 @@ async function buildNamuServerDatabase(env, title, content) {
 
   // Page count is needed by a small number of magic words. Cache it briefly
   // instead of running COUNT(*) on every render.
-  const pageCount = await getCachedNamuPageCount(env);
+  const pageCount = /\[pagecount\]/i.test(allMarkup)
+    ? await getCachedNamuPageCount(env)
+    : { total: 0 };
 
   for (const row of documentRows) {
     const key = row.title;
@@ -811,23 +815,26 @@ async function expandAonIncludes(env, source) {
 }
 
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
-  const renderSource = title === "아온" ? await expandAonIncludes(env, source) : String(source || "");
-  const extracted = extractAdminLinkColors(renderSource);
-  const text = extracted.content;
+  // Build the cache key from the unexpanded page source. This lets warm cache
+  // hits return before any transclusion D1 reads or parser preparation.
+  const sourceText = String(source || "");
   const colors = {};
-  for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const sourceDigest = namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  for (const key of ADMIN_LINK_COLOR_KEYS) {
+    const color = normalizeAdminLinkColor(linkColors?.[key]);
+    if (color) colors[key] = color;
+  }
+  const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
   const cacheKey = "targeted-db-v37-render-parser:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
+
   const pending = (async () => {
     try {
       await ensureNamuRenderCacheSchema(env);
       const stored = await env.DB.prepare("SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?").bind(title).first();
-      // Cache entries from earlier renderer versions are still valid when the
-      // source+color digest matches. Do not invalidate every document merely
-      // because the parser implementation/version changed.
+      // Keep compatible cache entries; parser updates must not trigger a
+      // site-wide cold-render burst.
       if (stored && (stored.source_hash === cacheKey || String(stored.source_hash || "").endsWith(":" + sourceDigest))) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
@@ -835,9 +842,20 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
         namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
         return value;
       }
-    } catch (error) { console.warn("AonWiki persistent render cache read failed:", error); }
-    const database = await buildNamuServerDatabase(env, title, text);
-    const parser = new NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
+    } catch (error) {
+      console.warn("AonWiki persistent render cache read failed:", error);
+    }
+
+    // Only resolve includes after both memory and persistent cache misses.
+    // The old order re-read Aon's two templates even when rendered HTML was
+    // already cached.
+    const renderSource = title === "아온"
+      ? await expandAonIncludes(env, sourceText)
+      : sourceText;
+    const extracted = extractAdminLinkColors(renderSource);
+    const renderText = extracted.content;
+    const database = await buildNamuServerDatabase(env, title, renderText);
+    const parser = new NamuMark(renderText, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
     // Table contrast requires a second HTMLRewriter pass. Documents without
@@ -847,21 +865,29 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       : cleanHtml;
     const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
-    if (namuRenderCache.size > 100) { const oldest = namuRenderCache.keys().next().value; if (oldest) namuRenderCache.delete(oldest); }
+    if (namuRenderCache.size > 100) {
+      const oldest = namuRenderCache.keys().next().value;
+      if (oldest) namuRenderCache.delete(oldest);
+    }
     if (value.html.length <= 250000) {
       try {
         await ensureNamuRenderCacheSchema(env);
         await env.DB.prepare("INSERT INTO namu_render_cache (title, source_hash, html, metadata_json, updated_at) VALUES (?, ?, ?, ?, datetime('now')) ON CONFLICT(title) DO UPDATE SET source_hash = excluded.source_hash, html = excluded.html, metadata_json = excluded.metadata_json, updated_at = excluded.updated_at").bind(title, cacheKey, value.html, JSON.stringify(value.metadata || {})).run();
-      } catch (error) { console.warn("AonWiki persistent render cache write failed:", error); }
+      } catch (error) {
+        console.warn("AonWiki persistent render cache write failed:", error);
+      }
     } else {
-      try { await ensureNamuRenderCacheSchema(env); await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(title).run(); } catch {}
+      try {
+        await ensureNamuRenderCacheSchema(env);
+        await env.DB.prepare("DELETE FROM namu_render_cache WHERE title = ?").bind(title).run();
+      } catch {}
     }
     return value;
   })().finally(() => namuRenderPending.delete(cacheKey));
+
   namuRenderPending.set(cacheKey, pending);
   return pending;
 }
-
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
