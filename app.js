@@ -41,6 +41,7 @@ function routeFor(title,anchor=""){
 async function api(path,options={}){const headers=new Headers(options.headers||{});const token=sessionStorage.getItem(TOKEN_SETTING);if(token)headers.set("Authorization","Bearer "+token);const method=String(options.method||"GET").toUpperCase();if(method!=="GET"&&method!=="HEAD"&&method!=="OPTIONS")headers.set("X-AonWiki-Request","1");if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");const target=new URL(path,apiBase()+"/");if(target.origin!==new URL(apiBase()+"/").origin)throw new Error("허용되지 않은 API 주소입니다.");const res=await fetch(target.href,{...options,headers});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error([data.error,data.detail].filter(Boolean).join(" — ")||"요청 실패");return data}
 let isWikiAdmin=false;
 let currentRole="anonymous";
+let identityResolved=false;
 const AON_UI_ICON_SHAPES = {
   lock: [
     ["rect",{x:"3.2",y:"7",width:"9.6",height:"7.1",rx:"1.3"}],
@@ -185,8 +186,16 @@ function syncDocumentEditControls(){
  // Treat that SSR-only false as unknown until the client identity is restored.
  const authenticated=Boolean(loggedInName||sessionStorage.getItem(TOKEN_SETTING)||isWikiAdmin);
  const permissionFallback=authenticated && (currentProtection.level!=="admin" || isWikiAdmin);
- const canEdit=hasDocument && (currentCanEdit===true ? true : permissionFallback);
- const canShowHeadingEdit=canEdit && authenticated;
+ // Never let a transient /api/me failure or SSR's anonymous view erase an
+ // already authenticated browser session's edit controls.
+ const canEdit=hasDocument && (
+   currentCanEdit===true ||
+   permissionFallback ||
+   (!identityResolved && Boolean(sessionStorage.getItem(TOKEN_SETTING)))
+ );
+ const canShowHeadingEdit=canEdit && (
+   authenticated || (!identityResolved && Boolean(sessionStorage.getItem(TOKEN_SETTING)))
+ );
  $("edit").hidden=!canEdit;
  $("heading-edit").hidden=!canShowHeadingEdit;
  if(hasDocument){
@@ -204,11 +213,13 @@ async function refreshIdentity(){
   currentRole=me.role||"anonymous";
   loggedInName=me.authenticated?(me.username||""):"";
   if(loggedInName)sessionStorage.setItem(NAME_SETTING,loggedInName);
-  else sessionStorage.removeItem(NAME_SETTING);
+  else if(identityResolved)sessionStorage.removeItem(NAME_SETTING);
  }catch{
+  // Keep the browser session identity on transient API/network failures.
+  // Clearing it here caused the edit button to disappear after refresh.
   isWikiAdmin=false;
   currentRole="anonymous";
-  loggedInName="";
+  if(!loggedInName) loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
  }
  $("login").textContent=loggedInName?"로그아웃 · "+loggedInName:"로그인";
  const roleLabel=$("role-label");
@@ -223,6 +234,7 @@ async function refreshIdentity(){
   const protectionButton=$("page-protection");
   const isArticleView=!$("document-view").hidden&&!$("backlinks-tab").hidden&&!/^(?:분류|category):/i.test(currentTitle)&&!$("message").textContent.includes("이 문서는 아직 존재하지 않습니다");
   if(protectionButton)protectionButton.hidden=!isWikiAdmin||!currentTitle||isHomeRoute()||!isArticleView;
+  identityResolved=true;
   syncDocumentEditControls();
 }
 
@@ -3534,7 +3546,7 @@ if(document.body.dataset.ssrPage==="true"&&initialSsrState?.exists){
  else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
 }
 if(document.body.dataset.ssrPage!=="true")readRoute();
-refreshIdentity().then(()=>syncDocumentEditControls());
+refreshIdentity().catch(()=>{}).finally(()=>syncDocumentEditControls());
 loadGlobalRail();
 startLivePageWatcher();
 
