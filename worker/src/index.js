@@ -42,7 +42,10 @@ function isTrustedStateChangingRequest(request, env) {
   const origin = request.headers.get("Origin");
   if (origin) {
     const allowed = (env.ALLOWED_ORIGIN || "").split(",").map(v => v.trim()).filter(Boolean);
-    if (!allowed.includes(origin)) return false;
+    const sameOrigin = (() => {
+      try { return origin === new URL(request.url).origin; } catch { return false; }
+    })();
+    if (!sameOrigin && !allowed.includes(origin)) return false;
   }
   return true;
 }
