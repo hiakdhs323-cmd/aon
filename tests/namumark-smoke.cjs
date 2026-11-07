@@ -263,8 +263,9 @@ assert.ok(workerSource.includes("buildAonClientRenderPayload") && workerSource.i
 assert.ok(workerSource.includes("clientRenderPending = found && actualTitle === \"아온\""), "Aon full-document SSR must skip Worker-side parsing");
 assert.ok(workerSource.includes('"namumark-parser.js"') && workerSource.includes('url.pathname.slice(1)'), "Worker must proxy the parser bundle on same-origin root and /aon paths");
 assert.ok(workerSource.includes('"namumark-parser.js", "aonwiki-mark.svg"'), "SSR asset rewriting must route the parser bundle through the Worker");
-assert.ok(workerSource.includes("script-src-attr 'none'") && workerSource.includes("https://aon69446.p-e.kr"), "Worker CSP must allow the custom origin but keep inline event handlers disabled");
-assert.ok(htmlSource.includes("script-src-attr 'none'") && htmlSource.includes("https://aon69446.p-e.kr"), "HTML CSP must use the same strict script policy");
+assert.ok(workerSource.includes("script-src-attr 'unsafe-inline'") && workerSource.includes("https://aon69446.p-e.kr"), "Worker CSP must allow inline event handlers without weakening script-src-elem");
+assert.ok(workerSource.includes('if(name.startsWith("on")||!SERVER_WIKI_ATTRS.has(name))'), "untrusted wiki HTML must still be stripped of event attributes before insertion");
+assert.ok(htmlSource.includes("script-src-attr 'unsafe-inline'") && htmlSource.includes("https://aon69446.p-e.kr"), "HTML CSP must allow inline event handlers consistently with the Worker response policy");
 assert.ok(parserSource.includes('data-opennamu-action="heading-fold"') && !parserSource.includes('onclick="javascript:opennamu_heading_folding'), "heading folding markup must not emit inline JavaScript handlers");
 assert.ok(appSource.includes('parserAction === "heading-fold"') && appSource.includes('"data-opennamu-action"'), "client sanitizer must preserve and bind the safe heading-fold action");
 assert.ok(workerSource.includes('setAttribute("data-opennamu-action","heading-fold")'), "Worker sanitizer must convert legacy heading onclick markup to a safe data action");
