@@ -809,6 +809,10 @@ async function renderFullWikiDocument(request, env, title) {
     await ensurePageProtectionSchema(env);
     protection = await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(actualTitle).first();
   }
+  await ensureOfficialDocumentSchema(env);
+  const official = found
+    ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(actualTitle).first()
+    : null;
   const titleText = found ? actualTitle : actualTitle + " (문서 없음)";
   const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "아직 작성되지 않은 문서입니다.";
   const state = {
