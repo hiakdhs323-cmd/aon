@@ -1236,10 +1236,12 @@ function buildDiscussionCreateForm(pageTitle=""){
  const bodyLabel=document.createElement("label");
  bodyLabel.className="discussion-field";
  bodyLabel.append(document.createTextNode("토론 내용"));
- const bodyInput=document.createElement("textarea");
- bodyInput.required=true;bodyInput.maxLength=10000;bodyInput.rows=6;
- bodyInput.placeholder="토론을 시작하게 된 이유와 논의할 내용을 작성하세요.";
- bodyLabel.append(bodyInput);
+ const bodyEditor=createDiscussionSyntaxEditor({
+  required:true,maxLength:10000,rows:6,
+  placeholder:"토론을 시작하게 된 이유와 논의할 내용을 작성하세요."
+ });
+ const bodyInput=bodyEditor.textarea;
+ bodyLabel.append(bodyEditor.wrap);
  const footer=document.createElement("div");footer.className="discussion-form-actions";
  const cancel=document.createElement("button");cancel.type="button";cancel.className="title-button";cancel.textContent="취소";
  const submit=document.createElement("button");submit.type="submit";submit.className="primary-button";submit.textContent="토론 생성";
@@ -1349,12 +1351,25 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true)
    const position=textarea.selectionStart??textarea.value.length;
    textarea.value=textarea.value.slice(0,position)+addition+textarea.value.slice(position);
    textarea.focus();const caret=position+addition.length;textarea.setSelectionRange(caret,caret);
+   textarea.dispatchEvent(new Event("input",{bubbles:true}));
   });
   actions.append(quote);
  }
  if(isWikiAdmin||loggedInName===post.author){
   const edit=document.createElement("button");edit.type="button";edit.className="text-action";edit.textContent="수정";
-  edit.addEventListener("click",async()=>{const next=prompt("답글 수정",post.body);if(next===null)return;try{await api("/api/discussion/post",{method:"PATCH",body:JSON.stringify({id:post.id,body:next})});await loadDiscussionDetail(post.discussion_id,false)}catch(error){alert(error.message)}});
+  edit.addEventListener("click",()=>{
+   const existing=card.querySelector(".discussion-inline-edit-form");
+   if(existing){existing.remove();return}
+   const editorForm=buildDiscussionBodyEditForm({
+    heading:"답글 수정",value:post.body,maxLength:6000,rows:5,
+    onSave:async nextBody=>{
+     await api("/api/discussion/post",{method:"PATCH",body:JSON.stringify({id:post.id,body:nextBody})});
+     await loadDiscussionDetail(post.discussion_id,false);
+    }
+   });
+   card.append(editorForm);
+   editorForm.querySelector("textarea")?.focus();
+  });
   const remove=document.createElement("button");remove.type="button";remove.className="text-action danger-text";remove.textContent="삭제";
   remove.addEventListener("click",async()=>{if(!confirm("이 답글을 삭제할까요?"))return;try{await api("/api/discussion/post?id="+post.id,{method:"DELETE"});await loadDiscussionDetail(post.discussion_id,false);loadGlobalRail()}catch(error){alert(error.message)}});
   actions.append(edit,remove);
@@ -1403,15 +1418,19 @@ async function loadDiscussionDetail(id,pushRoute=true){
   const controls=document.createElement("div");controls.className="discussion-topic-actions";
   if(isWikiAdmin||loggedInName===topic.author){
    const editTopic=document.createElement("button");editTopic.type="button";editTopic.className="title-button";editTopic.textContent="토론 수정";
-   editTopic.addEventListener("click",async()=>{
-    const nextTitle=prompt("토론 제목 수정",topic.title);
-    if(nextTitle===null)return;
-    const nextBody=prompt("토론 원문 수정",topic.body);
-    if(nextBody===null)return;
-    try{
-     await api("/api/discussion",{method:"PATCH",body:JSON.stringify({id:topic.id,action:"edit",title:nextTitle,body:nextBody})});
-     await loadDiscussionDetail(topic.id,false);loadGlobalRail();
-    }catch(error){alert(error.message)}
+   editTopic.addEventListener("click",()=>{
+    const existing=article.querySelector(".discussion-inline-edit-form.topic-edit-form");
+    if(existing){existing.remove();return}
+    const editorForm=buildDiscussionBodyEditForm({
+     heading:"토론 원문 수정",titleValue:topic.title,value:topic.body,maxLength:10000,rows:7,
+     onSave:async(nextBody,nextTitle)=>{
+      await api("/api/discussion",{method:"PATCH",body:JSON.stringify({id:topic.id,action:"edit",title:nextTitle,body:nextBody})});
+      await loadDiscussionDetail(topic.id,false);loadGlobalRail();
+     }
+    });
+    editorForm.classList.add("topic-edit-form");
+    original.after(editorForm);
+    editorForm.querySelector("textarea")?.focus();
    });
    controls.append(editTopic);
    const statusButton=document.createElement("button");statusButton.type="button";statusButton.className="title-button";
@@ -1443,11 +1462,12 @@ async function loadDiscussionDetail(id,pushRoute=true){
    if(loggedInName||sessionStorage.getItem(TOKEN_SETTING)){
     const form=document.createElement("form");form.className="discussion-reply-form";
     addText(form,"h3","답글 작성").className="discussion-form-heading";
-    const textarea=document.createElement("textarea");textarea.required=true;textarea.maxLength=6000;textarea.rows=5;textarea.placeholder="토론에 대한 의견을 작성하세요.";
+    const replyEditor=createDiscussionSyntaxEditor({required:true,maxLength:6000,rows:5,placeholder:"토론에 대한 의견을 작성하세요."});
+    const textarea=replyEditor.textarea;
     const footer=document.createElement("div");footer.className="discussion-form-actions";
     const submit=document.createElement("button");submit.type="submit";submit.className="primary-button";submit.textContent="답글 등록";
     footer.append(submit);const status=addText(form,"p","");status.className="discussion-form-status";
-    form.append(textarea,footer,status);form.addEventListener("submit",async event=>{
+    form.append(replyEditor.wrap,footer,status);form.addEventListener("submit",async event=>{
      event.preventDefault();submit.disabled=true;status.textContent="답글을 등록하고 있습니다…";
      try{await api("/api/discussion/reply",{method:"POST",body:JSON.stringify({id:topic.id,body:textarea.value})});await loadDiscussionDetail(topic.id,false);loadGlobalRail()}
      catch(error){status.textContent=error.message;submit.disabled=false}
@@ -2485,6 +2505,109 @@ function highlightNamuLine(line, insideCode) {
   output += escapeHighlightText(line.slice(last));
   return output;
 }
+function createDiscussionSyntaxEditor(options={}){
+ const wrap=document.createElement("div");
+ wrap.className="discussion-code-wrap";
+ const pre=document.createElement("pre");
+ pre.className="discussion-code-highlight";
+ pre.setAttribute("aria-hidden","true");
+ const code=document.createElement("code");
+ code.className="discussion-code-highlight-content";
+ pre.append(code);
+ const textarea=document.createElement("textarea");
+ textarea.className="discussion-markup-input";
+ textarea.value=String(options.value??"");
+ textarea.rows=Number(options.rows||5);
+ if(options.maxLength)textarea.maxLength=Number(options.maxLength);
+ if(options.required)textarea.required=true;
+ textarea.placeholder=String(options.placeholder||"");
+ textarea.spellcheck=false;
+ const update=()=>{
+  let insideCode=false;
+  code.innerHTML=textarea.value.split("\n").map(line=>{
+   const opening=line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
+   if(opening){
+    const output=highlightNamuLine(line,false);
+    insideCode=["syntax","html","style","latex"].includes(opening[1].toLowerCase());
+    return output;
+   }
+   if(/^\s*\{\{\{\s*$/.test(line)){
+    insideCode=true;
+    return '<span class="mk-code-fence">'+escapeHighlightText(line)+'</span>';
+   }
+   if(/^\s*\}\}\}\s*$/.test(line)){
+    insideCode=false;
+    return highlightNamuLine(line,false);
+   }
+   return highlightNamuLine(line,insideCode);
+  }).join("\n")+(textarea.value.endsWith("\n")?"\n":"");
+  pre.scrollTop=textarea.scrollTop;
+  pre.scrollLeft=textarea.scrollLeft;
+ };
+ textarea.addEventListener("input",update);
+ textarea.addEventListener("keyup",update);
+ textarea.addEventListener("click",update);
+ textarea.addEventListener("scroll",()=>{
+  pre.scrollTop=textarea.scrollTop;
+  pre.scrollLeft=textarea.scrollLeft;
+ });
+ textarea.addEventListener("compositionend",update);
+ wrap.append(pre,textarea);
+ update();
+ return {wrap,textarea,update};
+}
+function buildDiscussionBodyEditForm(options={}){
+ const form=document.createElement("form");
+ form.className="discussion-inline-edit-form";
+ const heading=addText(form,"h4",options.heading||"내용 수정");
+ heading.className="discussion-form-heading";
+ if(options.titleValue!==undefined){
+  const titleLabel=document.createElement("label");
+  titleLabel.className="discussion-field";
+  titleLabel.append(document.createTextNode("토론 제목"));
+  const titleInput=document.createElement("input");
+  titleInput.type="text";
+  titleInput.required=true;
+  titleInput.maxLength=120;
+  titleInput.value=String(options.titleValue||"");
+  titleLabel.append(titleInput);
+  form.append(titleLabel);
+  form._discussionTitleInput=titleInput;
+ }
+ const bodyLabel=document.createElement("label");
+ bodyLabel.className="discussion-field";
+ bodyLabel.append(document.createTextNode("토론 내용"));
+ const editor=createDiscussionSyntaxEditor({
+  value:options.value||"",maxLength:options.maxLength||6000,rows:options.rows||5,required:true,
+  placeholder:"나무마크 문법을 사용해 내용을 작성하세요."
+ });
+ bodyLabel.append(editor.wrap);
+ form.append(bodyLabel);
+ const footer=document.createElement("div");
+ footer.className="discussion-form-actions";
+ const cancel=document.createElement("button");
+ cancel.type="button";cancel.className="title-button";cancel.textContent="취소";
+ cancel.addEventListener("click",()=>form.remove());
+ const submit=document.createElement("button");
+ submit.type="submit";submit.className="primary-button";submit.textContent="수정 저장";
+ footer.append(cancel,submit);
+ const status=addText(form,"p","");
+ status.className="discussion-form-status";
+ form.append(footer,status);
+ form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!form.reportValidity())return;
+  submit.disabled=true;status.textContent="수정 내용을 저장하고 있습니다…";
+  try{
+   await options.onSave(editor.textarea.value,form._discussionTitleInput?.value);
+  }catch(error){
+   status.textContent=String(error?.message||error);
+   submit.disabled=false;
+  }
+ });
+ return form;
+}
+
 function updateEditorHighlight() {
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
   if (!field || !code || !pre) return;
