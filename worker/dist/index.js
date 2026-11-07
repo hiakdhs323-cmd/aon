@@ -3028,6 +3028,22 @@ async function expandAonIncludes(env, source) {
   }
   return text;
 }
+async function buildAonClientRenderPayload(env, title, source, linkColors = {}) {
+  const expandedSource = await expandAonIncludes(env, source);
+  const extracted = extractAdminLinkColors(expandedSource);
+  const renderSource = extracted.content;
+  const database = await buildNamuServerDatabase(env, title, renderSource);
+  const records = [...database.lookup.values()].map((item) => ({
+    title: String(item.title || ""),
+    data: String(item.data || "")
+  }));
+  return {
+    source: renderSource,
+    records,
+    pageCount: Number(database.data?.length) || 0,
+    linkColors: linkColors || {}
+  };
+}
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const sourceText = String(source || "");
   const colors = {};
@@ -3156,7 +3172,8 @@ async function renderFullWikiDocument(request, env, title) {
   const found = Boolean(page);
   const actualTitle = found ? page.title : title;
   const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
-  const rendered = found ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "", linkColors) : { html: "" };
+  const clientRenderPending = found && actualTitle === "\uC544\uC628";
+  const rendered = found && !clientRenderPending ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "", linkColors) : { html: "" };
   let protection = null;
   if (found) {
     await ensurePageProtectionSchema(env);
@@ -3174,11 +3191,12 @@ async function renderFullWikiDocument(request, env, title) {
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
     canEdit: found ? ssrUser ? !ssrEditDenied : false : false,
-    exists: found
+    exists: found,
+    clientRenderPending
   };
   const protectionLabel = protection?.level === "admin" ? "\uAD00\uB9AC\uC790 \uD3B8\uC9D1 \uBCF4\uD638" : protection?.level === "registered" ? "\uD68C\uC6D0 \uD3B8\uC9D1 \uBCF4\uD638" : "";
   const protectionMessage = protectionLabel ? protection?.reason || (protection.level === "admin" ? "\uC774 \uBB38\uC11C\uB294 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uB3C4\uB85D \uBCF4\uD638\uB418\uC5B4 \uC788\uC2B5\uB2C8\uB2E4." : "\uC774 \uBB38\uC11C\uB294 \uB85C\uADF8\uC778\uD55C \uD68C\uC6D0\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : "";
-  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml2(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml2(description) + '">\n<meta property="og:title" content="' + escapeHtml2(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml2(description) + '">\n<link rel="canonical" href="' + escapeHtml2(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml2(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml2(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml2(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml2(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content">' + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml2(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml2(description) + '">\n<meta property="og:title" content="' + escapeHtml2(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml2(description) + '">\n<link rel="canonical" href="' + escapeHtml2(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml2(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml2(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml2(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml2(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
   if (!found) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
@@ -3910,7 +3928,8 @@ var index_default = {
           }
           if (!page) return { page: null, html: "", engine: "namumark-worker" };
           const linkColors = await getPageLinkColors(env, page.title);
-          const rendered = await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
+          const clientRender = page.title === "\uC544\uC628" ? await buildAonClientRenderPayload(env, page.title, page.content || "", linkColors) : null;
+          const rendered = clientRender ? { html: "" } : await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
           return {
             page: {
               title: page.title,
@@ -3923,7 +3942,8 @@ var index_default = {
               protectionUpdatedAt: page.protectionUpdatedAt || ""
             },
             html: rendered.html,
-            engine: "namumark-worker"
+            clientRender,
+            engine: clientRender ? "namumark-client" : "namumark-worker"
           };
         })().then((value2) => {
           namuPageResponseCache.set(title, { value: value2, expiresAt: Date.now() + 30 * 1e3 });
