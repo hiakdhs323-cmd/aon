@@ -79,10 +79,10 @@ const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
 const workerParserSource = fs.readFileSync("worker/src/namumark-parser.js", "utf8");
 const parserSource = workerParserSource;
-assert.ok(workerSource.includes('aonfix", "20261107-discussion-mobile-v2"'), "SSR must serve the new folding stylesheet under a fresh cache key");
+assert.ok(workerSource.includes('aonfix", "20261107-security-hardening-v3"'), "SSR must serve assets under the current cache key");
 assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append the compact NamuWiki-style chain marker");
 assert.ok(appSource.includes("link.prepend(icon)"), "external link icon must precede the unchanged label");
-assert.ok(workerSource.includes('aonfix", "20261107-discussion-mobile-v2"'), "Worker must cache-bust new NamuWiki-style assets");
+assert.ok(workerSource.includes('aonfix", "20261107-security-hardening-v3"'), "Worker must cache-bust the current frontend assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
