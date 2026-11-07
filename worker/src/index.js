@@ -819,7 +819,6 @@ async function renderFullWikiDocument(request, env, title) {
     exists: found
   };
   const protectionLabel = protection?.level === "admin" ? "관리자 편집 보호" : protection?.level === "registered" ? "회원 편집 보호" : "";
-  const officialTemplate = found && /^(?:틀|template):/i.test(actualTitle);
   const protectionMessage = protectionLabel
     ? (protection?.reason || (protection.level === "admin" ? "이 문서는 관리자만 편집할 수 있도록 보호되어 있습니다." : "이 문서는 로그인한 회원만 편집할 수 있습니다."))
     : "";
@@ -831,7 +830,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">')
     .replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + '</h1>')
     .replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + '</span>')
-    .replace('<span id="template-status" class="template-status" hidden>공식 틀 문서</span>', officialTemplate ? '<span id="template-status" class="template-status">공식 틀 문서</span>' : '<span id="template-status" class="template-status" hidden>공식 틀 문서</span>')
+    .replace('<span id="template-status" class="template-status" hidden>공식 틀 문서</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">공식 틀 문서</span>' : '<span id="template-status" class="template-status" hidden>공식 틀 문서</span>')
     .replace('<span id="official-status" class="official-status" hidden>공식 문서</span>', state.official ? '<span id="official-status" class="official-status">공식 문서</span>' : '<span id="official-status" class="official-status" hidden>공식 문서</span>')
     .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
     .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
