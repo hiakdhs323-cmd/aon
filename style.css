@@ -3677,7 +3677,6 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   padding:3px 7px!important;
   border:1px solid var(--wiki-border-strong)!important;
   border-radius:4px!important;
-  background:var(--wiki-panel)!important;
   color:var(--wiki-text)!important;
   font-size:12px!important;
   line-height:1.5!important;
