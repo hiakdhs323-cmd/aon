@@ -566,7 +566,14 @@ async function getCachedNamuPageCount(env) {
   return namuPageCountPending;
 }
 async function sanitizeServerWikiHtml(markup) {
-  const input=new Response(String(markup||""),{headers:{"Content-Type":"text/html; charset=utf-8"}});
+  const source = String(markup || "");
+  // NamuMark already escapes source text before generating its trusted HTML.
+  // Skip the expensive HTMLRewriter pass when there is no construct that
+  // requires sanitization; this is important on the 10 ms Free-plan CPU cap.
+  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\\b|\\bon[a-z]+\\s*=|(?:href|src|poster)\\s*=\\s*["']\\s*(?:javascript|data|vbscript):/i.test(source)) {
+    return source;
+  }
+  const input=new Response(source,{headers:{"Content-Type":"text/html; charset=utf-8"}});
   const rewritten=new HTMLRewriter().on("*",{
     element(element){
       const tag=String(element.tagName||"").toUpperCase();
@@ -781,7 +788,11 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const parser = new NamuMark(text, { docName: title, useTocSet: "default", docType: "view" }, database);
     const parsed = parser.parse();
     const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
-    const contrastedHtml = await applyTableTextContrast(cleanHtml);
+    // Table contrast requires a second HTMLRewriter pass. Documents without
+    // tables do not need it.
+    const contrastedHtml = /<table\\b/i.test(cleanHtml)
+      ? await applyTableTextContrast(cleanHtml)
+      : cleanHtml;
     const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
     if (namuRenderCache.size > 100) { const oldest = namuRenderCache.keys().next().value; if (oldest) namuRenderCache.delete(oldest); }
