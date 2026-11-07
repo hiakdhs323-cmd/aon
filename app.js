@@ -2057,6 +2057,8 @@ async function loadPage(title,pushRoute=true,anchor=""){
   }
   currentOfficial=Boolean(data.page.official);
   currentCanEdit=data.page.canEdit;
+  const templateStatusAfterLoad=$("template-status");
+  if(templateStatusAfterLoad) templateStatusAfterLoad.hidden=!(currentOfficial&&/^(?:틀|template):/i.test(title));
   $("page-protection").hidden=!isWikiAdmin;
   $("official-document").hidden=!isWikiAdmin;
   $("official-document").textContent=currentOfficial?"공식 문서 해제":"공식 문서 지정";
