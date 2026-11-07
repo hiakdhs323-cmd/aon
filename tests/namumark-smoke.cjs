@@ -97,6 +97,7 @@ assert.match(styles, /#article\.wiki-content table td:first-child:not\(\[style\*
 assert.match(workerSource, /aonfix", "20261107-namu-parity-v5"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
+assert.match(styles, /\.wiki-content h2\{[^}]*color:var\(--wiki-link\)/, "level-2 == headings must retain the blue link color");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
 assert.match(appSource, /aonwikiAutoText/, "automatic text colors must be tracked");
 assert.match(htmlSource, /document\.documentElement\.dataset\.theme = theme/, "theme must be selected before CSS loads");
@@ -144,6 +145,7 @@ assert.match(toc, /<details[^>]*open/, "table of contents must start expanded");
 
 
 assert.ok(workerSource.includes("pages_has_more"), "search API must expose paginated result state");
+assert.match(workerSource, /title === "대문" && !user\.isAdmin/, "homepage editing must be restricted to administrators");
 assert.ok(workerSource.includes("makeSnippet"), "search API must return content excerpts");
 assert.ok(workerSource.includes("lower(title) = lower(?)"), "search API must rank exact title matches first");
 assert.ok(appSource.includes("function loadMoreSearchResults()"), "search results must support progressive paging");
