@@ -1521,6 +1521,18 @@ try {
   }
   // re.sub fix
   manageLink() {
+    // A file link used as the label of an external link must contribute only
+    // its image content. Keeping the file page anchor would create invalid
+    // nested <a> elements and make browsers discard the outer destination.
+    const unwrapNestedFileImages = (value) => String(value || "").replace(
+      /<(render_[0-9]+[^<>]*)><\/\1>/g,
+      (match, storageName) => {
+        const media = this.dataTempStorage["meta_" + storageName];
+        if (!media || media.type !== "file-image") return match;
+        const dataName = this.getToolDataStorage(media.html, "", match);
+        return `<${dataName}></${dataName}>`;
+      }
+    );
     this.renderData = this.renderData.replaceAll("[[]]", "");
     const linkRegex = /\[\[((?:(?!\[\[|\]\]|\||<|>).|<(?:\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)+)(?:\|((?:(?!\[\[|\]\]|\|).)+))?\]\](\n?)/;
     let imageCount = 0;
@@ -1696,6 +1708,13 @@ try {
           } else {
             dataName = this.getToolDataStorage("", "", linkDataFull);
           }
+          if (filePass === 1) {
+            let imageOnlyHtml = '<img style="' + fileStyle + '" alt="' + linkSub + '" src="' + linkMain + '">';
+            if (fileAlign === "center") {
+              imageOnlyHtml = `<div style="text-align:center;">${imageOnlyHtml}</div>`;
+            }
+            this.dataTempStorage["meta_" + dataName] = { type: "file-image", html: imageOnlyHtml };
+          }
           this.renderData = this.renderData.replace(linkRegex, `<${dataName}></${dataName}>` + linkData[2]);
         }
       } else if (/^(분류|category):/i.test(linkMain)) {
@@ -1779,7 +1798,7 @@ try {
         linkMain = linkMain.replace(/"/g, "&quot;");
         linkMain = linkMain.replace(/</g, "&lt;");
         linkMain = linkMain.replace(/>/g, "&gt;");
-        let linkSub = linkData[1] || "";
+        let linkSub = unwrapNestedFileImages(linkData[1] || "");
         const linkSubStorage = linkSub ? "" : linkMainOrg;
         const linkClass = "opennamu_link_out";
         const addStr = linkData[2] || "";
