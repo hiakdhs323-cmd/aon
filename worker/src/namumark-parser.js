@@ -501,7 +501,7 @@ var NamuMark = class _NamuMark {
     let foldingCount = 0;
     let interCount = 0;
     let interData = {};
-    const middleRegex = /{{{([^{](?:(?!{{{|}}}).|\n)*)?(?:}|<(\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)}}/;
+    const middleRegex = /{{{([^{](?:(?!{{{|}}}).|\n|<(?:\/?(?:slash|render)_[^<>]+)>)*)(?:}|<(\/?(?:slash)_(?:[0-9]+)(?:[^<>]+))>)}}/;
     let middleCountAll = (this.renderData.match(globalRegExp(middleRegex)) || []).length * 10;
     while (true) {
       const middleDataMatch = this.renderData.match(middleRegex);
