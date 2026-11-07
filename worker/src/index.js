@@ -442,12 +442,15 @@ function collectWikiLinkTargets(source) {
 // for existence checks, so a sparse array preserves the count without loading
 // every page title into memory on each Worker isolate.
 async function buildNamuServerDatabase(env, title, content) {
-  const records = new Map([[title, { title, data: String(content || "") }]]);
+  const source = String(content || "");
+  const records = new Map([[title, { title, data: source }]]);
   const visitedIncludes = new Set([title]);
-  let pendingIncludes = collectIncludeTargets(content);
+  let pendingIncludes = collectIncludeTargets(source);
   let includedCount = 0;
   const maxIncludes = 50;
 
+  // Includes are intentionally bounded. A malformed include graph must never
+  // turn one page render into an unbounded D1/CPU workload.
   for (let depth = 0; depth < 4 && pendingIncludes.length && includedCount < maxIncludes; depth++) {
     const batch = [...new Set(pendingIncludes)]
       .filter(name => name && !visitedIncludes.has(name))
@@ -469,47 +472,72 @@ async function buildNamuServerDatabase(env, title, content) {
     }
   }
 
-  const allMarkup = [String(content || ""), ...[...records.values()].map(item => item.data || "")].join("\n");
+  const allMarkup = [source, ...[...records.values()].map(item => item.data || "")].join("\n");
   const linkTargets = new Set(collectWikiLinkTargets(allMarkup));
   const categoryAliases = new Set(
     collectCategoryTargets(allMarkup).map(name => "category:" + name)
   );
   for (const alias of categoryAliases) linkTargets.delete(alias);
 
-  const documentTargets = [...linkTargets].filter(name => !name.startsWith("file:") && !records.has(name));
-  const documentQueries = [];
+  // Keep existence lookups bounded. The old implementation created every D1
+  // query first and then ran all of them at once, which amplified CPU/memory
+  // usage on link-heavy pages.
+  const documentTargets = [...linkTargets]
+    .filter(name => !name.startsWith("file:") && !records.has(name))
+    .slice(0, 900);
+
+  const documentRows = [];
   for (let index = 0; index < documentTargets.length; index += 90) {
     const batch = documentTargets.slice(index, index + 90);
     const placeholders = batch.map(() => "?").join(",");
-    documentQueries.push(
-      env.DB.prepare("SELECT title FROM pages WHERE title IN (" + placeholders + ")")
-        .bind(...batch).all()
-    );
+    const result = await env.DB.prepare(
+      "SELECT title FROM pages WHERE title IN (" + placeholders + ")"
+    ).bind(...batch).all();
+    documentRows.push(...(result.results || []));
   }
 
-  // NamuMark supports nested file links inside link labels and templates.
-  // A flat [[...]] scan can swallow nested [[파일:...]] markup, so index all
-  // image names when the document contains any file syntax.
-  const imageQueries = [];
-  if (/\[\[(?:파일|file):/i.test(allMarkup)) {
+  // Resolve only the image names actually referenced by the document. Loading
+  // the complete images/image_aliases tables for every page was unnecessarily
+  // expensive and could push a Worker over its resource limit.
+  const fileTargets = [...linkTargets]
+    .filter(name => name.startsWith("file:"))
+    .map(name => name.slice(5))
+    .filter(Boolean)
+    .slice(0, 500);
+
+  const imageRows = [];
+  const imageAliasRows = [];
+  if (fileTargets.length) {
     await ensureImageSchema(env);
-    imageQueries.push(
-      env.DB.prepare("SELECT filename FROM images").all(),
-      env.DB.prepare("SELECT alias FROM image_aliases").all()
-    );
+    for (let index = 0; index < fileTargets.length; index += 90) {
+      const batch = fileTargets.slice(index, index + 90);
+      const placeholders = batch.map(() => "?").join(",");
+      const [images, aliases] = await Promise.all([
+        env.DB.prepare("SELECT filename FROM images WHERE filename IN (" + placeholders + ")")
+          .bind(...batch).all(),
+        env.DB.prepare("SELECT alias FROM image_aliases WHERE alias IN (" + placeholders + ")")
+          .bind(...batch).all()
+      ]);
+      imageRows.push(...(images.results || []));
+      imageAliasRows.push(...(aliases.results || []));
+    }
   }
 
-  const [pageCount, ...lookups] = await Promise.all([
-    env.DB.prepare("SELECT COUNT(*) AS total FROM pages").first(),
-    ...documentQueries,
-    ...imageQueries
-  ]);
+  // Page count is needed by a small number of magic words. Cache it briefly
+  // instead of running COUNT(*) on every render.
+  const pageCount = await getCachedNamuPageCount(env);
 
-  for (const result of lookups) {
-    for (const row of result.results || []) {
-      const key = row.title || ("file:" + (row.filename || row.alias));
-      if (key) records.set(key, { title: key, data: "" });
-    }
+  for (const row of documentRows) {
+    const key = row.title;
+    if (key) records.set(key, { title: key, data: "" });
+  }
+  for (const row of imageRows) {
+    const key = "file:" + row.filename;
+    if (row.filename) records.set(key, { title: key, data: "" });
+  }
+  for (const row of imageAliasRows) {
+    const key = "file:" + row.alias;
+    if (row.alias) records.set(key, { title: key, data: "" });
   }
   for (const categoryTitle of categoryAliases) {
     records.set(categoryTitle, { title: categoryTitle, data: "" });
@@ -519,6 +547,23 @@ async function buildNamuServerDatabase(env, title, content) {
     data: new Array(Math.max(0, Number(pageCount?.total) || 0)),
     lookup: new Map(records)
   };
+}
+
+let namuPageCountCache = { value: null, expiresAt: 0 };
+let namuPageCountPending = null;
+async function getCachedNamuPageCount(env) {
+  if (namuPageCountCache.value && namuPageCountCache.expiresAt > Date.now()) {
+    return namuPageCountCache.value;
+  }
+  if (namuPageCountPending) return namuPageCountPending;
+  namuPageCountPending = env.DB.prepare("SELECT COUNT(*) AS total FROM pages").first()
+    .then(row => {
+      const value = { total: Number(row?.total) || 0 };
+      namuPageCountCache = { value, expiresAt: Date.now() + 60 * 1000 };
+      return value;
+    })
+    .finally(() => { namuPageCountPending = null; });
+  return namuPageCountPending;
 }
 async function sanitizeServerWikiHtml(markup) {
   const input=new Response(String(markup||""),{headers:{"Content-Type":"text/html; charset=utf-8"}});
