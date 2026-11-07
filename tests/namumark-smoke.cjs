@@ -172,8 +172,8 @@ assert.match(toc, /class="opennamu_TOC_indent"/, "nested TOC headings must use d
 assert.match(styles, /min-width:174px!important/, "TOC must use the compact reference panel width");
 assert.ok(styles.includes("font-size:18px!important"), "TOC heading label must use the enlarged typography");
 assert.ok(styles.includes("font-size:15px!important"), "TOC entry text and numbers must use the enlarged typography");
-assert.match(styles, /\.opennamu_TOC_number\\{[\\s\\S]*?color:var\\(--wiki-link\\)!important/, "TOC numbers must use the active theme link color");
-assert.match(styles, /\.opennamu_TOC_text\\{[\\s\\S]*?color:var\\(--wiki-text\\)!important/, "TOC titles must use the active theme text color");
+assert.match(styles, /\.opennamu_TOC_number\{[\s\S]*?color:var\(--wiki-link\)!important/, "TOC numbers must use the active theme link color");
+assert.match(styles, /\.opennamu_TOC_text\{[\s\S]*?color:var\(--wiki-text\)!important/, "TOC titles must use the active theme text color");
 
 
 assert.ok(workerSource.includes("pages_has_more"), "search API must expose paginated result state");
