@@ -970,9 +970,14 @@ function toggleNamumarkBeta() {
 syncNamumarkBetaButton();
 function getExplicitWikiTextColor(element, root) {
   for (let node = element; node && node !== root; node = node.parentElement) {
+    // Worker marks cells only when a foreground color was explicitly authored.
+    // Use the computed theme-specific color for those cells, not the automatic
+    // contrast variable that is injected into every table cell.
+    if (node.hasAttribute?.("data-aonwiki-authored-fg")) {
+      const authoredColor = getComputedStyle(node).color;
+      if (authoredColor) return authoredColor;
+    }
     const inlineColor = node.style?.getPropertyValue("color")?.trim();
-    // The Worker injects this variable for automatic table contrast. It is not
-    // an author-selected color and must not override the normal green link style.
     if (inlineColor && !inlineColor.includes("--aonwiki-table-auto-fg-")) return inlineColor;
     if (node.tagName === "FONT" && node.hasAttribute("color")) {
       const fontColor = String(node.getAttribute("color") || "").trim();

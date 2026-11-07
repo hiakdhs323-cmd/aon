@@ -77,10 +77,10 @@ assert.doesNotMatch(warningNotice, /background:\s*;/i, "empty rowbgcolor must no
 
 const appSource = fs.readFileSync("app.js", "utf8");
 const workerSource = fs.readFileSync("worker/src/index.js", "utf8");
-assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v4"'), "SSR must serve the new folding stylesheet under a fresh cache key");
+assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v5"'), "SSR must serve the new folding stylesheet under a fresh cache key");
 assert.ok(appSource.includes('createAonUiIcon("link","wiki-external-link-icon")'), "external links must append the compact NamuWiki-style chain marker");
 assert.ok(appSource.includes("link.prepend(icon)"), "external link icon must precede the unchanged label");
-assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v4"'), "Worker must cache-bust new NamuWiki-style assets");
+assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v5"'), "Worker must cache-bust new NamuWiki-style assets");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
 assert.doesNotMatch(workerSource, /--aonwiki-table-auto-bg-(?:light|dark):/, "server renderer must not synthesize or overwrite cell backgrounds");
@@ -88,13 +88,13 @@ assert.match(workerSource, /data-aonwiki-authored-fg/, "explicit authored text c
 assert.match(styles, /html\[data-theme="light"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#20252a!important/s, "light mode must darken text over the existing light label-cell background");
 assert.match(styles, /html\[data-theme="dark"\] #article\.wiki-content table td:first-child[^{}]*\{[^}]*color:#f2f3f4!important/s, "dark mode must lighten text without changing the label-cell background");
 assert.doesNotMatch(styles, /auto-bg-(?:light|dark)/, "theme switching must not add synthesized cell backgrounds");
-assert.match(workerSource, /aonfix", "20261107-namu-parity-v4"/, "SSR asset URLs must receive a new cache key");
+assert.match(workerSource, /aonfix", "20261107-namu-parity-v5"/, "SSR asset URLs must receive a new cache key");
 assert.match(workerSource, /targeted-db-v25-theme-text-only:/, "server render cache must invalidate old table markup");
 assert.match(styles, /:root\s*\{[^}]*color-scheme:dark;/, "dark mode must be the stylesheet default");
 assert.match(styles, /html\[data-theme="light"\]\s*\{[^}]*--wiki-bg:#f3f4f5;/, "light mode must retain a dedicated palette");
 assert.match(styles, /aonwiki-table-spacer/, "spacer rows must have compact styling");
 assert.match(styles, /#article\.wiki-content table td:first-child:not\(\[style\*="background"\]\)/, "first-column background must follow the active theme");
-assert.match(workerSource, /aonfix", "20261107-namu-parity-v4"/, "SSR must serve the corrected stylesheet under a fresh cache key");
+assert.match(workerSource, /aonfix", "20261107-namu-parity-v5"/, "SSR must serve the corrected stylesheet under a fresh cache key");
 assert.match(styles, /border:1px solid var\(--wiki-border-strong\)/, "table frame must remain visible around borderless spacer rows");
 assert.match(styles, /line-height:1\.55!important/, "table cell line spacing must be compact and consistent");
 assert.match(appSource, /function refreshWikiTableContrast\(root = document\)/, "table contrast must refresh on render and theme changes");
@@ -150,6 +150,7 @@ assert.ok(appSource.includes("function loadMoreSearchResults()"), "search result
 assert.ok(appSource.includes("search-suggestions"), "header search must provide autocomplete suggestions");
 assert.ok(appSource.includes("function getExplicitWikiTextColor"), "wiki links must preserve explicit NamuMark colors");
 assert.ok(appSource.includes('!inlineColor.includes("--aonwiki-table-auto-fg-")'), "automatic table contrast must not be mistaken for an authored link color");
+assert.ok(appSource.includes('node.hasAttribute?.("data-aonwiki-authored-fg")'), "explicit table foreground colors must be preserved in both themes");
 assert.ok(appSource.includes("discussion-wiki-content"), "discussion posts must use the NamuMark renderer");
 assert.ok(appSource.includes("이전 토론 더 보기"), "discussion lists must support older topics");
 assert.ok(cssSource.includes("--wiki-body-link:#008b68"), "document links must use the green body-link palette");
@@ -168,5 +169,5 @@ assert.ok(cssSource.includes(".discussion-search-toolbar"), "discussion search c
 assert.ok(cssSource.includes("wiki-numbered-list"), "numbered-list CSS must remain present");
 assert.ok(cssSource.includes(".opennamu_footnote"), "footnote CSS must remain present");
 assert.ok(cssSource.includes('a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"])'), "footnote markers must keep their native link appearance");
-assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v4"'), "SSR must refresh the latest NamuWiki-style assets");
+assert.ok(workerSource.includes('aonfix", "20261107-namu-parity-v5"'), "SSR must refresh the latest NamuWiki-style assets");
 console.log("NamuMark smoke tests passed: NamuWiki parity links, search, discussions and renderer.");
