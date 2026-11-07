@@ -297,12 +297,12 @@ function extractAdminLinkColors(source) {
 }
 function buildAdminLinkColorMarkup(html, colors) {
   const selectors = {
-    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link)',
-    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link)',
-    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):visited',
-    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):visited',
-    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):hover',
-    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):hover'
+    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
+    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
+    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):visited',
+    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):visited',
+    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):hover',
+    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):hover'
   };
   const rules = [];
   for (const [key, selector] of Object.entries(selectors)) {
@@ -310,6 +310,9 @@ function buildAdminLinkColorMarkup(html, colors) {
     if (color) rules.push(selector + "{color:" + color + " !important}");
   }
   if (!rules.length) return String(html || "");
+  // Heading section numbers are structural navigation, not page-authored body links.
+  // Keep them in the wiki link palette even when a document defines custom link colors.
+  rules.push('html[data-theme="light"] .aonwiki-page-content a.wiki-heading-number, html[data-theme="dark"] .aonwiki-page-content a.wiki-heading-number, html[data-theme="light"] .aonwiki-page-content a.wiki-heading-number:visited, html[data-theme="dark"] .aonwiki-page-content a.wiki-heading-number:visited, html[data-theme="light"] .aonwiki-page-content a.wiki-heading-number:hover, html[data-theme="dark"] .aonwiki-page-content a.wiki-heading-number:hover {color:var(--wiki-link) !important}');
   // Explicit NamuMark text colors take precedence over page-wide link colors,
   // including configured visited and hover states.
   rules.push('.aonwiki-page-content span[style*="color"] a, .aonwiki-page-content span[style*="color"] a:visited, .aonwiki-page-content span[style*="color"] a:hover{color:inherit !important}');
@@ -640,7 +643,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const text = extracted.content;
   const colors = {};
   for (const key of ADMIN_LINK_COLOR_KEYS) { const color = normalizeAdminLinkColor(linkColors?.[key]); if (color) colors[key] = color; }
-  const cacheKey = "targeted-db-v26-heading-theme-aware:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
+  const cacheKey = "targeted-db-v27-heading-number-blue:" + String(title) + ":" + namuFileHash(String(source || "") + "\n" + JSON.stringify(colors));
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -700,7 +703,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     catch { return attribute; }
     const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
     if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-heading-theme-v1");
+    parsed.searchParams.set("aonfix", "20261107-heading-number-blue-v2");
     return name + "=" + quote + base + file + parsed.search + parsed.hash + quote;
   });
 }
@@ -711,7 +714,7 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   frontendShellPending = (async () => {
     const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-heading-theme-v1", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const shellResponse = await fetch(origin + "/?aonwiki-shell=20261107-heading-number-blue-v2", { headers: { "Accept": "text/html", "Cache-Control": "no-cache" }, cf: { cacheTtl: 60, cacheEverything: true } });
     if (!shellResponse.ok) throw new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
     const shell = await shellResponse.text();
     if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
