@@ -2265,6 +2265,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    await renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
   }else{
    appendSanitizedServerHtml(staging,data.html);
+   rewriteClientNamuImageUrls(staging,data.imageMap);
    prepareServerRenderedMarkup(staging,displayTitle);
    ensureClientDocumentToc(staging, data.page.content || "", true);
   }
