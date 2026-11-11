@@ -904,7 +904,9 @@ function sanitizeNamuOutput(root, docTitle) {
       // Footnote markers are UI popups, never ordinary hash-navigation links.
       const footnoteTarget = node.getAttribute("fn_target") ||
         (href.startsWith("#") ? (() => { try { return decodeURIComponent(href.slice(1)); } catch { return href.slice(1); } })() : "");
-      if (node.id.includes("rfn_") && footnoteTarget) {
+      const isFootnoteMarker = node.classList.contains("wiki-fn-content") ||
+        Boolean(node.querySelector?.('[id^="rfn-"], [id^="rfn_"]'));
+      if (isFootnoteMarker && footnoteTarget) {
         node.setAttribute("data-wiki-footnote-target", footnoteTarget);
         // Keep the engine's original #footnote href and class.
         return;
@@ -931,14 +933,14 @@ function sanitizeNamuOutput(root, docTitle) {
       } else if (/^https?:\/\//i.test(href)) {
         node.setAttribute("target", "_blank");
         node.setAttribute("rel", "noopener noreferrer");
-      } else if (href.startsWith("/image/") || href.startsWith("/media/")) {
+      } else if (href.startsWith("/image/") || href.startsWith("/media/") || href.startsWith("/files/")) {
         node.setAttribute("href", apiBase() + href);
       }
     }
     if (tag === "IMG") {
       const src = node.getAttribute("src") || "";
       // Server-rendered media paths are relative to the Worker, while the wiki UI is hosted on GitHub Pages.
-      if (src.startsWith("/image/") || src.startsWith("/media/")) node.setAttribute("src", new URL(src, apiBase() + "/").href);
+      if (src.startsWith("/image/") || src.startsWith("/media/") || src.startsWith("/files/")) node.setAttribute("src", new URL(src, apiBase() + "/").href);
       node.setAttribute("loading", "lazy");
       node.setAttribute("decoding", "async");
       node.addEventListener("error", () => {
@@ -2218,25 +2220,22 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
 function renderDocumentMetadata(article, metadata, docTitle) {
  const categories=[...new Set((metadata?.categories||[]).map(value=>String(value||"").trim()).filter(Boolean))]
    .map(value=>value.replace(/^(?:분류|category):/i,"").trim()).filter(Boolean);
- article.querySelector(".wiki-document-metadata")?.remove();
+ article.querySelector(".wiki-categories")?.remove();
  if(!categories.length)return;
- const footer=document.createElement("footer");
- footer.className="wiki-document-metadata";
+ const footer=document.createElement("div");
+ footer.className="wiki-categories";
  const label=document.createElement("span");
- label.className="wiki-document-metadata-label";
- label.textContent="분류";
+ label.className="wiki-categories-label";
+ label.textContent="분류:";
  footer.append(label);
- const list=document.createElement("div");
- list.className="wiki-document-category-list";
  categories.forEach(name=>{
   const link=document.createElement("a");
   link.href=routeFor("분류:"+name);
   link.textContent="분류:"+name;
   link.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+name)});
-  list.append(link);
+  footer.append(link);
  });
- footer.append(list);
- article.append(footer);
+ article.prepend(footer);
 }
 
 async function loadPage(title,pushRoute=true,anchor=""){
@@ -3825,4 +3824,5 @@ if(document.body.dataset.ssrPage==="true"){
 refreshIdentity().catch(()=>{}).finally(()=>syncDocumentEditControls());
 loadGlobalRail();
 startLivePageWatcher();
+
 
