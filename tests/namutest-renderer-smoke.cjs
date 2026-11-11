@@ -12,7 +12,7 @@ assert.match(html, /namumark-interactions-aon\.css/, "AonWiki interaction skin m
 assert.doesNotMatch(html, /namumark-parser\.js|namumark-beta\.css/, "legacy parser bundle and beta skin must not be loaded");
 assert.match(app, /import\("\.\/namumark-wasm\.js"\)/, "browser fallback must load the single WASM renderer wrapper");
 assert.match(app, /import\("\.\/Namu_test-main\/interactions\.js"\)/, "browser interaction module must come from Namu_test-main");
-assert.doesNotMatch(app, /NamuMarkBundle|namumark-beta|toggleNamumarkBeta/, "legacy parser and beta toggle must be absent");
+assert.doesNotMatch(app, /NamuMarkBundle|namumark-beta|toggleNamumarkBeta|openNAMU|opennamu_/, "legacy parser and beta toggle must be absent");
 assert.match(wrapper, /from "\.\/Namu_test-main\/namumark\.js"/, "browser wrapper must use the Namu_test-main parser glue");
 assert.match(worker, /from "\.\.\/\.\.\/Namu_test-main\/namumark\.js"/, "Worker SSR must use the same Namu_test-main parser glue");
 assert.match(worker, /from "\.\.\/\.\.\/Namu_test-main\/namumark_bg\.wasm"/, "Worker SSR must use the Namu_test-main WASM binary");
@@ -37,5 +37,8 @@ const removedLegacyFiles = [
 for (const path of removedLegacyFiles) {
   assert.equal(fs.existsSync(path), false, `legacy renderer file must be removed: ${path}`);
 }
+
+assert.doesNotMatch(read("style.css"), /opennamu_/i, "site skin must not contain legacy OpenNAMU renderer selectors");
+assert.doesNotMatch(read("UPSTREAM-NOTICE.md"), /builds and runs.*openNAMU/i, "upstream notice must not claim OpenNAMU is the active runtime");
 
 console.log("AonWiki single-renderer integration checks passed.");
