@@ -22,11 +22,16 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
   transition: opacity 125ms var(--nm-ease-out);
 }
 
-.namumark-wasm-content .nm-footnote-preview[data-visible] {
+.namumark-wasm-content .nm-footnote-preview[data-visible],
+.namumark-wasm-content .nm-footnote-preview[data-open] {
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .namumark-wasm-content .nm-footnote-preview .footnote-list {

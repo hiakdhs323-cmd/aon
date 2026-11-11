@@ -13,6 +13,10 @@ export function setupWikiInteractions(root) {
   let activeNote = null;
   let showTimer, hideTimer, exitTimer, positionFrame, revealFrame;
 
+  function previewIsOpen() {
+    return supportsPopover ? preview.matches(":popover-open") : preview.hasAttribute("data-open");
+  }
+
   function toggleFolding(details, animate) {
     const previous = foldings.get(details);
     const target = !(previous?.target ?? details.open);
@@ -73,7 +77,7 @@ export function setupWikiInteractions(root) {
   }
 
   function positionPreview() {
-    if (!activeNote || !preview.matches(":popover-open")) return;
+    if (!activeNote || !previewIsOpen()) return;
     const anchor = activeNote.getBoundingClientRect();
     if (!activeNote.isConnected || !activeNote.getClientRects().length) {
       hidePreview(true);
@@ -111,6 +115,7 @@ export function setupWikiInteractions(root) {
     preview.removeAttribute("data-visible");
     const finish = () => {
       if (supportsPopover && preview.matches(":popover-open")) preview.hidePopover();
+      preview.removeAttribute("data-open");
       activeNote?.removeAttribute("aria-details");
       activeNote = null;
     };
@@ -119,7 +124,6 @@ export function setupWikiInteractions(root) {
   }
 
   function showPreview(note, keyboard = false) {
-    if (!supportsPopover) return;
     const content = noteContent(note);
     if (!content) return;
     clearTimeout(showTimer);
@@ -136,7 +140,11 @@ export function setupWikiInteractions(root) {
     }
     preview.style.transition = keyboard ? "none" : "";
     if (!preview.isConnected) root.append(preview);
-    if (!preview.matches(":popover-open")) preview.showPopover();
+    if (supportsPopover) {
+      if (!preview.matches(":popover-open")) preview.showPopover();
+    } else {
+      preview.setAttribute("data-open", "");
+    }
     positionPreview();
     void preview.offsetHeight;
     cancelAnimationFrame(revealFrame);
@@ -168,7 +176,7 @@ export function setupWikiInteractions(root) {
       // especially important on touch devices, where there is no hover.
       event.preventDefault();
       event.stopPropagation();
-      if (activeNote === clickedNote && preview.matches(":popover-open")) hidePreview(true);
+      if (activeNote === clickedNote && previewIsOpen()) hidePreview(true);
       else showPreview(clickedNote);
       return;
     }
@@ -196,7 +204,7 @@ export function setupWikiInteractions(root) {
     if (!note || preview.contains(note) || note.contains(event.relatedTarget)) return;
     keepPreview();
     clearTimeout(showTimer);
-    const instant = activeNote && preview.matches(":popover-open");
+    const instant = activeNote && previewIsOpen();
     showTimer = setTimeout(() => showPreview(note), instant ? 0 : 100);
   });
 
@@ -243,11 +251,11 @@ export function setupWikiInteractions(root) {
 
   return {
     refresh() {
-      if (!supportsPopover) return;
       root.querySelectorAll("a.wiki-fn-content[title]").forEach((note) => {
         if (!noteContent(note)) return;
+        // Keep the engine's native title tooltip for desktop hover. The
+        // positioned preview below supplements it on touch devices.
         titles.set(note, note.getAttribute("title"));
-        note.removeAttribute("title");
       });
       root.querySelectorAll("a.wiki-fn-content").forEach((note) => {
         const href = note.getAttribute("href") || "";
