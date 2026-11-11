@@ -29,6 +29,7 @@ export function setupWikiInteractions(root) {
       Object.assign(details.style, original);
       foldings.delete(details);
     };
+
     if (!animate || reducedMotion.matches) {
       restore();
       return;
@@ -136,7 +137,6 @@ export function setupWikiInteractions(root) {
     if (!preview.isConnected) root.append(preview);
     if (!preview.matches(":popover-open")) preview.showPopover();
     positionPreview();
-    
     void preview.offsetHeight;
     cancelAnimationFrame(revealFrame);
     revealFrame = requestAnimationFrame(() => preview.setAttribute("data-visible", ""));
@@ -165,7 +165,6 @@ export function setupWikiInteractions(root) {
     if (details?.matches("details.wiki-folding") && root.contains(details)) {
       event.preventDefault();
       hidePreview(true);
-      
       toggleFolding(details, event.detail !== 0);
       return;
     }
@@ -187,12 +186,14 @@ export function setupWikiInteractions(root) {
     const instant = activeNote && preview.matches(":popover-open");
     showTimer = setTimeout(() => showPreview(note), instant ? 0 : 100);
   });
+
   root.addEventListener("pointerout", (event) => {
     if (!(event.target instanceof Element)) return;
     const note = event.target.closest("a.wiki-fn-content");
     if (!note || note.contains(event.relatedTarget) || preview.contains(event.relatedTarget)) return;
     scheduleHide();
   });
+
   preview.addEventListener("pointerenter", keepPreview);
   preview.addEventListener("pointerleave", scheduleHide);
   root.addEventListener("focusin", (event) => {
@@ -200,10 +201,12 @@ export function setupWikiInteractions(root) {
     const note = event.target.closest("a.wiki-fn-content");
     if (note) showPreview(note, true);
   });
+
   root.addEventListener("focusout", (event) => {
     if (preview.contains(event.relatedTarget) || activeNote?.contains(event.relatedTarget)) return;
     scheduleHide();
   });
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !activeNote) return;
     const trigger = activeNote;
@@ -212,9 +215,11 @@ export function setupWikiInteractions(root) {
     hidePreview(true);
     event.preventDefault();
   });
+
   document.addEventListener("pointerdown", (event) => {
     if (!preview.contains(event.target) && !activeNote?.contains(event.target)) hidePreview(true);
   });
+
   window.addEventListener("scroll", schedulePosition, true);
   window.addEventListener("resize", schedulePosition);
   const observer = new ResizeObserver(schedulePosition);
