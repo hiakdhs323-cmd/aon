@@ -1,5 +1,5 @@
 import initAonNamuMark, { RendererOptions, parse_with_callbacks_and_options } from "../../namumark.js";
-import AON_NAMU_WASM_MODULE from "../../namumark_bg.wasm";
+import AON_NAMU_WASM_MODULE from "../../Namu_test-main/namumark_bg.wasm";
 
 let aonNamuWasmPromise = null;
 async function ensureAonNamuWasm() {
