@@ -1,4 +1,4 @@
-import initAonNamuMark, { RendererOptions, parse_with_callbacks_and_options } from "../../namumark.js";
+import initAonNamuMark, { RendererOptions, parse_with_callbacks_and_options } from "../../Namu_test-main/namumark.js";
 import AON_NAMU_WASM_MODULE from "../../Namu_test-main/namumark_bg.wasm";
 
 let aonNamuWasmPromise = null;
@@ -877,7 +877,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "targeted-db-v37-render-parser:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v1-renderer:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -886,9 +886,9 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     try {
       await ensureNamuRenderCacheSchema(env);
       const stored = await env.DB.prepare("SELECT source_hash, html, metadata_json FROM namu_render_cache WHERE title = ?").bind(title).first();
-      // Keep compatible cache entries; parser updates must not trigger a
-      // site-wide cold-render burst.
-      if (stored && (stored.source_hash === cacheKey || String(stored.source_hash || "").endsWith(":" + sourceDigest))) {
+      // Rendered HTML is tied to a specific parser build. Never reuse a
+      // persistent entry created by a different renderer version.
+      if (stored && stored.source_hash === cacheKey) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
         const value = { html: String(stored.html || ""), metadata };
@@ -992,16 +992,31 @@ function safeJsonForHtml(value) {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
-  const base = frontendOrigin.replace(/\/+$/, "") + "/";
-  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "namumark-wasm.js", "namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
-  return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
+  const baseUrl = new URL(frontendOrigin.replace(/\\/+$/, "") + "/");
+  const basePath = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : baseUrl.pathname + "/";
+  const staticAssets = new Set([
+    "style.css",
+    "app.js",
+    "theme.js",
+    "namumark-wasm.js",
+    "namumark-aon.css",
+    "namumark-interactions-aon.css",
+    "Namu_test-main/namumark.js",
+    "Namu_test-main/namumark_bg.wasm",
+    "Namu_test-main/interactions.js",
+    "aonwiki-mark.svg"
+  ]);
+  return String(html).replace(/\\b(href|src)\\s*=\\s*(["'])(.*?)\\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
-    try { parsed = new URL(String(rawUrl).trim(), base); }
+    try { parsed = new URL(String(rawUrl).trim(), baseUrl); }
     catch { return attribute; }
-    const file = parsed.pathname.split("/").filter(Boolean).pop() || "";
-    if (!staticAssets.has(file)) return attribute;
-    parsed.searchParams.set("aonfix", "20261107-security-hardening-v3");
-    return name + "=" + quote + "/aon/" + file + parsed.search + parsed.hash + quote;
+    if (parsed.origin !== baseUrl.origin || !parsed.pathname.startsWith(basePath)) return attribute;
+    let assetPath;
+    try { assetPath = decodeURIComponent(parsed.pathname.slice(basePath.length)); }
+    catch { return attribute; }
+    if (!staticAssets.has(assetPath)) return attribute;
+    parsed.searchParams.set("aonfix", "20261111-namutest-main-v1");
+    return name + "=" + quote + "/aon/" + assetPath + parsed.search + parsed.hash + quote;
   });
 }
 const FRONTEND_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -1222,7 +1237,7 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
-      const staticFiles = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "namumark-wasm.js", "namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
+      const staticFiles = new Set(["style.css", "app.js", "theme.js", "namumark-wasm.js", "namumark-aon.css", "namumark-interactions-aon.css", "Namu_test-main/namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
