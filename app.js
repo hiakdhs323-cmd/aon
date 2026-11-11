@@ -1132,7 +1132,7 @@ function applyFinalWikiTypographyAndLinkColors(root) {
   }
   root.querySelectorAll(".wiki-macro-toc").forEach(toc=>{
     const summary=toc.querySelector(":scope > summary");
-    const contents=toc.querySelector(":scope > .wiki-macro-toc");
+    const contents=toc.querySelector(":scope > details");
     if(summary){
       summary.setAttribute("aria-expanded",String(toc.open));
       if(contents){
@@ -1150,7 +1150,7 @@ function applyFinalWikiTypographyAndLinkColors(root) {
       link.style.setProperty("text-decoration-color","currentColor","important");
       return;
     }
-    const footnoteRegion=link.closest(".wiki-macro-footnote,.wiki-footnotes,.footnote-list,.footnote-list,.footnote-list");
+    const footnoteRegion=link.closest(".wiki-macro-footnote,.footnote-list");
     const footnoteId=String(link.id||"");
     const footnoteHref=String(link.getAttribute("href")||"");
     if(footnoteRegion||/(?:^|_)r?fn_/.test(footnoteId)||/(?:^|#).*?(?:^|_)r?fn_/.test(footnoteHref))return;
