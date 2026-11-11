@@ -1202,7 +1202,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v5",
+        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v6",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1329,7 +1329,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v5" : "20261111-assets-v5";
+        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v6" : "20261111-assets-v6";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
@@ -2066,9 +2066,6 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
             // loses includes, file resolution, and document existence checks.
             const payload = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
             clientRender = {
-              chunked: true,
-              totalChars: sourceText.length,
-              chunkSize: 8000,
               linkColors: payload.linkColors || linkColors || {},
               records: payload.records || [],
               pageCount: payload.pageCount || 0,
@@ -2108,37 +2105,6 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const value = await pending;
         return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "MISS" });
       }
-      if (url.pathname === "/api/render-chunk" && request.method === "GET") {
-        const title = cleanTitle(url.searchParams.get("title"));
-        if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
-        const requestedOffset = Math.max(0, Number(url.searchParams.get("offset") || 0) || 0);
-        const requestedLimit = Math.max(4096, Math.min(12000, Number(url.searchParams.get("limit") || 8000) || 8000));
-        const selectPage = async pageTitle => env.DB.prepare(
-          "SELECT title, content FROM pages WHERE title = ?"
-        ).bind(pageTitle).first();
-        let page = await selectPage(title);
-        if (!page) {
-          await ensurePageAliasSchema(env);
-          const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
-          if (alias) page = await selectPage(alias.title);
-        }
-        if (!page) return response({ error: "문서를 찾을 수 없습니다." }, 404, cors);
-        const source = String(page.content || "");
-        const offset = Math.min(requestedOffset, source.length);
-        const end = Math.min(source.length, offset + requestedLimit);
-        return response({
-          title: page.title,
-          offset,
-          end,
-          total: source.length,
-          chunk: source.slice(offset, end)
-        }, 200, {
-          ...cors,
-          "Cache-Control": "private, max-age=30",
-          "X-AonWiki-Render": "namumark-chunk"
-        });
-      }
-
       if (url.pathname === "/api/render" && request.method === "POST") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
           return response({ error: "미리보기 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
