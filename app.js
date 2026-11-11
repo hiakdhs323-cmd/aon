@@ -1088,19 +1088,6 @@ function enhanceFootnoteHover(root) {
   }
 }
 
-function syncNamumarkBetaButton() {
-  const button = $("namumark-beta-toggle");
-  if (!button) return;
-  button.textContent = "서버 렌더링";
-  button.setAttribute("aria-pressed", "true");
-  button.setAttribute("title", "모든 나무마크 문서는 Cloudflare Worker에서 파싱됩니다.");
-  button.disabled = true;
-  button.classList.add("is-enabled");
-}
-function toggleNamumarkBeta() {
-  syncNamumarkBetaButton();
-}
-syncNamumarkBetaButton();
 function getExplicitWikiTextColor(element, root) {
   for (let node = element; node && node !== root; node = node.parentElement) {
     // Worker marks cells only when a foreground color was explicitly authored.
@@ -1209,7 +1196,6 @@ function prepareServerRenderedMarkup(root,docTitle){
   });
   refreshWikiTableContrast(root);
   root.classList.add("namumark-rendered");
-  root.classList.remove("namumark-beta-active");
   enhanceFootnoteHover(root);
   applyFinalWikiTypographyAndLinkColors(root);
   if(window.katex){
@@ -1410,7 +1396,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     if (serverRenderVersions.get(target) !== version) return;
     target.replaceChildren();
     const message = document.createElement("p");
-    message.className = "namumark-beta-warning";
+    message.className = "wiki-engine-warning";
     message.textContent = "서버 문서 렌더링에 실패했습니다: " + String(error.message || error);
     target.append(message);
     throw error;
@@ -2305,7 +2291,6 @@ async function loadPage(title,pushRoute=true,anchor=""){
   article.classList.add("namumark-rendered");
   await activateAonWikiInteractions(article);
   if(requestId!==pageNavigationSequence)return;
-  article.classList.remove("namumark-beta-active");
   article.dataset.renderEngine=data.engine||staging.dataset.renderEngine||"worker-ssr";
   requestAnimationFrame(()=>{
    if(requestId!==pageNavigationSequence)return;
