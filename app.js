@@ -871,7 +871,7 @@ function sanitizeNamuStylesheet(raw) {
 }
 function sanitizeNamuOutput(root, docTitle) {
   const allowedTags = new Set(("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE").split(" "));
-  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
+  const allowedAttrs = new Set(("alt allow allowfullscreen class colspan data-namumark-action fn_target frameborder height href id lang loading open referrerpolicy rel rowspan src style target title type width align valign controls loop muted poster start").split(" "));
   [...root.querySelectorAll("*")].forEach(node => {
     const tag = node.tagName;
     if (["SCRIPT","OBJECT","EMBED","FORM","INPUT","BUTTON","LINK","META"].includes(tag)) {
@@ -886,7 +886,7 @@ function sanitizeNamuOutput(root, docTitle) {
       node.textContent = sanitizeNamuStylesheet(node.textContent || "");
       return;
     }
-    const parserAction = node.getAttribute("data-opennamu-action") || node.getAttribute("onclick") || "";
+    const parserAction = node.getAttribute("data-namumark-action") || node.getAttribute("onclick") || "";
     [...node.attributes].forEach(attr => {
       const name = attr.name.toLowerCase();
       if (name.startsWith("on") || !allowedAttrs.has(name)) {
@@ -921,13 +921,13 @@ function sanitizeNamuOutput(root, docTitle) {
       }
     }
     if (tag === "A") {
-      const legacyHeadingFold = /^javascript:opennamu_heading_folding\('[a-f0-9_]+', this\);?$/i.test(parserAction);
+      const legacyHeadingFold = /^javascript:namumark_heading_folding\('[a-f0-9_]+', this\);?$/i.test(parserAction);
       if (parserAction === "heading-fold" || legacyHeadingFold) {
         const heading = node.closest("h1,h2,h3,h4,h5,h6");
         const section = heading ? heading.nextElementSibling : null;
-        if (section && section.id && section.id.includes("opennamu_heading_")) {
+        if (section && section.id && section.id.includes("namumark_heading_")) {
           node.removeAttribute("href");
-          node.removeAttribute("data-opennamu-action");
+          node.removeAttribute("data-namumark-action");
           node.setAttribute("role", "button");
           node.setAttribute("tabindex", "0");
           const toggleSection = event => {
@@ -943,7 +943,7 @@ function sanitizeNamuOutput(root, docTitle) {
             if (event.key === "Enter" || event.key === " ") toggleSection(event);
           });
         } else {
-          node.removeAttribute("data-opennamu-action");
+          node.removeAttribute("data-namumark-action");
         }
       }
       const href = node.getAttribute("href") || "";
@@ -1121,18 +1121,18 @@ function hasExplicitWikiTextColor(element, root) {
 function applyFinalWikiTypographyAndLinkColors(root) {
   if (!root) return;
   const compactNodes=root.querySelectorAll([
-    ".opennamu_footnote",".opennamu_footnote *",".wiki-footnotes",".wiki-footnotes *",
-    ".opennamu_spead_footnote",".opennamu_spead_footnote *",
-    ".opennamu_popup_footnote",".opennamu_popup_footnote *",
-    "footnote_title",".opennamu_category",".opennamu_category *",".wiki-footnote-tooltip"
+    ".wiki-macro-footnote",".wiki-macro-footnote *",".wiki-footnotes",".wiki-footnotes *",
+    ".footnote-list",".footnote-list *",
+    ".footnote-list",".footnote-list *",
+    ".footnote-list",".wiki-category",".wiki-category *",".wiki-footnote-tooltip"
   ].join(","));
   for(const element of compactNodes){
     element.style.setProperty("font-size","12px","important");
     element.style.setProperty("line-height","1.6","important");
   }
-  root.querySelectorAll(".opennamu_TOC").forEach(toc=>{
+  root.querySelectorAll(".wiki-macro-toc").forEach(toc=>{
     const summary=toc.querySelector(":scope > summary");
-    const contents=toc.querySelector(":scope > .opennamu_TOC_contents");
+    const contents=toc.querySelector(":scope > .wiki-macro-toc");
     if(summary){
       summary.setAttribute("aria-expanded",String(toc.open));
       if(contents){
@@ -1144,13 +1144,13 @@ function applyFinalWikiTypographyAndLinkColors(root) {
     }
   });
   root.querySelectorAll("a").forEach(link=>{
-    if(link.classList.contains("opennamu_not_exist_link")){
+    if(link.classList.contains("not-exist")){
       link.style.setProperty("color","var(--wiki-danger)","important");
       link.style.setProperty("text-decoration","underline","important");
       link.style.setProperty("text-decoration-color","currentColor","important");
       return;
     }
-    const footnoteRegion=link.closest(".opennamu_footnote,.wiki-footnotes,.opennamu_spead_footnote,.opennamu_popup_footnote,footnote_title");
+    const footnoteRegion=link.closest(".wiki-macro-footnote,.wiki-footnotes,.footnote-list,.footnote-list,.footnote-list");
     const footnoteId=String(link.id||"");
     const footnoteHref=String(link.getAttribute("href")||"");
     if(footnoteRegion||/(?:^|_)r?fn_/.test(footnoteId)||/(?:^|#).*?(?:^|_)r?fn_/.test(footnoteHref))return;
@@ -1200,7 +1200,7 @@ function prepareServerRenderedMarkup(root,docTitle){
       }
     }
   });
-  root.querySelectorAll(".wiki-fold,.opennamu_TOC,.wiki-fold-content").forEach(element=>{
+  root.querySelectorAll(".wiki-fold,.wiki-macro-toc,.wiki-fold-content").forEach(element=>{
     element.style.setProperty("max-width","100%");element.style.setProperty("min-width","0");
   });
   refreshWikiTableContrast(root);
@@ -1332,7 +1332,7 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
  const color=String(colors[theme]||"").trim();
  if(color&&/^(?:#[0-9a-f]{3,8}|[a-z]{1,20}|rgba?\\([\\d.% ,/+-]+\\)|hsla?\\([\\d.% ,/+-]+\\))$/i.test(color)){
-  target.querySelectorAll("a:not(.opennamu_not_exist_link):not(.wiki-heading-number)").forEach(link=>link.style.setProperty("color",color,"important"));
+  target.querySelectorAll("a:not(.not-exist):not(.wiki-heading-number)").forEach(link=>link.style.setProperty("color",color,"important"));
  }
  target.dataset.renderEngine="namumark-wasm";
 }
@@ -1361,7 +1361,7 @@ function appendSanitizedServerHtml(target,html){
    if(!allowedTags.has(tag)){node.replaceWith(...node.childNodes);continue}
    for(const attr of [...node.attributes]){
     const name=attr.name.toLowerCase(),value=attr.value;
-    if(name.startsWith("on")||name==="srcdoc"||name==="formaction"||name==="action"||name==="xlink:href"||!["alt","allow","allowfullscreen","class","colspan","data-opennamu-action","fn_target","frameborder","height","href","id","lang","loading","open","poster","referrerpolicy","rel","rowspan","src","style","tabindex","target","title","type","width","align","valign","controls","loop","muted"].includes(name)){node.removeAttribute(attr.name);continue}
+    if(name.startsWith("on")||name==="srcdoc"||name==="formaction"||name==="action"||name==="xlink:href"||!["alt","allow","allowfullscreen","class","colspan","data-namumark-action","fn_target","frameborder","height","href","id","lang","loading","open","poster","referrerpolicy","rel","rowspan","src","style","tabindex","target","title","type","width","align","valign","controls","loop","muted"].includes(name)){node.removeAttribute(attr.name);continue}
     if(urlAttrs.has(name)&&!safeUrl(value,tag,name)){node.removeAttribute(attr.name);continue}
    }
    if(tag==="IFRAME"){
