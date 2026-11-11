@@ -1385,7 +1385,7 @@ async function applyTableTextContrast(markup) {
       const current = el.getAttribute("style") || "";
       el.setAttribute(
         "style",
-        (current.trim() ? current.trim().replace(/;?$/, ";") : "") + "--aonwiki-table-auto-fg-light:" + lightText + ";--aonwiki-table-auto-fg-dark:" + darkText + ";color:var(--aonwiki-table-auto-fg-light,var(--wiki-text));"
+        (current.trim() ? current.trim().replace(/;?$/, ";") : "") + "--aonwiki-table-auto-fg-light:" + lightText + ";--aonwiki-table-auto-fg-dark:" + darkText + ";color:light-dark(var(--aonwiki-table-auto-fg-light,var(--wiki-text)),var(--aonwiki-table-auto-fg-dark,var(--wiki-text)));"
       );
       if (lightFg || darkFg) el.setAttribute("data-aonwiki-authored-fg", "1");
       else el.removeAttribute("data-aonwiki-authored-fg");
@@ -1478,12 +1478,14 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     options.dark_class = "dark";
     const callbacks = {
       documentExists(name) {
-        const key = String(name || "").trim();
-        return database.lookup.has(key) || database.lookup.has("file:" + key) || database.lookup.has("category:" + key);
+        const raw = String(name || "").trim();
+        const key = raw.replace(/^(?:\uD30C\uC77C|file):/i, "");
+        return database.lookup.has(raw) || database.lookup.has(key) || database.lookup.has("\uD30C\uC77C:" + key) || database.lookup.has("file:" + key) || database.lookup.has("category:" + key);
       },
       getDocumentContent(name) {
-        const key = String(name || "").trim();
-        return database.lookup.get(key)?.data || "";
+        const raw = String(name || "").trim();
+        const key = raw.replace(/^(?:\uD30C\uC77C|file):/i, "");
+        return (database.lookup.get(raw) || database.lookup.get(key) || database.lookup.get("\uD30C\uC77C:" + key) || database.lookup.get("file:" + key) || database.lookup.get("category:" + key))?.data || "";
       },
       getPagecount() {
         return Number(database.data.length) || 0;
@@ -1667,7 +1669,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v6",
+        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v7",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1776,7 +1778,7 @@ var index_default = {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v6" : "20261111-assets-v6";
+        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v7" : "20261111-assets-v7";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
