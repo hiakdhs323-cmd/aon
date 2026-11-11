@@ -1,7 +1,7 @@
-# Upstream engine notice
+# Renderer notice
 
-AonWiki builds and runs [openNAMU](https://github.com/openNAMU/openNAMU) from its `beta` branch during the Docker build.
+AonWiki's active document renderer is **Namu_test-main**. The browser renderer and Cloudflare Worker SSR both use the same `Namu_test-main/namumark.js` + `Namu_test-main/namumark_bg.wasm` engine.
 
-openNAMU is distributed under the BSD 3-Clause license. Its license and third-party notices are maintained in the upstream repository. Consult that repository and preserve its notices when redistributing built images or source.
+The historical openNAMU/namumark-clone integration is retained only in `PARSER-LICENSES.md` as provenance; it is not built, loaded, or executed by the current runtime.
 
 AonWiki is an independent deployment wrapper and is not the official Namuwiki service.
