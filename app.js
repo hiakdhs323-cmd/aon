@@ -1248,9 +1248,7 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  const callbacks = {
   documentExists(name){
    const key=String(name||"").trim().replace(/^(?:파일|file):/i,"");
-   return lookup.has(String(name||"").trim())
-     || lookup.has("file:"+key)
-     || lookup.has("category:"+key);
+   return lookup.has(String(name||"").trim()) || lookup.has("file:"+key) || lookup.has("category:"+key);
   },
   getDocumentContent(name){
    const raw=String(name||"").trim();
@@ -1258,9 +1256,7 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
    const row=lookup.get(raw)||lookup.get(key)||lookup.get("file:"+key)||lookup.get("category:"+key);
    return row ? row.data : "";
   },
-  getPagecount(){
-   return pageCount;
-  }
+  getPagecount(){ return pageCount; }
  };
  const options = new renderer.RendererOptions();
  options.document_url_prefix = "/w/";
@@ -1278,13 +1274,49 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  appendSanitizedServerHtml(target,html);
  rewriteClientNamuImageUrls(target, clientRender?.imageMap);
  prepareServerRenderedMarkup(target,docTitle);
- const colors=clientRender?.linkColors||{};
- const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
- const color=String(colors[theme]||"").trim();
- if(color&&/^(?:#[0-9a-f]{3,8}|[a-z]{1,20}|rgba?\\([\\d.% ,/+-]+\\)|hsla?\\([\\d.% ,/+-]+\\))$/i.test(color)){
-  target.querySelectorAll("a:not(.not-exist):not(.wiki-heading-number)").forEach(link=>link.style.setProperty("color",color,"important"));
- }
+ // Large documents are parsed in independent chunks to avoid Worker/WASM
+ // limits. That means the parser cannot build a document-wide [목차].
+ // Rebuild the TOC from the final heading set when the source explicitly asks
+ // for one, so normal documents and previews behave consistently.
+ ensureClientDocumentToc(target, source);
  target.dataset.renderEngine="namumark-wasm";
+}
+
+function ensureClientDocumentToc(root, source){
+ if(!root || !/\[\s*목차\s*\]/i.test(String(source||""))) return;
+ if(root.querySelector(".wiki-macro-toc")) return;
+ const headings=[...root.querySelectorAll("h1,h2,h3,h4,h5,h6")].filter(h=>h.textContent.trim());
+ if(!headings.length) return;
+ const toc=document.createElement("details");
+ toc.className="wiki-macro-toc";
+ toc.open=true;
+ const summary=document.createElement("summary");
+ summary.textContent="목차";
+ const contents=document.createElement("div");
+ contents.className="wiki-toc-contents";
+ const list=document.createElement("ol");
+ let previousLevel=0;
+ headings.forEach((heading,index)=>{
+  const level=Number(heading.tagName.slice(1));
+  const id=heading.id || ("aon-toc-heading-"+index);
+  heading.id=id;
+  const item=document.createElement("li");
+  item.className="wiki-toc-item wiki-toc-level-"+level;
+  const link=document.createElement("a");
+  link.href="#"+encodeURIComponent(id);
+  link.textContent=heading.textContent.trim().replace(/^\s*\d+(?:\.\d+)*\.\s*/,"");
+  link.addEventListener("click",event=>{event.preventDefault();heading.scrollIntoView({behavior:"smooth",block:"start"});});
+  item.append(link);
+  list.append(item);
+  previousLevel=level;
+ });
+ contents.append(list);
+ toc.append(summary,contents);
+ // Place the generated TOC at the beginning of the article. This is the
+ // safe fallback for chunked rendering; non-chunked parser output remains
+ // authoritative and is never replaced.
+ root.prepend(toc);
+ applyFinalWikiTypographyAndLinkColors(root);
 }
 function rewriteClientNamuImageUrls(root, imageMap) {
  const map = imageMap && typeof imageMap === "object" ? imageMap : {};
