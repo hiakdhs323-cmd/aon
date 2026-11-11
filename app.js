@@ -1291,7 +1291,7 @@ function rewriteClientNamuImageUrls(root, imageMap) {
  if (!root || !Object.keys(map).length) return;
  root.querySelectorAll("img[src]").forEach(img => {
   const src = String(img.getAttribute("src") || "");
-  const match = src.match(/\\/image\\/([a-f0-9]{56})\\.([a-z0-9]+)\\.cache_v[0-9]+(?:[?#].*)?$/i);
+  const match = src.match(/\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#].*)?$/i);
   if (!match) return;
   const id = map[(match[1] + "." + match[2]).toLowerCase()];
   if (id) img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
