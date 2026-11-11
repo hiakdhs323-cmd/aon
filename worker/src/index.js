@@ -651,13 +651,38 @@ async function getCachedNamuPageCount(env) {
   return namuPageCountPending;
 }
 function rewriteNamuImageUrls(markup, imageMap){
-  const source=String(markup||"");
-  if(!imageMap?.size || !/<img\b/i.test(source)) return source;
-  return source.replace(/([\"'])\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#][^\"']*)?([\"'])/gi,
+  let source=String(markup||"");
+  if(!imageMap?.size) return source;
+  source=source.replace(/(["'])\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#][^\"']*)?(["'])/gi,
     (full, quote, hash, ext, endQuote) => {
       const id=imageMap.get(hash.toLowerCase()+"."+ext.toLowerCase());
       return id ? quote+"/media/"+id+endQuote : full;
     });
+  // Some Namu_test-main builds emit a normal missing-document link for a
+  // local [[파일:...]] when the file resolver callback reports existence but
+  // the renderer does not have a file-content callback. Convert that fallback
+  // into the real uploaded image using the already-resolved imageMap.
+  const decodeHtml = value => String(value || "")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+  const escAttr = value => String(value || "")
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  source=source.replace(/<a\b([^>]*\btitle=["']파일:([^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi,
+    (full, attrs, rawFilename) => {
+      let filename=decodeHtml(rawFilename).trim();
+      try { filename=decodeURIComponent(filename); } catch {}
+      const dot=filename.lastIndexOf(".");
+      const base=dot>0 ? filename.slice(0,dot) : filename;
+      const ext=dot>0 ? filename.slice(dot+1).toLowerCase() : "jpg";
+      const id=imageMap.get(imageFileHash(base).toLowerCase()+"."+ext);
+      if(!id) return full;
+      return '<span class="wiki-image-align-normal"><span class="wiki-image-wrapper"><a href="/media/'+encodeURIComponent(id)+'" rel="nofollow"><img class="wiki-image" src="/media/'+encodeURIComponent(id)+'" alt="'+escAttr(filename)+'" loading="lazy" decoding="async"></a></span></span>';
+    });
+  return source;
 }
 async function sanitizeServerWikiHtml(markup) {
   const source = String(markup || "");
