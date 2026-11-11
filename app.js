@@ -2299,7 +2299,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   applyDocumentActionIcons();
   const staging=document.createElement("article");
   if(data.clientRender){
-   renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
+   await renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
   }else{
    appendSanitizedServerHtml(staging,data.html);
    prepareServerRenderedMarkup(staging,displayTitle);
