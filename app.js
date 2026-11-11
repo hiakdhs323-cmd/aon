@@ -612,6 +612,14 @@ const renderedDocumentPending=new Map();
 async function loadChunkedClientRender(data,title){
  const manifest=data?.clientRender;
  if(!manifest?.chunked)return data;
+ // Preview and document rendering must consume the same expanded source.
+ // Large documents may receive that source directly from /api/render;
+ // otherwise fall back to the chunk endpoint.
+ if(typeof manifest.source==="string"){
+  data.clientRender={...manifest,source:manifest.source};
+  if(data.page){data.page.content="";data.page.contentLength=manifest.source.length;}
+  return data;
+ }
  const total=Math.max(0,Number(manifest.totalChars)||0);
  const size=Math.max(4096,Math.min(12000,Number(manifest.chunkSize)||8000));
  if(total===0){
