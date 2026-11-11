@@ -575,9 +575,9 @@ async function buildNamuServerDatabase(env, title, content) {
       const batch = fileTargets.slice(index, index + 90);
       const placeholders = batch.map(() => "?").join(",");
       const [images, aliases] = await Promise.all([
-        env.DB.prepare("SELECT filename FROM images WHERE filename IN (" + placeholders + ")")
+        env.DB.prepare("SELECT id, filename FROM images WHERE filename IN (" + placeholders + ")")
           .bind(...batch).all(),
-        env.DB.prepare("SELECT alias FROM image_aliases WHERE alias IN (" + placeholders + ")")
+        env.DB.prepare("SELECT alias, image_id FROM image_aliases WHERE alias IN (" + placeholders + ")")
           .bind(...batch).all()
       ]);
       imageRows.push(...(images.results || []));
@@ -885,10 +885,15 @@ async function buildAonClientRenderPayload(env, title, source, linkColors = {}) 
     title: String(item.title || ""),
     data: String(item.data || "")
   }));
+  const imageMap = {};
+  for (const [key, id] of database.imageMap || []) {
+    if (id) imageMap[String(key)] = String(id);
+  }
   return {
     source: renderSource,
     records,
     pageCount: Number(database.data?.length) || 0,
+    imageMap,
     linkColors: linkColors || {}
   };
 }
@@ -903,7 +908,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "namutest-main-v1-renderer:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v2-assets:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
