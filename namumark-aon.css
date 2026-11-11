@@ -1,4 +1,12 @@
-/* AonWiki NamuMark renderer skin — faithful to Namu_test-main */
+:root {
+  color-scheme: light dark;
+}
+
+@media print {
+  :root { color-scheme: light; }
+}
+
+/* AonWiki NamuMark renderer skin — supplied namumark.css / Namu_test-main */
 /* Source: 000.css — https://namu.wiki/skins/espejo/dghwpxbh.ee18835d5e0ffe2995c7.css */
 .namumark-wasm-content {
   overflow: hidden;
@@ -814,15 +822,17 @@
   margin-bottom: 0;
 }
 
-.namumark-wasm-content .wiki-theme-dark {
+ .namumark-wasm-content .wiki-theme-dark {
   display: none;
 }
 
-html[data-theme="dark"] .namumark-wasm-content .wiki-theme-dark {
+/* Browser/renderer color-scheme controls light/dark; AonWiki does not select a theme. */
+.theseed-dark-mode .namumark-wasm-content .wiki-theme-dark {
   display: inline-block;
 }
 
-html[data-theme="dark"] .namumark-wasm-content .wiki-theme-light {
+/* The renderer skin decides which theme asset is visible when its upstream marker is present. */
+.theseed-dark-mode .namumark-wasm-content .wiki-theme-dark {
   display: none;
 }
 
