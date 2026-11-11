@@ -1076,6 +1076,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     "Namu_test-main/namumark.js",
     "Namu_test-main/namumark_bg.wasm",
     "Namu_test-main/interactions.js",
+    "Namu_test-main/interactions.css",
     "aonwiki-mark.svg"
   ]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
