@@ -4,10 +4,10 @@
   --wiki-primary-dark:#008f86;
   --wiki-link:#06c;
   --wiki-link-hover:#004a99;
-  --wiki-bg:#fff;
+  --wiki-bg:Canvas;
   --wiki-panel:#fff;
   --wiki-panel-soft:#f5f5f5;
-  --wiki-text:#212529;
+  --wiki-text:CanvasText;
   --wiki-muted:#6c757d;
   --wiki-border:#ddd;
   --wiki-border-strong:#aaa;
@@ -21,7 +21,7 @@
   font-synthesis:none;
 }
 *{box-sizing:border-box}
-html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg)}
+html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg);color-scheme:light dark}
 body{min-height:100vh;max-width:100%;margin:0;overflow-x:hidden;overscroll-behavior-x:none;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font);line-height:1.65}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
@@ -1005,156 +1005,6 @@ dialog::backdrop,#dialog::backdrop{background:rgba(0,0,0,.5)}
 }
 @media(max-width:700px){
 }
-
-/* =========================================================
-   AonWiki dark wiki shell — inspired by the supplied reference
-   ========================================================= */
-:root{
-  --wiki-bg:#222426;
-  --wiki-panel:#151515;
-  --wiki-panel-soft:#2b2e32;
-  --wiki-text:#f2f3f4;
-  --wiki-muted:#a4a8ad;
-  --wiki-border:#3b3f43;
-  --wiki-border-strong:#555a60;
-  --wiki-link:#91afff;
-  --wiki-link-hover:#b6c9ff;
-  --wiki-primary:#00b884;
-  --wiki-primary-dark:#009b70;
-}
-html,body{background:var(--wiki-bg);color:var(--wiki-text)}
-body{font-size:14px;line-height:1.6}
-.site-header{
-  position:sticky;top:0;z-index:100;
-  width:100%;min-height:50px;padding:0 18px;
-  background:#050505;color:#f6f7f8;
-  border:0;border-bottom:1px solid #45484c;box-shadow:none
-}
-.topbar-inner{
-  display:flex;align-items:center;gap:15px;
-  width:min(1260px,100%);min-height:49px;margin:0 auto
-}
-.site-header .brand{gap:8px;color:#fff;flex:0 0 auto}
-.site-header .brand-symbol{
-  width:28px;height:28px;flex-basis:28px;object-fit:contain;
-  border:0;border-radius:0;background:transparent;box-shadow:none
-}
-.site-header .brand-name{font-size:19px;font-weight:750;letter-spacing:-.5px;color:#fff}
-.top-nav{display:flex;align-items:center;gap:2px;min-width:0;flex:0 0 auto}
-.top-nav-link{
-  display:inline-flex;align-items:center;gap:6px;min-height:49px;
-  padding:0 10px;border:0;border-bottom:2px solid transparent;
-  background:transparent;color:#e7e8e9;font-size:12px;font-weight:600;
-  text-decoration:none;white-space:nowrap
-}
-.top-nav-link:hover,.top-nav-link.active{
-  color:#fff;background:rgba(255,255,255,.055);text-decoration:none
-}
-.top-nav-link.active{border-bottom-color:#fff}
-.searchbar{
-  display:flex;align-items:center;flex:1;min-width:130px;max-width:300px;
-  margin:0 0 0 auto
-}
-.searchbar input{
-  height:34px;padding:0 10px;border:1px solid #55595e;border-right:0;
-  border-radius:5px 0 0 5px;background:#101010;color:#f3f3f3;font-size:12px
-}
-.searchbar input::placeholder{color:#92969a}
-.searchbar button{
-  height:34px;min-width:34px;padding:0 9px;border:1px solid #55595e;
-  border-radius:0 5px 5px 0;background:#101010;color:#f3f3f3;font-size:18px
-}
-.searchbar button:hover{background:#25282c}
-.header-actions{display:flex;align-items:center;gap:2px;flex:0 0 auto}
-.header-actions .button{
-  min-height:31px;padding:0 7px;border:0;background:transparent;
-  color:#e8e9eb;font-size:11px
-}
-.header-actions .button:hover{background:#292c30;color:#fff}
-.role-label{font-size:10px}
-.layout{
-  display:grid;grid-template-columns:minmax(0,1fr) 275px;gap:20px;
-  align-items:start;width:min(1260px,calc(100% - 36px));
-  margin:14px auto 36px
-}
-.left-nav{display:none!important}
-.main{min-width:0;width:100%}
-.global-rail{display:flex;flex-direction:column;gap:14px;min-width:0}
-.rail-panel{
-  min-width:0;overflow:hidden;border:1px solid #484c50;border-radius:7px;
-  background:#151515;color:#f1f1f1
-}
-.rail-panel-heading{
-  display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 13px;
-  border-bottom:1px solid #303438
-}
-.rail-heading-icon{color:#e0e4e7;font-size:18px;line-height:1}
-.rail-panel-heading h2{flex:1;margin:0;font-size:14px;font-weight:650}
-.rail-panel-heading>a{color:inherit;font-size:26px;line-height:1;text-decoration:none}
-.rail-list{margin:0;padding:9px 13px 13px 35px;list-style:decimal}
-.rail-list li{padding:3px 0;color:#e3e5e7;font-size:12px;line-height:1.45}
-.rail-list a{color:#91afff;text-decoration:none;overflow-wrap:anywhere}
-.rail-list a:hover{text-decoration:underline}
-.rail-muted{color:#9da2a7!important}
-.rail-scroll-tools{display:flex;flex-direction:row;gap:4px;padding:8px 12px}
-.rail-scroll-tools button{
-  min-width:31px;height:34px;border:0;background:transparent;color:var(--wiki-text);
-  font-size:22px;cursor:pointer
-}
-.rail-scroll-tools button:hover{background:var(--wiki-panel-soft);border-radius:4px}
-.home-view{width:100%;max-width:none;margin:0;padding:0 0 30px}
-.home-hero,.home-panel,.home-stats,.home-quick-nav,.home-search-hint{
-  border-radius:5px
-}
-.home-hero{
-  margin:0 0 14px;min-height:160px;padding:24px 28px;
-  border:1px solid var(--wiki-border);border-top:2px solid var(--wiki-primary);
-  background:var(--wiki-panel)
-}
-.home-hero::after{border-color:var(--wiki-border)}
-.home-hero-mark{border:0;background:transparent;box-shadow:none}
-.home-quick-nav{margin:0 0 14px;background:var(--wiki-panel)}
-.home-stats{margin:0 0 14px;background:var(--wiki-panel)}
-.home-search-hint{background:var(--wiki-panel);border-color:var(--wiki-border)}
-.home-panel{border-radius:5px;background:var(--wiki-panel)}
-.home-panel-heading{background:var(--wiki-panel-soft)}
-.home-panel-symbol{background:var(--wiki-panel);border-color:var(--wiki-border)}
-.document-view{width:100%;max-width:none;margin:0;padding:0;min-width:0}
-.breadcrumbs{margin:0 0 9px;color:var(--wiki-muted)}
-.article{
-  padding:18px 20px 15px;border:1px solid #44484c;border-radius:7px;
-  background:var(--wiki-panel);box-shadow:none
-}
-.article-titlebar{align-items:flex-start;padding-bottom:11px;border-color:var(--wiki-border)}
-.article-titlebar h1{font-size:24px;font-weight:700;letter-spacing:-.45px}
-.title-actions{gap:5px}
-.title-button{
-  min-height:31px;padding:5px 10px;border:1px solid var(--wiki-border-strong);
-  border-radius:5px;background:transparent;color:var(--wiki-text);font-size:12px
-}
-.title-button:hover{background:var(--wiki-panel-soft);border-color:#747a80}
-.article-tools{
-  display:flex;align-items:center;gap:7px;min-height:42px;height:auto;
-  margin:0;padding:5px 0;border-bottom:1px solid var(--wiki-border)
-}
-.article-tools button{
-  min-height:29px;height:auto;padding:4px 9px;border:1px solid transparent;
-  border-radius:4px;background:transparent;color:var(--wiki-muted);font-size:12px
-}
-.article-tools button:hover{background:var(--wiki-panel-soft);color:var(--wiki-text);text-decoration:none}
-.article-tools .current-tab{height:auto;min-height:29px;padding:4px 9px;border:0;border-bottom:2px solid var(--wiki-primary)}
-.article-tools .tool-spacer{flex:1}
-.article-tools .title-button{border:1px solid var(--wiki-border-strong);color:var(--wiki-text)}
-.article-tools .article-language{font-size:11px}
-#heading-edit{display:none!important}
-.legacy-action{display:none!important}
-.notice{border-radius:4px}
-.article-footer{border-color:var(--wiki-border)}
-.site-footer{border-color:var(--wiki-border)}
-.editor-view{max-width:none;width:100%}
-.editor-card{border-radius:7px;background:var(--wiki-panel);border-color:var(--wiki-border)}
-.editor-page-heading,.editor-tabs,.editor-markup-toolbar,.editor-counter{background:var(--wiki-panel-soft)}
-button:disabled{opacity:.55;cursor:not-allowed}
 
 /* Discussion index and thread detail */
 .discussion-page-heading{
