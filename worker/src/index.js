@@ -2080,6 +2080,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
               protectionUpdatedAt: page.protectionUpdatedAt || ""
             },
             html: rendered.html,
+            metadata: rendered.metadata || { categories: [], backlinks: [] },
             imageMap: rendered.imageMap || {},
             clientRender,
             engine: clientRender ? "namumark-client" : "namumark-worker"
