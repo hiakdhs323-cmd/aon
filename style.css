@@ -21,7 +21,7 @@
   font-synthesis:none;
 }
 *{box-sizing:border-box}
-html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg);color-scheme:light dark}
+html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg)}
 body{min-height:100vh;max-width:100%;margin:0;overflow-x:hidden;overscroll-behavior-x:none;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font);line-height:1.65}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
