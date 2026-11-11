@@ -391,6 +391,15 @@
   padding: 5px 10px;
 }
 
+/* Worker-injected automatic contrast must switch with the active color scheme. */
+.namumark-wasm-content .wiki-table td[style*="--aonwiki-table-auto-fg-light"],
+.namumark-wasm-content .wiki-table th[style*="--aonwiki-table-auto-fg-light"] {
+  color: light-dark(
+    var(--aonwiki-table-auto-fg-light, var(--wiki-text)),
+    var(--aonwiki-table-auto-fg-dark, var(--wiki-text))
+  ) !important;
+}
+
 .namumark-wasm-content .wiki-table td.wiki-table-nopadding,
 .namumark-wasm-content .wiki-table th.wiki-table-nopadding {
   padding: 0;
