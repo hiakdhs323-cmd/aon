@@ -340,7 +340,7 @@ function imageNameMatches(filename, hash, extension) {
 
 
 const SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE".split(" "));
-const SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
+const SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-namumark-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
 function sanitizeServerWikiStyle(raw) {
   const allowed = new Set(["color","background","background-color","font-size","font-weight","font-style","text-align","text-decoration","text-transform","line-height","letter-spacing","word-spacing","width","max-width","min-width","height","max-height","min-height","margin","margin-left","margin-right","margin-top","margin-bottom","padding","border","border-top","border-right","border-bottom","border-left","border-color","border-top-color","border-right-color","border-bottom-color","border-left-color","border-width","border-top-width","border-right-width","border-bottom-width","border-left-width","border-style","border-top-style","border-right-style","border-bottom-style","border-left-style","border-radius","border-collapse","float","clear","display","vertical-align","white-space","list-style-type","image-rendering","object-fit","overflow","overflow-wrap","box-shadow","opacity"]);
   const themeVariable = /^--aonwiki-table-(?:(?:bg|fg|border)-(?:light|dark)|auto-fg-(?:light|dark))$/;
@@ -409,12 +409,12 @@ function extractAdminLinkColors(source) {
 }
 function buildAdminLinkColorMarkup(html, colors) {
   const selectors = {
-    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
-    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
-    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):visited',
-    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):visited',
-    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):hover',
-    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number):hover'
+    light: 'html[data-theme="light"] .aonwiki-page-content a:not(.not-exist):not(.wiki-heading-number)',
+    dark: 'html[data-theme="dark"] .aonwiki-page-content a:not(.not-exist):not(.wiki-heading-number)',
+    "visited-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.not-exist):not(.wiki-heading-number):visited',
+    "visited-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.not-exist):not(.wiki-heading-number):visited',
+    "hover-light": 'html[data-theme="light"] .aonwiki-page-content a:not(.not-exist):not(.wiki-heading-number):hover',
+    "hover-dark": 'html[data-theme="dark"] .aonwiki-page-content a:not(.not-exist):not(.wiki-heading-number):hover'
   };
   const rules = [];
   for (const [key, selector] of Object.entries(selectors)) {
@@ -650,7 +650,7 @@ async function sanitizeServerWikiHtml(markup) {
       for(const [rawName,rawValue] of [...element.attributes]){
         const name=String(rawName).toLowerCase(),value=String(rawValue||"");
         if(name==="onclick"){
-          if(tag==="A"&&/^javascript:opennamu_heading_folding\('[a-f0-9_]+', this\);?$/i.test(value))element.setAttribute("data-opennamu-action","heading-fold");
+          if(tag==="A"&&/^javascript:namumark_heading_folding\('[a-f0-9_]+', this\);?$/i.test(value))element.setAttribute("data-namumark-action","heading-fold");
           element.removeAttribute(rawName);continue;
         }
         if(name.startsWith("on")||!SERVER_WIKI_ATTRS.has(name)){
@@ -675,7 +675,7 @@ async function sanitizeServerWikiHtml(markup) {
       }
       if(tag==="A"){
         const classes=(element.getAttribute("class")||"").split(/\s+/);
-        if(classes.includes("opennamu_not_exist_link")){
+        if(classes.includes("not-exist")){
           const current=element.getAttribute("style")||"";
           const cleaned=current.split(";").filter(part=>!/^\s*(?:color|text-decoration)(?:\s|:)/i.test(part)).join(";");
           element.setAttribute("style",(cleaned?cleaned.replace(/;?$/,";"):"")+"color:#d1242f;text-decoration:underline;");
