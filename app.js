@@ -1168,6 +1168,7 @@ function applyFinalWikiTypographyAndLinkColors(root) {
   root.dataset.aonFinalPresentation="applied";
 }
 function prepareServerRenderedMarkup(root,docTitle){
+  root.classList.add("namumark-wasm-content");
   sanitizeNamuOutput(root,docTitle);
   decorateExternalLinks(root);
   const tableScrollSelector=".table_safe,.wiki-table-scroll,.wiki-table,.wiki-table-wrap";
@@ -1252,43 +1253,7 @@ function splitNamuSourceForFallback(source,maxChars=7000){
  }
  return chunks.filter(Boolean);
 }
-let aonWasmRendererPromise=null;
-async function getAonWasmRenderer(){
- if(!aonWasmRendererPromise){
-  aonWasmRendererPromise=(async()=>{
-   const mod=await import("./Namu_test-main/wasm.js");
-   await mod.initWasm(new URL("./Namu_test-main/namumark_bg.wasm",import.meta.url));
-   return mod;
-  })().catch(error=>{aonWasmRendererPromise=null;throw error});
- }
- return aonWasmRendererPromise;
-}
-async function renderClientWithAonWasm(source,clientRender,docTitle,target){
- const mod=await getAonWasmRenderer();
- const records=Array.isArray(clientRender?.records)?clientRender.records:[];
- const lookup=new Map();
- for(const record of records){
-  if(record&&typeof record.title==="string"&&record.title){
-   lookup.set(record.title,{title:record.title,data:String(record.data||"")});
-  }
- }
- const pageCount=Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
- const callbacks={
-  documentExists:name=>lookup.has(String(name||"")),
-  getDocumentContent:(name)=>lookup.get(String(name||""))?.data??"",
-  getPagecount:()=>pageCount
- };
- const options=new mod.RendererOptions();
- options.document_url_prefix="/w/";
- options.document_query_prefix="/w/";
- const result=mod.renderWithMetadata(source,{options,callbacks});
- try{
-  return result.html;
- }finally{
-  options.free();
- }
-}
-async let aonNamuWasmPromise = null;
+let aonNamuWasmPromise = null;
 
 async function getAonNamuWasm() {
  if(!aonNamuWasmPromise){
@@ -1301,6 +1266,29 @@ async function getAonNamuWasm() {
   });
  }
  return aonNamuWasmPromise;
+}
+
+let aonNamuInteractionModulePromise = null;
+const aonNamuInteractionInstances = new WeakMap();
+async function activateAonWikiInteractions(root) {
+ if(!root || !(root instanceof Element)) return;
+ if(!aonNamuInteractionModulePromise) {
+  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js")
+   .catch(error => { aonNamuInteractionModulePromise = null; throw error; });
+ }
+ try {
+  const mod = await aonNamuInteractionModulePromise;
+  let instance = aonNamuInteractionInstances.get(root);
+  if(!instance) {
+   instance = mod.setupWikiInteractions(root);
+   aonNamuInteractionInstances.set(root, instance);
+  } else {
+   instance.reset();
+  }
+  instance.refresh();
+ } catch(error) {
+  console.warn("AonWiki NamuMark interactions could not be initialized:", error);
+ }
 }
 
 async function renderClientParsedDocument(clientRender, target, docTitle) {
@@ -2307,7 +2295,11 @@ async function loadPage(title,pushRoute=true,anchor=""){
   if(requestId!==pageNavigationSequence)return;
   const article=$("article");
   article.replaceChildren(...staging.childNodes);
+  article.classList.add("namumark-wasm-content");
+  article.dataset.namumarkWasm = "true";
   article.classList.add("namumark-rendered");
+  await activateAonWikiInteractions(article);
+  if(requestId!==pageNavigationSequence)return;
   article.classList.remove("namumark-beta-active");
   article.dataset.renderEngine=data.engine||staging.dataset.renderEngine||"worker-ssr";
   requestAnimationFrame(()=>{
