@@ -1162,13 +1162,14 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  const pageCount = Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
  const callbacks = {
   documentExists(name){
-   const key=String(name||"").trim().replace(/^(?:파일|file):/i,"");
-   return lookup.has(String(name||"").trim()) || lookup.has("file:"+key) || lookup.has("category:"+key);
+   const raw=String(name||"").trim();
+   const key=raw.replace(/^(?:\uD30C\uC77C|file):/i,"");
+   return lookup.has(raw) || lookup.has(key) || lookup.has("\uD30C\uC77C:"+key) || lookup.has("file:"+key) || lookup.has("category:"+key);
   },
   getDocumentContent(name){
    const raw=String(name||"").trim();
-   const key=raw.replace(/^(?:파일|file):/i,"");
-   const row=lookup.get(raw)||lookup.get(key)||lookup.get("file:"+key)||lookup.get("category:"+key);
+   const key=raw.replace(/^(?:\uD30C\uC77C|file):/i,"");
+   const row=lookup.get(raw)||lookup.get(key)||lookup.get("\uD30C\uC77C:"+key)||lookup.get("file:"+key)||lookup.get("category:"+key);
    return row ? row.data : "";
   },
   getPagecount(){ return pageCount; }
