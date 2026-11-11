@@ -826,6 +826,24 @@ function parseTableColorRgb(value) {
   if (match) return [Number(match[1]),Number(match[2]),Number(match[3])];
   return null;
 }
+function resolveThemeTableColor(value, theme) {
+  const input = String(value || "").trim();
+  const match = input.match(/^light-dark\(([\s\S]+)\)$/i);
+  if (!match) return input;
+  const inner = match[1];
+  let depth = 0;
+  for (let index = 0; index < inner.length; index++) {
+    const character = inner[index];
+    if (character === "(") depth++;
+    else if (character === ")") depth--;
+    else if (character === "," && depth === 0) {
+      const light = inner.slice(0, index).trim();
+      const dark = inner.slice(index + 1).trim();
+      return theme === "dark" ? dark : light;
+    }
+  }
+  return input;
+}
 function tableLuminance(rgb) {
   const linear = value => {
     const c = value / 255;
@@ -863,12 +881,12 @@ async function applyTableTextContrast(markup) {
   const getThemeValue = (levels, key, theme) => {
     for (const properties of levels) {
       const paired = properties["--aonwiki-table-" + key + "-" + theme];
-      if (paired) return paired;
+      if (paired) return resolveThemeTableColor(paired, theme);
       if (key === "bg") {
         const fixed = properties["background-color"] || properties.background || "";
-        if (fixed && !/^transparent$/i.test(fixed)) return fixed;
+        if (fixed && !/^transparent$/i.test(fixed)) return resolveThemeTableColor(fixed, theme);
       } else if (key === "fg" && properties.color && !/^var\(/i.test(properties.color)) {
-        return properties.color;
+        return resolveThemeTableColor(properties.color, theme);
       }
     }
     return "";
@@ -1210,7 +1228,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v7",
+        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v8",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1337,7 +1355,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v7" : "20261111-assets-v7";
+        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v8" : "20261111-assets-v8";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
