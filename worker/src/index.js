@@ -993,7 +993,7 @@ function safeJsonForHtml(value) {
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/+$/, "") + "/";
-  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "aonwiki-mark.svg"]);
+  const staticAssets = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "namumark-wasm.js", "namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
     try { parsed = new URL(String(rawUrl).trim(), base); }
@@ -1222,7 +1222,7 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
-      const staticFiles = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "aonwiki-mark.svg"]);
+      const staticFiles = new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "namumark-wasm.js", "namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
