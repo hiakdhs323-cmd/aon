@@ -1273,7 +1273,9 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetUrl = origin + "/" + assetName + url.search;
+        const assetCacheVersion = assetName === "style.css" ? "20261111-style-clean-v2" : "20261111-assets-v1";
+        const assetQuery = url.search ? url.search + "&" : "?";
+        const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
           const result = await loadFrontendAsset(assetUrl, request.headers.get("Accept") || "*/*");
           if (result.entry) return makeFrontendAssetResponse(result.entry, result.cacheState);
