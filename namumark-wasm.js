@@ -1,4 +1,6 @@
-import init, { parse_with_metadata, parse_with_options, parse_with_callbacks, parse_with_callbacks_and_options } from "./Namu_test-main/namumark.js";
+import init, { RendererOptions, parse_with_metadata, parse_with_options, parse_with_callbacks, parse_with_callbacks_and_options } from "./Namu_test-main/namumark.js";
+
+export { RendererOptions };
 
 let initialized = false;
 
