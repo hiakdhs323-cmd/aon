@@ -654,6 +654,20 @@ function rewriteNamuImageUrls(markup, imageMap){
   let source=String(markup||"");
   if(!imageMap?.size) return source;
 
+  // Some NamuMark builds emit the original filename as /files/<name>
+  // instead of the hashed /image/<hash> path. Resolve it to the stored media
+  // id when the document image map contains that file.
+  source=source.replace(/(["'])\/files\/([^"']+)(["'])/gi,
+    (full, quote, rawName, endQuote) => {
+      let filename = String(rawName || "");
+      try { filename = decodeURIComponent(filename); } catch {}
+      const dot = filename.lastIndexOf(".");
+      const base = dot > 0 ? filename.slice(0, dot) : filename;
+      const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
+      const id = imageMap.get(imageFileHash(base).toLowerCase() + "." + ext);
+      return id ? quote + "/media/" + encodeURIComponent(id) + endQuote : full;
+    });
+
   // Namu_test-main normally emits /image/<hash>.<ext>.cache_v..., but some
   // versions resolve a local [[파일:...]] as a normal internal/missing link.
   // Handle both forms from the same server-side image map.
@@ -1188,7 +1202,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261107-upstream-resilience-v1",
+        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v3",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1275,7 +1289,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
     .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
     .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
-    .replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + rendered.html + '</article>')
+    .replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + rendered.html + '</article>')
     .replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"')
     .replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
@@ -1315,7 +1329,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261111-browser-theme-v1" : "20261111-assets-v2";
+        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v3" : "20261111-assets-v3";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
@@ -2406,6 +2420,30 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
         return new Response(bytes, { headers });
       }
+      if (url.pathname.startsWith("/files/") && request.method === "GET") {
+        await ensureImageSchema(env);
+        let filename = url.pathname.slice("/files/".length);
+        try { filename = decodeURIComponent(filename); } catch {}
+        filename = filename.trim().slice(0, 160);
+        if (!filename || filename.includes("/")) return new Response("Not found", { status: 404 });
+        let image = await env.DB.prepare("SELECT id, content_type, data_base64 FROM images WHERE filename = ? COLLATE NOCASE LIMIT 1").bind(filename).first();
+        if (!image) {
+          image = await env.DB.prepare("SELECT images.id, images.content_type, images.data_base64 FROM image_aliases JOIN images ON images.id = image_aliases.image_id WHERE image_aliases.alias = ? COLLATE NOCASE LIMIT 1").bind(filename).first();
+        }
+        if (!image) return new Response("Not found", { status: 404 });
+        const binary = atob(image.data_base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const headers = new Headers(cors);
+        headers.set("Content-Type", image.content_type);
+        headers.set("Content-Length", String(bytes.byteLength));
+        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("ETag", '"' + image.id + '"');
+        headers.set("X-Content-Type-Options", "nosniff");
+        if (request.headers.get("If-None-Match") === '"' + image.id + '"') return new Response(null, { status: 304, headers });
+        if (image.content_type === "image/svg+xml") headers.set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox");
+        return new Response(bytes, { headers });
+      }
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
         const key = url.pathname.slice("/media/".length);
         if (!/^[a-f0-9-]{36}$/i.test(key)) return new Response("Not found", { status: 404 });
@@ -2439,3 +2477,4 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
     }
   }
 };
+
