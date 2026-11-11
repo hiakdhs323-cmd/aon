@@ -1,0 +1,51 @@
+name: Build AonWiki Namu_test-main renderer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Namu_test-main/**"
+      - "namumark-wasm.js"
+      - "app.js"
+      - "index.html"
+      - "worker/src/index.js"
+      - "tests/**"
+      - ".github/workflows/build-renderer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aonwiki-renderer-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify frontend JavaScript syntax
+        run: node --check app.js
+      - name: Verify single renderer integration
+        run: node tests/namutest-renderer-smoke.cjs
+      - name: Bundle Cloudflare Worker
+        run: |
+          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --outfile=worker/dist/index.js
+          node --check worker/dist/index.js
+      - name: Commit generated Worker bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add worker/dist/index.js
+          if git diff --cached --quiet; then
+            echo "Worker bundle is up to date."
+          else
+            git commit -m "Build AonWiki Namu_test-main Worker bundle"
+            git push
+          fi
