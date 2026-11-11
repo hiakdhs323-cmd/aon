@@ -992,7 +992,7 @@ function safeJsonForHtml(value) {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 }
 function rewriteFrontendAssets(html, frontendOrigin) {
-  const baseUrl = new URL(frontendOrigin.replace(/\\/+$/, "") + "/");
+  const baseUrl = new URL(frontendOrigin.replace(/\/+$/, "") + "/");
   const basePath = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : baseUrl.pathname + "/";
   const staticAssets = new Set([
     "style.css",
@@ -1006,7 +1006,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     "Namu_test-main/interactions.js",
     "aonwiki-mark.svg"
   ]);
-  return String(html).replace(/\\b(href|src)\\s*=\\s*(["'])(.*?)\\2/gi, (attribute, name, quote, rawUrl) => {
+  return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
     try { parsed = new URL(String(rawUrl).trim(), baseUrl); }
     catch { return attribute; }
