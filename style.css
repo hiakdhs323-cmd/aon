@@ -2322,3 +2322,33 @@ button.aon-has-icon{display:inline-flex;justify-content:center}
   .layout { grid-template-columns: minmax(0, 1fr); }
   .main, .global-rail { min-width: 0; }
 }
+
+
+/* Theme palette repair: the browser Canvas follows the active color scheme,
+   so fixed light panel colors caused white document cards in dark mode. */
+:root {
+  color-scheme: light dark;
+  --wiki-bg: Canvas;
+  --wiki-panel: light-dark(#ffffff, #17191b);
+  --wiki-panel-soft: light-dark(#f5f5f5, #202327);
+  --wiki-text: CanvasText;
+  --wiki-muted: light-dark(#6c757d, #a3aab3);
+  --wiki-border: light-dark(#dddddd, #383d44);
+  --wiki-border-strong: light-dark(#aaaaaa, #59616b);
+  --wiki-warning-bg: light-dark(#fff8dc, #332b18);
+  --wiki-warning-border: light-dark(#d0a72c, #94752a);
+}
+html, body {
+  background: var(--wiki-bg);
+  color: var(--wiki-text);
+}
+.article,
+.document-view,
+.editor-card,
+.search-page,
+.revision-render-pane,
+.revision-render-pane,
+.file-manager-row {
+  background-color: var(--wiki-panel);
+  color: var(--wiki-text);
+}
