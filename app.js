@@ -303,7 +303,7 @@ function ensureDocumentViewTargets(){
  let message=$("message");
  if(!message){message=document.createElement("div");message.id="message";message.className="notice";message.setAttribute("role","status");view.append(message)}
  let article=$("article");
- if(!article){article=document.createElement("article");article.id="article";article.className="wiki-content wiki";article.setAttribute("data-wiki","");view.append(article)}
+ if(!article){article=document.createElement("article");article.id="article";article.className="namumark-content-host";view.append(article)}
  return {title,crumb,message,article,protection:$("page-protection"),headingEdit:$("heading-edit")};
 }
 function setArticleTitleLink(host,title,label){
@@ -906,9 +906,7 @@ function sanitizeNamuOutput(root, docTitle) {
         (href.startsWith("#") ? (() => { try { return decodeURIComponent(href.slice(1)); } catch { return href.slice(1); } })() : "");
       if (node.id.includes("rfn_") && footnoteTarget) {
         node.setAttribute("data-wiki-footnote-target", footnoteTarget);
-        node.removeAttribute("href");
-        node.setAttribute("role", "button");
-        node.setAttribute("tabindex", "0");
+        // Keep the engine's original #footnote href and class.
         return;
       }
       if (href.startsWith("/edit_section/")) {
@@ -1133,7 +1131,7 @@ function prepareServerRenderedMarkup(root,docTitle){
   });
   refreshWikiTableContrast(root);
   root.classList.add("namumark-rendered");
-  enhanceFootnoteHover(root);
+   // Footnote previews are owned by Namu_test-main/interactions.js.
   applyFinalWikiTypographyAndLinkColors(root);
   if(window.katex){
     root.querySelectorAll('span[id*="opennamu_math_"]').forEach(element=>{
@@ -2260,6 +2258,8 @@ async function loadPage(title,pushRoute=true,anchor=""){
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  document.title=displayTitle+" - AonWiki";
  const targets=ensureDocumentViewTargets();
+  targets.article.classList.remove("wiki-content","wiki","namumark-wasm-content","namumark-rendered");
+  targets.article.classList.add("namumark-content-host");
  const templateStatus=$("template-status");
  if(templateStatus)templateStatus.hidden=true;
  setArticleTitleLink(targets.title,title,displayTitle);targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();
@@ -2273,7 +2273,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
    const staging=document.createElement("article");
    await renderCategoryPage(name,0,staging,requestId);
    if(requestId!==pageNavigationSequence)return;
-   $("article").replaceChildren(...staging.childNodes);
+    $("article").replaceChildren(...staging.childNodes);
    $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("page-protection").hidden=true;$("official-document").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;
    return;
   }
@@ -2354,6 +2354,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   }
   if(requestId!==pageNavigationSequence)return;
   const article=$("article");
+   article.classList.remove("namumark-content-host");
   article.replaceChildren(...staging.childNodes);
   article.classList.add("namumark-wasm-content");
   article.dataset.namumarkWasm = "true";
@@ -3552,7 +3553,7 @@ async function showRevisionRendered(id) {
     body.replaceChildren();
     addText(body, "p", "버전 #" + revision.id + " · " + formatRevisionDate(revision.created_at) + " · " + (revision.editor || "알 수 없음")).className = "compare-intro";
     const preview = document.createElement("article");
-    preview.className = "wiki-content revision-single-preview";
+     preview.className = "namumark-content-host revision-single-preview";
     body.append(preview);
     await renderNamuMarkup(revision.content, preview, historyDocumentTitle || revision.title);
     const actions = document.createElement("div");
@@ -3629,7 +3630,7 @@ async function renderRevisionComparison(idA, idB, mode = "source") {
         pane.className = "revision-render-pane";
         addText(pane, "h3", label + " · " + formatRevisionDate(revision.created_at));
         const article = document.createElement("article");
-        article.className = "wiki-content revision-rendered-content";
+         article.className = "namumark-content-host revision-rendered-content";
         pane.append(article);
         grid.append(pane);
         return article;
