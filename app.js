@@ -613,21 +613,45 @@ async function loadChunkedClientRender(data,title){
  const manifest=data?.clientRender;
  if(!manifest?.chunked)return data;
  const total=Math.max(0,Number(manifest.totalChars)||0);
- const size=Math.max(4096,Math.min(20000,Number(manifest.chunkSize)||12000));
+ const size=Math.max(4096,Math.min(12000,Number(manifest.chunkSize)||8000));
  if(total===0){
   data.clientRender={...manifest,source:""};
+  if(data.page)data.page.content="";
   return data;
  }
- const chunks=[];
- for(let offset=0;offset<total;offset+=size){
-  const end=Math.min(total,offset+size);
-  chunks.push(api("/api/render-chunk?title="+encodeURIComponent(title)+"&offset="+offset+"&limit="+(end-offset)));
- }
- const parts=await Promise.all(chunks);
- const source=parts.map(part=>String(part.chunk||"")).join("");
+ const offsets=[];
+ for(let offset=0;offset<total;offset+=size)offsets.push(offset);
+ const parts=new Array(offsets.length);
+ let nextIndex=0;
+ const concurrency=Math.min(4,offsets.length);
+ const worker=async()=>{
+  while(true){
+   const index=nextIndex++;
+   if(index>=offsets.length)return;
+   const offset=offsets[index];
+   const end=Math.min(total,offset+size);
+   const chunk=await api("/api/render-chunk?title="+encodeURIComponent(title)+"&offset="+offset+"&limit="+(end-offset));
+   if(Number(chunk.offset)!==offset)throw new Error("대용량 문서 청크 위치가 일치하지 않습니다.");
+   parts[index]=String(chunk.chunk||"");
+  }
+ };
+ await Promise.all(Array.from({length:concurrency},()=>worker()));
+ const source=parts.join("");
  if(source.length!==total)throw new Error("대용량 문서 청크가 완전하게 불러와지지 않았습니다.");
  data.clientRender={...manifest,source};
+ // Large source is now held only in the chunked render payload. This avoids
+ // keeping a second full copy in data.page while the article is displayed.
+ if(data.page)data.page.content="";
+ data.page.contentLength=total;
  return data;
+}
+async function ensureCurrentContentForEdit(){
+ if(currentContent)return currentContent;
+ if(!currentTitle)return "";
+ const data=await api("/api/page?title="+encodeURIComponent(currentTitle));
+ if(!data.page)throw new Error("문서를 찾을 수 없습니다.");
+ currentContent=String(data.page.content||"");
+ return currentContent;
 }
 async function getRenderedDocument(title){
  const key=String(title||"").trim();
