@@ -2,7 +2,7 @@ import init, { parse_with_metadata, parse_with_options, parse_with_callbacks, pa
 
 let initialized = false;
 
-export async function initWasm(path = new URL("./namumark_bg.wasm", import.meta.url)) {
+export async function initWasm(path = new URL("./Namu_test-main/namumark_bg.wasm", import.meta.url)) {
   const wasm = await init({ module_or_path: path });
   initialized = true;
   return wasm;
