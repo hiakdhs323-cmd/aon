@@ -1276,6 +1276,7 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
   for(const chunk of chunks) html+=parseOne(chunk).html||"";
  }
  appendSanitizedServerHtml(target,html);
+ rewriteClientNamuImageUrls(target, clientRender?.imageMap);
  prepareServerRenderedMarkup(target,docTitle);
  const colors=clientRender?.linkColors||{};
  const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
@@ -1284,6 +1285,17 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
   target.querySelectorAll("a:not(.not-exist):not(.wiki-heading-number)").forEach(link=>link.style.setProperty("color",color,"important"));
  }
  target.dataset.renderEngine="namumark-wasm";
+}
+function rewriteClientNamuImageUrls(root, imageMap) {
+ const map = imageMap && typeof imageMap === "object" ? imageMap : {};
+ if (!root || !Object.keys(map).length) return;
+ root.querySelectorAll("img[src]").forEach(img => {
+  const src = String(img.getAttribute("src") || "");
+  const match = src.match(/\\/image\\/([a-f0-9]{56})\\.([a-z0-9]+)\\.cache_v[0-9]+(?:[?#].*)?$/i);
+  if (!match) return;
+  const id = map[(match[1] + "." + match[2]).toLowerCase()];
+  if (id) img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
+ });
 }
 function appendSanitizedServerHtml(target,html){
  const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
