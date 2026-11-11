@@ -1,10 +1,8 @@
 NamuMark parser integration
 
-- namumark-clone-core: MIT License, Copyright (c) 2025 jhk1090.
-  Source: https://github.com/jhk1090/namumark-clone-core
-- The parser implementation is based on openNAMU v3.5.0-v188 and includes code
-  originally written by surplus-dev under the BSD 3-Clause License.
-  Source: https://github.com/openNAMU/openNAMU
+- The repository's active renderer is Namu_test-main. This file records historical upstream notices retained for source provenance and redistribution compliance.
+- Historical parser components were derived from namumark-clone-core (MIT License, Copyright (c) 2025 jhk1090) and openNAMU v3.5.0-v188 (BSD 3-Clause License, originally written in part by surplus-dev).
+- These projects are no longer used as AonWiki's runtime renderer.
 
 BSD 3-Clause License
 
