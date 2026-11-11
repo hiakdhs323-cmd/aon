@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>나무마크 테스트</title>
+    <link rel="stylesheet" href="namumark.css" />
+    <link rel="stylesheet" href="interactions.css" />
+    <script>
+      (function () {
+        {
+          if (
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme:dark)").matches
+          ) {
+            {
+              document.documentElement.classList.add("dark");
+            }
+          }
+          window
+            .matchMedia("(prefers-color-scheme:dark)")
+            .addEventListener("change", function (e) {
+              {
+                document.documentElement.classList.toggle("dark", e.matches);
+              }
+            });
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="namuwiki">
+      <textarea
+        id="input"
+        placeholder="나무마크 문법 입력"
+        rows="10"
+        disabled
+      ></textarea>
+      <p id="status"></p>
+      <pre id="metadata" hidden></pre>
+      <article id="content" class="wiki wiki-content" data-wiki></article>
+    </div>
+    <script type="module">
+      import { initWasm, renderWithMetadata } from "./wasm.js";
+      import { setupWikiInteractions } from "./interactions.js";
+
+      const input = document.getElementById("input");
+      const output = document.getElementById("content");
+      const status = document.getElementById("status");
+      const metadata = document.getElementById("metadata");
+      const interactions = setupWikiInteractions(output);
+
+      async function update() {
+        const text = input.value;
+        interactions.reset();
+        metadata.textContent = "";
+        metadata.hidden = true;
+        if (!text) {
+          output.innerHTML = "";
+          status.textContent = "";
+          return;
+        }
+
+        try {
+          const start = performance.now();
+          const result = renderWithMetadata(text);
+          const elapsed = performance.now() - start;
+          output.innerHTML = result.html;
+          interactions.refresh();
+          const info = [];
+          if (result.categories.length) {
+            info.push(`분류: ${result.categories.join(", ")}`);
+          }
+          if (result.backlinks.length) {
+            info.push(`역링크: ${result.backlinks.join(", ")}`);
+          }
+          if (result.redirect_target != null) {
+            const anchor = result.redirect_anchor == null
+              ? ""
+              : `#${result.redirect_anchor}`;
+            info.push(`리다이렉트: ${result.redirect_target}${anchor}`);
+          }
+          metadata.textContent = info.join("\n");
+          metadata.hidden = info.length === 0;
+          status.textContent = `${elapsed.toFixed(2)}ms`;
+        } catch (e) {
+          output.innerHTML = "";
+          status.textContent = "Error: " + e.message;
+        }
+      }
+
+      input.addEventListener("input", () => {
+        update();
+      });
+
+      status.textContent = "WASM loading…";
+      try {
+        await initWasm();
+        input.disabled = false;
+        if (input.value) await update();
+        else status.textContent = "WASM loaded";
+      } catch (e) {
+        status.textContent = "WASM load error: " + e.message;
+      }
+    </script>
+  </body>
+</html>

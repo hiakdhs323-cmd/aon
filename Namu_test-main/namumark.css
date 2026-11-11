@@ -1,0 +1,2915 @@
+
+body {
+  margin: 0;
+  padding: var(--espejo-layout-gutter-var);
+}
+
+.wiki[data-wiki] {
+  --espejo-container-max-width: none;
+  max-width: var(--espejo-container-max-width);
+  margin: 24px auto;
+  background-color: var(--espejo-card-background-color);
+  border-color: var(--espejo-card-border-color);
+  border-radius: var(--espejo-card-border-radius-var);
+  border-style: solid;
+  border-width: var(--espejo-card-border-width-var);
+  min-height: var(--espejo-article-min-height-var);
+  padding: var(--espejo-article-gutter-y-var) var(--espejo-article-gutter-right-var) var(--espejo-article-gutter-y-var) var(--espejo-article-gutter-left-var);
+  transition: background-color .05s ease-in;
+  word-break: break-all;
+}
+
+@media screen and (min-width: 1200px) {
+  .wiki[data-wiki] {
+    --espejo-container-max-width: 1280px;
+  }
+}
+
+@media screen and (max-width: 1023.98px) {
+  .wiki[data-wiki] {
+    border-bottom: 0px;
+    border-top: 0px;
+    border-radius: 0px;
+    border-width: var(--espejo-card-border-width-var) 0;
+  }
+}
+
+#input {
+  box-sizing: border-box;
+  width: 100%;
+}
+      
+      
+/* Source: 000.css — https://namu.wiki/skins/espejo/dghwpxbh.ee18835d5e0ffe2995c7.css */
+.wiki[data-wiki] {
+  overflow: hidden;
+}
+
+.wiki[data-wiki] p {
+  margin-top: 0;
+}
+
+.wiki[data-wiki] ol,
+.wiki[data-wiki] ul {
+  margin: .4em 0 .4em 1.5em;
+  padding-left: .5rem;
+}
+
+.wiki[data-wiki] li {
+  margin: .4em 0;
+}
+
+.wiki[data-wiki] h1.wiki-heading {
+  font-size: 2em;
+}
+
+.wiki[data-wiki] h2.wiki-heading {
+  font-size: 1.8em;
+}
+
+.wiki[data-wiki] h3.wiki-heading {
+  font-size: 1.6em;
+}
+
+.wiki[data-wiki] h4.wiki-heading {
+  font-size: 1.4em;
+}
+
+.wiki[data-wiki] h5.wiki-heading {
+  font-size: 1.2em;
+}
+
+.wiki[data-wiki] h6.wiki-heading {
+  font-size: 1em;
+}
+
+.wiki[data-wiki] h1.wiki-heading,
+.wiki[data-wiki] h2.wiki-heading,
+.wiki[data-wiki] h3.wiki-heading,
+.wiki[data-wiki] h4.wiki-heading,
+.wiki[data-wiki] h5.wiki-heading,
+.wiki[data-wiki] h6.wiki-heading {
+  border-bottom: 1px solid light-dark(#ccc,#383b40);
+  margin: 1.2em 0 .8em;
+  padding-bottom: 5px;
+}
+
+.wiki[data-wiki] .wiki-paragraph {
+  margin-bottom: 1rem;
+}
+
+.wiki[data-wiki] .wiki-heading-content.wiki-heading-content-folded {
+  display: none;
+}
+
+.wiki[data-wiki] .wiki-edit-section {
+  float: right;
+  font-size: .8rem;
+}
+
+@media print {
+  .wiki[data-wiki] .wiki-edit-section {
+    display: none;
+  }
+}
+
+.wiki[data-wiki] del {
+  color: gray;
+}
+
+.wiki[data-wiki] del:hover {
+  -webkit-text-decoration: none;
+  text-decoration: none;
+}
+
+.wiki.force-font-size-8[data-wiki] {
+  font-size: .8em;
+}
+
+.wiki.force-font-size-9[data-wiki] {
+  font-size: .9em;
+}
+
+.wiki.force-font-size-10[data-wiki] {
+  font-size: 1em;
+}
+
+.wiki.force-font-size-11[data-wiki] {
+  font-size: 1.1em;
+}
+
+.wiki.force-font-size-13[data-wiki] {
+  font-size: 1.3em;
+}
+
+.wiki.force-font-size-15[data-wiki] {
+  font-size: 1.5em;
+}
+
+.wiki[data-wiki] .wiki-size-up-1 {
+  font-size: 1.2888888889em;
+}
+
+.wiki[data-wiki] .wiki-size-up-2 {
+  font-size: 1.3888888889em;
+}
+
+.wiki[data-wiki] .wiki-size-up-3 {
+  font-size: 1.4814444444em;
+}
+
+.wiki[data-wiki] .wiki-size-up-4 {
+  font-size: 1.574em;
+}
+
+.wiki[data-wiki] .wiki-size-up-5 {
+  font-size: 1.6666666667em;
+}
+
+.wiki[data-wiki] .wiki-size-down-1 {
+  font-size: .9258888889em;
+}
+
+.wiki[data-wiki] .wiki-size-down-2 {
+  font-size: .8333333333em;
+}
+
+.wiki[data-wiki] .wiki-size-down-3 {
+  font-size: .7406666667em;
+}
+
+.wiki[data-wiki] .wiki-size-down-4 {
+  font-size: .6481111111em;
+}
+
+.wiki[data-wiki] .wiki-size-down-5 {
+  font-size: .6222222222em;
+}
+
+.wiki[data-wiki] code {
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2px;
+}
+
+.wiki[data-wiki] pre {
+  background-color: light-dark(#eee,#2d2f34);
+  border: 1px solid light-dark(#ddd,#383b40);
+  border-radius: 3px;
+  overflow-x: auto;
+  padding: 7px;
+}
+
+.wiki[data-wiki] pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.wiki[data-wiki] .not-exist {
+  color: light-dark(red,#dc4343);
+}
+
+.wiki[data-wiki] .wiki-self-link {
+  font-weight: 700;
+}
+
+.wiki[data-wiki] .wiki-link-auto {
+  cursor: default;
+}
+
+.wiki[data-wiki] .wiki-link-internal {
+  cursor: pointer;
+}
+
+.wiki[data-wiki] .wiki-link-external,
+.wiki[data-wiki] .wiki-link-external-image {
+  color: #090 !important;
+}
+
+.wiki[data-wiki] img {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.wiki[data-wiki] .wiki-table img {
+  display: inline-block;
+  max-width: none;
+}
+
+.wiki[data-wiki] .wiki-list {
+  margin: .4em 0 .4em 1.5em;
+}
+
+.wiki[data-wiki] .wiki-list-decimal {
+  list-style: decimal;
+}
+
+.wiki[data-wiki] .wiki-list li .wiki-paragraph {
+  margin-bottom: 0;
+}
+
+.wiki[data-wiki] .wiki-list-alpha {
+  list-style: lower-alpha;
+}
+
+.wiki[data-wiki] .wiki-list-upper-alpha {
+  list-style: upper-alpha;
+}
+
+.wiki[data-wiki] .wiki-list-roman {
+  list-style: lower-roman;
+}
+
+.wiki[data-wiki] .wiki-list-upper-roman {
+  list-style: upper-roman;
+}
+
+.wiki[data-wiki] .wiki-list li {
+  list-style: inherit !important;
+  list-style-type: inherit !important;
+  margin: .4em 0;
+}
+
+.wiki[data-wiki] .wiki-fn-content {
+  font-size: .8em;
+  vertical-align: super;
+}
+
+.wiki[data-wiki] .wiki-macro-footnote {
+  border-top: 1px solid light-dark(#777,#383840);
+  margin: 1.5em 0;
+  padding: .5em 0;
+}
+
+.wiki[data-wiki] .footnote-list {
+  display: block;
+  line-height: 1.75;
+  margin-bottom: .5em;
+  word-break: break-all;
+}
+
+.wiki[data-wiki] .wiki-indent {
+  padding-left: 10px;
+}
+
+.wiki[data-wiki] .wiki-quote {
+  background: light-dark(#eee,#2d2f34);
+  border: 2px dashed light-dark(#ccc,#383b40);
+  border-left: 5px solid light-dark(#71bc6d,#666c75);
+  display: table;
+  margin: 1em 0;
+  padding: 1em;
+}
+
+.wiki[data-wiki] .wiki-quote .wiki-paragraph {
+  margin-bottom: 0;
+}
+
+.wiki[data-wiki] .wiki-quote .wiki-indent {
+  padding-left: 0;
+}
+
+.wiki[data-wiki] hr {
+  border: 0;
+  border-top: .0625rem solid light-dark(#ccc,#383b40);
+  box-sizing: content-box;
+  height: 0;
+  margin: .5em 0;
+}
+
+.wiki[data-wiki] .wiki-macro-toc {
+  border: 1px solid light-dark(#ccc,#383b40);
+  display: inline-block;
+  margin-left: 5px;
+  padding: 12px 20px 12px 0;
+}
+
+.wiki[data-wiki] .wiki-macro-toc details summary {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 320 512%27%3E%3Cpath fill=%27%23666%27 d=%27M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z%27/%3E%3C/svg%3E");
+  background-position: 100%;
+  background-repeat: no-repeat;
+  background-size: auto 14px;
+  cursor: pointer;
+  font-size: 1.25em;
+  list-style: none;
+  margin-left: 14px;
+  min-width: 60px;
+}
+
+.wiki[data-wiki] .wiki-macro-toc details summary::marker {
+  content: "";
+  display: none;
+}
+
+.wiki[data-wiki] .wiki-macro-toc details summary:before {
+  content: "목차";
+}
+
+.wiki[data-wiki] .wiki-macro-toc details[open] {
+  padding-bottom: 4px;
+}
+
+.wiki[data-wiki] .wiki-macro-toc details[open] summary {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 448 512%27%3E%3Cpath fill=%27%23666%27 d=%27M201.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 338.7 54.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z%27/%3E%3C/svg%3E");
+  margin-bottom: 12px;
+}
+
+.wiki[data-wiki] .toc-indent {
+  padding-left: 20px;
+}
+
+.wiki[data-wiki] .wiki-macro-toc>.toc-indent:first-of-type {
+  margin-top: 12px;
+}
+
+.wiki[data-wiki] .toc-item {
+  display: block;
+}
+
+.wiki[data-wiki] .wiki-media {
+  display: block;
+  max-width: 100%;
+}
+
+.wiki[data-wiki] lite-youtube.wiki-media {
+  display: table-cell;
+}
+
+.wiki[data-wiki] .wiki-media-wrapper {
+  display: table;
+}
+
+.wiki[data-wiki] video {
+  max-width: 100%;
+}
+
+.wiki[data-wiki] .wiki-table-wrap {
+  display: block;
+  margin: 10px 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.wiki[data-wiki] .wiki-table-wrap.table-center {
+  margin: 10px auto;
+}
+
+.wiki[data-wiki] .wiki-table {
+  background-color: light-dark(#f5f5f5,#2d2f34);
+  border-collapse: collapse;
+}
+
+.wiki[data-wiki] .table-center .wiki-table {
+  margin: auto;
+}
+
+.wiki[data-wiki] .table-right {
+  float: right;
+  margin-bottom: 20px;
+  margin-left: 20px;
+}
+
+@media screen and (max-width:420px) {
+  .wiki[data-wiki] .table-right {
+    float: none;
+    margin: 10px 0;
+  }
+}
+
+.wiki[data-wiki] .wiki-table td,
+.wiki[data-wiki] .wiki-table th {
+  border: 1px solid light-dark(#ddd,#383b40);
+  padding: 5px 10px;
+}
+
+.wiki[data-wiki] .wiki-table td.wiki-table-nopadding,
+.wiki[data-wiki] .wiki-table th.wiki-table-nopadding {
+  padding: 0;
+}
+
+.wiki[data-wiki] .wiki-table .wiki-table-keepall {
+  word-break: keep-all;
+}
+
+.wiki[data-wiki] .wiki-table .wiki-table-sortable {
+  padding-right: 25px;
+}
+
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell {
+  cursor: pointer;
+  position: relative;
+}
+
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell:after,
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell:before {
+  border: 4px solid transparent;
+  content: "";
+  display: inline-block;
+  height: 0;
+  position: absolute;
+  right: 7px;
+  width: 0;
+}
+
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell:before {
+  border-bottom-color: currentColor;
+  top: calc(50% - 9px);
+}
+
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell:after {
+  border-top-color: currentColor;
+  top: calc(50% + 2px);
+}
+
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell[data-sort-direction=asc]:after {
+  display: none;
+}
+
+.wiki[data-wiki] .wiki-table .sortable-table-head-cell[data-sort-direction=desc]:before {
+  display: none;
+}
+
+.wiki[data-wiki] .wiki-table td .wiki-paragraph,
+.wiki[data-wiki] .wiki-table th .wiki-paragraph {
+  margin-bottom: 0;
+}
+
+.wiki[data-wiki] em {
+  font-style: italic;
+}
+
+.wiki[data-wiki] .wiki-file-image {
+  margin-bottom: 20px;
+}
+
+.wiki[data-wiki] .hljs {
+  font-family: monospace !important;
+  line-height: 1.3em;
+  white-space: pre;
+}
+
+.wiki[data-wiki] .hljs span {
+  font-family: monospace !important;
+}
+
+.wiki[data-wiki] .hljs .hljs-comment,
+.wiki[data-wiki] .hljs .hljs-doctag,
+.wiki[data-wiki] .hljs .hljs-quote,
+.wiki[data-wiki] .hljs .hljs-variable {
+  color: light-dark(green,#6a9954);
+}
+
+.wiki[data-wiki] .hljs .hljs-built_in,
+.wiki[data-wiki] .hljs .hljs-keyword,
+.wiki[data-wiki] .hljs .hljs-name,
+.wiki[data-wiki] .hljs .hljs-selector-tag,
+.wiki[data-wiki] .hljs .hljs-tag {
+  color: light-dark(#00f,#579cd6);
+}
+
+.wiki[data-wiki] .hljs .hljs-addition,
+.wiki[data-wiki] .hljs .hljs-attribute,
+.wiki[data-wiki] .hljs .hljs-literal,
+.wiki[data-wiki] .hljs .hljs-section,
+.wiki[data-wiki] .hljs .hljs-string,
+.wiki[data-wiki] .hljs .hljs-template-tag,
+.wiki[data-wiki] .hljs .hljs-template-variable,
+.wiki[data-wiki] .hljs .hljs-title,
+.wiki[data-wiki] .hljs .hljs-type {
+  color: light-dark(#a31515,#ce9178);
+}
+
+.wiki[data-wiki] .hljs .hljs-deletion,
+.wiki[data-wiki] .hljs .hljs-meta,
+.wiki[data-wiki] .hljs .hljs-selector-attr,
+.wiki[data-wiki] .hljs .hljs-selector-pseudo {
+  color: light-dark(#2b91af,#d4d4d4);
+}
+
+.wiki[data-wiki] .hljs .hljs-attr {
+  color: light-dark(red,#9ddcfe);
+}
+
+.wiki[data-wiki] .hljs .hljs-bullet,
+.wiki[data-wiki] .hljs .hljs-link,
+.wiki[data-wiki] .hljs .hljs-symbol {
+  color: light-dark(#00b0e8,#00b0e8);
+}
+
+.wiki[data-wiki] .hljs .hljs-emphasis {
+  font-style: italic;
+}
+
+.wiki[data-wiki] .hljs .hljs-strong {
+  font-weight: 700;
+}
+
+.wiki[data-wiki] details.wiki-folding summary {
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.wiki[data-wiki] details.wiki-folding summary::marker {
+  content: "";
+  display: none;
+}
+
+.wiki[data-wiki] details.wiki-folding>div {
+  overflow: hidden;
+}
+
+.wiki[data-wiki] .wiki-image {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.wiki[data-wiki] .wiki-image-show-button {
+  background-color: transparent;
+  border: .0625rem solid #5bc0de;
+  color: #5bc0de;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: 400;
+  padding: .2rem .45rem;
+  text-align: center;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  vertical-align: middle;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.wiki[data-wiki] .wiki-image-show-button:active,
+.wiki[data-wiki] .wiki-image-show-button:hover {
+  background-color: #5bc0de;
+  border-color: #5bc0de;
+  color: #fff;
+}
+
+.wiki[data-wiki] .wiki-image-wrapper {
+  display: inline-block;
+  font-size: 0;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.wiki[data-wiki] .wiki-image-info-btn {
+  background: none;
+  border: none;
+  color: #ec9f19;
+  display: none;
+  font-size: 1.1rem;
+  outline: none;
+  position: absolute;
+  right: 6px;
+  top: 0;
+}
+
+.wiki[data-wiki] .wiki-image-wrapper:hover .wiki-image-info-btn {
+  display: block;
+}
+
+.wiki[data-wiki] .wiki-image-info-btn:before {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Cpath fill=%27%23ec9f19%27 d=%27M235.4 172.2c0-11.4 9.3-19.9 20.5-19.9 11.4 0 20.7 8.5 20.7 19.9s-9.3 20-20.7 20c-11.2 0-20.5-8.6-20.5-20m1.4 35.7H275V352h-38.2z%27/%3E%3Cpath fill=%27%23ec9f19%27 d=%27M256 76c48.1 0 93.3 18.7 127.3 52.7S436 207.9 436 256s-18.7 93.3-52.7 127.3S304.1 436 256 436s-93.3-18.7-127.3-52.7S76 304.1 76 256s18.7-93.3 52.7-127.3S207.9 76 256 76m0-28C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48%27/%3E%3C/svg%3E");
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: contain;
+  content: "";
+  display: inline-block;
+  height: 1em;
+  vertical-align: text-bottom;
+  width: 1em;
+}
+
+.wiki[data-wiki] .wiki-image-info-btn:hover:before {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Cpath fill=%27%23ec9f19%27 d=%27M256 48C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48m19 304h-38.2V207.9H275zm-19.1-159.8c-11.3 0-20.5-8.6-20.5-20s9.3-19.9 20.5-19.9c11.4 0 20.7 8.5 20.7 19.9s-9.3 20-20.7 20%27/%3E%3C/svg%3E");
+}
+
+.wiki[data-wiki] .wiki-image-loading {
+  display: none;
+}
+
+.wiki[data-wiki] .wiki-image-align-bottom,
+.wiki[data-wiki] .wiki-image-align-center,
+.wiki[data-wiki] .wiki-image-align-left,
+.wiki[data-wiki] .wiki-image-align-middle,
+.wiki[data-wiki] .wiki-image-align-normal,
+.wiki[data-wiki] .wiki-image-align-right,
+.wiki[data-wiki] .wiki-image-align-top {
+  display: inline-block;
+  font-size: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.wiki[data-wiki] .wiki-image-align-left {
+  float: left;
+}
+
+.wiki[data-wiki] .wiki-image-align-right {
+  float: right;
+}
+
+.wiki[data-wiki] .wiki-image-align-center,
+.wiki[data-wiki] .wiki-image-align-middle {
+  display: block;
+  text-align: center;
+}
+
+.wiki[data-wiki] .wiki-image-align-top {
+  vertical-align: top;
+}
+
+.wiki[data-wiki] .wiki-image-align-bottom {
+  vertical-align: bottom;
+}
+
+.always-show-external-link-icon.wiki[data-wiki] .wiki-link-external-image:before,
+.wiki[data-wiki] .wiki-link-external:before {
+  background: green;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Cpath fill=%27%23fff%27 d=%27M74.6 256c0-38.3 31.1-69.4 69.4-69.4h88V144h-88c-61.8 0-112 50.2-112 112s50.2 112 112 112h88v-42.6h-88c-38.3 0-69.4-31.1-69.4-69.4m85.4 22h192v-44H160zm208-134h-88v42.6h88c38.3 0 69.4 31.1 69.4 69.4s-31.1 69.4-69.4 69.4h-88V368h88c61.8 0 112-50.2 112-112s-50.2-112-112-112%27/%3E%3C/svg%3E");
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: 90%;
+  color: #fff;
+  content: "";
+  display: inline-block;
+  height: 1em;
+  margin-right: .1em;
+  position: relative;
+  top: -.1em;
+  vertical-align: text-bottom;
+  width: 1.13em;
+}
+
+.wiki[data-wiki] .wiki-heading:before {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Cpath fill=%27%23666%27 d=%27M256 294.1 383 167c9.4-9.4 24.6-9.4 33.9 0s9.3 24.6 0 34L273 345c-9.1 9.1-23.7 9.3-33.1.7L95 201.1c-4.7-4.7-7-10.9-7-17s2.3-12.3 7-17c9.4-9.4 24.6-9.4 33.9 0z%27/%3E%3C/svg%3E");
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  background-size: .8em .8em;
+  content: "";
+  float: left;
+  height: 1.8em;
+  line-height: 1.8em;
+  margin: 0 .5rem 0 .2rem;
+  text-align: center;
+  width: .725em;
+}
+
+.wiki[data-wiki] .wiki-heading {
+  cursor: pointer;
+}
+
+.wiki[data-wiki] .wiki-heading.wiki-heading-folded {
+  opacity: .5;
+}
+
+.wiki[data-wiki] .wiki-heading.wiki-heading-folded:before {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 320 512%27%3E%3Cpath fill=%27%23666%27 d=%27M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z%27/%3E%3C/svg%3E");
+  background-position: center 34%;
+  background-size: .625em .625em;
+}
+
+.wiki[data-wiki] .wiki-fn-content {
+  white-space: nowrap;
+}
+
+.wiki[data-wiki] .wiki-unfold-fn,
+.wiki[data-wiki] .wiki-unfold-link {
+  background-color: light-dark(#efefef,#2d2f34);
+  border: 1px solid #cecece;
+  color: light-dark(#555,#ddd);
+  font-size: .88888em;
+  margin-left: .1rem;
+  margin-right: .2rem;
+}
+
+.wiki[data-wiki] .wiki-unfold-fn {
+  font-size: 1em;
+  vertical-align: baseline;
+}
+
+.wiki[data-wiki] .wiki-clearfix {
+  clear: both;
+}
+
+.nowrap-wiki-table.wiki[data-wiki] .wiki-table {
+  white-space: nowrap;
+}
+
+.hide-strike.wiki[data-wiki] del {
+  visibility: hidden;
+}
+
+.disable-strike.wiki[data-wiki] del {
+  color: inherit;
+  -webkit-text-decoration: none;
+  text-decoration: none;
+}
+
+.hide-bold.wiki[data-wiki] b,
+.hide-bold.wiki[data-wiki] strong {
+  visibility: hidden;
+}
+
+.disable-bold.wiki[data-wiki] b,
+.disable-bold.wiki[data-wiki] strong {
+  font-weight: inherit;
+  -webkit-text-decoration: none;
+  text-decoration: none;
+}
+
+.wiki[data-wiki] .popper {
+  background: light-dark(#fff,#383b40);
+  border-radius: 3px;
+  box-shadow: 0 0 2px light-dark(rgba(0,0,0,.5),hsla(0,0%,100%,.5));
+  max-width: 50%;
+  padding: 15px;
+  position: absolute;
+  word-break: break-all;
+  z-index: 1;
+}
+
+.wiki[data-wiki] .popper .popper__arrow {
+  border-color: light-dark(#ddd,#ccc);
+  border-style: solid;
+  height: 0;
+  margin: 5px;
+  position: absolute;
+  width: 0;
+}
+
+.wiki[data-wiki] .popper[x-placement^=top] {
+  margin-bottom: 5px;
+}
+
+.wiki[data-wiki] .popper[x-placement^=top] .popper__arrow {
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-width: 5px 5px 0;
+  bottom: -5px;
+  left: calc(50% - 5px);
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.wiki[data-wiki] .popper[x-placement^=bottom] {
+  margin-top: 5px;
+}
+
+.wiki[data-wiki] .popper[x-placement^=bottom] .popper__arrow {
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-top-color: transparent;
+  border-width: 0 5px 5px;
+  left: calc(50% - 5px);
+  margin-bottom: 0;
+  margin-top: 0;
+  top: -5px;
+}
+
+.wiki[data-wiki] .popper[x-placement^=right] {
+  margin-left: 5px;
+}
+
+.wiki[data-wiki] .popper[x-placement^=right] .popper__arrow {
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  border-top-color: transparent;
+  border-width: 5px 5px 5px 0;
+  left: -5px;
+  margin-left: 0;
+  margin-right: 0;
+  top: calc(50% - 5px);
+}
+
+.wiki[data-wiki] .popper[x-placement^=left] {
+  margin-right: 5px;
+}
+
+.wiki[data-wiki] .popper[x-placement^=left] .popper__arrow {
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+  border-top-color: transparent;
+  border-width: 5px 0 5px 5px;
+  margin-left: 0;
+  margin-right: 0;
+  right: -5px;
+  top: calc(50% - 5px);
+}
+
+.discuss.wiki[data-wiki] .wiki-paragraph:last-of-type {
+  margin-bottom: 0;
+}
+
+.wiki[data-wiki] .wiki-theme-dark {
+  display: none;
+}
+
+.theseed-dark-mode .wiki[data-wiki] .wiki-theme-dark {
+  display: inline-block;
+}
+
+.theseed-dark-mode .wiki[data-wiki] .wiki-theme-light {
+  display: none;
+}
+
+.wiki[data-wiki] .wiki-heading-powerlink1 {
+  cursor: pointer;
+}
+
+.wiki[data-wiki] .wiki-heading-powerlink11 {
+  cursor: pointer;
+}
+
+.wiki[data-wiki] .wiki-heading-powerlink2 {
+  display: block;
+}
+
+.wiki[data-wiki] .wiki-heading-powerlink22 {
+  display: block;
+}
+
+.wiki[data-wiki] .wiki-heading-powerlink3 {
+  display: none;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_AMS;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/73ea273a72f4aca30ca5.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/d562e886c52f12660a41.woff") format("woff"),url("https://namu.wiki/skins/espejo/853be92419a6c3766b9a.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Caligraphic;
+  font-style: normal;
+  font-weight: 700;
+  src: url("https://namu.wiki/skins/espejo/a1abf90dfd72792a577a.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/d757c535a2e5902f1325.woff") format("woff"),url("https://namu.wiki/skins/espejo/7489a2fbfb9bfe704420.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Caligraphic;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/d6484fce1ef428d5bd94.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/db074fa22cf224af93d7.woff") format("woff"),url("https://namu.wiki/skins/espejo/7e873d3833eb108a0758.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Fraktur;
+  font-style: normal;
+  font-weight: 700;
+  src: url("https://namu.wiki/skins/espejo/931d67ea207ab37ee693.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/354501bac435c3264834.woff") format("woff"),url("https://namu.wiki/skins/espejo/4c761b3711973ab04edf.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Fraktur;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/172d3529b26f8cedef6b.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/6fdf0ac577be0ba82a4c.woff") format("woff"),url("https://namu.wiki/skins/espejo/ed305b5434865e06ffde.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Main;
+  font-style: normal;
+  font-weight: 700;
+  src: url("https://namu.wiki/skins/espejo/39890742bc957b368704.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/0c3b8929d377c0e9b2f3.woff") format("woff"),url("https://namu.wiki/skins/espejo/8169508bf58f8bd92ad8.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Main;
+  font-style: italic;
+  font-weight: 700;
+  src: url("https://namu.wiki/skins/espejo/20f389c4120be058d80a.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/428978dc7837d46de091.woff") format("woff"),url("https://namu.wiki/skins/espejo/828abcb200061cffbaae.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Main;
+  font-style: italic;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/fe2176f79edaa716e621.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/fd947498bc16392e76c2.woff") format("woff"),url("https://namu.wiki/skins/espejo/fa675e5e4bec9eb250b6.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Main;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/f650f111a3b890d116f1.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/4f35fbcc9ee8614c2bcc.woff") format("woff"),url("https://namu.wiki/skins/espejo/9eba1d77abcf2aa6e94e.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Math;
+  font-style: italic;
+  font-weight: 700;
+  src: url("https://namu.wiki/skins/espejo/dcbcbd93bac0470b462d.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/3f07ed67f06c720120ce.woff") format("woff"),url("https://namu.wiki/skins/espejo/bf2d440b3a42ea78a998.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Math;
+  font-style: italic;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/6d3d25f4820d0da8f01f.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/96759856b4e70f3a8338.woff") format("woff"),url("https://namu.wiki/skins/espejo/8a5f936332e8028c7278.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: "KaTeX_SansSerif";
+  font-style: normal;
+  font-weight: 700;
+  src: url("https://namu.wiki/skins/espejo/95591a929f0d32aa282a.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/b9cd458ac6d5889ff9c3.woff") format("woff"),url("https://namu.wiki/skins/espejo/5b49f4993ae22d7975b4.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: "KaTeX_SansSerif";
+  font-style: italic;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/7d393d382f3e7fb1c637.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/8d593cfaa96238d5e2f8.woff") format("woff"),url("https://namu.wiki/skins/espejo/b257a18c016f37ee4543.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: "KaTeX_SansSerif";
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/cd5e231e0cc53b2cb2c0.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/02271ec5cb9f5b4588ac.woff") format("woff"),url("https://namu.wiki/skins/espejo/2f7bc363fc5424ebda59.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Script;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/c81d1b2a4b75d3eded60.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/073b3402d036714b4370.woff") format("woff"),url("https://namu.wiki/skins/espejo/fc9ba5249878cd8f8d88.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Size1;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/6eec866c69313624be60.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/0108e89c9003e8c14ea3.woff") format("woff"),url("https://namu.wiki/skins/espejo/6de7d4b539221a49e9e2.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Size2;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/2960900c4f271311eb36.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/3a99e70aee4076660d38.woff") format("woff"),url("https://namu.wiki/skins/espejo/57f5c1837853986ea1db.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Size3;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/e1951519f6f0596f7356.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/7947224e8a9914fa332b.woff") format("woff"),url("https://namu.wiki/skins/espejo/8d6b6822586eea3d3b20.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Size4;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/e418bf257af1052628d8.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/aeffd8025cba3647f1a6.woff") format("woff"),url("https://namu.wiki/skins/espejo/4ad7c7e8bb8d10a34bb7.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: block;
+  font-family: KaTeX_Typewriter;
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://namu.wiki/skins/espejo/c295e7f71970f03c0549.woff2") format("woff2"),url("https://namu.wiki/skins/espejo/4c6b94fd1d07f8beff7c.woff") format("woff"),url("https://namu.wiki/skins/espejo/c5c02d763c89380dcb4e.ttf") format("truetype");
+}
+
+.katex {
+  font: normal 1.21em KaTeX_Main,Times New Roman,serif;
+  line-height: 1.2;
+  position: relative;
+  text-indent: 0;
+  text-rendering: auto;
+}
+
+.katex * {
+  -ms-high-contrast-adjust: none !important;
+  border-color: currentColor;
+}
+
+.katex .katex-version:after {
+  content: "0.17.0";
+}
+
+.katex .katex-mathml {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.katex .katex-html>.newline {
+  display: block;
+}
+
+.katex .base {
+  position: relative;
+  white-space: nowrap;
+  width: -moz-min-content;
+  width: min-content;
+}
+
+.katex .base,
+.katex .strut {
+  display: inline-block;
+}
+
+.katex .textbf {
+  font-weight: 700;
+}
+
+.katex .textit {
+  font-style: italic;
+}
+
+.katex .textrm {
+  font-family: KaTeX_Main;
+}
+
+.katex .textsf {
+  font-family: KaTeX_SansSerif;
+}
+
+.katex .texttt {
+  font-family: KaTeX_Typewriter;
+}
+
+.katex .mathnormal {
+  font-family: KaTeX_Math;
+  font-style: italic;
+}
+
+.katex .mathit {
+  font-family: KaTeX_Main;
+  font-style: italic;
+}
+
+.katex .mathrm {
+  font-style: normal;
+}
+
+.katex .mathbf {
+  font-family: KaTeX_Main;
+  font-weight: 700;
+}
+
+.katex .boldsymbol {
+  font-family: KaTeX_Math;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.katex .amsrm,
+.katex .mathbb,
+.katex .textbb {
+  font-family: KaTeX_AMS;
+}
+
+.katex .mathcal {
+  font-family: KaTeX_Caligraphic;
+}
+
+.katex .mathfrak,
+.katex .textfrak {
+  font-family: KaTeX_Fraktur;
+}
+
+.katex .mathboldfrak,
+.katex .textboldfrak {
+  font-family: KaTeX_Fraktur;
+  font-weight: 700;
+}
+
+.katex .mathtt {
+  font-family: KaTeX_Typewriter;
+}
+
+.katex .mathscr,
+.katex .textscr {
+  font-family: KaTeX_Script;
+}
+
+.katex .mathsf,
+.katex .textsf {
+  font-family: KaTeX_SansSerif;
+}
+
+.katex .mathboldsf,
+.katex .textboldsf {
+  font-family: KaTeX_SansSerif;
+  font-weight: 700;
+}
+
+.katex .mathitsf,
+.katex .mathsfit,
+.katex .textitsf {
+  font-family: KaTeX_SansSerif;
+  font-style: italic;
+}
+
+.katex .mainrm {
+  font-family: KaTeX_Main;
+  font-style: normal;
+}
+
+.katex .vlist-t {
+  border-collapse: collapse;
+  display: inline-table;
+  table-layout: fixed;
+}
+
+.katex .vlist-r {
+  display: table-row;
+}
+
+.katex .vlist {
+  display: table-cell;
+  position: relative;
+  vertical-align: bottom;
+}
+
+.katex .vlist>span {
+  display: block;
+  height: 0;
+  position: relative;
+}
+
+.katex .vlist>span>span {
+  display: inline-block;
+}
+
+.katex .vlist>span>.pstrut {
+  overflow: hidden;
+  width: 0;
+}
+
+.katex .vlist-t2 {
+  margin-right: -2px;
+}
+
+.katex .vlist-s {
+  display: table-cell;
+  font-size: 1px;
+  min-width: 2px;
+  vertical-align: bottom;
+  width: 2px;
+}
+
+.katex .vbox {
+  align-items: baseline;
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.katex .hbox {
+  width: 100%;
+}
+
+.katex .hbox,
+.katex .thinbox {
+  display: inline-flex;
+  flex-direction: row;
+}
+
+.katex .thinbox {
+  max-width: 0;
+  width: 0;
+}
+
+.katex .msupsub {
+  text-align: left;
+}
+
+.katex .mfrac>span>span {
+  text-align: center;
+}
+
+.katex .mfrac .frac-line {
+  border-bottom-style: solid;
+  display: inline-block;
+  width: 100%;
+}
+
+.katex .hdashline,
+.katex .hline,
+.katex .mfrac .frac-line,
+.katex .overline .overline-line,
+.katex .rule,
+.katex .underline .underline-line {
+  min-height: 1px;
+}
+
+.katex .mspace {
+  display: inline-block;
+}
+
+.katex .smash {
+  display: inline;
+  line-height: 0;
+}
+
+.katex .clap,
+.katex .llap,
+.katex .rlap {
+  position: relative;
+  width: 0;
+}
+
+.katex .clap>.inner,
+.katex .llap>.inner,
+.katex .rlap>.inner {
+  position: absolute;
+}
+
+.katex .clap>.fix,
+.katex .llap>.fix,
+.katex .rlap>.fix {
+  display: inline-block;
+}
+
+.katex .llap>.inner {
+  right: 0;
+}
+
+.katex .clap>.inner,
+.katex .rlap>.inner {
+  left: 0;
+}
+
+.katex .clap>.inner>span {
+  margin-left: -50%;
+  margin-right: 50%;
+}
+
+.katex .rule {
+  border: 0 solid;
+  display: inline-block;
+  position: relative;
+}
+
+.katex .hline,
+.katex .overline .overline-line,
+.katex .underline .underline-line {
+  border-bottom-style: solid;
+  display: inline-block;
+  width: 100%;
+}
+
+.katex .hdashline {
+  border-bottom-style: dashed;
+  display: inline-block;
+  width: 100%;
+}
+
+.katex .sqrt>.root {
+  margin-left: .2777777778em;
+  margin-right: -.5555555556em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size1,
+.katex .sizing.reset-size1.size1 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size2,
+.katex .sizing.reset-size1.size2 {
+  font-size: 1.2em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size3,
+.katex .sizing.reset-size1.size3 {
+  font-size: 1.4em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size4,
+.katex .sizing.reset-size1.size4 {
+  font-size: 1.6em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size5,
+.katex .sizing.reset-size1.size5 {
+  font-size: 1.8em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size6,
+.katex .sizing.reset-size1.size6 {
+  font-size: 2em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size7,
+.katex .sizing.reset-size1.size7 {
+  font-size: 2.4em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size8,
+.katex .sizing.reset-size1.size8 {
+  font-size: 2.88em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size9,
+.katex .sizing.reset-size1.size9 {
+  font-size: 3.456em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size10,
+.katex .sizing.reset-size1.size10 {
+  font-size: 4.148em;
+}
+
+.katex .fontsize-ensurer.reset-size1.size11,
+.katex .sizing.reset-size1.size11 {
+  font-size: 4.976em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size1,
+.katex .sizing.reset-size2.size1 {
+  font-size: .8333333333em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size2,
+.katex .sizing.reset-size2.size2 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size3,
+.katex .sizing.reset-size2.size3 {
+  font-size: 1.1666666667em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size4,
+.katex .sizing.reset-size2.size4 {
+  font-size: 1.3333333333em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size5,
+.katex .sizing.reset-size2.size5 {
+  font-size: 1.5em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size6,
+.katex .sizing.reset-size2.size6 {
+  font-size: 1.6666666667em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size7,
+.katex .sizing.reset-size2.size7 {
+  font-size: 2em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size8,
+.katex .sizing.reset-size2.size8 {
+  font-size: 2.4em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size9,
+.katex .sizing.reset-size2.size9 {
+  font-size: 2.88em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size10,
+.katex .sizing.reset-size2.size10 {
+  font-size: 3.4566666667em;
+}
+
+.katex .fontsize-ensurer.reset-size2.size11,
+.katex .sizing.reset-size2.size11 {
+  font-size: 4.1466666667em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size1,
+.katex .sizing.reset-size3.size1 {
+  font-size: .7142857143em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size2,
+.katex .sizing.reset-size3.size2 {
+  font-size: .8571428571em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size3,
+.katex .sizing.reset-size3.size3 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size4,
+.katex .sizing.reset-size3.size4 {
+  font-size: 1.1428571429em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size5,
+.katex .sizing.reset-size3.size5 {
+  font-size: 1.2857142857em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size6,
+.katex .sizing.reset-size3.size6 {
+  font-size: 1.4285714286em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size7,
+.katex .sizing.reset-size3.size7 {
+  font-size: 1.7142857143em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size8,
+.katex .sizing.reset-size3.size8 {
+  font-size: 2.0571428571em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size9,
+.katex .sizing.reset-size3.size9 {
+  font-size: 2.4685714286em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size10,
+.katex .sizing.reset-size3.size10 {
+  font-size: 2.9628571429em;
+}
+
+.katex .fontsize-ensurer.reset-size3.size11,
+.katex .sizing.reset-size3.size11 {
+  font-size: 3.5542857143em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size1,
+.katex .sizing.reset-size4.size1 {
+  font-size: .625em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size2,
+.katex .sizing.reset-size4.size2 {
+  font-size: .75em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size3,
+.katex .sizing.reset-size4.size3 {
+  font-size: .875em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size4,
+.katex .sizing.reset-size4.size4 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size5,
+.katex .sizing.reset-size4.size5 {
+  font-size: 1.125em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size6,
+.katex .sizing.reset-size4.size6 {
+  font-size: 1.25em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size7,
+.katex .sizing.reset-size4.size7 {
+  font-size: 1.5em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size8,
+.katex .sizing.reset-size4.size8 {
+  font-size: 1.8em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size9,
+.katex .sizing.reset-size4.size9 {
+  font-size: 2.16em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size10,
+.katex .sizing.reset-size4.size10 {
+  font-size: 2.5925em;
+}
+
+.katex .fontsize-ensurer.reset-size4.size11,
+.katex .sizing.reset-size4.size11 {
+  font-size: 3.11em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size1,
+.katex .sizing.reset-size5.size1 {
+  font-size: .5555555556em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size2,
+.katex .sizing.reset-size5.size2 {
+  font-size: .6666666667em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size3,
+.katex .sizing.reset-size5.size3 {
+  font-size: .7777777778em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size4,
+.katex .sizing.reset-size5.size4 {
+  font-size: .8888888889em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size5,
+.katex .sizing.reset-size5.size5 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size6,
+.katex .sizing.reset-size5.size6 {
+  font-size: 1.1111111111em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size7,
+.katex .sizing.reset-size5.size7 {
+  font-size: 1.3333333333em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size8,
+.katex .sizing.reset-size5.size8 {
+  font-size: 1.6em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size9,
+.katex .sizing.reset-size5.size9 {
+  font-size: 1.92em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size10,
+.katex .sizing.reset-size5.size10 {
+  font-size: 2.3044444444em;
+}
+
+.katex .fontsize-ensurer.reset-size5.size11,
+.katex .sizing.reset-size5.size11 {
+  font-size: 2.7644444444em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size1,
+.katex .sizing.reset-size6.size1 {
+  font-size: .5em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size2,
+.katex .sizing.reset-size6.size2 {
+  font-size: .6em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size3,
+.katex .sizing.reset-size6.size3 {
+  font-size: .7em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size4,
+.katex .sizing.reset-size6.size4 {
+  font-size: .8em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size5,
+.katex .sizing.reset-size6.size5 {
+  font-size: .9em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size6,
+.katex .sizing.reset-size6.size6 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size7,
+.katex .sizing.reset-size6.size7 {
+  font-size: 1.2em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size8,
+.katex .sizing.reset-size6.size8 {
+  font-size: 1.44em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size9,
+.katex .sizing.reset-size6.size9 {
+  font-size: 1.728em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size10,
+.katex .sizing.reset-size6.size10 {
+  font-size: 2.074em;
+}
+
+.katex .fontsize-ensurer.reset-size6.size11,
+.katex .sizing.reset-size6.size11 {
+  font-size: 2.488em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size1,
+.katex .sizing.reset-size7.size1 {
+  font-size: .4166666667em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size2,
+.katex .sizing.reset-size7.size2 {
+  font-size: .5em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size3,
+.katex .sizing.reset-size7.size3 {
+  font-size: .5833333333em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size4,
+.katex .sizing.reset-size7.size4 {
+  font-size: .6666666667em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size5,
+.katex .sizing.reset-size7.size5 {
+  font-size: .75em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size6,
+.katex .sizing.reset-size7.size6 {
+  font-size: .8333333333em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size7,
+.katex .sizing.reset-size7.size7 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size8,
+.katex .sizing.reset-size7.size8 {
+  font-size: 1.2em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size9,
+.katex .sizing.reset-size7.size9 {
+  font-size: 1.44em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size10,
+.katex .sizing.reset-size7.size10 {
+  font-size: 1.7283333333em;
+}
+
+.katex .fontsize-ensurer.reset-size7.size11,
+.katex .sizing.reset-size7.size11 {
+  font-size: 2.0733333333em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size1,
+.katex .sizing.reset-size8.size1 {
+  font-size: .3472222222em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size2,
+.katex .sizing.reset-size8.size2 {
+  font-size: .4166666667em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size3,
+.katex .sizing.reset-size8.size3 {
+  font-size: .4861111111em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size4,
+.katex .sizing.reset-size8.size4 {
+  font-size: .5555555556em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size5,
+.katex .sizing.reset-size8.size5 {
+  font-size: .625em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size6,
+.katex .sizing.reset-size8.size6 {
+  font-size: .6944444444em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size7,
+.katex .sizing.reset-size8.size7 {
+  font-size: .8333333333em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size8,
+.katex .sizing.reset-size8.size8 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size9,
+.katex .sizing.reset-size8.size9 {
+  font-size: 1.2em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size10,
+.katex .sizing.reset-size8.size10 {
+  font-size: 1.4402777778em;
+}
+
+.katex .fontsize-ensurer.reset-size8.size11,
+.katex .sizing.reset-size8.size11 {
+  font-size: 1.7277777778em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size1,
+.katex .sizing.reset-size9.size1 {
+  font-size: .2893518519em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size2,
+.katex .sizing.reset-size9.size2 {
+  font-size: .3472222222em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size3,
+.katex .sizing.reset-size9.size3 {
+  font-size: .4050925926em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size4,
+.katex .sizing.reset-size9.size4 {
+  font-size: .462962963em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size5,
+.katex .sizing.reset-size9.size5 {
+  font-size: .5208333333em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size6,
+.katex .sizing.reset-size9.size6 {
+  font-size: .5787037037em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size7,
+.katex .sizing.reset-size9.size7 {
+  font-size: .6944444444em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size8,
+.katex .sizing.reset-size9.size8 {
+  font-size: .8333333333em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size9,
+.katex .sizing.reset-size9.size9 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size10,
+.katex .sizing.reset-size9.size10 {
+  font-size: 1.2002314815em;
+}
+
+.katex .fontsize-ensurer.reset-size9.size11,
+.katex .sizing.reset-size9.size11 {
+  font-size: 1.4398148148em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size1,
+.katex .sizing.reset-size10.size1 {
+  font-size: .2410800386em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size2,
+.katex .sizing.reset-size10.size2 {
+  font-size: .2892960463em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size3,
+.katex .sizing.reset-size10.size3 {
+  font-size: .337512054em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size4,
+.katex .sizing.reset-size10.size4 {
+  font-size: .3857280617em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size5,
+.katex .sizing.reset-size10.size5 {
+  font-size: .4339440694em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size6,
+.katex .sizing.reset-size10.size6 {
+  font-size: .4821600771em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size7,
+.katex .sizing.reset-size10.size7 {
+  font-size: .5785920926em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size8,
+.katex .sizing.reset-size10.size8 {
+  font-size: .6943105111em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size9,
+.katex .sizing.reset-size10.size9 {
+  font-size: .8331726133em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size10,
+.katex .sizing.reset-size10.size10 {
+  font-size: 1em;
+}
+
+.katex .fontsize-ensurer.reset-size10.size11,
+.katex .sizing.reset-size10.size11 {
+  font-size: 1.1996142719em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size1,
+.katex .sizing.reset-size11.size1 {
+  font-size: .2009646302em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size2,
+.katex .sizing.reset-size11.size2 {
+  font-size: .2411575563em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size3,
+.katex .sizing.reset-size11.size3 {
+  font-size: .2813504823em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size4,
+.katex .sizing.reset-size11.size4 {
+  font-size: .3215434084em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size5,
+.katex .sizing.reset-size11.size5 {
+  font-size: .3617363344em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size6,
+.katex .sizing.reset-size11.size6 {
+  font-size: .4019292605em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size7,
+.katex .sizing.reset-size11.size7 {
+  font-size: .4823151125em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size8,
+.katex .sizing.reset-size11.size8 {
+  font-size: .578778135em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size9,
+.katex .sizing.reset-size11.size9 {
+  font-size: .6945337621em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size10,
+.katex .sizing.reset-size11.size10 {
+  font-size: .8336012862em;
+}
+
+.katex .fontsize-ensurer.reset-size11.size11,
+.katex .sizing.reset-size11.size11 {
+  font-size: 1em;
+}
+
+.katex .delimsizing.size1 {
+  font-family: KaTeX_Size1;
+}
+
+.katex .delimsizing.size2 {
+  font-family: KaTeX_Size2;
+}
+
+.katex .delimsizing.size3 {
+  font-family: KaTeX_Size3;
+}
+
+.katex .delimsizing.size4 {
+  font-family: KaTeX_Size4;
+}
+
+.katex .delimsizing.mult .delim-size1>span {
+  font-family: KaTeX_Size1;
+}
+
+.katex .delimsizing.mult .delim-size4>span {
+  font-family: KaTeX_Size4;
+}
+
+.katex .nulldelimiter {
+  display: inline-block;
+  width: .12em;
+}
+
+.katex .delimcenter,
+.katex .op-symbol {
+  position: relative;
+}
+
+.katex .op-symbol.small-op {
+  font-family: KaTeX_Size1;
+}
+
+.katex .op-symbol.large-op {
+  font-family: KaTeX_Size2;
+}
+
+.katex .accent>.vlist-t,
+.katex .op-limits>.vlist-t {
+  text-align: center;
+}
+
+.katex .accent .accent-body {
+  position: relative;
+}
+
+.katex .accent .accent-body:not(.accent-full) {
+  width: 0;
+}
+
+.katex .overlay {
+  display: block;
+}
+
+.katex .mtable .vertical-separator {
+  display: inline-block;
+  min-width: 1px;
+}
+
+.katex .mtable .arraycolsep {
+  display: inline-block;
+}
+
+.katex .mtable .col-align-c>.vlist-t {
+  text-align: center;
+}
+
+.katex .mtable .col-align-l>.vlist-t {
+  text-align: left;
+}
+
+.katex .mtable .col-align-r>.vlist-t {
+  text-align: right;
+}
+
+.katex .svg-align {
+  text-align: left;
+}
+
+.katex svg {
+  fill: currentColor;
+  stroke: currentColor;
+  display: block;
+  height: inherit;
+  position: absolute;
+  width: 100%;
+}
+
+.katex svg path {
+  stroke: none;
+}
+
+.katex svg {
+  fill-rule: nonzero;
+  fill-opacity: 1;
+  stroke-width: 1;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 4;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  stroke-opacity: 1;
+}
+
+.katex img {
+  border-style: none;
+  max-height: none;
+  max-width: none;
+  min-height: 0;
+  min-width: 0;
+}
+
+.katex .stretchy {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.katex .stretchy:after,
+.katex .stretchy:before {
+  content: "";
+}
+
+.katex .hide-tail {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.katex .halfarrow-left {
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 50.2%;
+}
+
+.katex .halfarrow-right {
+  overflow: hidden;
+  position: absolute;
+  right: 0;
+  width: 50.2%;
+}
+
+.katex .brace-left {
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 25.1%;
+}
+
+.katex .brace-center {
+  left: 25%;
+  overflow: hidden;
+  position: absolute;
+  width: 50%;
+}
+
+.katex .brace-right {
+  overflow: hidden;
+  position: absolute;
+  right: 0;
+  width: 25.1%;
+}
+
+.katex .x-arrow-pad {
+  padding: 0 .5em;
+}
+
+.katex .cd-arrow-pad {
+  padding: 0 .55556em 0 .27778em;
+}
+
+.katex .mover,
+.katex .munder,
+.katex .x-arrow {
+  text-align: center;
+}
+
+.katex .boxpad {
+  padding: 0 .3em;
+}
+
+.katex .fbox,
+.katex .fcolorbox {
+  border: .04em solid;
+  box-sizing: border-box;
+}
+
+.katex .cancel-pad {
+  padding: 0 .2em;
+}
+
+.katex .cancel-lap {
+  margin-left: -.2em;
+  margin-right: -.2em;
+}
+
+.katex .sout {
+  border-bottom-style: solid;
+  border-bottom-width: .08em;
+}
+
+.katex .angl {
+  border-right: .049em solid;
+  border-top: .049em solid;
+  box-sizing: border-box;
+  margin-right: .03889em;
+}
+
+.katex .anglpad {
+  padding: 0 .03889em;
+}
+
+.katex .eqn-num:before {
+  content: "(" counter(katexEqnNo) ")";
+  counter-increment: katexEqnNo;
+}
+
+.katex .mml-eqn-num:before {
+  content: "(" counter(mmlEqnNo) ")";
+  counter-increment: mmlEqnNo;
+}
+
+.katex .mtr-glue {
+  width: 50%;
+}
+
+.katex .cd-vert-arrow {
+  display: inline-block;
+  position: relative;
+}
+
+.katex .cd-label-left {
+  display: inline-block;
+  position: absolute;
+  right: calc(50% + .3em);
+  text-align: left;
+}
+
+.katex .cd-label-right {
+  display: inline-block;
+  left: calc(50% + .3em);
+  position: absolute;
+  text-align: right;
+}
+
+.katex-display {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+
+.katex-display>.katex {
+  display: block;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.katex-display>.katex>.katex-html {
+  display: block;
+  position: relative;
+}
+
+.katex-display>.katex>.katex-html>.tag {
+  position: absolute;
+  right: 0;
+}
+
+.katex-display.leqno>.katex>.katex-html>.tag {
+  left: 0;
+  right: auto;
+}
+
+.katex-display.fleqn>.katex {
+  padding-left: 2em;
+  text-align: left;
+}
+
+body {
+  counter-reset: katexEqnNo mmlEqnNo;
+}
+
+:where([data-sonner-toaster][data-y-position=top]) {
+  top: var(--toast-area-offset-y,max(var(--offset),env(safe-area-inset-top))) !important;
+}
+
+:where([data-sonner-toaster][data-y-position=bottom]) {
+  bottom: var(--toast-area-offset-y,max(var(--offset),env(safe-area-inset-bottom))) !important;
+}
+
+:where([data-sonner-toaster][data-x-position=left]) {
+  left: var(--toast-area-offset-x,max(var(--offset),env(safe-area-inset-left))) !important;
+}
+
+:where([data-sonner-toaster][data-x-position=right]) {
+  right: var(--toast-area-offset-x,max(var(--offset),env(safe-area-inset-right))) !important;
+}
+
+:where([data-sonner-toast][data-styled=true]) {
+  font-size: .875rem !important;
+}
+
+@keyframes _8Uqw45mc {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes jKZaTf7E {
+  0% {
+    background: var(--espejo-nav-bar-background-color);
+    transform: rotateX(0);
+  }
+
+  50% {
+    transform: rotateX(90deg);
+  }
+
+  to {
+    transform: rotateX(0);
+  }
+}
+
+@keyframes _3hPXkkXz {
+  0% {
+    background-color: hsla(0,0%,87%,.3);
+  }
+
+  50% {
+    background-color: hsla(0,0%,87%,.5);
+  }
+
+  to {
+    background-color: hsla(0,0%,87%,.3);
+  }
+}
+
+@keyframes GoEJijGg {
+  0% {
+    background-color: hsla(0,0%,47%,.3);
+  }
+
+  50% {
+    background-color: hsla(0,0%,47%,.5);
+  }
+
+  to {
+    background-color: hsla(0,0%,47%,.3);
+  }
+}
+
+@keyframes bZ7WJ3c3 {
+  0% {
+    background-color: hsla(0,0%,87%,.3);
+  }
+
+  50% {
+    background-color: hsla(0,0%,87%,.5);
+  }
+
+  to {
+    background-color: hsla(0,0%,87%,.3);
+  }
+}
+
+@keyframes wZq\+943V {
+  0% {
+    transform: translateY(0);
+  }
+
+  8% {
+    transform: translateY(0);
+  }
+
+  10% {
+    transform: translateY(-2rem);
+  }
+
+  18% {
+    transform: translateY(-2rem);
+  }
+
+  20% {
+    transform: translateY(-4rem);
+  }
+
+  28% {
+    transform: translateY(-4rem);
+  }
+
+  30% {
+    transform: translateY(-6rem);
+  }
+
+  38% {
+    transform: translateY(-6rem);
+  }
+
+  40% {
+    transform: translateY(-8rem);
+  }
+
+  48% {
+    transform: translateY(-8rem);
+  }
+
+  50% {
+    transform: translateY(-10rem);
+  }
+
+  58% {
+    transform: translateY(-10rem);
+  }
+
+  60% {
+    transform: translateY(-12rem);
+  }
+
+  68% {
+    transform: translateY(-12rem);
+  }
+
+  70% {
+    transform: translateY(-14rem);
+  }
+
+  78% {
+    transform: translateY(-14rem);
+  }
+
+  80% {
+    transform: translateY(-16rem);
+  }
+
+  88% {
+    transform: translateY(-16rem);
+  }
+
+  90% {
+    transform: translateY(-18rem);
+  }
+
+  98% {
+    transform: translateY(-18rem);
+  }
+
+  to {
+    transform: translateY(-20rem);
+  }
+}
+
+@keyframes rcHqgaqK {
+  0% {
+    background-color: hsla(0,0%,87%,.3);
+  }
+
+  50% {
+    background-color: hsla(0,0%,87%,.5);
+  }
+
+  to {
+    background-color: hsla(0,0%,87%,.3);
+  }
+}
+
+*,
+:after,
+:before {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif,"Segoe UI",Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+}
+
+body {
+  margin: 0;
+}
+
+hr {
+  color: inherit;
+  height: 0;
+}
+
+abbr[title] {
+  text-decoration: underline;
+  -webkit-text-decoration: underline dotted;
+  text-decoration: underline dotted;
+}
+
+b,
+strong {
+  font-weight: bolder;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+  font-size: 1em;
+}
+
+small {
+  font-size: 80%;
+}
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -.25em;
+}
+
+sup {
+  top: -.5em;
+}
+
+table {
+  border-color: inherit;
+  text-indent: 0;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15;
+  margin: 0;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+[type=button],
+[type=reset],
+[type=submit],
+button {
+  -webkit-appearance: button;
+}
+
+::-moz-focus-inner {
+  border-style: none;
+  padding: 0;
+}
+
+:-moz-focusring {
+  outline: 1px dotted ButtonText;
+}
+
+:-moz-ui-invalid {
+  box-shadow: none;
+}
+
+legend {
+  padding: 0;
+}
+
+progress {
+  vertical-align: baseline;
+}
+
+::-webkit-inner-spin-button,
+::-webkit-outer-spin-button {
+  height: auto;
+}
+
+[type=search] {
+  -webkit-appearance: textfield;
+  outline-offset: -2px;
+}
+
+::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+::-webkit-file-upload-button {
+  -webkit-appearance: button;
+  font: inherit;
+}
+
+summary {
+  display: list-item;
+}
+
+:root {
+  --espejo-page-font-size-var: 15px;
+  --espejo-page-font-family-var: "Pretendard JP",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR","NanumBarunGothic",Roboto,"Segoe UI","Malgun Gothic","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol",sans-serif,emoji;
+  --espejo-page-font-weight-var: 400;
+  --espejo-layout-gutter-var: 1rem;
+  --espejo-card-gutter-var: 1.25rem;
+  --espejo-content-gutter-var: 1rem;
+  --espejo-card-border-width-var: 1px;
+  --espejo-card-border-radius-var: 6px;
+  --espejo-button-border-width-var: 1px;
+  --espejo-button-border-radius-var: 0.3rem;
+  --espejo-button-gutter-x-var: 0.75rem;
+  --espejo-button-gutter-y-var: 0.25rem;
+  --espejo-nav-bar-height-var: 3.5rem;
+  --espejo-nav-bar-gutter-left-var: max(env(safe-area-inset-left,0),1rem);
+  --espejo-nav-bar-gutter-right-var: max(env(safe-area-inset-right,0),1rem);
+  --espejo-nav-bar-gutter-y-var: 0.5rem;
+  --espejo-nav-bar-border-width-var: 1px;
+  --espejo-nav-bar-brand-gap-var: 1rem;
+  --espejo-nav-bar-child-radius-var: 4px;
+  --espejo-nav-bar-menu-item-gutter-var: 0.75rem;
+  --espejo-nav-bar-menu-item-gap-var: 0.5rem;
+  --espejo-nav-bar-menu-icon-size-var: 1rem;
+  --espejo-nav-bar-menu-icon-size-large-var: 1.2rem;
+  --espejo-nav-bar-menu-icon-gap-var: 0.75rem;
+  --espejo-nav-bar-menu-font-size-var: 1.05rem;
+  --espejo-nav-bar-menu-font-weight-var: 500;
+  --espejo-nav-bar-image-menu-item-gutter-var: 0.5rem;
+  --espejo-nav-bar-image-height-var: 2.5rem;
+  --espejo-search-box-width-var: 20rem;
+  --espejo-search-box-height-var: 2.5rem;
+  --espejo-search-box-gap-var: 0.5rem;
+  --espejo-search-box-gutter-left-var: 0;
+  --espejo-search-box-gutter-right-var: 0;
+  --espejo-search-box-button-width-var: 2.25rem;
+  --espejo-search-box-left-button-width-var: 2.5rem;
+  --espejo-search-box-suggest-gap-top-var: 0.75rem;
+  --espejo-search-box-suggest-gutter-left-var: 0.25rem;
+  --espejo-search-box-suggest-gutter-right-var: 0.25rem;
+  --espejo-search-box-suggest-item-gutter-x-var: 0.5rem;
+  --espejo-search-box-suggest-item-gutter-y-var: 0.5rem;
+  --espejo-site-notice-gap-left-var: 0;
+  --espejo-site-notice-gap-right-var: 0;
+  --espejo-site-notice-gutter-x-var: 0.75rem;
+  --espejo-site-notice-gutter-y-var: 0.75rem;
+  --espejo-dropdown-menu-gutter-x-var: 0;
+  --espejo-dropdown-menu-gutter-y-var: 0.25rem;
+  --espejo-dropdown-menu-gap-top-var: 0.25rem;
+  --espejo-dropdown-menu-gap-x-var: 0.25rem;
+  --espejo-dropdown-menu-item-gutter-x-var: 0.75rem;
+  --espejo-dropdown-menu-item-gutter-y-var: 0.375rem;
+  --espejo-dropdown-menu-item-gutter-y-tight-var: 0.3125rem;
+  --espejo-dropdown-menu-item-gap-x-var: 0.25rem;
+  --espejo-dropdown-menu-item-gap-y-var: 0.125rem;
+  --espejo-dropdown-menu-item-gap-y-tight-var: 0;
+  --espejo-dropdown-menu-item-border-radius-var: 4px;
+  --espejo-dropdown-menu-item-icon-gap-var: 0.75rem;
+  --espejo-dropdown-menu-item-icon-gap-tight-var: 0.35rem;
+  --espejo-dropdown-menu-header-gutter-x-var: 1rem;
+  --espejo-dropdown-menu-header-gutter-top-var: 0.375rem;
+  --espejo-dropdown-menu-header-gutter-bottom-var: 0.125rem;
+  --espejo-sidebar-width-var: 320px;
+  --espejo-sidebar-item-gutter-left-var: 1.25rem;
+  --espejo-sidebar-item-gutter-right-var: 1.25rem;
+  --espejo-sidebar-item-gutter-bottom-var: 1rem;
+  --espejo-article-min-height-var: 50rem;
+  --espejo-article-gutter-left-var: 1.5rem;
+  --espejo-article-gutter-right-var: 1.5rem;
+  --espejo-article-gutter-y-var: 1.5rem;
+  --espejo-article-seperator-width-var: 1px;
+  --espejo-article-seperator-gap-var: 1.5rem;
+  --espejo-article-title-gutter-bottom-var: 1.5rem;
+  --espejo-article-wiki-title-gutter-bottom-var: 1.5rem;
+  --espejo-nav-control-gutter-x-var: 2.5rem;
+  --espejo-nav-control-gutter-y-var: 2rem;
+  --espejo-nav-control-gap-var: 0.75rem;
+  --espejo-nav-control-item-width-var: 2.5rem;
+  --espejo-nav-control-item-height-var: 2.5rem;
+  --espejo-nav-control-toc-popup-width-var: 320px;
+  --espejo-nav-control-toc-popup-max-height-var: 28rem;
+}
+
+@media screen and (max-width:1199.98px) {
+  :root {
+    --espejo-sidebar-width-var: 280px;
+    --espejo-nav-control-toc-popup-width-var: 280px;
+  }
+}
+
+@media screen and (max-width:1023.98px) {
+  :root {
+    --espejo-layout-gutter-var: 0;
+    --espejo-card-gutter-var: 1rem;
+    --espejo-content-gutter-var: 0;
+    --espejo-nav-bar-height-var: 3rem;
+    --espejo-nav-bar-brand-gap-var: 0.5rem;
+    --espejo-nav-bar-menu-item-gap-var: 0;
+    --espejo-nav-bar-image-height-var: 2rem;
+    --espejo-search-box-gap-var: 0;
+    --espejo-search-box-gutter-left-var: env(safe-area-inset-left,0);
+    --espejo-search-box-gutter-right-var: env(safe-area-inset-right,0);
+    --espejo-search-box-button-width-var: 2rem;
+    --espejo-search-box-left-button-width-var: 2.25rem;
+    --espejo-search-box-suggest-gutter-left-var: max(env(safe-area-inset-left,0),0.25rem);
+    --espejo-search-box-suggest-gutter-right-var: max(env(safe-area-inset-right,0),0.25rem);
+    --espejo-site-notice-gap-left-var: env(safe-area-inset-left,0);
+    --espejo-site-notice-gap-right-var: env(safe-area-inset-right,0);
+    --espejo-sidebar-item-gutter-left-var: calc(env(safe-area-inset-left, 0) + 1rem);
+    --espejo-sidebar-item-gutter-right-var: calc(env(safe-area-inset-right, 0) + 1rem);
+    --espejo-article-gutter-left-var: calc(env(safe-area-inset-left, 0) + 1rem);
+    --espejo-article-gutter-right-var: calc(env(safe-area-inset-right, 0) + 1rem);
+    --espejo-article-gutter-y-var: 1rem;
+    --espejo-article-title-gutter-bottom-var: 1.25rem;
+    --espejo-article-wiki-title-gutter-bottom-var: 1rem;
+    --espejo-nav-control-gutter-x-var: 1.5rem;
+    --espejo-nav-control-gutter-y-var: 1.5rem;
+    --espejo-nav-control-gap-var: 0.5rem;
+  }
+}
+
+@media screen and (max-width:727.98px) {
+  :root {
+    --espejo-card-gutter-var: 0.75rem;
+    --espejo-nav-bar-gutter-left-var: max(env(safe-area-inset-left,0),0.5rem);
+    --espejo-nav-bar-gutter-right-var: max(env(safe-area-inset-right,0),0.5rem);
+    --espejo-article-min-height-var: 35rem;
+    --espejo-article-gutter-left-var: calc(env(safe-area-inset-left, 0) + 0.75rem);
+    --espejo-article-gutter-right-var: calc(env(safe-area-inset-right, 0) + 0.75rem);
+    --espejo-article-gutter-y-var: 0.75rem;
+    --espejo-article-title-gutter-bottom-var: 1rem;
+    --espejo-article-wiki-title-gutter-bottom-var: 0.75rem;
+    --espejo-nav-control-toc-popup-width-var: 16rem;
+    --espejo-nav-control-toc-popup-max-height-var: 32rem;
+  }
+}
+
+@media screen and (max-width:371.98px) {
+  :root {
+    --espejo-nav-control-toc-popup-width-var: 14rem;
+  }
+}
+
+@media screen and (max-width:319.98px) {
+  :root {
+    --espejo-button-border-width-var: 1px;
+    --espejo-button-border-radius-var: 0.3rem;
+    --espejo-button-gutter-x-var: 0.5rem;
+    --espejo-button-gutter-y-var: 0.15rem;
+    --espejo-nav-bar-height-var: 2.5rem;
+    --espejo-nav-bar-gutter-left-var: max(env(safe-area-inset-left,0),0.25rem);
+    --espejo-nav-bar-gutter-right-var: max(env(safe-area-inset-right,0),0.25rem);
+    --espejo-nav-bar-brand-gap-var: 0.25rem;
+    --espejo-nav-bar-menu-item-gutter-var: 0.5rem;
+    --espejo-nav-bar-menu-item-gap-var: 0;
+    --espejo-nav-bar-menu-icon-size-var: 0.85rem;
+    --espejo-nav-bar-menu-icon-size-large-var: 1rem;
+    --espejo-nav-bar-menu-icon-gap-var: 0.5rem;
+    --espejo-nav-bar-image-height-var: 1.75rem;
+    --espejo-search-box-height-var: 2rem;
+    --espejo-search-box-button-width-var: 1.75rem;
+    --espejo-search-box-left-button-width-var: 2rem;
+    --espejo-article-min-height-var: none;
+  }
+}
+
+@media print {
+  :root {
+    --espejo-card-border-width-var: 0;
+    --espejo-card-border-radius-var: 0;
+    --espejo-article-min-height-var: initial;
+    --espejo-article-gutter-left-var: 0;
+    --espejo-article-gutter-right-var: 0;
+    --espejo-article-gutter-y-var: 0;
+    --espejo-article-seperator-gap-var: 1.5rem;
+    --espejo-article-title-gutter-bottom-var: 1.5rem;
+  }
+}
+
+body {
+  --article-padding-x: var(--espejo-article-gutter-left-var);
+  --article-padding-y: var(--espejo-article-gutter-y-var);
+  --toast-area-offset-x: calc(var(--espejo-nav-control-gutter-x-var) + env(safe-area-inset-right) - 0.5rem);
+  --toast-area-offset-y: calc(var(--espejo-nav-control-gutter-y-var) + env(safe-area-inset-bottom) + 6rem);
+}
+
+:root {
+  --brand-color-1: var(--espejo-brand1-color);
+  --brand-color-2: var(--espejo-brand2-color);
+  --brand-bright-color-1: var(--espejo-brand-bright1-color);
+  --brand-bright-color-2: var(--espejo-brand-bright2-color);
+  --light-text-color: #212529;
+  --dark-text-color: #e0e0e0;
+  --text-color: var(--espejo-text-color);
+  --light-text-secondary-color: rgba(33,37,41,.749);
+  --dark-text-secondary-color: hsla(0,0%,88%,.749);
+  --text-secondary-color: var(--espejo-text-secondary-color);
+  --light-link-color: #0275d8;
+  --dark-link-color: #ec9f19;
+  --link-color: var(--espejo-link-color);
+  --light-article-background-color: #fff;
+  --dark-article-background-color: #1c1d1f;
+  --article-background-color: var(--espejo-card-background-color);
+  --espejo-background-color: light-dark(#f5f5f5,#000);
+  --espejo-text-color: light-dark(#212529,#e0e0e0);
+  --espejo-text-secondary-color: light-dark(rgba(33,37,41,.749),hsla(0,0%,88%,.749));
+  --espejo-text-tertiary-color: light-dark(rgba(33,37,41,.502),hsla(0,0%,88%,.502));
+  --espejo-text-quaternary-color: light-dark(rgba(33,37,41,.353),hsla(0,0%,88%,.353));
+  --espejo-text-light-color: #212529;
+  --espejo-link-color: light-dark(#0275d8,#ec9f19);
+  --espejo-link-hover-color: light-dark(#0263b8,#bd7f14);
+  --espejo-link-external-color: light-dark(#377e21,#377e21);
+  --espejo-highlight-color: light-dark(rgba(231,227,23,.5),rgba(233,230,18,.3));
+  --espejo-white-color: light-dark(#fff,#000);
+  --espejo-black-color: light-dark(#000,#fff);
+  --espejo-danger-color: light-dark(#d64a58,#d64a58);
+  --espejo-danger-hover-color: light-dark(#ab3b46,#ab3b46);
+  --espejo-pink-color: light-dark(#db2777,#be185d);
+  --espejo-brand1-color: light-dark(#00a69c,#2e3033);
+  --espejo-brand2-color: light-dark(#28b472,#2e3033);
+  --espejo-brand-bright1-color: light-dark(#bfe9d5,#c0c1c2);
+  --espejo-brand-bright2-color: light-dark(#d4f0e3,#c0c1c2);
+  --espejo-card-background-color: light-dark(#fff,#1c1d1f);
+  --espejo-card-border-color: light-dark(#ccc,#444);
+  --espejo-component-background-color: light-dark(#fff,#000);
+  --espejo-component-background-focus-color: light-dark(#f2f2f2,#262626);
+  --espejo-component-border-color: light-dark(#ced4da,#444);
+  --espejo-component-border-focus-color: light-dark(#878a8d,#888);
+  --espejo-button-background-color: light-dark(#fff,#000);
+  --espejo-button-background-disabled-color: light-dark(#f7f7f7,#1f1f1f);
+  --espejo-button-background-secondary-color: light-dark(#a2a2a2,#050505);
+  --espejo-button-background-active-color: light-dark(#d4f0e3,#325e4a);
+  --espejo-button-background-danger-color: #d64a58;
+  --espejo-button-background-hover-color: light-dark(#efefef,#1e1e1e);
+  --espejo-button-background-secondary-hover-color: light-dark(#aaa,#1d1d1d);
+  --espejo-button-background-active-hover-color: light-dark(#c9e4d8,#2d5543);
+  --espejo-button-background-danger-hover-color: #c1434f;
+  --espejo-button-background-focus-color: light-dark(#f3f3f3,#0a0a0a);
+  --espejo-button-background-secondary-focus-color: light-dark(#a7a7a7,#141414);
+  --espejo-button-background-active-focus-color: light-dark(#cee9dc,#305946);
+  --espejo-button-background-danger-focus-color: #c74552;
+  --espejo-button-border-color: light-dark(#dadada,#3e3e3e);
+  --espejo-button-border-hover-color: light-dark(#c5c5c5,#4a4a4a);
+  --espejo-button-border-focus-color: light-dark(#c5c5c5,#4d4d4d);
+  --espejo-nav-bar-background-color: light-dark(linear-gradient(90deg,#00a69c,#00a69c,#28b472),linear-gradient(#2e3033));
+  --espejo-nav-bar-text-color: light-dark(#fff,#fff);
+  --espejo-nav-bar-item-hover-color: hsla(0,0%,100%,.1);
+  --espejo-nav-bar-border-color: light-dark(#ccc,#444);
+  --espejo-site-notice-background-color: light-dark(#fefc8c,#181800);
+  --espejo-site-notice-icon-background-color: light-dark(#e5e37e,#2e2e00);
+  --espejo-article-title-namespace-underline-color: light-dark(#d4f0e3,rgba(212,240,227,.3));
+  --espejo-article-menu-background-color: light-dark(#fff,#2e2e2e);
+  --espejo-toc-map-item-background-1-color: light-dark(#5a5a5a,#c2c2c2);
+  --espejo-toc-map-item-background-2-color: light-dark(#5a5a5a,#c2c2c2);
+  --espejo-toc-map-item-background-3-color: light-dark(#8c8c8c,#888);
+  --espejo-toc-map-item-background-4-color: light-dark(#adadad,#616161);
+  --espejo-toc-map-item-background-5-color: light-dark(#bdbdbd,#4e4e4e);
+  --espejo-toc-map-item-background-6-color: light-dark(#bdbdbd,#4e4e4e);
+  --espejo-toc-map-item-background-hover-1-color: light-dark(#404040,#d5d5d5);
+  --espejo-toc-map-item-background-hover-2-color: light-dark(#404040,#d5d5d5);
+  --espejo-toc-map-item-background-hover-3-color: light-dark(#797979,#959595);
+  --espejo-toc-map-item-background-hover-4-color: light-dark(#a0a0a0,#6b6b6b);
+  --espejo-toc-map-item-background-hover-5-color: light-dark(#b3b3b3,#555);
+  --espejo-toc-map-item-background-hover-6-color: light-dark(#b3b3b3,#555);
+  --espejo-nav-control-background-color: light-dark(#1aafa6,#2e3033);
+  --espejo-nav-control-text-color: light-dark(#fff,#fff);
+  --espejo-nav-control-border-color: light-dark(rgba(206,212,218,.5),rgba(68,68,68,.5));
+}
+
+@media print {
+  :root {
+    --espejo-background-color: initial;
+    --espejo-card-background-color: initial;
+  }
+}
+
+body {
+  --brand-color-1: var(--espejo-brand1-color);
+  --brand-color-2: var(--espejo-brand2-color);
+  --brand-bright-color-1: var(--espejo-brand-bright1-color);
+  --brand-bright-color-2: var(--espejo-brand-bright2-color);
+  --light-text-color: #212529;
+  --dark-text-color: #e0e0e0;
+  --text-color: var(--espejo-text-color);
+  --light-text-secondary-color: rgba(33,37,41,.749);
+  --dark-text-secondary-color: hsla(0,0%,88%,.749);
+  --text-secondary-color: var(--espejo-text-secondary-color);
+  --light-link-color: #0275d8;
+  --dark-link-color: #ec9f19;
+  --link-color: var(--espejo-link-color);
+  --light-article-background-color: #fff;
+  --dark-article-background-color: #1c1d1f;
+  --article-background-color: var(--espejo-card-background-color);
+}
+
+body {
+  background-color: light-dark(#f5f5f5,#000);
+  background-color: var(--espejo-background-color);
+  color: light-dark(#212529,#e0e0e0);
+  color: var(--espejo-text-color);
+  font-display: swap;
+  font-family: "Pretendard JP",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR","NanumBarunGothic",Roboto,"Segoe UI","Malgun Gothic","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol",sans-serif,emoji;
+  font-family: var(--espejo-page-font-family-var);
+  font-size: 15px;
+  font-size: var(--espejo-page-font-size-var);
+  font-weight: 400;
+  font-weight: var(--espejo-page-font-weight-var);
+  line-height: 1.5;
+  min-width: 240px;
+}
+
+a {
+  color: light-dark(#0275d8,#ec9f19);
+  color: var(--espejo-link-color);
+  -webkit-text-decoration: none;
+  text-decoration: none;
+}
+
+a,
+a:hover {
+  transition: color .05s ease-in;
+}
+
+a:hover {
+  color: light-dark(#0263b8,#bd7f14);
+  color: var(--espejo-link-hover-color);
+  -webkit-text-decoration: underline;
+  text-decoration: underline;
+}
+
+pre {
+  overflow: auto;
+}
+
+input[type=search] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+:focus {
+  outline: none;
+}
+
+::-moz-focus-inner {
+  border: 0;
+}

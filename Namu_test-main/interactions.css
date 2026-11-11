@@ -1,0 +1,46 @@
+.wiki[data-wiki] {
+  --nm-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --nm-collapse-duration: 200ms;
+}
+
+.wiki[data-wiki] .nm-footnote-preview {
+  position: fixed;
+  inset: auto;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 16px));
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid light-dark(#ccc, #555);
+  border-radius: 3px;
+  background: light-dark(#fff, #2d2f34);
+  color: light-dark(#212529, #e8e6e3);
+  box-shadow: 0 3px 12px #0003;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transition: opacity 125ms var(--nm-ease-out);
+}
+
+.wiki[data-wiki] .nm-footnote-preview[data-visible] {
+  opacity: 1;
+}
+
+.wiki[data-wiki] .nm-footnote-preview .footnote-list {
+  margin: 0;
+  word-break: normal;
+}
+
+.wiki[data-wiki] .nm-footnote-preview :focus-visible {
+  outline: 2px solid light-dark(#0275d8, #80bfff);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiki[data-wiki] {
+    --nm-collapse-duration: 0ms;
+  }
+}
