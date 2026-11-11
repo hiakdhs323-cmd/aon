@@ -198,8 +198,6 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .article-footer{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding:10px 0 0;border-top:1px solid var(--wiki-border);color:var(--wiki-muted);font-size:11px}
 .site-footer{margin:12px 0 30px;padding-top:9px;border-top:1px solid var(--wiki-border);color:var(--wiki-muted);font-size:11px}
 
-/* Document rendering is owned by namumark-aon.css / Namu_test-main. */
-
 /* Category directory, recent changes, backlinks and history */
 .category-index-heading{margin:0 0 18px}
 .category-eyebrow{margin:0 0 5px;color:var(--wiki-muted);font-size:11px;font-weight:700}
