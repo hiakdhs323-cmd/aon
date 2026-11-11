@@ -308,26 +308,26 @@ html[data-theme="dark"] .official-status{border-color:#356f68;background:#203b38
 .wiki-toc li{padding:0}
 .wiki-toc .toc-level-h3{margin-left:16px}
 .wiki-toc .toc-level-h4,.wiki-toc .toc-level-h5,.wiki-toc .toc-level-h6{margin-left:32px}
-.wiki-content .opennamu_TOC{
+.wiki-content .namumark_legacy_TOC{
   display:table;min-width:190px;max-width:100%;margin:0 0 18px;padding:8px 14px;
   border:1px solid var(--wiki-border-strong);border-radius:2px;
   background:var(--wiki-panel);color:var(--wiki-text);font-size:13px;line-height:1.7
 }
-.wiki-content .opennamu_TOC_title{display:block;margin:0 0 4px;text-align:center;font-weight:700}
-.wiki-content .opennamu_TOC_list{display:inline-block;line-height:1.7}
-.wiki-content .opennamu_TOC_fold{
+.wiki-content .namumark_legacy_TOC_title{display:block;margin:0 0 4px;text-align:center;font-weight:700}
+.wiki-content .namumark_legacy_TOC_list{display:inline-block;line-height:1.7}
+.wiki-content .namumark_legacy_TOC_fold{
   display:table;min-width:190px;max-width:100%;margin:0 0 18px;
   border:1px solid var(--wiki-border-strong);border-radius:2px;background:var(--wiki-panel-soft)
 }
-.wiki-content .opennamu_TOC_fold>summary{padding:7px 12px;color:var(--wiki-link);font-weight:700;text-align:center;cursor:pointer}
-.wiki-content .opennamu_TOC_fold .opennamu_TOC{display:block;min-width:0;margin:0;border:0;border-top:1px solid var(--wiki-border)}
+.wiki-content .namumark_legacy_TOC_fold>summary{padding:7px 12px;color:var(--wiki-link);font-weight:700;text-align:center;cursor:pointer}
+.wiki-content .namumark_legacy_TOC_fold .namumark_legacy_TOC{display:block;min-width:0;margin:0;border:0;border-top:1px solid var(--wiki-border)}
 .wiki-footnotes{margin-top:24px;padding-top:9px;border-top:1px solid var(--wiki-border-strong);font-size:12px;line-height:1.6}
 .wiki-footnotes h2{margin:0 0 7px;padding:0;border:0;font-size:15px;font-weight:700}
 .wiki-footnotes ol{margin:0;padding-left:24px}
 .wiki-footnotes li{padding:2px 0}
 .footnote-back{margin-left:5px;font-size:11px}
-.wiki-content .opennamu_footnote{margin-top:22px;padding:9px 0;border-top:1px solid var(--wiki-border-strong);font-size:12px;line-height:1.6}
-.wiki-content .opennamu_footnote a{font-size:12px}
+.wiki-content .namumark_legacy_footnote{margin-top:22px;padding:9px 0;border-top:1px solid var(--wiki-border-strong);font-size:12px;line-height:1.6}
+.wiki-content .namumark_legacy_footnote a{font-size:12px}
 .wiki-footnote-trigger{position:relative;cursor:pointer}
 .wiki-footnote-ref{color:var(--wiki-link);font-size:.8em;vertical-align:super}
 .wiki-footnote-tooltip{
@@ -347,8 +347,8 @@ html[data-theme="dark"] .official-status{border-color:#356f68;background:#203b38
 .wiki-categories-label{margin-right:6px;color:var(--wiki-text);font-weight:700}
 .wiki-categories a{padding:0;border:0;background:transparent;color:var(--wiki-link);font-size:12px}
 .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
-.wiki-content .opennamu_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
-.wiki-content .opennamu_category a{margin:0 4px}
+.wiki-content .namumark_legacy_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
+.wiki-content .namumark_legacy_category a{margin:0 4px}
 .wiki-spoiler{border-radius:2px;background:var(--wiki-text);color:var(--wiki-text);cursor:pointer}
 .wiki-spoiler:hover,.wiki-spoiler:focus{color:var(--wiki-panel)}
 .wiki-content sup,.wiki-content sub{line-height:0}
@@ -357,9 +357,9 @@ html[data-theme="dark"] .official-status{border-color:#356f68;background:#203b38
 .wiki-content .wiki-left{text-align:left}
 .wiki-content .wiki-clear{clear:both}
 .wiki-content .wiki-stylebox{margin:8px 0}
-.wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited{color:var(--wiki-danger);text-decoration:underline;text-decoration-color:rgba(198,40,40,.35);text-underline-offset:2px}
-.wiki-content a.opennamu_not_exist_link:hover{color:var(--wiki-danger);text-decoration-thickness:2px}
-.wiki-content table a.opennamu_not_exist_link,.wiki-content table a.opennamu_not_exist_link:visited{color:var(--wiki-danger)!important;text-decoration:underline;text-decoration-color:rgba(198,40,40,.45);text-underline-offset:2px}
+.wiki-content a.namumark_legacy_not_exist_link,.wiki-content a.namumark_legacy_not_exist_link:visited{color:var(--wiki-danger);text-decoration:underline;text-decoration-color:rgba(198,40,40,.35);text-underline-offset:2px}
+.wiki-content a.namumark_legacy_not_exist_link:hover{color:var(--wiki-danger);text-decoration-thickness:2px}
+.wiki-content table a.namumark_legacy_not_exist_link,.wiki-content table a.namumark_legacy_not_exist_link:visited{color:var(--wiki-danger)!important;text-decoration:underline;text-decoration-color:rgba(198,40,40,.45);text-underline-offset:2px}
 
 /* Category directory, recent changes, backlinks and history */
 .category-index-heading{margin:0 0 18px}
@@ -549,17 +549,17 @@ html[data-theme="dark"] .protection-status{background:var(--wiki-warning-bg);bor
 html[data-theme="dark"] .protection-notice{background:var(--wiki-warning-bg);border-color:var(--wiki-warning-border);border-left-color:#d0a72c;color:var(--wiki-text)}
 html[data-theme="dark"] .protection-reason{border-color:var(--wiki-warning-border);color:var(--wiki-muted)}
 html[data-theme="dark"] .notice{background:var(--wiki-panel-soft);border-color:var(--wiki-border);color:var(--wiki-muted)}
-html[data-theme="dark"] .wiki-content blockquote,html[data-theme="dark"] .wiki-content pre,
-html[data-theme="dark"] .wiki-content code,html[data-theme="dark"] .wiki-content th,
-html[data-theme="dark"] .wiki-content .wiki-toc,html[data-theme="dark"] .wiki-content .opennamu_TOC,
-html[data-theme="dark"] .wiki-content .opennamu_TOC_fold{background:var(--wiki-panel-soft);border-color:var(--wiki-border);color:var(--wiki-text)}
-html[data-theme="dark"] .wiki-content th,html[data-theme="dark"] .wiki-content td{border-color:var(--wiki-border-strong)}
-html[data-theme="dark"] .wiki-content h1{border-color:var(--wiki-text)}
-html[data-theme="dark"] .wiki-content h2{border-color:var(--wiki-border-strong)}
-html[data-theme="dark"] .wiki-content h3,html[data-theme="dark"] .wiki-content h4{border-color:var(--wiki-border)}
-html[data-theme="dark"] .wiki-content hr{border-top-color:var(--wiki-border-strong)}
-html[data-theme="dark"] .wiki-footnotes,html[data-theme="dark"] .wiki-content .opennamu_footnote,
-html[data-theme="dark"] .wiki-categories,html[data-theme="dark"] .wiki-content .opennamu_category{border-color:var(--wiki-border-strong)}
+html[data-theme="dark"] .legacy-wiki-content blockquote,html[data-theme="dark"] .legacy-wiki-content pre,
+html[data-theme="dark"] .legacy-wiki-content code,html[data-theme="dark"] .legacy-wiki-content th,
+html[data-theme="dark"] .legacy-wiki-content .wiki-toc,html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_TOC,
+html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_TOC_fold{background:var(--wiki-panel-soft);border-color:var(--wiki-border);color:var(--wiki-text)}
+html[data-theme="dark"] .legacy-wiki-content th,html[data-theme="dark"] .legacy-wiki-content td{border-color:var(--wiki-border-strong)}
+html[data-theme="dark"] .legacy-wiki-content h1{border-color:var(--wiki-text)}
+html[data-theme="dark"] .legacy-wiki-content h2{border-color:var(--wiki-border-strong)}
+html[data-theme="dark"] .legacy-wiki-content h3,html[data-theme="dark"] .legacy-wiki-content h4{border-color:var(--wiki-border)}
+html[data-theme="dark"] .legacy-wiki-content hr{border-top-color:var(--wiki-border-strong)}
+html[data-theme="dark"] .wiki-footnotes,html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_footnote,
+html[data-theme="dark"] .wiki-categories,html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_category{border-color:var(--wiki-border-strong)}
 html[data-theme="dark"] .wiki-footnote-tooltip{background:var(--wiki-panel);border-color:var(--wiki-border-strong);color:var(--wiki-text)}
 html[data-theme="dark"] .category-parent-line,html[data-theme="dark"] .revision-diff,
 html[data-theme="dark"] .file-manager-row,html[data-theme="dark"] .history-version-row{background:var(--wiki-panel);border-color:var(--wiki-border)}
@@ -589,7 +589,7 @@ html[data-theme="dark"] .mk-file,html[data-theme="dark"] .mk-category,html[data-
 html[data-theme="dark"] .mk-template,html[data-theme="dark"] .mk-size,html[data-theme="dark"] .mk-script-text{color:#e7bd86}
 html[data-theme="dark"] .mk-include,html[data-theme="dark"] .mk-directive,html[data-theme="dark"] .mk-include-target{color:#c5a0ed}
 html[data-theme="dark"] .mk-content{color:var(--wiki-text)}
-html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link:visited{color:#ff7777}
+html[data-theme="dark"] .legacy-wiki-content a.namumark_legacy_not_exist_link,html[data-theme="dark"] .legacy-wiki-content a.namumark_legacy_not_exist_link:visited{color:#ff7777}
 
 /* Tablet and mobile */
 @media(max-width:900px){
@@ -647,7 +647,7 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
   .wiki-content h4{font-size:16px;margin-top:17px}
   .wiki-content table{font-size:12px}
   .wiki-content th,.wiki-content td{padding:4px 6px}
-  .wiki-toc,.wiki-content .opennamu_TOC,.wiki-content .opennamu_TOC_fold{max-width:100%;min-width:0}
+  .wiki-toc,.wiki-content .namumark_legacy_TOC,.wiki-content .namumark_legacy_TOC_fold{max-width:100%;min-width:0}
   .category-groups{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .category-entry{font-size:12px}
   .file-manager-list{grid-template-columns:1fr}
@@ -752,8 +752,8 @@ html[data-theme="dark"] .wiki-content a.opennamu_not_exist_link,html[data-theme=
 .wiki-content table{color:var(--wiki-text)}
 .wiki-content th,.wiki-content td{color:inherit}
 .wiki-content .wiki-table-wrap,.wiki-content .table_safe,.wiki-content .wiki-table-scroll{color:var(--wiki-text)}
-html[data-theme="dark"] .wiki-content table{border-color:var(--wiki-border-strong)}
-html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
+html[data-theme="dark"] .legacy-wiki-content table{border-color:var(--wiki-border-strong)}
+html[data-theme="dark"] .legacy-wiki-content th{background:var(--wiki-panel-soft)}
 
 /* Links inside tables retain the wiki link palette instead of inheriting cell text colors. */
 .wiki-content table td a,
@@ -819,8 +819,8 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
   border:0 !important;
   border-top:1px solid var(--wiki-border-strong) !important;
 }
-#article.wiki-content .opennamu_TOC,
-#article.wiki-content .opennamu_TOC_fold {
+#article.wiki-content .namumark_legacy_TOC,
+#article.wiki-content .namumark_legacy_TOC_fold {
   margin:8px 0 12px !important;
   padding:6px 12px 8px !important;
   line-height:1.35 !important;
@@ -839,7 +839,7 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
  display:block !important; visibility:visible !important; width:100% !important; height:0 !important;
  margin:16px 0 !important; padding:0 !important; border:0 !important; border-top:1px solid var(--wiki-border-strong) !important;
 }
-#article.wiki-content .opennamu_TOC,#article.wiki-content .opennamu_TOC_fold {
+#article.wiki-content .namumark_legacy_TOC,#article.wiki-content .namumark_legacy_TOC_fold {
  margin-top:4px !important; margin-bottom:8px !important; padding-top:4px !important; padding-bottom:6px !important; line-height:1.3 !important;
 }
 
@@ -928,27 +928,27 @@ html[data-theme="dark"] .wiki-content th{background:var(--wiki-panel-soft)}
 /* Requested article typography, compact collapsible TOC and missing include links */
 #article.wiki-content{font-size:14px!important}
 #article.wiki-content :where(p,li,td,th,blockquote){font-size:14px!important}
-.wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited{color:var(--wiki-danger)!important;text-decoration:underline;text-decoration-color:currentColor}
-.wiki-content .opennamu_TOC{font-size:12px;line-height:1.5}
-.wiki-content .opennamu_TOC>summary{font-size:12px;cursor:pointer;list-style:none}
-.wiki-content .opennamu_TOC>summary::-webkit-details-marker{display:none}
-.wiki-content .opennamu_TOC>summary::marker{content:""}
-.wiki-content .opennamu_TOC>summary:after{content:"▾";float:right;font-size:11px;color:var(--wiki-muted)}
-.wiki-content .opennamu_TOC:not([open])>summary:after{content:"▸"}
-.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_list{font-size:12px;line-height:1.5}
+.wiki-content a.namumark_legacy_not_exist_link,.wiki-content a.namumark_legacy_not_exist_link:visited{color:var(--wiki-danger)!important;text-decoration:underline;text-decoration-color:currentColor}
+.wiki-content .namumark_legacy_TOC{font-size:12px;line-height:1.5}
+.wiki-content .namumark_legacy_TOC>summary{font-size:12px;cursor:pointer;list-style:none}
+.wiki-content .namumark_legacy_TOC>summary::-webkit-details-marker{display:none}
+.wiki-content .namumark_legacy_TOC>summary::marker{content:""}
+.wiki-content .namumark_legacy_TOC>summary:after{content:"▾";float:right;font-size:11px;color:var(--wiki-muted)}
+.wiki-content .namumark_legacy_TOC:not([open])>summary:after{content:"▸"}
+.wiki-content .namumark_legacy_TOC_contents,.wiki-content .namumark_legacy_TOC_list{font-size:12px;line-height:1.5}
 
 
 /* Parser/editor release */
-.wiki-content .opennamu_TOC{display:table;width:max-content;min-width:0;max-width:100%;margin:0 0 16px;padding:6px 10px;font-size:12px;line-height:1.5}
-.wiki-content .opennamu_TOC>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0;padding:1px 2px;font-size:12px;line-height:1.5;cursor:pointer;list-style:none;user-select:none}
-.wiki-content .opennamu_TOC>summary::-webkit-details-marker{display:none}
-.wiki-content .opennamu_TOC>summary::marker{content:""}
-.wiki-content .opennamu_TOC_toggle{display:inline-block;flex:0 0 auto;width:12px;text-align:center;color:var(--wiki-muted)}
-.wiki-content .opennamu_TOC_toggle::before{content:"▸"}
-.wiki-content .opennamu_TOC[open]>.opennamu_TOC_title .opennamu_TOC_toggle::before{content:"▾"}
-.wiki-content .opennamu_TOC_contents,.wiki-content .opennamu_TOC_contents *,.wiki-content .opennamu_TOC_list{font-size:12px;line-height:1.5}
-.wiki-content .opennamu_TOC_contents{padding-top:5px;overflow-wrap:anywhere}
-.wiki-content a.opennamu_not_exist_link,.wiki-content a.opennamu_not_exist_link:visited,.wiki-content table a.opennamu_not_exist_link{color:var(--wiki-danger)!important;text-decoration:underline!important;text-decoration-color:currentColor!important}
+.wiki-content .namumark_legacy_TOC{display:table;width:max-content;min-width:0;max-width:100%;margin:0 0 16px;padding:6px 10px;font-size:12px;line-height:1.5}
+.wiki-content .namumark_legacy_TOC>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0;padding:1px 2px;font-size:12px;line-height:1.5;cursor:pointer;list-style:none;user-select:none}
+.wiki-content .namumark_legacy_TOC>summary::-webkit-details-marker{display:none}
+.wiki-content .namumark_legacy_TOC>summary::marker{content:""}
+.wiki-content .namumark_legacy_TOC_toggle{display:inline-block;flex:0 0 auto;width:12px;text-align:center;color:var(--wiki-muted)}
+.wiki-content .namumark_legacy_TOC_toggle::before{content:"▸"}
+.wiki-content .namumark_legacy_TOC[open]>.namumark_legacy_TOC_title .namumark_legacy_TOC_toggle::before{content:"▾"}
+.wiki-content .namumark_legacy_TOC_contents,.wiki-content .namumark_legacy_TOC_contents *,.wiki-content .namumark_legacy_TOC_list{font-size:12px;line-height:1.5}
+.wiki-content .namumark_legacy_TOC_contents{padding-top:5px;overflow-wrap:anywhere}
+.wiki-content a.namumark_legacy_not_exist_link,.wiki-content a.namumark_legacy_not_exist_link:visited,.wiki-content table a.namumark_legacy_not_exist_link{color:var(--wiki-danger)!important;text-decoration:underline!important;text-decoration-color:currentColor!important}
 .wiki-content .table_safe,.wiki-content .wiki-table-wrap,.wiki-content .wiki-table-scroll,.wiki-content .wiki-table{box-sizing:border-box;min-width:0;max-width:100%}
 .wiki-content .table_safe .wiki-table-wrap,.wiki-content .wiki-table-wrap .table_safe{overflow:visible}
 #editor-highlight .mk-syntax{color:#cf222e;font-weight:650}
@@ -1052,8 +1052,8 @@ html[data-theme="dark"] .diff-remove{background:#4a2227;color:#ffb4b4}
 
 
 /* The complete TOC entry, including its title, is one link. */
-.wiki-content .opennamu_TOC_link{display:inline-block;color:var(--wiki-link);text-decoration:none}
-.wiki-content .opennamu_TOC_link:hover,.wiki-content .opennamu_TOC_link:focus{
+.wiki-content .namumark_legacy_TOC_link{display:inline-block;color:var(--wiki-link);text-decoration:none}
+.wiki-content .namumark_legacy_TOC_link:hover,.wiki-content .namumark_legacy_TOC_link:focus{
   color:var(--wiki-link-hover);text-decoration:underline
 }
 
@@ -1548,23 +1548,23 @@ html[data-theme="dark"] .template-status{
 }
 .wiki-content table td[style*="background"],
 .wiki-content table th[style*="background"]{color:inherit}
-html[data-theme="dark"] .wiki-content table{
+html[data-theme="dark"] .legacy-wiki-content table{
   border-color:#f0f0f0;
   background:#232323;
 }
-html[data-theme="dark"] .wiki-content table th{
+html[data-theme="dark"] .legacy-wiki-content table th{
   background:#2d3034;
   color:#f4f4f4;
   border-color:#44484d;
 }
-html[data-theme="dark"] .wiki-content table td{
+html[data-theme="dark"] .legacy-wiki-content table td{
   background:transparent;
   color:#f4f4f4;
   border-color:#44484d;
 }
-html[data-theme="dark"] .wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
-html[data-theme="dark"] .wiki-content table td[style*="background"],
-html[data-theme="dark"] .wiki-content table th[style*="background"]{border-color:#44484d}
+html[data-theme="dark"] .legacy-wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
+html[data-theme="dark"] .legacy-wiki-content table td[style*="background"],
+html[data-theme="dark"] .legacy-wiki-content table th[style*="background"]{border-color:#44484d}
 @media(max-width:700px){
   .wiki-content th,.wiki-content td{padding:6px 8px}
 }
@@ -2210,39 +2210,39 @@ html[data-theme="light"] .discussion-empty{
   #article.wiki-content .wiki-table-wrap,
   #article.wiki-content .table_safe,
   #article.wiki-content .wiki-table-scroll{max-width:100%;overflow-x:auto}
-  #article.wiki-content .opennamu_TOC{
+  #article.wiki-content .namumark_legacy_TOC{
     display:block;width:100%;min-width:0;max-width:100%;
     margin:0 0 15px;padding:0;border:1px solid var(--wiki-border-strong);
     border-radius:5px;background:var(--wiki-panel);overflow:hidden;
     font-size:12px;line-height:1.65
   }
-  #article.wiki-content .opennamu_TOC_title{
+  #article.wiki-content .namumark_legacy_TOC_title{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     min-height:39px;margin:0;padding:8px 11px;
     border:0;background:var(--wiki-panel-soft);color:var(--wiki-text);
     text-align:left;font-size:13px;font-weight:700;cursor:pointer;list-style:none
   }
-  #article.wiki-content .opennamu_TOC_title::-webkit-details-marker{display:none}
-  #article.wiki-content .opennamu_TOC_title::after{
+  #article.wiki-content .namumark_legacy_TOC_title::-webkit-details-marker{display:none}
+  #article.wiki-content .namumark_legacy_TOC_title::after{
     content:"⌄";flex:0 0 auto;color:var(--wiki-muted);font-size:17px;line-height:1
   }
-  #article.wiki-content .opennamu_TOC:not([open])>.opennamu_TOC_title::after{content:"›";font-size:19px}
-  #article.wiki-content .opennamu_TOC_contents{
+  #article.wiki-content .namumark_legacy_TOC:not([open])>.namumark_legacy_TOC_title::after{content:"›";font-size:19px}
+  #article.wiki-content .namumark_legacy_TOC_contents{
     padding:8px 11px 10px;
     border-top:1px solid var(--wiki-border);font-size:12px;line-height:1.65
   }
-  #article.wiki-content .opennamu_TOC_contents a{font-size:12px;line-height:1.65}
-  #article.wiki-content .opennamu_TOC_list{display:inline;font-size:12px;line-height:1.65}
-  #article.wiki-content .opennamu_TOC_fold{
+  #article.wiki-content .namumark_legacy_TOC_contents a{font-size:12px;line-height:1.65}
+  #article.wiki-content .namumark_legacy_TOC_list{display:inline;font-size:12px;line-height:1.65}
+  #article.wiki-content .namumark_legacy_TOC_fold{
     display:block;width:100%;min-width:0;max-width:100%;
     margin:0 0 15px;border:1px solid var(--wiki-border-strong);border-radius:5px;
     background:var(--wiki-panel);overflow:hidden
   }
-  #article.wiki-content .opennamu_TOC_fold>summary{
+  #article.wiki-content .namumark_legacy_TOC_fold>summary{
     min-height:39px;padding:8px 11px;background:var(--wiki-panel-soft);
     color:var(--wiki-text);font-size:13px;text-align:left
   }
-  #article.wiki-content .opennamu_TOC_fold .opennamu_TOC{border-top:1px solid var(--wiki-border);border-radius:0}
+  #article.wiki-content .namumark_legacy_TOC_fold .namumark_legacy_TOC{border-top:1px solid var(--wiki-border);border-radius:0}
   .global-rail{display:flex;flex-direction:column;gap:9px;margin:12px}
   .rail-panel{border-radius:5px}
   .rail-list{max-height:260px;overflow-y:auto}
@@ -2262,57 +2262,57 @@ html[data-theme="light"] .discussion-empty{
 }
 
 /* Collapsible table of contents - full-width, touch-friendly disclosure row */
-.wiki-content .opennamu_TOC{
+.wiki-content .namumark_legacy_TOC{
   display:block;width:fit-content;min-width:220px;max-width:100%;
   margin:0 0 17px;padding:0;overflow:hidden;
   border:1px solid var(--wiki-border-strong);border-radius:5px;
   background:var(--wiki-panel);color:var(--wiki-text)
 }
-.wiki-content .opennamu_TOC_title{
+.wiki-content .namumark_legacy_TOC_title{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   min-height:38px;margin:0;padding:8px 12px;
   background:var(--wiki-panel-soft);color:var(--wiki-text);
   font-size:13px;font-weight:700;text-align:left;cursor:pointer;list-style:none
 }
-.wiki-content .opennamu_TOC_title::-webkit-details-marker{display:none}
-.wiki-content .opennamu_TOC_title::after{
+.wiki-content .namumark_legacy_TOC_title::-webkit-details-marker{display:none}
+.wiki-content .namumark_legacy_TOC_title::after{
   content:"⌄";flex:0 0 auto;color:var(--wiki-muted);font-size:17px;line-height:1
 }
-.wiki-content .opennamu_TOC:not([open])>.opennamu_TOC_title::after{content:"›";font-size:19px}
-.wiki-content .opennamu_TOC_contents{
+.wiki-content .namumark_legacy_TOC:not([open])>.namumark_legacy_TOC_title::after{content:"›";font-size:19px}
+.wiki-content .namumark_legacy_TOC_contents{
   padding:8px 12px 10px;border-top:1px solid var(--wiki-border);
   color:var(--wiki-text);font-size:12px;line-height:1.65
 }
-.wiki-content .opennamu_TOC_contents a{color:var(--wiki-link)}
-html[data-theme="light"] .wiki-content .opennamu_TOC{
+.wiki-content .namumark_legacy_TOC_contents a{color:var(--wiki-link)}
+html[data-theme="light"] .legacy-wiki-content .namumark_legacy_TOC{
   background:#fff;border-color:#cbd2d8;color:#20252a
 }
-html[data-theme="light"] .wiki-content .opennamu_TOC_title{
+html[data-theme="light"] .legacy-wiki-content .namumark_legacy_TOC_title{
   background:#f1f3f5;color:#20252a
 }
-html[data-theme="light"] .wiki-content .opennamu_TOC_contents{
+html[data-theme="light"] .legacy-wiki-content .namumark_legacy_TOC_contents{
   background:#fff;color:#252b30;border-color:#d8dde2
 }
-html[data-theme="dark"] .wiki-content .opennamu_TOC{
+html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_TOC{
   background:#151515;border-color:#51565c;color:#f2f3f4
 }
-html[data-theme="dark"] .wiki-content .opennamu_TOC_title{
+html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_TOC_title{
   background:#2b2e32;color:#f2f3f4
 }
-html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
+html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_TOC_contents{
   background:#151515;color:#f2f3f4;border-color:#3b3f43
 }
 @media(max-width:560px){
-  .wiki-content .opennamu_TOC{
+  .wiki-content .namumark_legacy_TOC{
     display:block;width:100%;min-width:0;max-width:100%;
     margin-bottom:14px;border-radius:5px
   }
-  .wiki-content .opennamu_TOC_title{min-height:40px;padding:9px 11px;font-size:13px}
-  .wiki-content .opennamu_TOC_contents{padding:8px 11px 10px;font-size:12px;line-height:1.7}
+  .wiki-content .namumark_legacy_TOC_title{min-height:40px;padding:9px 11px;font-size:13px}
+  .wiki-content .namumark_legacy_TOC_contents{padding:8px 11px 10px;font-size:12px;line-height:1.7}
 }
 
 /* The summary row uses a single CSS chevron; hide the legacy inline icon. */
-.wiki-content .opennamu_TOC_toggle{display:none!important}
+.wiki-content .namumark_legacy_TOC_toggle{display:none!important}
 
 @media(max-width:560px){
   .wiki-content .wiki-float-host{width:100%!important}
@@ -2334,7 +2334,7 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
   margin:0 0 12px 16px;
   max-width:48%;
 }
-.wiki-content .opennamu_TOC{
+.wiki-content .namumark_legacy_TOC{
   display:table;
   width:fit-content;
   min-width:220px;
@@ -2344,13 +2344,13 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
   margin:0 0 17px;
   vertical-align:top;
 }
-.wiki-content .opennamu_TOC>summary.opennamu_TOC_title::after{
+.wiki-content .namumark_legacy_TOC>summary.namumark_legacy_TOC_title::after{
   content:"⌄";
 }
-.wiki-content .opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+.wiki-content .namumark_legacy_TOC:not([open])>summary.namumark_legacy_TOC_title::after{
   content:"›";
 }
-.wiki-content .opennamu_TOC_toggle{display:none!important}
+.wiki-content .namumark_legacy_TOC_toggle{display:none!important}
 @media(max-width:700px){
   .wiki-content .wiki-float-host,
   .wiki-content .wiki-float-table{
@@ -2362,7 +2362,7 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
     margin:12px 0;
   }
   .wiki-content .wiki-float-table{display:table;table-layout:auto}
-  .wiki-content .opennamu_TOC{
+  .wiki-content .namumark_legacy_TOC{
     display:block;
     width:100%;
     min-width:0;
@@ -2372,7 +2372,7 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
 }
 
 /* NamuWiki-style category bar with accessible +/- disclosure. */
-.wiki-content .opennamu_category{
+.wiki-content .namumark_legacy_category{
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -2389,7 +2389,7 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
   font-size:12px;
   line-height:1.55;
 }
-.wiki-content .opennamu_category_button{
+.wiki-content .namumark_legacy_category_button{
   display:inline-flex;
   flex:0 0 auto;
   align-items:center;
@@ -2401,11 +2401,11 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
   font-weight:700;
   text-decoration:none;
 }
-.wiki-content .opennamu_category_button:hover{text-decoration:underline}
-.wiki-content .opennamu_category_label{flex:0 0 auto;margin-right:1px;color:var(--wiki-text);font-weight:700}
-.wiki-content .opennamu_category_links{display:inline;min-width:0}
-.wiki-content .opennamu_category_links[hidden]{display:none!important}
-.wiki-content .opennamu_category_links a{
+.wiki-content .namumark_legacy_category_button:hover{text-decoration:underline}
+.wiki-content .namumark_legacy_category_label{flex:0 0 auto;margin-right:1px;color:var(--wiki-text);font-weight:700}
+.wiki-content .namumark_legacy_category_links{display:inline;min-width:0}
+.wiki-content .namumark_legacy_category_links[hidden]{display:none!important}
+.wiki-content .namumark_legacy_category_links a{
   display:inline;
   margin:0;
   padding:0;
@@ -2415,14 +2415,14 @@ html[data-theme="dark"] .wiki-content .opennamu_TOC_contents{
   font-size:12px;
   overflow-wrap:anywhere;
 }
-html[data-theme="light"] .wiki-content .opennamu_category{
+html[data-theme="light"] .legacy-wiki-content .namumark_legacy_category{
   background:#fff;border-color:#cbd2d8;color:#20252a
 }
-html[data-theme="light"] .wiki-content .opennamu_category_label{color:#20252a}
-html[data-theme="dark"] .wiki-content .opennamu_category{
+html[data-theme="light"] .legacy-wiki-content .namumark_legacy_category_label{color:#20252a}
+html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_category{
   background:#151515;border-color:#51565c;color:#f2f3f4
 }
-html[data-theme="dark"] .wiki-content .opennamu_category_label{color:#f2f3f4}
+html[data-theme="dark"] .legacy-wiki-content .namumark_legacy_category_label{color:#f2f3f4}
 
 /* Table renderer: table, row, column and cell colors inherit without being
    painted over by a generic cell background. Inline NamuMark colors win. */
@@ -2473,14 +2473,14 @@ html[data-theme="dark"] .wiki-content .opennamu_category_label{color:#f2f3f4}
 }
 .wiki-content .wiki-float-host table,
 .wiki-content .wiki-float-table{table-layout:auto}
-html[data-theme="light"] .wiki-content table{background:#fff;color:#20252a}
-html[data-theme="light"] .wiki-content th,
-html[data-theme="light"] .wiki-content td{border-color:#cbd2d8;color:inherit;background:transparent}
-html[data-theme="light"] .wiki-content caption{color:#20252a}
-html[data-theme="dark"] .wiki-content table{background:#151515;color:#f2f3f4}
-html[data-theme="dark"] .wiki-content th,
-html[data-theme="dark"] .wiki-content td{border-color:#51565c;color:inherit;background:transparent}
-html[data-theme="dark"] .wiki-content caption{color:#f2f3f4}
+html[data-theme="light"] .legacy-wiki-content table{background:#fff;color:#20252a}
+html[data-theme="light"] .legacy-wiki-content th,
+html[data-theme="light"] .legacy-wiki-content td{border-color:#cbd2d8;color:inherit;background:transparent}
+html[data-theme="light"] .legacy-wiki-content caption{color:#20252a}
+html[data-theme="dark"] .legacy-wiki-content table{background:#151515;color:#f2f3f4}
+html[data-theme="dark"] .legacy-wiki-content th,
+html[data-theme="dark"] .legacy-wiki-content td{border-color:#51565c;color:inherit;background:transparent}
+html[data-theme="dark"] .legacy-wiki-content caption{color:#f2f3f4}
 @media(max-width:700px){
   .wiki-content .table_safe,
   .wiki-content .wiki-table-wrap,
@@ -2491,7 +2491,7 @@ html[data-theme="dark"] .wiki-content caption{color:#f2f3f4}
   }
   .wiki-content table{font-size:12px}
   .wiki-content th,.wiki-content td{padding:5px 7px}
-  .wiki-content .opennamu_category{padding:6px 7px}
+  .wiki-content .namumark_legacy_category{padding:6px 7px}
 }
 
 /* =========================================================
@@ -2501,7 +2501,7 @@ html[data-theme="dark"] .wiki-content caption{color:#f2f3f4}
 
 /* Category strip: plain "분류:" line, no legacy plus/minus widget. */
 /* Category bar: boxed "분류: 항목 | 항목" layout. */
-#article.wiki-content .opennamu_category{
+#article.wiki-content .namumark_legacy_category{
   display:flex;align-items:center;flex-wrap:wrap;gap:0 6px;
   box-sizing:border-box;width:100%;min-width:0;
   margin:10px 0 12px;padding:6px 9px;
@@ -2509,27 +2509,27 @@ html[data-theme="dark"] .wiki-content caption{color:#f2f3f4}
   background:var(--wiki-panel);color:var(--wiki-text);
   font-size:12px;line-height:1.6;
 }
-#article.wiki-content .opennamu_category_label{
+#article.wiki-content .namumark_legacy_category_label{
   display:inline;flex:0 0 auto;margin:0;color:var(--wiki-text);font-weight:700;
 }
-#article.wiki-content .opennamu_category_links{display:inline;min-width:0;overflow-wrap:anywhere}
-#article.wiki-content .opennamu_category_links a{
+#article.wiki-content .namumark_legacy_category_links{display:inline;min-width:0;overflow-wrap:anywhere}
+#article.wiki-content .namumark_legacy_category_links a{
   display:inline;margin:0;padding:0;border:0;background:transparent;
   color:var(--wiki-link);font-size:12px;text-decoration:none;
 }
-#article.wiki-content .opennamu_category_links a:hover{text-decoration:underline}
-html[data-theme="light"] #article.wiki-content .opennamu_category{
+#article.wiki-content .namumark_legacy_category_links a:hover{text-decoration:underline}
+html[data-theme="light"] #article.legacy-wiki-content .namumark_legacy_category{
   background:#fff;border-color:#cbd2d8;color:#20252a;
 }
-html[data-theme="light"] #article.wiki-content .opennamu_category_label{color:#20252a}
-html[data-theme="dark"] #article.wiki-content .opennamu_category{
+html[data-theme="light"] #article.legacy-wiki-content .namumark_legacy_category_label{color:#20252a}
+html[data-theme="dark"] #article.legacy-wiki-content .namumark_legacy_category{
   background:#171a1d;border-color:#515960;color:#e7eaed;
 }
-html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1f3f5}
+html[data-theme="dark"] #article.legacy-wiki-content .namumark_legacy_category_label{color:#f1f3f5}
 
 /* The TOC is a clean disclosure header: no native marker, no glyph icon,
    and only one CSS-drawn chevron. Keep it expanded on first render. */
-#article.wiki-content details.opennamu_TOC{
+#article.wiki-content details.namumark_legacy_TOC{
   display:block!important;
   float:none!important;
   clear:none!important;
@@ -2546,7 +2546,7 @@ html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1
   box-shadow:none!important;
   overflow:visible;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title{
   position:relative;
   display:flex!important;
   align-items:center;
@@ -2573,19 +2573,19 @@ html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1
   outline:none;
   box-shadow:none!important;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::-webkit-details-marker{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title::-webkit-details-marker{
   display:none!important;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::marker{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title::marker{
   content:""!important;
   font-size:0!important;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title:focus,
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title:focus-visible{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title:focus,
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title:focus-visible{
   outline:none!important;
   box-shadow:inset 0 0 0 2px var(--wiki-primary)!important;
 }
-#article.wiki-content .opennamu_TOC_label{
+#article.wiki-content .namumark_legacy_TOC_label{
   display:block;
   flex:1 1 auto;
   min-width:0;
@@ -2593,8 +2593,8 @@ html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1
   color:var(--wiki-text)!important;
   text-align:left!important;
 }
-#article.wiki-content .opennamu_TOC_toggle{display:none!important}
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::after{
+#article.wiki-content .namumark_legacy_TOC_toggle{display:none!important}
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title::after{
   content:"";
   display:block;
   flex:0 0 auto;
@@ -2606,11 +2606,11 @@ html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1
   transform:rotate(45deg);
   transition:transform .16s ease;
 }
-#article.wiki-content details.opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+#article.wiki-content details.namumark_legacy_TOC:not([open])>summary.namumark_legacy_TOC_title::after{
   transform:rotate(-45deg);
   margin-bottom:0;
 }
-#article.wiki-content .opennamu_TOC_contents{
+#article.wiki-content .namumark_legacy_TOC_contents{
   box-sizing:border-box;
   min-width:0;
   max-width:100%;
@@ -2623,19 +2623,19 @@ html[data-theme="dark"] #article.wiki-content .opennamu_category_label{color:#f1
   line-height:1.7!important;
   overflow-wrap:anywhere;
 }
-#article.wiki-content .opennamu_TOC_contents *,
-#article.wiki-content .opennamu_TOC_list,
-#article.wiki-content .opennamu_TOC_link{
+#article.wiki-content .namumark_legacy_TOC_contents *,
+#article.wiki-content .namumark_legacy_TOC_list,
+#article.wiki-content .namumark_legacy_TOC_link{
   font-size:12px!important;
   line-height:1.7!important;
 }
-#article.wiki-content .opennamu_TOC_link{
+#article.wiki-content .namumark_legacy_TOC_link{
   color:var(--wiki-link);
   text-decoration:none;
 }
-#article.wiki-content .opennamu_TOC_link:hover{text-decoration:underline}
-html[data-theme="light"] #article.wiki-content .opennamu_TOC_label{color:#20252a!important}
-html[data-theme="dark"] #article.wiki-content .opennamu_TOC_label{color:#f1f3f5!important}
+#article.wiki-content .namumark_legacy_TOC_link:hover{text-decoration:underline}
+html[data-theme="light"] #article.legacy-wiki-content .namumark_legacy_TOC_label{color:#20252a!important}
+html[data-theme="dark"] #article.legacy-wiki-content .namumark_legacy_TOC_label{color:#f1f3f5!important}
 
 /* Expand/collapse blocks: remove browser marker and replace the old text
    triangle with the same geometric chevron used by the TOC. */
@@ -2742,16 +2742,16 @@ html[data-theme="dark"] #article.wiki-content .opennamu_TOC_label{color:#f1f3f5!
   vertical-align:middle;
   overflow-wrap:anywhere;
 }
-html[data-theme="light"] #article.wiki-content table.wiki-bracket-table th{
+html[data-theme="light"] #article.legacy-wiki-content table.wiki-bracket-table th{
   background:#f1f3f5;color:#20252a;border-color:#cbd2d8;
 }
-html[data-theme="light"] #article.wiki-content table.wiki-bracket-table td{
+html[data-theme="light"] #article.legacy-wiki-content table.wiki-bracket-table td{
   background:#fff;color:#20252a;border-color:#cbd2d8;
 }
-html[data-theme="dark"] #article.wiki-content table.wiki-bracket-table th{
+html[data-theme="dark"] #article.legacy-wiki-content table.wiki-bracket-table th{
   background:#2b3035;color:#f1f3f5;border-color:#515960;
 }
-html[data-theme="dark"] #article.wiki-content table.wiki-bracket-table td{
+html[data-theme="dark"] #article.legacy-wiki-content table.wiki-bracket-table td{
   background:#171a1d;color:#e7eaed;border-color:#515960;
 }
 
@@ -2885,19 +2885,19 @@ html[data-theme="dark"] #editor-highlight .mk-code-fence{color:#a5abb1!important
 /* Responsive article and editor sizing; prevent nested tables and toolbars
    from forcing a wider-than-screen layout. */
 @media(max-width:700px){
-  #article.wiki-content details.opennamu_TOC{
+  #article.wiki-content details.namumark_legacy_TOC{
     display:block!important;
     width:100%;
     min-width:0;
     max-width:100%;
     margin:8px 0 13px!important;
   }
-  #article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title{
+  #article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title{
     min-height:40px;
     padding:9px 4px!important;
     font-size:13px!important;
   }
-  #article.wiki-content .opennamu_TOC_contents{padding:8px 4px!important}
+  #article.wiki-content .namumark_legacy_TOC_contents{padding:8px 4px!important}
   #article.wiki-content details.wiki-fold>summary{
     min-height:40px;
     padding:9px 10px;
@@ -2906,7 +2906,7 @@ html[data-theme="dark"] #editor-highlight .mk-code-fence{color:#a5abb1!important
   #article.wiki-content table.wiki-bracket-table{font-size:12px}
   #article.wiki-content table.wiki-bracket-table th,
   #article.wiki-content table.wiki-bracket-table td{padding:5px 6px}
-  #article.wiki-content .opennamu_category{font-size:12px}
+  #article.wiki-content .namumark_legacy_category{font-size:12px}
   .editor-card{width:100%;max-width:100%;margin:0;border-radius:0}
   .editor-code-wrap{height:min(58dvh,560px);min-height:250px}
   #editor-highlight,#editor-content{font-size:12px;line-height:1.55}
@@ -2930,29 +2930,29 @@ html[data-theme="dark"] #editor-highlight .mk-code-fence{color:#a5abb1!important
 }
 
 /* Final TOC colors: keep a distinct card and filled contents in both themes. */
-#article.wiki-content details.opennamu_TOC,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+#article.wiki-content details.namumark_legacy_TOC,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC{
   background:var(--wiki-panel)!important;
   border:1px solid var(--wiki-border-strong)!important;
   border-radius:4px!important;
 }
-#article.wiki-content details.opennamu_TOC>.opennamu_TOC_title,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_title,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_title{
+#article.wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_title,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_title,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_title{
   background:var(--wiki-panel-soft)!important;
   color:var(--wiki-text)!important;
   border-bottom:1px solid var(--wiki-border)!important;
 }
-#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+#article.wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents{
   background:var(--wiki-panel)!important;
   color:var(--wiki-text)!important;
   padding:8px 10px 10px!important;
 }
 @media(max-width:700px){
-  #article.wiki-content details.opennamu_TOC{
+  #article.wiki-content details.namumark_legacy_TOC{
     display:block!important;width:100%;min-width:0;max-width:100%;
   }
 }
@@ -2987,16 +2987,16 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
 #article.wiki-content details.wiki-fold[open]>summary{
   border-bottom:1px solid var(--wiki-border)!important;
 }
-html[data-theme="light"] #article.wiki-content details.wiki-fold{
+html[data-theme="light"] #article.legacy-wiki-content details.wiki-fold{
   border-color:#cbd2d8;background:#fff;
 }
-html[data-theme="light"] #article.wiki-content details.wiki-fold>summary{
+html[data-theme="light"] #article.legacy-wiki-content details.wiki-fold>summary{
   background:#e9edf1!important;color:#20252a!important;
 }
-html[data-theme="dark"] #article.wiki-content details.wiki-fold{
+html[data-theme="dark"] #article.legacy-wiki-content details.wiki-fold{
   border-color:#51565c;background:#232629;
 }
-html[data-theme="dark"] #article.wiki-content details.wiki-fold>summary{
+html[data-theme="dark"] #article.legacy-wiki-content details.wiki-fold>summary{
   background:#2b2e32!important;color:#f1f3f5!important;
 }
 @media(max-width:700px){
@@ -3016,7 +3016,7 @@ html[data-theme="dark"] #article.wiki-content details.wiki-fold>summary{
 #article.wiki-content table tr[style*="background"]>td,
 #article.wiki-content table tr[style*="background"]>th{background-color:transparent}
 #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:var(--wiki-panel-soft)}
-html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
+html[data-theme="dark"] #article.legacy-wiki-content table tr:nth-child(even):not([style*="background"]){background:#242629}
 
 
 /* Compact, valid spacer rows emitted by the NamuMark table parser. */
@@ -3048,7 +3048,7 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
 #article.wiki-content table tr:nth-child(even):not([style*="background"]):not(.aonwiki-table-spacer){
   background:var(--wiki-panel-soft);
 }
-html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([style*="background"]):not(.aonwiki-table-spacer){
+html[data-theme="dark"] #article.legacy-wiki-content table tr:nth-child(even):not([style*="background"]):not(.aonwiki-table-spacer){
   background:#242629;
 }
 
@@ -3327,8 +3327,8 @@ html[data-theme="dark"] #article.wiki-content table tr:nth-child(even):not([styl
 :root{--wiki-body-link:#00a69c;--wiki-body-link-hover:#43c9b5}
 html[data-theme="dark"]{--wiki-body-link:#35c6ad;--wiki-body-link-hover:#75ddc9}
 html[data-theme="light"]{--wiki-body-link:#008b68;--wiki-body-link-hover:#006d53}
-#article.wiki-content a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"]){color:var(--wiki-body-link);text-decoration:none}
-#article.wiki-content a:not(.opennamu_not_exist_link):not([id*="fn_"]):not([href*="fn_"]):hover{
+#article.wiki-content a:not(.namumark_legacy_not_exist_link):not([id*="fn_"]):not([href*="fn_"]){color:var(--wiki-body-link);text-decoration:none}
+#article.wiki-content a:not(.namumark_legacy_not_exist_link):not([id*="fn_"]):not([href*="fn_"]):hover{
  color:var(--wiki-body-link-hover);text-decoration:underline;text-underline-offset:2px
 }
 #article.wiki-content .wiki-external-link-icon{
@@ -3459,9 +3459,9 @@ button.aon-has-icon{display:inline-flex;justify-content:center}
 
 
 /* Reference-style table of contents: compact bordered panel with separated number/title colors. */
-#article.wiki-content details.opennamu_TOC,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+#article.wiki-content details.namumark_legacy_TOC,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC{
   display:block!important;
   box-sizing:border-box;
   width:fit-content!important;
@@ -3478,9 +3478,9 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   font-size:14px!important;
   line-height:1.55!important;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title{
   display:flex!important;
   align-items:center;
   justify-content:space-between;
@@ -3499,14 +3499,14 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>summary.openn
   cursor:pointer;
   list-style:none!important;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::-webkit-details-marker{display:none!important}
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::marker{content:""!important;font-size:0!important}
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title .opennamu_TOC_label{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title::-webkit-details-marker{display:none!important}
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title::marker{content:""!important;font-size:0!important}
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title .namumark_legacy_TOC_label{
   display:block;flex:1 1 auto;min-width:0;margin:0!important;
   color:var(--wiki-text)!important;text-align:left!important
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title .opennamu_TOC_toggle{display:none!important}
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title::after{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title .namumark_legacy_TOC_toggle{display:none!important}
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title::after{
   content:"";
   display:block;
   flex:0 0 8px;
@@ -3517,13 +3517,13 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>summary.openn
   transform:rotate(45deg);
   transition:transform .15s ease;
 }
-#article.wiki-content details.opennamu_TOC:not([open])>summary.opennamu_TOC_title::after{
+#article.wiki-content details.namumark_legacy_TOC:not([open])>summary.namumark_legacy_TOC_title::after{
   margin-bottom:0;
   transform:rotate(-45deg)
 }
-#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+#article.wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents{
   box-sizing:border-box;
   min-width:0;max-width:100%;
   margin:0!important;
@@ -3535,7 +3535,7 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
   line-height:1.55!important;
   overflow-wrap:anywhere
 }
-#article.wiki-content .opennamu_TOC_entry{
+#article.wiki-content .namumark_legacy_TOC_entry{
   display:block;
   min-width:0;
   margin:0!important;
@@ -3544,38 +3544,38 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
   line-height:1.55!important;
   white-space:normal
 }
-#article.wiki-content .opennamu_TOC_indent{
+#article.wiki-content .namumark_legacy_TOC_indent{
   display:inline-block;
   width:20px;
   height:1px;
   vertical-align:baseline
 }
-#article.wiki-content .opennamu_TOC_link,
-#article.wiki-content .opennamu_TOC_link:visited{
+#article.wiki-content .namumark_legacy_TOC_link,
+#article.wiki-content .namumark_legacy_TOC_link:visited{
   display:inline;
   color:var(--wiki-text)!important;
   font-size:14px!important;
   line-height:1.55!important;
   text-decoration:none!important
 }
-#article.wiki-content .opennamu_TOC_number{
+#article.wiki-content .namumark_legacy_TOC_number{
   color:var(--wiki-link)!important;
   font-size:14px!important;
   font-weight:400;
   font-variant-numeric:tabular-nums
 }
-#article.wiki-content .opennamu_TOC_text{
+#article.wiki-content .namumark_legacy_TOC_text{
   color:var(--wiki-text)!important;
   font-size:14px!important;
   font-weight:400
 }
-#article.wiki-content .opennamu_TOC_link:hover,
-#article.wiki-content .opennamu_TOC_link:focus{
+#article.wiki-content .namumark_legacy_TOC_link:hover,
+#article.wiki-content .namumark_legacy_TOC_link:focus{
   text-decoration:underline!important;
   text-underline-offset:2px
 }
 @media(max-width:700px){
-  #article.wiki-content details.opennamu_TOC{
+  #article.wiki-content details.namumark_legacy_TOC{
     width:fit-content!important;
     min-width:0!important;
     max-width:100%!important
@@ -3584,34 +3584,34 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC>.opennamu_TOC
 
 
 /* Final spacing and fixed compact width to match the supplied TOC reference. */
-#article.wiki-content details.opennamu_TOC,
-html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
-html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+#article.wiki-content details.namumark_legacy_TOC,
+html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC,
+html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC{
   box-sizing:border-box!important;
   width:174px!important;
   min-width:174px!important;
   max-width:100%!important;
 }
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
-#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title,
+#article.wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents{
   padding-left:17px!important;
   padding-right:17px!important;
 }
-#article.wiki-content .opennamu_TOC_entry{
+#article.wiki-content .namumark_legacy_TOC_entry{
   line-height:1.55!important;
 }
-#article.wiki-content .opennamu_TOC_number{
+#article.wiki-content .namumark_legacy_TOC_number{
   margin-right:1px;
 }
-#article.wiki-content .opennamu_TOC_link{
+#article.wiki-content .namumark_legacy_TOC_link{
   white-space:normal!important;
   overflow-wrap:normal;
   word-break:normal;
 }
 @media(max-width:700px){
-  #article.wiki-content details.opennamu_TOC,
-  html[data-theme="light"] #article.wiki-content details.opennamu_TOC,
-  html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
+  #article.wiki-content details.namumark_legacy_TOC,
+  html[data-theme="light"] #article.legacy-wiki-content details.namumark_legacy_TOC,
+  html[data-theme="dark"] #article.legacy-wiki-content details.namumark_legacy_TOC{
     width:min(174px,100%)!important;
     min-width:0!important;
   }
@@ -3619,26 +3619,26 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
 
 
 /* Larger TOC typography while preserving the compact reference panel geometry. */
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title,
-#article.wiki-content details.opennamu_TOC>summary.opennamu_TOC_title .opennamu_TOC_label{
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title,
+#article.wiki-content details.namumark_legacy_TOC>summary.namumark_legacy_TOC_title .namumark_legacy_TOC_label{
   font-size:18px!important;
   line-height:1.4!important;
 }
-#article.wiki-content details.opennamu_TOC>.opennamu_TOC_contents{
+#article.wiki-content details.namumark_legacy_TOC>.namumark_legacy_TOC_contents{
   font-size:15px!important;
   line-height:1.65!important;
 }
-#article.wiki-content .opennamu_TOC_entry,
-#article.wiki-content .opennamu_TOC_link,
-#article.wiki-content .opennamu_TOC_number,
-#article.wiki-content .opennamu_TOC_text{
+#article.wiki-content .namumark_legacy_TOC_entry,
+#article.wiki-content .namumark_legacy_TOC_link,
+#article.wiki-content .namumark_legacy_TOC_number,
+#article.wiki-content .namumark_legacy_TOC_text{
   font-size:15px!important;
   line-height:1.65!important;
 }
 
 
 /* Category label and links follow the compact reference treatment. */
-#article.wiki-content .opennamu_category{
+#article.wiki-content .namumark_legacy_category{
   display:inline-flex!important;
   align-items:center;
   flex-wrap:wrap;
@@ -3655,7 +3655,7 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   font-size:12px!important;
   line-height:1.5!important;
 }
-#article.wiki-content .opennamu_category_label{
+#article.wiki-content .namumark_legacy_category_label{
   display:inline!important;
   flex:0 0 auto;
   margin:0 1px 0 0!important;
@@ -3663,17 +3663,17 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   font-size:12px!important;
   font-weight:500!important;
 }
-#article.wiki-content .opennamu_category_links{
+#article.wiki-content .namumark_legacy_category_links{
   display:inline!important;
   flex:0 1 auto;
   min-width:0;
   color:var(--wiki-text)!important;
   overflow-wrap:anywhere;
 }
-#article.wiki-content .opennamu_category_links a,
-#article.wiki-content .opennamu_category_links a:visited,
-#article.wiki-content .opennamu_category_links a:hover,
-#article.wiki-content .opennamu_category_links a:focus{
+#article.wiki-content .namumark_legacy_category_links a,
+#article.wiki-content .namumark_legacy_category_links a:visited,
+#article.wiki-content .namumark_legacy_category_links a:hover,
+#article.wiki-content .namumark_legacy_category_links a:focus{
   display:inline;
   margin:0!important;
   padding:0!important;
@@ -3684,14 +3684,14 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   font-weight:400;
   text-decoration:none!important;
 }
-#article.wiki-content .opennamu_category_links a:hover,
-#article.wiki-content .opennamu_category_links a:focus{
+#article.wiki-content .namumark_legacy_category_links a:hover,
+#article.wiki-content .namumark_legacy_category_links a:focus{
   color:var(--wiki-link-hover)!important;
   text-decoration:underline!important;
   text-underline-offset:2px;
 }
 @media(max-width:700px){
-  #article.wiki-content .opennamu_category{
+  #article.wiki-content .namumark_legacy_category{
     width:fit-content!important;
     max-width:100%!important;
     padding:3px 7px!important;
@@ -3700,7 +3700,7 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
 
 
 /* Full-width outlined category bar, matching the supplied reference. */
-#article.wiki-content .opennamu_category{
+#article.wiki-content .namumark_legacy_category{
   display:block!important;
   box-sizing:border-box!important;
   width:100%!important;
@@ -3717,23 +3717,23 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   overflow-wrap:anywhere;
   word-break:normal;
 }
-#article.wiki-content .opennamu_category_label{
+#article.wiki-content .namumark_legacy_category_label{
   display:inline!important;
   margin:0 5px 0 0!important;
   color:var(--wiki-text)!important;
   font-size:12px!important;
   font-weight:500!important;
 }
-#article.wiki-content .opennamu_category_links{
+#article.wiki-content .namumark_legacy_category_links{
   display:inline!important;
   min-width:0;
   color:var(--wiki-text)!important;
   overflow-wrap:anywhere;
 }
-#article.wiki-content .opennamu_category_links a,
-#article.wiki-content .opennamu_category_links a:visited,
-#article.wiki-content .opennamu_category_links a:hover,
-#article.wiki-content .opennamu_category_links a:focus{
+#article.wiki-content .namumark_legacy_category_links a,
+#article.wiki-content .namumark_legacy_category_links a:visited,
+#article.wiki-content .namumark_legacy_category_links a:hover,
+#article.wiki-content .namumark_legacy_category_links a:focus{
   display:inline;
   margin:0!important;
   padding:0!important;
@@ -3745,14 +3745,14 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
   text-decoration:none!important;
   overflow-wrap:anywhere;
 }
-#article.wiki-content .opennamu_category_links a:hover,
-#article.wiki-content .opennamu_category_links a:focus{
+#article.wiki-content .namumark_legacy_category_links a:hover,
+#article.wiki-content .namumark_legacy_category_links a:focus{
   color:var(--wiki-link-hover)!important;
   text-decoration:underline!important;
   text-underline-offset:2px;
 }
 @media(max-width:700px){
-  #article.wiki-content .opennamu_category{
+  #article.wiki-content .namumark_legacy_category{
     display:block!important;
     width:100%!important;
     min-width:0!important;
@@ -3761,9 +3761,9 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
     padding:6px 8px!important;
     line-height:1.7!important;
   }
-  #article.wiki-content .opennamu_category_label,
-  #article.wiki-content .opennamu_category_links,
-  #article.wiki-content .opennamu_category_links a{
+  #article.wiki-content .namumark_legacy_category_label,
+  #article.wiki-content .namumark_legacy_category_links,
+  #article.wiki-content .namumark_legacy_category_links a{
     font-size:12px!important;
     line-height:1.7!important;
   }
@@ -4185,10 +4185,10 @@ html[data-theme="dark"] #article.wiki-content details.opennamu_TOC{
 
 
 /* AonWiki compatibility: table-local broken links and real emphasis. */
-.wiki-table a.opennamu_not_exist_link,
-.wiki-bracket-table a.opennamu_not_exist_link,
-.wiki-table .opennamu_not_exist_link,
-.wiki-bracket-table .opennamu_not_exist_link {
+.wiki-table a.namumark_legacy_not_exist_link,
+.wiki-bracket-table a.namumark_legacy_not_exist_link,
+.wiki-table .namumark_legacy_not_exist_link,
+.wiki-bracket-table .namumark_legacy_not_exist_link {
   color: var(--wiki-danger) !important;
 }
 .wiki-table strong,
@@ -4234,16 +4234,17 @@ body{font-size:14px;line-height:1.62}
 .topbar-inner{width:min(1280px,100%);min-height:52px;gap:14px}
 .site-header .brand{gap:8px}
 .site-header .brand-symbol{width:30px;height:30px;flex-basis:30px}
-.site-header .brand-name{font-size:20px;letter-spacing:-.6px}
+.site-header .brand-name{font-size:20px;letter-spacing:-.6px;color:#f3f5f6!important}
+.site-header .brand-name span{color:#f3f5f6!important}
 .top-nav{gap:1px}
 .top-nav-link{
   min-height:52px;
   padding:0 11px;
   color:#cfd3d6;
   font-size:12px;
-  font-weight:600
+  font-weight:600;color:#cfd3d6!important
 }
-.top-nav-link:hover,.top-nav-link.active{background:#1b1e20;color:#fff}
+.top-nav-link:hover,.top-nav-link.active{background:#1b1e20;color:#fff!important}
 .top-nav-link.active{border-bottom-color:#00a69c}
 .searchbar{max-width:390px}
 .searchbar input,.searchbar button{border-color:#4b5054;background:#131516}
@@ -4353,6 +4354,37 @@ html[data-theme="dark"] .article{border-color:#454b50}
 .article-footer{margin-top:10px;padding-top:9px;font-size:10px}
 .site-footer{margin-top:10px;color:#9ca3a7;border-color:#34383c}
 
+/* NamuWiki places document categories above the title block. */
+#article.namumark-wasm-content > .wiki-categories{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:0;
+  margin:0 0 14px;
+  padding:5px 9px;
+  border:1px solid var(--wiki-border-strong);
+  border-radius:4px;
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-muted);
+  font-size:12px;
+  line-height:1.55
+}
+#article.namumark-wasm-content > .wiki-categories .wiki-categories-label{
+  margin-right:5px;
+  color:var(--wiki-text);
+  font-weight:700
+}
+#article.namumark-wasm-content > .wiki-categories a{color:var(--wiki-link)}
+#article.namumark-wasm-content > .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
+
+/* The shell stays dark while the renderer remains responsible for document markup. */
+.protection-notice{background:#fff8e1!important;color:#59451b!important}
+.protection-notice *{color:inherit!important}
+@media(prefers-color-scheme:dark){
+  .protection-notice{background:#332e1e!important;color:#f7e7b0!important}
+}
+html[data-theme="dark"] .protection-notice{background:#332e1e!important;color:#f7e7b0!important}
+
 /* Match the familiar compact wiki typography and link colors. */
 #article.wiki-content .wiki-link-internal,
 #article.wiki-content .wiki-link-auto,
@@ -4407,3 +4439,4 @@ html[data-theme="dark"] .article{border-color:#454b50}
   .article-titlebar{align-items:flex-start}
   .article-titlebar h1{font-size:20px}
 }
+
