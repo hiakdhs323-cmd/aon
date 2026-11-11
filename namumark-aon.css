@@ -826,13 +826,11 @@
   display: none;
 }
 
-/* Browser/renderer color-scheme controls light/dark; AonWiki does not select a theme. */
 .theseed-dark-mode .namumark-wasm-content .wiki-theme-dark {
   display: inline-block;
 }
 
-/* The renderer skin decides which theme asset is visible when its upstream marker is present. */
-.theseed-dark-mode .namumark-wasm-content .wiki-theme-dark {
+.theseed-dark-mode .namumark-wasm-content .wiki-theme-light {
   display: none;
 }
 
