@@ -623,15 +623,14 @@ async function loadChunkedClientRender(data,title){
  for(let offset=0;offset<total;offset+=size)offsets.push(offset);
  const parts=new Array(offsets.length);
  let nextIndex=0;
- const concurrency=Math.min(4,offsets.length);
+ const concurrency=Math.min(3,offsets.length);
  const worker=async()=>{
   while(true){
    const index=nextIndex++;
    if(index>=offsets.length)return;
-   const offset=offsets[index];
-   const end=Math.min(total,offset+size);
+   const offset=offsets[index],end=Math.min(total,offset+size);
    const chunk=await api("/api/render-chunk?title="+encodeURIComponent(title)+"&offset="+offset+"&limit="+(end-offset));
-   if(Number(chunk.offset)!==offset)throw new Error("대용량 문서 청크 위치가 일치하지 않습니다.");
+   if(Number(chunk.offset)!==offset||Number(chunk.total)!==total)throw new Error("대용량 문서 청크 검증에 실패했습니다.");
    parts[index]=String(chunk.chunk||"");
   }
  };
@@ -639,8 +638,6 @@ async function loadChunkedClientRender(data,title){
  const source=parts.join("");
  if(source.length!==total)throw new Error("대용량 문서 청크가 완전하게 불러와지지 않았습니다.");
  data.clientRender={...manifest,source};
- // Large source is now held only in the chunked render payload. This avoids
- // keeping a second full copy in data.page while the article is displayed.
  if(data.page)data.page.content="";
  data.page.contentLength=total;
  return data;
