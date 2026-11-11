@@ -1307,6 +1307,53 @@ function rewriteClientNamuImageUrls(root, imageMap) {
   const id = map[(match[1] + "." + match[2]).toLowerCase()];
   if (id) img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
  });
+ // Match the SSR fallback produced when [[파일:...]] was emitted as a
+ // missing-document anchor instead of an <img>. The same imageMap is already
+ // returned by the Worker, so no extra database request is needed.
+ const hashImageName = value => {
+  let hash = 2166136261;
+  const input = String(value || "");
+  for (let i = 0; i < input.length; i++) {
+   hash ^= input.charCodeAt(i);
+   hash = Math.imul(hash, 16777619);
+  }
+  const parts = [];
+  for (let i = 0; i < 7; i++) {
+   const mixed = Math.imul(hash ^ (2654435769 * (i + 1)), 2246822507);
+   parts.push((mixed >>> 0).toString(16).padStart(8, "0"));
+  }
+  return parts.join("").slice(0, 56);
+ };
+ const decode = value => {
+  const area = document.createElement("textarea");
+  area.innerHTML = String(value || "");
+  return area.value;
+ };
+ root.querySelectorAll('a.wiki-link-internal[title^="파일:"]').forEach(anchor => {
+  const raw = decode(anchor.getAttribute("title") || "").replace(/^파일:/i, "").trim();
+  const dot = raw.lastIndexOf(".");
+  const base = dot > 0 ? raw.slice(0, dot) : raw;
+  const ext = dot > 0 ? raw.slice(dot + 1).toLowerCase() : "jpg";
+  const id = map[(hashImageName(base).toLowerCase() + "." + ext)];
+  if (!id) return;
+  const span = document.createElement("span");
+  span.className = "wiki-image-align-normal";
+  const wrapper = document.createElement("span");
+  wrapper.className = "wiki-image-wrapper";
+  const link = document.createElement("a");
+  link.href = apiBase() + "/media/" + encodeURIComponent(id);
+  link.rel = "nofollow";
+  const img = document.createElement("img");
+  img.className = "wiki-image";
+  img.src = apiBase() + "/media/" + encodeURIComponent(id);
+  img.alt = raw;
+  img.loading = "lazy";
+  img.decoding = "async";
+  link.append(img);
+  wrapper.append(link);
+  span.append(wrapper);
+  anchor.replaceWith(span);
+ });
 }
 function appendSanitizedServerHtml(target,html){
  const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
