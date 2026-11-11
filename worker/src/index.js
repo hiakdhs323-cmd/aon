@@ -908,7 +908,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "namutest-main-v2-assets:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v3-renderer:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -922,7 +922,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       if (stored && stored.source_hash === cacheKey) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
-        const value = { html: String(stored.html || ""), metadata };
+        const value = { html: String(stored.html || ""), metadata, imageMap: metadata.imageMap || {} };
         namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
         return value;
       }
@@ -984,7 +984,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const contrastedHtml = /<table\b/i.test(cleanHtml)
       ? await applyTableTextContrast(cleanHtml)
       : cleanHtml;
-    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsedMetadata };
+    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: { ...parsedMetadata, imageMap: Object.fromEntries(database.imageMap || []) }, imageMap: Object.fromEntries(database.imageMap || []) };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
     if (namuRenderCache.size > 100) {
       const oldest = namuRenderCache.keys().next().value;
@@ -2036,6 +2036,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
               protectionUpdatedAt: page.protectionUpdatedAt || ""
             },
             html: rendered.html,
+            imageMap: rendered.imageMap || {},
             clientRender,
             engine: clientRender ? "namumark-client" : "namumark-worker"
           };
