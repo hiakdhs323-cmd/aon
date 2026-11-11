@@ -1,10 +1,13 @@
-// worker/src/namumark-parser.js
 var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-var urlPas = (data) => {
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+
+// worker/src/namumark-parser.js
+var __defProp2 = Object.defineProperty;
+var __defNormalProp = /* @__PURE__ */ __name((obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value, "__defNormalProp");
+var __publicField = /* @__PURE__ */ __name((obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value), "__publicField");
+var urlPas = /* @__PURE__ */ __name((data) => {
   return encodeURIComponent(data.replace(/^\./g, "\\\\.")).replaceAll("/", "%2F");
-};
+}, "urlPas");
 function sha224Replace(data) {
   let hash = 2166136261;
   for (let i = 0; i < data.length; i++) {
@@ -18,14 +21,17 @@ function sha224Replace(data) {
   }
   return parts.join("").slice(0, 56);
 }
+__name(sha224Replace, "sha224Replace");
 function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
 }
+__name(escapeHtml, "escapeHtml");
 function unescapeHtml(html) {
   return html.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'");
 }
-var globalRegExp = (regexp) => new RegExp(regexp, "g");
-var v4 = () => crypto.randomUUID();
+__name(unescapeHtml, "unescapeHtml");
+var globalRegExp = /* @__PURE__ */ __name((regexp) => new RegExp(regexp, "g"), "globalRegExp");
+var v4 = /* @__PURE__ */ __name(() => crypto.randomUUID(), "v4");
 var skinUseConfig = [
   "useStrike",
   "useBold",
@@ -82,10 +88,11 @@ function splitSafeExpression(input, operator) {
   parts.push(input.slice(start).trim());
   return parts;
 }
+__name(splitSafeExpression, "splitSafeExpression");
 function evaluateSafeNamuIf(expression, pageName) {
   const source = String(expression || "").trim();
   if (!source || source.length > 500) return false;
-  const stripOuter = (input) => {
+  const stripOuter = /* @__PURE__ */ __name((input) => {
     let value = input.trim();
     while (value.startsWith("(") && value.endsWith(")")) {
       let depth = 0, quote = "", closesAtEnd = false;
@@ -110,8 +117,8 @@ function evaluateSafeNamuIf(expression, pageName) {
       value = value.slice(1, -1).trim();
     }
     return value;
-  };
-  const valueOf = (raw) => {
+  }, "stripOuter");
+  const valueOf = /* @__PURE__ */ __name((raw) => {
     const value = stripOuter(raw);
     if (/^(docName|title|pagename)$/i.test(value)) return pageName;
     if (/^true$/i.test(value)) return true;
@@ -121,8 +128,8 @@ function evaluateSafeNamuIf(expression, pageName) {
     const stringMatch = value.match(/^(['"])([\s\S]*)\1$/);
     if (stringMatch) return stringMatch[2];
     return void 0;
-  };
-  const evaluate = (raw, depth = 0) => {
+  }, "valueOf");
+  const evaluate = /* @__PURE__ */ __name((raw, depth = 0) => {
     if (depth > 16) return false;
     const value = stripOuter(raw);
     const ors = splitSafeExpression(value, "||");
@@ -144,10 +151,14 @@ function evaluateSafeNamuIf(expression, pageName) {
     }
     const literal = valueOf(value);
     return literal === true || literal === 1 || typeof literal === "string" && literal.length > 0;
-  };
+  }, "evaluate");
   return evaluate(source);
 }
+__name(evaluateSafeNamuIf, "evaluateSafeNamuIf");
 var NamuMark = class _NamuMark {
+  static {
+    __name(this, "_NamuMark");
+  }
   constructor(wikiText, config, database, doType = "exter") {
     __publicField(this, "renderData", "");
     __publicField(this, "dataTempStorage", {});
@@ -249,7 +260,7 @@ var NamuMark = class _NamuMark {
     });
     __publicField(this, "getToolThemeColorStyle", (property, kind, data) => {
       const values = splitSafeExpression(String(data || ""), ",").map((value) => value.trim()).filter(Boolean);
-      const isColor = (value) => /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i.test(value);
+      const isColor = /* @__PURE__ */ __name((value) => /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\-/ ,]+\))$/i.test(value), "isColor");
       if (!values.length || !values.every(isColor)) return "";
       if (values.length === 1) {
         if (property === "border") return "border:2px solid " + values[0] + ";";
@@ -354,7 +365,7 @@ var NamuMark = class _NamuMark {
     this.renderData = this.renderData.replace(/\n##[^\n]+/g, "\n<front_br>");
   }
   manageIncludeDefault() {
-    const handler = (match, p1, p2, p3) => {
+    const handler = /* @__PURE__ */ __name((match, p1, p2, p3) => {
       const matches = [p1, p2, p3];
       if (typeof matches[2] === "number") {
         matches[2] = "";
@@ -372,7 +383,7 @@ var NamuMark = class _NamuMark {
         }
         return slashAdd + matches[2];
       }
-    };
+    }, "handler");
     this.renderData = this.renderData.replace(/(\\+)?@([ㄱ-힣a-zA-Z0-9_]+)=((?:\\@|[^@\n])+)@/g, handler);
     this.renderData = this.renderData.replace(/(\\+)?@([ㄱ-힣a-zA-Z0-9_]+)@/g, handler);
   }
@@ -436,7 +447,7 @@ var NamuMark = class _NamuMark {
         }
         const includeSubName = this.docSet["docInclude"] + "opennamu_include_" + includeNum;
         this.renderDataJS += 'opennamu_do_include("' + this.getToolJSSafe(includeName) + '", "' + this.getToolJSSafe(this.docName) + '", "' + this.getToolJSSafe(includeSubName) + '", "' + this.getToolJSSafe(includeSubName) + '");\n';
-        const handler = () => {
+        const handler = /* @__PURE__ */ __name(() => {
           return (match2, p1, p2, p3) => {
             const matches2 = [p1, p2, p3];
             if (typeof matches2[2] === "number") {
@@ -460,7 +471,7 @@ var NamuMark = class _NamuMark {
               }
             }
           };
-        };
+        }, "handler");
         result.data = result.data.replace(/(\\+)?@([ㄱ-힣a-zA-Z0-9_]+)=((?:\\@|[^@\n])+)@/g, handler());
         result.data = result.data.replace(/(\\+)?@([ㄱ-힣a-zA-Z0-9_]+)@/g, handler());
         result.data = result.data.replace(/^\n+/g, "");
@@ -480,14 +491,14 @@ var NamuMark = class _NamuMark {
     }
   }
   manageSlash() {
-    const handler = (match, p1) => {
+    const handler = /* @__PURE__ */ __name((match, p1) => {
       if (p1 === "<") {
         return "<";
       } else {
         const dataName = this.getToolDataStorage(p1, void 0, void 0, "slash");
         return `<${dataName}>`;
       }
-    };
+    }, "handler");
     this.renderData = this.renderData.replace(/\\(&lt;|&gt;|&#x27;|&quot;|&amp;|.)/g, handler);
   }
   // re.sub fix
@@ -758,12 +769,12 @@ var NamuMark = class _NamuMark {
       middleCountAll -= 1;
     }
     const interDataRegex = /<(inter_data_[0-9]+)>/g;
-    const replaceInterData = () => {
-      const replaceSub = (match, ...groups) => {
+    const replaceInterData = /* @__PURE__ */ __name(() => {
+      const replaceSub = /* @__PURE__ */ __name((match, ...groups) => {
         let data = interData[groups[0]];
         data = data.replace(interDataRegex, replaceSub);
         return data;
-      };
+      }, "replaceSub");
       return (match, ...groups) => {
         let data = interData[groups[0]];
         data = data.replace(interDataRegex, replaceSub);
@@ -771,12 +782,12 @@ var NamuMark = class _NamuMark {
         interCount += 1;
         return data;
       };
-    };
+    }, "replaceInterData");
     this.renderData = this.renderData.replace(interDataRegex, replaceInterData()).replace(/'<temp_(?<in>(?:slash)_(?:[0-9]+)(?:[^<>]+))>/g, "<$<in>>");
   }
   // re.sub fix
   manageMath() {
-    const handler = (match, p1) => {
+    const handler = /* @__PURE__ */ __name((match, p1) => {
       let data = p1;
       data = this.getToolDataRevert(data.replace(/\n/g, ""));
       let dataHTML = this.getToolJSSafe(data);
@@ -795,7 +806,7 @@ try {
       `;
       this.dataMathCount += 1;
       return `<${dataName}></${dataName}>`;
-    };
+    }, "handler");
     const mathRegex = /\[math\(((?:(?!\[math\(|\)\]).|\n)+)\)\]/gi;
     const mathRegex2 = /&lt;math&gt;((?:(?!&lt;math&gt;|&lt;\/math&gt;).)+)&lt;\/math&gt;/gi;
     this.renderData = this.renderData.replace(mathRegex2, handler);
@@ -819,25 +830,25 @@ try {
       const rows = [];
       let row = [];
       let cell = null;
-      const closeCell = () => {
+      const closeCell = /* @__PURE__ */ __name(() => {
         if (cell) {
           row.push(cell);
           cell = null;
         }
-      };
-      const closeRow = () => {
+      }, "closeCell");
+      const closeRow = /* @__PURE__ */ __name(() => {
         closeCell();
         if (row.length) rows.push(row);
         row = [];
-      };
-      const appendText = (value) => {
+      }, "closeRow");
+      const appendText = /* @__PURE__ */ __name((value) => {
         if (!value) return;
         if (!cell) {
           if (!value.trim()) return;
           cell = { tag: "td", colspan: 1, content: "" };
         }
         cell.content += value;
-      };
+      }, "appendText");
       const tokenRegex = /\[(\/)?(tr|th|td)(?:\s*=\s*(\d+))?\]/gi;
       let cursor = 0;
       let token;
@@ -864,7 +875,7 @@ try {
       appendText(rawBody.slice(cursor));
       closeRow();
       if (!rows.length) return whole;
-      const safeColor = (value) => /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\/\- ,]+\))$/i.test(value);
+      const safeColor = /* @__PURE__ */ __name((value) => /^(?:#[0-9a-f]{3,8}|[a-z]{1,24}|(?:rgba?|hsla?)\([\d.%+\/\- ,]+\))$/i.test(value), "safeColor");
       const wrapperStyles = [];
       const tableStyles = ["border-collapse:collapse", "max-width:100%"];
       const align = String(options.align || options.tablealign || "").toLowerCase();
@@ -906,7 +917,7 @@ try {
   // re.sub fix
   manageTable() {
     this.renderData = this.renderData.replace(/\n +\|\|/g, "\n||");
-    const manageTableParameter = (cellCount, parameter, data) => {
+    const manageTableParameter = /* @__PURE__ */ __name((cellCount, parameter, data) => {
       const tableParameterAll = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: "", colspan: "", rowspan: "", data: "" };
       let tableAlignAuto = 1;
       let tableColspanAuto = 1;
@@ -1004,7 +1015,7 @@ try {
       }
       tableParameterAll["data"] = doAnyThing + data;
       return tableParameterAll;
-    };
+    }, "manageTableParameter");
     const tableRegex = /\n((?:(?:(?:(?:\|\|)+)|(?:\|[^|]+\|(?:\|\|)*))\n?(?:(?:(?!\|\|).)+))(?:(?:\|\||\|\|\n|(?:\|\|)+(?!\n)(?:(?:(?!\|\|).)+)\n*)*)\|\|)\n/s;
     const tableSubRegex = /(\n?)((?:\|\|)+)((?:&lt;(?:(?:(?!&lt;|&gt;).)+)&gt;)*)((?:\n*(?:(?:(?:(?!\|\|).)+)\n*)+)|(?:(?:(?!\|\|).)*))/;
     const tableCaptionRegex = /^\|([^|]+)\|/;
@@ -1025,12 +1036,12 @@ try {
         tableCaption = "";
       }
       const tableParameter = { div: "", class: "", table: "", tableBg: "", tr: "", td: "", col: {}, rowspan: {} };
-      const getTableRowStyle = () => {
+      const getTableRowStyle = /* @__PURE__ */ __name(() => {
         const rowStyle = tableParameter["tr"];
         return /(?:^|;)\s*background(?:-color)?\s*:/i.test(rowStyle) ? rowStyle : tableParameter["tableBg"] + rowStyle;
-      };
+      }, "getTableRowStyle");
       let tableDataEnd = "";
-      const appendTableRow = () => {
+      const appendTableRow = /* @__PURE__ */ __name(() => {
         const rowStyle = getTableRowStyle();
         const rowSpecificStyle = tableParameter["tr"];
         const rowContent = tableParameter["td"];
@@ -1042,7 +1053,7 @@ try {
         const heightMatch = rowSpecificStyle.match(/(?:^|;)\s*height\s*:\s*([^;]+)/i);
         const cellStyle = heightMatch ? "height:" + heightMatch[1].trim() + ";" : "height:1px;";
         tableDataEnd += '<tr class="aonwiki-table-spacer" style="' + rowStyle + '"><td aria-hidden="true" style="' + cellStyle + '"></td></tr>';
-      };
+      }, "appendTableRow");
       let tableColNum = 0;
       let tableTrChange = 0;
       let match;
@@ -1133,6 +1144,7 @@ try {
       }
       return end_text;
     }
+    __name(intToAlpha, "intToAlpha");
     function intToRoman(number) {
       const num = [1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1e3];
       const sym = ["I", "IV", "V", "IX", "X", "XL", "L", "XC", "C", "CD", "D", "CM", "M"];
@@ -1149,6 +1161,7 @@ try {
       }
       return end_text;
     }
+    __name(intToRoman, "intToRoman");
     const useListViewChange = this.config.useListViewChange;
     const listStyle = {
       1: "opennamu_list_1",
@@ -1156,7 +1169,7 @@ try {
       3: "opennamu_list_3",
       4: "opennamu_list_4"
     };
-    const intToMatch = () => {
+    const intToMatch = /* @__PURE__ */ __name(() => {
       const listNum = {};
       return (match, ...groups) => {
         if (groups[3]) {
@@ -1212,7 +1225,7 @@ try {
           return '<li style="margin-left: ' + (listLen - 1) * 20 + 'px;" class="opennamu_list_none">' + changeText + ". " + listData + "</li>";
         }
       };
-    };
+    }, "intToMatch");
     const listRegex = /((?:\n( *)(?:(\*)) ?([^\n]*))+|(?:\n( *)(?:(1|a|A|I|i)\.(?:#([0-9]*))?) ?([^\n]*)){2,})\n/;
     let listCountMax = (this.renderData.match(globalRegExp(listRegex)) || []).length * 3;
     while (true) {
@@ -1236,7 +1249,7 @@ try {
   }
   // re.sub fix
   manageMacro() {
-    const manageMacroDouble = (full, ...match) => {
+    const manageMacroDouble = /* @__PURE__ */ __name((full, ...match) => {
       const matchOriginal = full;
       const nameData = match[0].toLowerCase();
       const macroSplitRegex = /(?:^|,) *([^,]+)/;
@@ -1397,13 +1410,13 @@ try {
       } else {
         return "<macro>" + match[0] + "(" + match[1] + ")</macro>";
       }
-    };
+    }, "manageMacroDouble");
     this.renderData = this.renderData.replace(/\[([^[(\]]+)\(((?:(?!\)\]).)+)\)\]/g, manageMacroDouble);
-    const manageMacroSingle = (full, p1) => {
+    const manageMacroSingle = /* @__PURE__ */ __name((full, p1) => {
       const matchOriginal = full;
       let match = p1.toLowerCase();
       if (["date", "datetime"].includes(match)) {
-        const getTime = () => {
+        const getTime = /* @__PURE__ */ __name(() => {
           const date = /* @__PURE__ */ new Date();
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1412,7 +1425,7 @@ try {
           const minutes = String(date.getMinutes()).padStart(2, "0");
           const seconds = String(date.getSeconds()).padStart(2, "0");
           return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-        };
+        }, "getTime");
         const dataName = this.getToolDataStorage(getTime(), "", matchOriginal);
         return "<" + dataName + "></" + dataName + ">";
       } else if (match === "br") {
@@ -1452,7 +1465,7 @@ try {
         }
         return `<macro>${p1}</macro>`;
       }
-    };
+    }, "manageMacroSingle");
     this.renderData = this.renderData.replace(/\[([^[\]]+)\]/g, manageMacroSingle);
     this.renderData = this.renderData.replaceAll("<macro>", "[");
     this.renderData = this.renderData.replaceAll("</macro>", "]");
@@ -1471,10 +1484,10 @@ try {
         break;
       }
       const linkDataFull = linkDataMatch[0];
-      const replaceCurrentMatch = (replacement) => {
+      const replaceCurrentMatch = /* @__PURE__ */ __name((replacement) => {
         const index = linkDataMatch.index ?? 0;
         this.renderData = this.renderData.slice(0, index) + replacement + this.renderData.slice(index + linkDataFull.length);
-      };
+      }, "replaceCurrentMatch");
       let linkData = linkDataMatch.slice(1);
       let linkMain = linkData[0];
       let linkMainOrg = linkMain;
@@ -1893,7 +1906,7 @@ try {
   }
   // re.sub fix
   manageText() {
-    const doRenderTextBold = (match, ...groups) => {
+    const doRenderTextBold = /* @__PURE__ */ __name((match, ...groups) => {
       const data = groups[0];
       let dataName;
       const useBold = this.config.useBold;
@@ -1905,35 +1918,35 @@ try {
         dataName = this.getToolDataStorage("<b>", "</b>", match);
       }
       return `<${dataName}>${data}</${dataName}>`;
-    };
+    }, "doRenderTextBold");
     this.renderData = this.renderData.replace(/&#x27;&#x27;&#x27;((?:(?!&#x27;&#x27;&#x27;).)+)&#x27;&#x27;&#x27;/g, doRenderTextBold);
-    const doRenderTextItalic = (match, p1) => {
+    const doRenderTextItalic = /* @__PURE__ */ __name((match, p1) => {
       const data = p1;
       const dataName = this.getToolDataStorage("<i>", "</i>", match);
       return `<${dataName}>${data}</${dataName}>`;
-    };
+    }, "doRenderTextItalic");
     this.renderData = this.renderData.replace(/&#x27;&#x27;((?:(?!&#x27;&#x27;).)+)&#x27;&#x27;/g, doRenderTextItalic);
-    const doRenderTextUnder = (match, p1) => {
+    const doRenderTextUnder = /* @__PURE__ */ __name((match, p1) => {
       const data = p1;
       const dataName = this.getToolDataStorage("<u>", "</u>", match);
       return `<${dataName}>${data}</${dataName}>`;
-    };
+    }, "doRenderTextUnder");
     this.renderData = this.renderData.replace(/__((?:(?!__).)+)__/g, doRenderTextUnder);
-    const doRenderTextSup = (match, p1) => {
+    const doRenderTextSup = /* @__PURE__ */ __name((match, p1) => {
       const data = p1;
       const dataName = this.getToolDataStorage("<sup>", "</sup>", match);
       return `<${dataName}>${data}</${dataName}>`;
-    };
+    }, "doRenderTextSup");
     this.renderData = this.renderData.replace(/\^\^\^((?:(?!\^\^\^).)+)\^\^\^/g, doRenderTextSup);
     this.renderData = this.renderData.replace(/\^\^((?:(?!\^\^).)+)\^\^/g, doRenderTextSup);
-    const doRenderTextSub = (match, p1) => {
+    const doRenderTextSub = /* @__PURE__ */ __name((match, p1) => {
       const data = p1;
       const dataName = this.getToolDataStorage("<sub>", "</sub>", match);
       return `<${dataName}>${data}</${dataName}>`;
-    };
+    }, "doRenderTextSub");
     this.renderData = this.renderData.replace(/,,,(?:(?!,,,).)+,,,/g, doRenderTextSub);
     this.renderData = this.renderData.replace(/,,((?:(?!,,).)+),,/g, doRenderTextSub);
-    const doRenderTextStrike = (match, p1) => {
+    const doRenderTextStrike = /* @__PURE__ */ __name((match, p1) => {
       const data = p1;
       let dataName;
       const useStrike = this.config.useStrike;
@@ -1945,7 +1958,7 @@ try {
         dataName = this.getToolDataStorage("<s>", "</s>", match);
       }
       return `<${dataName}>${data}</${dataName}>`;
-    };
+    }, "doRenderTextStrike");
     this.renderData = this.renderData.replace(/--((?:(?!--).)+)--/g, doRenderTextStrike);
     this.renderData = this.renderData.replace(/~~((?:(?!~~).)+)~~/g, doRenderTextStrike);
   }
@@ -2087,7 +2100,7 @@ try {
     this.renderData = this.renderData.replace(/\n/g, "<br>");
     this.renderData = this.getToolDataRestore(this.renderData);
     this.tempALinkCount = 0;
-    const handlerALink = (match, p1) => {
+    const handlerALink = /* @__PURE__ */ __name((match, p1) => {
       const data = p1;
       if (data === "</a>") {
         if (this.tempALinkCount === 0) {
@@ -2108,9 +2121,9 @@ try {
           return match;
         }
       }
-    };
+    }, "handlerALink");
     this.renderData = this.renderData.replace(/(<a(?: [^<>]*)?>|<\/a>)/g, handlerALink);
-    const handlerTocFilter = (match, p1) => {
+    const handlerTocFilter = /* @__PURE__ */ __name((match, p1) => {
       let data = p1.split(" ");
       if (data[0] === "a" || data[0] === "/a") {
         if (data.length > 3 && data[3] != 'href="javascript:void(0);"') {
@@ -2121,12 +2134,12 @@ try {
       } else {
         return "";
       }
-    };
-    const handlerToc = (match, p1) => {
+    }, "handlerTocFilter");
+    const handlerToc = /* @__PURE__ */ __name((match, p1) => {
       let data = p1.replace(/<\/?a(?: [^<>]*)?>/gi, "");
       data = data.replace(/<([^<>]*)>/g, handlerTocFilter);
       return data;
-    };
+    }, "handlerToc");
     if (this.dataToc !== "") {
       this.renderData += "</div>";
       const tocSearchRegex = /<toc_data>((?:(?!<toc_data>|<\/toc_data>).)*)<\/toc_data>/;
@@ -2158,7 +2171,7 @@ try {
       this.renderData = this.renderData.replace(/<toc_need_part(?:_hide)?>/g, "");
       this.renderData = this.renderData.replace(/<toc_no_auto>/g, "");
     }
-    const handlerFootnote = (match, p1) => {
+    const handlerFootnote = /* @__PURE__ */ __name((match, p1) => {
       const findRegex = new RegExp('<footnote_title id="' + p1 + '_title">((?:(?!<footnote_title|</footnote_title>).)*)</footnote_title>');
       let findData = this.renderData.match(findRegex);
       let findDataNew;
@@ -2170,12 +2183,12 @@ try {
       }
       findDataNew = findDataNew.replace(/&(?!#(?:x[0-9a-f]+|[0-9]+);|[a-z][a-z0-9]+;)/gi, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       return '<a title="' + findDataNew + '"';
-    };
+    }, "handlerFootnote");
     this.renderData = this.renderData.replace(/<a fn_target="([^"]+)"/g, handlerFootnote);
     this.renderDataJS += `document.querySelectorAll('details').forEach((el) => {new Accordion(el);});if(window.location.hash !== '' && document.getElementById(window.location.hash.replace(/^#/, ''))) {document.getElementById(window.location.hash.replace(/^#/, '')).focus();}
 opennamu_do_ip_render();
 `;
-    const applyInlineFontSize = (pattern, size, lineHeight = 1.8) => {
+    const applyInlineFontSize = /* @__PURE__ */ __name((pattern, size, lineHeight = 1.8) => {
       this.renderData = this.renderData.replace(pattern, (tag) => {
         const fontStyle = "font-size:" + size + "px !important;line-height:" + lineHeight + " !important;";
         const styleMatch = tag.match(/\sstyle=(["'])([\s\S]*?)\1/i);
@@ -2185,7 +2198,7 @@ opennamu_do_ip_render();
         }
         return tag.replace(/>$/, ' style="' + fontStyle + '">');
       });
-    };
+    }, "applyInlineFontSize");
     const headingSizes = [28, 21, 18, 16, 14, 13];
     headingSizes.forEach((size, index) => {
       applyInlineFontSize(new RegExp("<h" + (index + 1) + "\\b[^>]*>", "gi"), size, 1.4);
@@ -2259,6 +2272,7 @@ function response(data, status = 200, headers = {}) {
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers }
   });
 }
+__name(response, "response");
 function getSecurityHeaders() {
   return {
     "X-Content-Type-Options": "nosniff",
@@ -2273,6 +2287,7 @@ function getSecurityHeaders() {
     "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://aon69446.p-e.kr https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; script-src-elem 'self' https://aon69446.p-e.kr https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://hiakdhs323-cmd.github.io https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' data: blob: https:; frame-src https://www.youtube.com https://youtube.com https://www.instagram.com https://www.facebook.com https://www.tiktok.com https://twitframe.com https://tv.kakao.com https://tv.naver.com https://embed.nicovideo.jp https://player.vimeo.com; connect-src 'self' https://hiakdhs323-cmd.github.io https://aon.hiakdhs323.workers.dev https://aon69446.p-e.kr; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
   };
 }
+__name(getSecurityHeaders, "getSecurityHeaders");
 function getCors(request, env) {
   const origin = request.headers.get("Origin") || "";
   const allowed = (env.ALLOWED_ORIGIN || "https://hiakdhs323-cmd.github.io").split(",").map((v) => v.trim()).filter(Boolean);
@@ -2286,9 +2301,11 @@ function getCors(request, env) {
     "Vary": "Origin"
   };
 }
+__name(getCors, "getCors");
 function isStateChangingMethod(method) {
   return !["GET", "HEAD", "OPTIONS"].includes(String(method || "").toUpperCase());
 }
+__name(isStateChangingMethod, "isStateChangingMethod");
 function isTrustedStateChangingRequest(request, env) {
   if (!isStateChangingMethod(request.method)) return true;
   if (request.headers.get("X-AonWiki-Request") !== "1") return false;
@@ -2306,6 +2323,7 @@ function isTrustedStateChangingRequest(request, env) {
   }
   return true;
 }
+__name(isTrustedStateChangingRequest, "isTrustedStateChangingRequest");
 async function readJsonBody(request, maxBytes = 512 * 1024) {
   const contentType = String(request.headers.get("Content-Type") || "").toLowerCase().split(";")[0].trim();
   if (contentType !== "application/json" && !contentType.endsWith("+json")) {
@@ -2334,9 +2352,11 @@ async function readJsonBody(request, maxBytes = 512 * 1024) {
     throw invalid;
   }
 }
+__name(readJsonBody, "readJsonBody");
 function cleanTitle(value) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
 }
+__name(cleanTitle, "cleanTitle");
 function namuFileHash(data) {
   let hash = 2166136261;
   for (let i = 0; i < data.length; i++) {
@@ -2350,6 +2370,7 @@ function namuFileHash(data) {
   }
   return parts.join("").slice(0, 56);
 }
+__name(namuFileHash, "namuFileHash");
 var authRateLimitSchemaPromise = null;
 var adminTokenSchemaPromise = null;
 var wikiAdminSchemaPromise = null;
@@ -2362,6 +2383,7 @@ async function ensureAuthRateLimitSchema(env) {
   }
   await authRateLimitSchemaPromise;
 }
+__name(ensureAuthRateLimitSchema, "ensureAuthRateLimitSchema");
 async function authRateLimited(request, env, action, limit, windowMs) {
   await ensureAuthRateLimitSchema(env);
   const ip = String(request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
@@ -2376,6 +2398,7 @@ async function authRateLimited(request, env, action, limit, windowMs) {
   }
   return false;
 }
+__name(authRateLimited, "authRateLimited");
 async function ensureAdminTokenTable(env) {
   if (!adminTokenSchemaPromise) {
     adminTokenSchemaPromise = (async () => {
@@ -2388,6 +2411,7 @@ async function ensureAdminTokenTable(env) {
   }
   await adminTokenSchemaPromise;
 }
+__name(ensureAdminTokenTable, "ensureAdminTokenTable");
 async function ensureWikiAdminSchema(env) {
   if (!wikiAdminSchemaPromise) {
     wikiAdminSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS wiki_admins (user_id TEXT PRIMARY KEY NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT NOT NULL)").run().catch((error) => {
@@ -2397,6 +2421,7 @@ async function ensureWikiAdminSchema(env) {
   }
   await wikiAdminSchemaPromise;
 }
+__name(ensureWikiAdminSchema, "ensureWikiAdminSchema");
 function constantTimeEqual(left, right) {
   const a = String(left || ""), b = String(right || "");
   let difference = a.length ^ b.length;
@@ -2404,6 +2429,7 @@ function constantTimeEqual(left, right) {
   for (let i = 0; i < length; i++) difference |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   return difference === 0;
 }
+__name(constantTimeEqual, "constantTimeEqual");
 async function isAdminRequest(request, env) {
   const authorization = request.headers.get("Authorization") || "";
   if (!authorization.startsWith("Bearer ")) return false;
@@ -2439,6 +2465,7 @@ async function isAdminRequest(request, env) {
   }
   return false;
 }
+__name(isAdminRequest, "isAdminRequest");
 async function currentUser(request, env) {
   const auth = request.headers.get("Authorization") || "";
   if (!auth.startsWith("Bearer ")) return null;
@@ -2453,6 +2480,7 @@ async function currentUser(request, env) {
   if (await isAdminRequest(request, env)) return { username: "\uC704\uD0A4 \uAD00\uB9AC\uC790", role: "admin", isAdmin: true };
   return null;
 }
+__name(currentUser, "currentUser");
 function anonymousEditorIdentity(request) {
   const raw = String(request.headers.get("CF-Connecting-IP") || "").trim().toLowerCase();
   let label = "IP \uC54C \uC218 \uC5C6\uC74C";
@@ -2465,6 +2493,7 @@ function anonymousEditorIdentity(request) {
   }
   return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
 }
+__name(anonymousEditorIdentity, "anonymousEditorIdentity");
 var pageProtectionSchemaPromise = null;
 var officialDocumentSchemaPromise = null;
 var pageAliasSchemaPromise = null;
@@ -2479,6 +2508,7 @@ async function ensurePageProtectionSchema(env) {
   }
   await pageProtectionSchemaPromise;
 }
+__name(ensurePageProtectionSchema, "ensurePageProtectionSchema");
 async function ensureOfficialDocumentSchema(env) {
   if (!officialDocumentSchemaPromise) {
     officialDocumentSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS official_documents (title TEXT PRIMARY KEY NOT NULL, marked_by TEXT NOT NULL, updated_at TEXT NOT NULL)").run().catch((error) => {
@@ -2488,6 +2518,7 @@ async function ensureOfficialDocumentSchema(env) {
   }
   await officialDocumentSchemaPromise;
 }
+__name(ensureOfficialDocumentSchema, "ensureOfficialDocumentSchema");
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "\uBB38\uC11C\uB97C \uD3B8\uC9D1\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." };
   if (title === "\uB300\uBB38" && !user.isAdmin) return { status: 403, error: "\uB300\uBB38\uC740 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD558\uAC70\uB098 \uBCF5\uC6D0\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." };
@@ -2501,6 +2532,7 @@ async function checkPageEditPermission(env, user, title, protectionTitle = title
   }
   return null;
 }
+__name(checkPageEditPermission, "checkPageEditPermission");
 async function ensurePageAliasSchema(env) {
   if (!pageAliasSchemaPromise) {
     pageAliasSchemaPromise = (async () => {
@@ -2513,6 +2545,7 @@ async function ensurePageAliasSchema(env) {
   }
   await pageAliasSchemaPromise;
 }
+__name(ensurePageAliasSchema, "ensurePageAliasSchema");
 async function ensurePageLinkColorsSchema(env) {
   if (!pageLinkColorsSchemaPromise) {
     pageLinkColorsSchemaPromise = env.DB.prepare("CREATE TABLE IF NOT EXISTS page_link_colors (title TEXT PRIMARY KEY NOT NULL, config_json TEXT NOT NULL, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL DEFAULT '')").run().catch((error) => {
@@ -2522,6 +2555,7 @@ async function ensurePageLinkColorsSchema(env) {
   }
   await pageLinkColorsSchemaPromise;
 }
+__name(ensurePageLinkColorsSchema, "ensurePageLinkColorsSchema");
 async function ensureImageSchema(env) {
   if (!imageSchemaPromise) {
     imageSchemaPromise = (async () => {
@@ -2538,6 +2572,7 @@ async function ensureImageSchema(env) {
   }
   await imageSchemaPromise;
 }
+__name(ensureImageSchema, "ensureImageSchema");
 var discussionSchemaPromise = null;
 async function ensureDiscussionSchema(env) {
   if (!discussionSchemaPromise) {
@@ -2554,6 +2589,7 @@ async function ensureDiscussionSchema(env) {
   }
   await discussionSchemaPromise;
 }
+__name(ensureDiscussionSchema, "ensureDiscussionSchema");
 function cleanImageName(value, contentType) {
   const extension = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" }[contentType] || "img";
   let name = String(value || "").normalize("NFC").replace(/[\\/:*?"<>|]/g, "_").replace(/[\u0000-\u001f\u007f]/g, "").trim();
@@ -2561,6 +2597,7 @@ function cleanImageName(value, contentType) {
   if (!name) name = "image";
   return name + "." + extension;
 }
+__name(cleanImageName, "cleanImageName");
 function validateSvgUpload(text) {
   const svg = String(text || "").trim();
   if (!svg || svg.length > 1024 * 1024) throw new Error("SVG \uD30C\uC77C\uC740 1MB \uC774\uD558\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4.");
@@ -2571,12 +2608,14 @@ function validateSvgUpload(text) {
   if (!/<\/svg\s*>\s*$/i.test(svg)) throw new Error("SVG \uBB38\uC11C\uAC00 \uC62C\uBC14\uB974\uAC8C \uB2EB\uD600 \uC788\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
   return svg;
 }
+__name(validateSvgUpload, "validateSvgUpload");
 function makeAdminToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+__name(makeAdminToken, "makeAdminToken");
 function imageFileHash(value) {
   let hash = 2166136261;
   const input = String(value || "");
@@ -2591,6 +2630,7 @@ function imageFileHash(value) {
   }
   return parts.join("").slice(0, 56);
 }
+__name(imageFileHash, "imageFileHash");
 function imageNameMatches(filename, hash, extension) {
   const value = String(filename || "");
   const dot = value.lastIndexOf(".");
@@ -2598,6 +2638,7 @@ function imageNameMatches(filename, hash, extension) {
   const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
   return imageFileHash(base).toLowerCase() === String(hash || "").toLowerCase() && ext === String(extension || "").toLowerCase();
 }
+__name(imageNameMatches, "imageNameMatches");
 var SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE".split(" "));
 var SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-opennamu-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
 function sanitizeServerWikiStyle(raw) {
@@ -2618,6 +2659,7 @@ function sanitizeServerWikiStyle(raw) {
   });
   return output.join(";");
 }
+__name(sanitizeServerWikiStyle, "sanitizeServerWikiStyle");
 var ADMIN_LINK_COLOR_KEYS = /* @__PURE__ */ new Set(["light", "dark", "visited-light", "visited-dark", "hover-light", "hover-dark"]);
 function normalizeAdminLinkColor(value) {
   const color = String(value || "").trim();
@@ -2627,6 +2669,7 @@ function normalizeAdminLinkColor(value) {
   if (/^hsla?\(\s*-?\d+(?:\.\d+)?(?:deg|rad|turn)?(?:\s*,\s*|\s+)\d{1,3}(?:\.\d+)?%(?:\s*,\s*|\s+)\d{1,3}(?:\.\d+)?%(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i.test(color)) return color;
   return "";
 }
+__name(normalizeAdminLinkColor, "normalizeAdminLinkColor");
 function extractAdminLinkColors(source) {
   const colors = {}, errors = [];
   let found = false;
@@ -2658,6 +2701,7 @@ function extractAdminLinkColors(source) {
   if (/\{\{\{#!linkcolor\b/i.test(input) && !found) errors.push("\uB9C1\uD06C \uC0C9\uC0C1 \uC124\uC815 \uBE14\uB85D\uC744 }}} \uB85C \uB2EB\uC544\uC57C \uD569\uB2C8\uB2E4.");
   return { content, colors, found, errors };
 }
+__name(extractAdminLinkColors, "extractAdminLinkColors");
 function buildAdminLinkColorMarkup(html, colors) {
   const selectors = {
     light: 'html[data-theme="light"] .aonwiki-page-content a:not(.opennamu_not_exist_link):not(.wiki-heading-number)',
@@ -2677,6 +2721,7 @@ function buildAdminLinkColorMarkup(html, colors) {
   rules.push('.aonwiki-page-content span[style*="color"] a, .aonwiki-page-content span[style*="color"] a:visited, .aonwiki-page-content span[style*="color"] a:hover{color:inherit !important}');
   return "<style>" + rules.join("\n") + '</style><div class="aonwiki-page-content">' + String(html || "") + "</div>";
 }
+__name(buildAdminLinkColorMarkup, "buildAdminLinkColorMarkup");
 async function getPageLinkColors(env, title) {
   await ensurePageLinkColorsSchema(env);
   const row = await env.DB.prepare("SELECT config_json FROM page_link_colors WHERE title = ?").bind(title).first();
@@ -2692,6 +2737,7 @@ async function getPageLinkColors(env, title) {
     return {};
   }
 }
+__name(getPageLinkColors, "getPageLinkColors");
 async function savePageLinkColors(env, title, extracted, editor) {
   await ensurePageLinkColorsSchema(env);
   if (!extracted?.found || !Object.keys(extracted.colors || {}).length) {
@@ -2700,6 +2746,7 @@ async function savePageLinkColors(env, title, extracted, editor) {
   }
   await env.DB.prepare("INSERT INTO page_link_colors (title, config_json, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET config_json = excluded.config_json, updated_at = excluded.updated_at, updated_by = excluded.updated_by").bind(title, JSON.stringify(extracted.colors), (/* @__PURE__ */ new Date()).toISOString(), String(editor || "")).run();
 }
+__name(savePageLinkColors, "savePageLinkColors");
 function collectIncludeTargets(source) {
   const targets = [];
   for (const match of String(source || "").matchAll(/\[include\(((?:(?!\[include\(|\)\]).)+)\)\]/gi)) {
@@ -2708,6 +2755,7 @@ function collectIncludeTargets(source) {
   }
   return targets;
 }
+__name(collectIncludeTargets, "collectIncludeTargets");
 function collectWikiLinkTargets(source) {
   const targets = /* @__PURE__ */ new Set();
   const text = String(source || "");
@@ -2735,6 +2783,7 @@ function collectWikiLinkTargets(source) {
   }
   return [...targets];
 }
+__name(collectWikiLinkTargets, "collectWikiLinkTargets");
 async function buildNamuServerDatabase(env, title, content) {
   const source = String(content || "");
   const records = /* @__PURE__ */ new Map([[title, { title, data: source }]]);
@@ -2812,6 +2861,7 @@ async function buildNamuServerDatabase(env, title, content) {
     lookup: new Map(records)
   };
 }
+__name(buildNamuServerDatabase, "buildNamuServerDatabase");
 var namuPageCountCache = { value: null, expiresAt: 0 };
 var namuPageCountPending = null;
 async function getCachedNamuPageCount(env) {
@@ -2828,6 +2878,7 @@ async function getCachedNamuPageCount(env) {
   });
   return namuPageCountPending;
 }
+__name(getCachedNamuPageCount, "getCachedNamuPageCount");
 async function sanitizeServerWikiHtml(markup) {
   const source = String(markup || "");
   if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\b|\bon[a-z]+\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=\s*/i.test(source)) {
@@ -2905,6 +2956,7 @@ async function sanitizeServerWikiHtml(markup) {
   }).transform(input);
   return await rewritten.text();
 }
+__name(sanitizeServerWikiHtml, "sanitizeServerWikiHtml");
 var namuRenderCache = /* @__PURE__ */ new Map();
 var namuRenderPending = /* @__PURE__ */ new Map();
 var namuRenderCacheSchemaPromise = null;
@@ -2919,6 +2971,7 @@ async function ensureNamuRenderCacheSchema(env) {
   }
   await namuRenderCacheSchemaPromise;
 }
+__name(ensureNamuRenderCacheSchema, "ensureNamuRenderCacheSchema");
 async function clearPersistentNamuRenderCache(env, title = "") {
   try {
     await ensureNamuRenderCacheSchema(env);
@@ -2932,17 +2985,20 @@ async function clearPersistentNamuRenderCache(env, title = "") {
     console.warn("AonWiki persistent render cache clear failed:", error);
   }
 }
+__name(clearPersistentNamuRenderCache, "clearPersistentNamuRenderCache");
 var namuPageResponseCache = /* @__PURE__ */ new Map();
 var namuPageResponsePending = /* @__PURE__ */ new Map();
 function clearNamuPageResponseCache() {
   namuPageResponseCache.clear();
   namuPageResponsePending.clear();
 }
+__name(clearNamuPageResponseCache, "clearNamuPageResponseCache");
 function invalidateNamuServerIndexes() {
   namuRenderCache.clear();
   namuRenderPending.clear();
   clearNamuPageResponseCache();
 }
+__name(invalidateNamuServerIndexes, "invalidateNamuServerIndexes");
 function parseTableColorRgb(value) {
   const input = String(value || "").trim().toLowerCase();
   const named = { black: "#000000", white: "#ffffff", red: "#ff0000", green: "#008000", blue: "#0000ff", yellow: "#ffff00", orange: "#ffa500", purple: "#800080", gray: "#808080", grey: "#808080", navy: "#000080", teal: "#008080" };
@@ -2956,17 +3012,20 @@ function parseTableColorRgb(value) {
   if (match) return [Number(match[1]), Number(match[2]), Number(match[3])];
   return null;
 }
+__name(parseTableColorRgb, "parseTableColorRgb");
 function tableLuminance(rgb) {
-  const linear = (value) => {
+  const linear = /* @__PURE__ */ __name((value) => {
     const c = value / 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
+  }, "linear");
   return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
 }
+__name(tableLuminance, "tableLuminance");
 function tableContrast(a, b) {
   const x = tableLuminance(a), y = tableLuminance(b);
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
+__name(tableContrast, "tableContrast");
 function chooseTableTextColor(backgroundValue, foregroundValue, theme) {
   const canvas = theme === "dark" ? [26, 29, 32] : [255, 255, 255];
   const background = parseTableColorRgb(backgroundValue) || canvas;
@@ -2975,6 +3034,7 @@ function chooseTableTextColor(backgroundValue, foregroundValue, theme) {
   const black = [0, 0, 0], white = [255, 255, 255];
   return tableContrast(black, background) >= tableContrast(white, background) ? "#000000" : "#ffffff";
 }
+__name(chooseTableTextColor, "chooseTableTextColor");
 function getInlineStyleProperties(element) {
   const properties = {};
   const style = element.getAttribute("style") || "";
@@ -2987,10 +3047,11 @@ function getInlineStyleProperties(element) {
   }
   return properties;
 }
+__name(getInlineStyleProperties, "getInlineStyleProperties");
 async function applyTableTextContrast(markup) {
   const tableStack = [];
   const rowStack = [];
-  const getThemeValue = (levels, key, theme) => {
+  const getThemeValue = /* @__PURE__ */ __name((levels, key, theme) => {
     for (const properties of levels) {
       const paired = properties["--aonwiki-table-" + key + "-" + theme];
       if (paired) return paired;
@@ -3002,7 +3063,7 @@ async function applyTableTextContrast(markup) {
       }
     }
     return "";
-  };
+  }, "getThemeValue");
   const rewriter = new HTMLRewriter().on("table", { element(el) {
     tableStack.push(getInlineStyleProperties(el));
   }, endTag() {
@@ -3035,6 +3096,7 @@ async function applyTableTextContrast(markup) {
     headers: { "Content-Type": "text/html; charset=utf-8" }
   })).text();
 }
+__name(applyTableTextContrast, "applyTableTextContrast");
 async function expandAonIncludes(env, source) {
   let text = String(source || "");
   const seen = /* @__PURE__ */ new Set(["\uC544\uC628"]);
@@ -3057,6 +3119,7 @@ async function expandAonIncludes(env, source) {
   }
   return text;
 }
+__name(expandAonIncludes, "expandAonIncludes");
 async function buildAonClientRenderPayload(env, title, source, linkColors = {}) {
   const expandedSource = await expandAonIncludes(env, source);
   const extracted = extractAdminLinkColors(expandedSource);
@@ -3073,6 +3136,7 @@ async function buildAonClientRenderPayload(env, title, source, linkColors = {}) 
     linkColors: linkColors || {}
   };
 }
+__name(buildAonClientRenderPayload, "buildAonClientRenderPayload");
 async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   const sourceText = String(source || "");
   const colors = {};
@@ -3135,10 +3199,12 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
   namuRenderPending.set(cacheKey, pending);
   return pending;
 }
+__name(renderNamuMarkupOnWorker, "renderNamuMarkupOnWorker");
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+__name(sha256, "sha256");
 function escapeHtml2(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
@@ -3148,9 +3214,11 @@ function escapeHtml2(value) {
     "'": "&#39;"
   })[char]);
 }
+__name(escapeHtml2, "escapeHtml");
 function safeJsonForHtml(value) {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 }
+__name(safeJsonForHtml, "safeJsonForHtml");
 function rewriteFrontendAssets(html, frontendOrigin) {
   const base = frontendOrigin.replace(/\/+$/, "") + "/";
   const staticAssets = /* @__PURE__ */ new Set(["style.css", "namumark-beta.css", "app.js", "theme.js", "namumark-parser.js", "aonwiki-mark.svg"]);
@@ -3167,6 +3235,7 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     return name + "=" + quote + "/aon/" + file + parsed.search + parsed.hash + quote;
   });
 }
+__name(rewriteFrontendAssets, "rewriteFrontendAssets");
 var FRONTEND_TRANSIENT_STATUSES = /* @__PURE__ */ new Set([429, 500, 502, 503, 504]);
 async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
   let lastResponse = null;
@@ -3186,6 +3255,7 @@ async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
   if (lastResponse) return lastResponse;
   throw lastError || new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uC11C\uBC84\uC5D0 \uC5F0\uACB0\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
 }
+__name(fetchFrontendWithRetry, "fetchFrontendWithRetry");
 var frontendShellCache = { value: null, expiresAt: 0, staleUntil: 0 };
 var frontendShellPending = null;
 var frontendAssetCache = /* @__PURE__ */ new Map();
@@ -3198,6 +3268,7 @@ function makeFrontendAssetResponse(entry, cacheState) {
   headers.set("X-AonWiki-Asset-Cache", cacheState);
   return new Response(entry.body.slice(), { status: 200, headers });
 }
+__name(makeFrontendAssetResponse, "makeFrontendAssetResponse");
 async function loadFrontendAsset(assetUrl, acceptHeader) {
   const now = Date.now();
   const cached = frontendAssetCache.get(assetUrl);
@@ -3244,6 +3315,7 @@ async function loadFrontendAsset(assetUrl, acceptHeader) {
   frontendAssetPending.set(assetUrl, pending);
   return pending;
 }
+__name(loadFrontendAsset, "loadFrontendAsset");
 async function loadFrontendShell(env) {
   if (frontendShellCache.value && frontendShellCache.expiresAt > Date.now()) return frontendShellCache.value;
   if (frontendShellPending) return frontendShellPending;
@@ -3283,6 +3355,7 @@ async function loadFrontendShell(env) {
   });
   return frontendShellPending;
 }
+__name(loadFrontendShell, "loadFrontendShell");
 async function findWikiPage(env, title) {
   let page = await env.DB.prepare("SELECT title, content, created_at, updated_at FROM pages WHERE title = ?").bind(title).first();
   if (!page) {
@@ -3292,6 +3365,7 @@ async function findWikiPage(env, title) {
   }
   return page;
 }
+__name(findWikiPage, "findWikiPage");
 async function renderFullWikiDocument(request, env, title) {
   const { shell, origin } = await loadFrontendShell(env);
   const page = await findWikiPage(env, title);
@@ -3337,11 +3411,13 @@ async function renderFullWikiDocument(request, env, title) {
     headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
   });
 }
+__name(renderFullWikiDocument, "renderFullWikiDocument");
 async function passwordHash(password, salt) {
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: 1e5, hash: "SHA-256" }, material, 256);
   return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+__name(passwordHash, "passwordHash");
 var index_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -3866,7 +3942,7 @@ var index_default = {
         let result;
         if (q) {
           const terms = [...new Set(q.split(/\s+/).map((value) => value.trim()).filter(Boolean))].slice(0, 6);
-          const escapeLike = (value) => String(value).replace(/[!%_]/g, (character) => "!" + character);
+          const escapeLike = /* @__PURE__ */ __name((value) => String(value).replace(/[!%_]/g, (character) => "!" + character), "escapeLike");
           const patterns = terms.map((term) => "%" + escapeLike(term) + "%");
           const phrasePattern = "%" + escapeLike(q) + "%";
           const prefixPattern = escapeLike(terms[0] || q) + "%";
@@ -3883,7 +3959,7 @@ var index_default = {
             () => "(filename LIKE ? ESCAPE '!' OR EXISTS (SELECT 1 FROM image_aliases WHERE image_aliases.image_id = images.id AND image_aliases.alias LIKE ? ESCAPE '!'))"
           ).join(" AND ");
           const fileParameters = terms.flatMap((term, index) => [patterns[index], patterns[index]]);
-          const makeSnippet = (source) => {
+          const makeSnippet = /* @__PURE__ */ __name((source) => {
             let plain = String(source || "").replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1").replace(/\[https?:\/\/\S+\s+([^\]]+)\]/gi, "$1").replace(/<[^>]*>/g, " ").replace(/'{2,5}/g, "").replace(/^\s*=+.*?=+\s*$/gm, " ").replace(/[|{}\[\]#]/g, " ").replace(/\s+/g, " ").trim();
             if (!plain) return "";
             const lower = plain.toLocaleLowerCase("ko-KR");
@@ -3892,7 +3968,7 @@ var index_default = {
             const start = Math.max(0, matchAt - 78);
             const end = Math.min(plain.length, start + 230);
             return (start > 0 ? "\u2026" : "") + plain.slice(start, end) + (end < plain.length ? "\u2026" : "");
-          };
+          }, "makeSnippet");
           let pageTotal = 0;
           let pages = [];
           if (shouldSearchPages) {
@@ -4062,9 +4138,9 @@ var index_default = {
         }
         const pending = (async () => {
           await ensurePageProtectionSchema(env);
-          const selectPage = async (pageTitle) => env.DB.prepare(
+          const selectPage = /* @__PURE__ */ __name(async (pageTitle) => env.DB.prepare(
             "SELECT p.title, p.content, p.created_at, p.updated_at, pp.level AS protectionLevel, pp.reason AS protectionReason, pp.protected_by AS protectedBy, pp.updated_at AS protectionUpdatedAt FROM pages p LEFT JOIN page_protections pp ON pp.title = p.title WHERE p.title = ?"
-          ).bind(pageTitle).first();
+          ).bind(pageTitle).first(), "selectPage");
           let page = await selectPage(title);
           if (!page) {
             await ensurePageAliasSchema(env);
@@ -4073,12 +4149,25 @@ var index_default = {
           }
           if (!page) return { page: null, html: "", engine: "namumark-worker" };
           const linkColors = await getPageLinkColors(env, page.title);
-          const clientRender = page.title === "\uC544\uC628" ? await buildAonClientRenderPayload(env, page.title, page.content || "", linkColors) : null;
-          const rendered = clientRender ? { html: "" } : await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
+          const sourceText = String(page.content || "");
+          const largeDocument = sourceText.length > 6000;
+          let clientRender = null;
+          if (largeDocument) {
+            if (page.title === "\uC544\uC628") {
+              const payload = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
+              clientRender = { chunked: true, totalChars: sourceText.length, chunkSize: 8000, linkColors: payload.linkColors || linkColors || {}, records: payload.records || [], pageCount: payload.pageCount || 0 };
+            } else {
+              clientRender = { chunked: true, totalChars: sourceText.length, chunkSize: 8000, linkColors: linkColors || {} };
+            }
+          } else if (page.title === "\uC544\uC628") {
+            clientRender = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
+          }
+          const rendered = clientRender ? { html: "" } : await renderNamuMarkupOnWorker(env, page.title, sourceText, linkColors);
           return {
             page: {
               title: page.title,
-              content: page.content || "",
+              content: largeDocument ? "" : sourceText,
+              contentLength: sourceText.length,
               created_at: page.created_at,
               updated_at: page.updated_at,
               protectionLevel: page.protectionLevel || "none",
@@ -4098,6 +4187,24 @@ var index_default = {
         namuPageResponsePending.set(title, pending);
         const value = await pending;
         return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "MISS" });
+      }
+      if (url.pathname === "/api/render-chunk" && request.method === "GET") {
+        const title = cleanTitle(url.searchParams.get("title"));
+        if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        const requestedOffset = Math.max(0, Number(url.searchParams.get("offset") || 0) || 0);
+        const requestedLimit = Math.max(4096, Math.min(12000, Number(url.searchParams.get("limit") || 8000) || 8000));
+        const selectPage = async pageTitle => env.DB.prepare("SELECT title, content FROM pages WHERE title = ?").bind(pageTitle).first();
+        let page = await selectPage(title);
+        if (!page) {
+          await ensurePageAliasSchema(env);
+          const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+          if (alias) page = await selectPage(alias.title);
+        }
+        if (!page) return response({ error: "문서를 찾을 수 없습니다." }, 404, cors);
+        const source = String(page.content || "");
+        const offset = Math.min(requestedOffset, source.length);
+        const end = Math.min(source.length, offset + requestedLimit);
+        return response({ title: page.title, offset, end, total: source.length, chunk: source.slice(offset, end) }, 200, { ...cors, "Cache-Control": "private, max-age=30", "X-AonWiki-Render": "namumark-chunk" });
       }
       if (url.pathname === "/api/render" && request.method === "POST") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1e3)) {
@@ -4398,3 +4505,4 @@ var index_default = {
 export {
   index_default as default
 };
+//# sourceMappingURL=index.js.map
