@@ -672,19 +672,28 @@ function invalidateNamuDatabaseCache(){
  renderedDocumentPending.clear();
 }
 async function resolveWikiFile(filename){
- const key=apiBase()+"|"+String(filename||"").trim().toLocaleLowerCase();
+ const raw=String(filename||"").trim();
+ const names=[...new Set([raw,raw.replace(/^(?:파일|file):/i,"").trim()])].filter(Boolean);
+ const key=apiBase()+"|"+names.map(name=>name.toLocaleLowerCase()).join("|");
  const cached=wikiFileLookupCache.get(key);
  if(cached&&cached.expires>Date.now()){
   if(cached.url)return {url:cached.url};
   throw new Error("파일을 찾을 수 없습니다.");
  }
  if(wikiFileLookupPending.has(key))return wikiFileLookupPending.get(key);
- const pending=api("/api/file?name="+encodeURIComponent(filename)).then(data=>{
-  if(!data.image||!data.image.url)throw new Error("파일을 찾을 수 없습니다.");
-  const mediaUrl=new URL(data.image.url,apiBase()).href;
-  wikiFileLookupCache.set(key,{url:mediaUrl,expires:Date.now()+5*60*1000});
-  return {url:mediaUrl};
- }).catch(error=>{
+ const pending=(async()=>{
+  let lastError=null;
+  for(const name of names){
+   try{
+    const data=await api("/api/file?name="+encodeURIComponent(name));
+    if(!data.image||!data.image.url)continue;
+    const mediaUrl=new URL(data.image.url,apiBase()).href;
+    wikiFileLookupCache.set(key,{url:mediaUrl,expires:Date.now()+5*60*1000});
+    return {url:mediaUrl};
+   }catch(error){lastError=error}
+  }
+  throw lastError||new Error("파일을 찾을 수 없습니다.");
+ })().catch(error=>{
   wikiFileLookupCache.set(key,{url:"",expires:Date.now()+20*1000});
   throw error;
  }).finally(()=>wikiFileLookupPending.delete(key));
