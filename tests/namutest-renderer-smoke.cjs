@@ -17,7 +17,7 @@ assert.match(wrapper, /from "\.\/Namu_test-main\/namumark\.js"/, "browser wrappe
 assert.match(worker, /from "\.\.\/\.\.\/Namu_test-main\/namumark\.js"/, "Worker SSR must use the same Namu_test-main parser glue");
 assert.match(worker, /from "\.\.\/\.\.\/Namu_test-main\/namumark_bg\.wasm"/, "Worker SSR must use the Namu_test-main WASM binary");
 assert.doesNotMatch(worker, /worker\/src\/namumark-parser|namumark-parser\.js/, "Worker must not include the retired parser bundle");
-assert.match(worker, /namutest-main-v2-assets:/, "persistent cache keys must be namespaced by the new renderer identity");
+assert.match(worker, /namutest-main-v4-images:/, "persistent cache keys must be namespaced by the new renderer identity");
 assert.match(worker, /if \(stored && stored\.source_hash === cacheKey\)/, "old renderer cache entries must never be reused");
 assert.doesNotMatch(worker, /endsWith\("\\:" \+ sourceDigest\)/, "legacy cache compatibility fallback must be removed");
 assert.match(worker, /Namu_test-main\/namumark\.js/, "Worker static proxy must serve the nested Namu_test-main parser module");
