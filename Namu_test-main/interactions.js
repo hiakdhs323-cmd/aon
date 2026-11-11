@@ -159,6 +159,17 @@ export function setupWikiInteractions(root) {
   }
 
   root.addEventListener("click", (event) => {
+    const clickedNote = event.target instanceof Element
+      ? event.target.closest("a.wiki-fn-content")
+      : null;
+    if (clickedNote && root.contains(clickedNote) && !preview.contains(clickedNote)) {
+      // Footnote markers are previews, not page-navigation links. This is
+      // especially important on touch devices, where there is no hover.
+      event.preventDefault();
+      if (activeNote === clickedNote && preview.matches(":popover-open")) hidePreview(true);
+      else showPreview(clickedNote);
+      return;
+    }
     if (!(event.target instanceof Element) || event.target.closest("a, button, input, select, textarea")) return;
     const summary = event.target.closest("summary");
     const details = summary?.parentElement;
@@ -246,3 +257,4 @@ export function setupWikiInteractions(root) {
     },
   };
 }
+
