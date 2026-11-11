@@ -813,11 +813,11 @@
   display: none;
 }
 
-.theseed-dark-mode .namumark-wasm-content .wiki-theme-dark {
+html[data-theme="dark"] .namumark-wasm-content .wiki-theme-dark {
   display: inline-block;
 }
 
-.theseed-dark-mode .namumark-wasm-content .wiki-theme-light {
+html[data-theme="dark"] .namumark-wasm-content .wiki-theme-light {
   display: none;
 }
 
