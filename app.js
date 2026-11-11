@@ -609,12 +609,32 @@ const wikiFileLookupCache=new Map();
 const wikiFileLookupPending=new Map();
 const renderedDocumentCache=new Map();
 const renderedDocumentPending=new Map();
+async function loadChunkedClientRender(data,title){
+ const manifest=data?.clientRender;
+ if(!manifest?.chunked)return data;
+ const total=Math.max(0,Number(manifest.totalChars)||0);
+ const size=Math.max(4096,Math.min(20000,Number(manifest.chunkSize)||12000));
+ if(total===0){
+  data.clientRender={...manifest,source:""};
+  return data;
+ }
+ const chunks=[];
+ for(let offset=0;offset<total;offset+=size){
+  const end=Math.min(total,offset+size);
+  chunks.push(api("/api/render-chunk?title="+encodeURIComponent(title)+"&offset="+offset+"&limit="+(end-offset)));
+ }
+ const parts=await Promise.all(chunks);
+ const source=parts.map(part=>String(part.chunk||"")).join("");
+ if(source.length!==total)throw new Error("대용량 문서 청크가 완전하게 불러와지지 않았습니다.");
+ data.clientRender={...manifest,source};
+ return data;
+}
 async function getRenderedDocument(title){
  const key=String(title||"").trim();
  const cached=renderedDocumentCache.get(key);
  if(cached&&cached.expiresAt>Date.now())return cached.value;
  if(renderedDocumentPending.has(key))return renderedDocumentPending.get(key);
- const pending=api("/api/render?title="+encodeURIComponent(key)).then(data=>{
+ const pending=api("/api/render?title="+encodeURIComponent(key)).then(data=>loadChunkedClientRender(data,key)).then(data=>{
   if(data.page&&String(data.html||"").length<=300000){
    renderedDocumentCache.set(key,{value:data,expiresAt:Date.now()+45*1000});
    if(renderedDocumentCache.size>12)renderedDocumentCache.delete(renderedDocumentCache.keys().next().value);
