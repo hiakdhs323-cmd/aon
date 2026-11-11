@@ -1,4 +1,15 @@
 import { NamuMark } from "./namumark-parser.js";
+import initAonNamuMark, { RendererOptions, parse_with_callbacks_and_options } from "../../namumark.js";
+import AON_NAMU_WASM_MODULE from "../../namumark_bg.wasm";
+
+let aonNamuWasmPromise = null;
+async function ensureAonNamuWasm() {
+  if (!aonNamuWasmPromise) {
+    aonNamuWasmPromise = initAonNamuMark({ module_or_path: AON_NAMU_WASM_MODULE })
+      .catch(error => { aonNamuWasmPromise = null; throw error; });
+  }
+  return aonNamuWasmPromise;
+}
 // Keep Worker builds in sync with the regenerated SSR parser bundle.
 function response(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -898,15 +909,52 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const extracted = extractAdminLinkColors(renderSource);
     const renderText = extracted.content;
     const database = await buildNamuServerDatabase(env, title, renderText);
-    const parser = new NamuMark(renderText, { docName: title, useTocSet: "default", docType: "view" }, database);
-    const parsed = parser.parse();
-    const cleanHtml = await sanitizeServerWikiHtml(parsed[0] || "");
+
+    // Use the exact Namu_test-main WASM renderer for SSR as well as the
+    // browser fallback. D1 resolution is prepared before parsing so the WASM
+    // callbacks remain synchronous, which keeps the parser deterministic.
+    await ensureAonNamuWasm();
+    const options = new RendererOptions();
+    options.document_url_prefix = "/w/";
+    options.document_query_prefix = "/w/";
+    options.dark_class = "dark";
+    const callbacks = {
+      documentExists(name) {
+        const key = String(name || "").trim();
+        return database.lookup.has(key)
+          || database.lookup.has("file:" + key)
+          || database.lookup.has("category:" + key);
+      },
+      getDocumentContent(name) {
+        const key = String(name || "").trim();
+        return database.lookup.get(key)?.data || "";
+      },
+      getPagecount() {
+        return Number(database.data.length) || 0;
+      }
+    };
+    const parsed = parse_with_callbacks_and_options(renderText, callbacks, options);
+    let parsedHtml = "";
+    let parsedMetadata = {};
+    try {
+      parsedHtml = parsed.html || "";
+      parsedMetadata = {
+        categories: parsed.categories || [],
+        backlinks: parsed.backlinks || [],
+        redirect_target: parsed.redirect_target,
+        redirect_anchor: parsed.redirect_anchor
+      };
+    } finally {
+      parsed.free();
+      options.free();
+    }
+    const cleanHtml = await sanitizeServerWikiHtml(parsedHtml);
     // Table contrast requires a second HTMLRewriter pass. Documents without
     // tables do not need it.
     const contrastedHtml = /<table\b/i.test(cleanHtml)
       ? await applyTableTextContrast(cleanHtml)
       : cleanHtml;
-    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsed[2] || {} };
+    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: parsedMetadata };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
     if (namuRenderCache.size > 100) {
       const oldest = namuRenderCache.keys().next().value;
