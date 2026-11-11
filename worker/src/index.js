@@ -1,4 +1,3 @@
-import { NamuMark } from "./namumark-parser.js";
 import initAonNamuMark, { RendererOptions, parse_with_callbacks_and_options } from "../../namumark.js";
 import AON_NAMU_WASM_MODULE from "../../namumark_bg.wasm";
 
