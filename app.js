@@ -814,32 +814,7 @@ function hasAuthoredWikiTableColor(cell, table, wasAutoColor) {
  }
  return false;
 }
-function refreshWikiTableContrast(root = document){
- if(!root||typeof root.querySelectorAll!=="function")return;
- const tables=[];
- if(root.matches?.("table"))tables.push(root);
- root.querySelectorAll("table").forEach(table=>tables.push(table));
- for(const table of tables){
-  if(!table.closest(".wiki-content"))continue;
-  table.querySelectorAll("th,td").forEach(cell=>{
-   const wasAutoColor=cell.dataset.aonwikiAutoText==="1";
-   if(hasAuthoredWikiTableColor(cell,table,wasAutoColor)){
-    if(wasAutoColor){
-     cell.style.removeProperty("color");
-     delete cell.dataset.aonwikiAutoText;
-    }
-    return;
-   }
-   const background=getWikiEffectiveBackground(cell);
-   const lightText=[248,249,250,1],darkText=[33,37,41,1];
-   const readableText=wikiContrastRatio(lightText,background)>=wikiContrastRatio(darkText,background)
-    ?"rgb(248, 249, 250)"
-    :"rgb(33, 37, 41)";
-   cell.style.setProperty("color",readableText,"important");
-   cell.dataset.aonwikiAutoText="1";
-  });
- }
-}
+function refreshWikiTableContrast(){ /* Namu_test-main owns table colors. */ }
 
 function sanitizeNamuStylesheet(raw) {
   const allowedSelectorPart = /^(?:\*|[a-z][a-z0-9-]*|[.#][a-z_][a-z0-9_-]*)(?::(?:hover|focus|active|visited|first-child|last-child|only-child|nth-child\(\d+(?:n[+-]\d+)?\)|nth-of-type\(\d+(?:n[+-]\d+)?\)))?$/i;
@@ -1118,48 +1093,22 @@ function getExplicitWikiTextColor(element, root) {
 function hasExplicitWikiTextColor(element, root) {
   return Boolean(getExplicitWikiTextColor(element, root));
 }
-function applyFinalWikiTypographyAndLinkColors(root) {
-  if (!root) return;
-  const compactNodes=root.querySelectorAll([
-    ".wiki-macro-footnote",".wiki-macro-footnote *",".wiki-footnotes",".wiki-footnotes *",
-    ".footnote-list",".footnote-list *",
-    ".footnote-list",".footnote-list *",
-    ".footnote-list",".wiki-category",".wiki-category *",".wiki-footnote-tooltip"
-  ].join(","));
-  for(const element of compactNodes){
-    element.style.setProperty("font-size","12px","important");
-    element.style.setProperty("line-height","1.6","important");
-  }
+function applyFinalWikiTypographyAndLinkColors(root){
+  if(!root)return;
   root.querySelectorAll(".wiki-macro-toc").forEach(toc=>{
     const summary=toc.querySelector(":scope > summary");
     const contents=toc.querySelector(":scope > details");
-    if(summary){
-      summary.setAttribute("aria-expanded",String(toc.open));
-      if(contents){
-        if(!contents.id)contents.id="toc-contents-"+Math.random().toString(36).slice(2,9);
-        summary.setAttribute("aria-controls",contents.id);
-      }
-      const syncExpanded=()=>summary.setAttribute("aria-expanded",String(toc.open));
-      if(!toc.dataset.aonTocToggleBound){toc.addEventListener("toggle",syncExpanded);toc.dataset.aonTocToggleBound="true";}
+    if(!summary)return;
+    summary.setAttribute("aria-expanded",String(toc.open));
+    if(contents){
+      if(!contents.id)contents.id="toc-contents-"+Math.random().toString(36).slice(2,9);
+      summary.setAttribute("aria-controls",contents.id);
     }
-  });
-  root.querySelectorAll("a").forEach(link=>{
-    if(link.classList.contains("not-exist")){
-      link.style.setProperty("color","var(--wiki-danger)","important");
-      link.style.setProperty("text-decoration","underline","important");
-      link.style.setProperty("text-decoration-color","currentColor","important");
-      return;
+    const syncExpanded=()=>summary.setAttribute("aria-expanded",String(toc.open));
+    if(!toc.dataset.aonTocToggleBound){
+      toc.addEventListener("toggle",syncExpanded);
+      toc.dataset.aonTocToggleBound="true";
     }
-    const footnoteRegion=link.closest(".wiki-macro-footnote,.footnote-list");
-    const footnoteId=String(link.id||"");
-    const footnoteHref=String(link.getAttribute("href")||"");
-    if(footnoteRegion||/(?:^|_)r?fn_/.test(footnoteId)||/(?:^|#).*?(?:^|_)r?fn_/.test(footnoteHref))return;
-    const explicitColor=getExplicitWikiTextColor(link,root);
-    if(explicitColor){
-      link.style.setProperty("color",explicitColor,"important");
-      return;
-    }
-    link.style.setProperty("color","var(--wiki-body-link)","important");
   });
   root.dataset.aonFinalPresentation="applied";
 }
