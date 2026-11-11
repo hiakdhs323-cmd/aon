@@ -474,7 +474,7 @@ dialog::backdrop,#dialog::backdrop{background:rgba(0,0,0,.5)}
 .labs-toggle{display:flex!important;align-items:center;gap:9px;margin:13px 0!important;padding:10px;border:1px solid var(--wiki-border);background:var(--wiki-panel-soft);font-weight:700}
 .labs-toggle input{width:18px;height:18px;flex:0 0 auto}
 .labs-state,.labs-credit{color:var(--wiki-muted);font-size:11px}
-.namumark-beta-warning{padding:9px 11px;border:1px solid #d5a1a1;background:#fff1f1;color:#a32626}
+.wiki-engine-warning{padding:9px 11px;border:1px solid #d5a1a1;background:#fff1f1;color:#a32626}
 .namumark-rendered{min-width:0}
 
 /* Syntax editor colors */
@@ -566,7 +566,7 @@ html[data-theme="dark"] .dialog-head{background:var(--wiki-panel-soft);border-co
 html[data-theme="dark"] .dialog-close{color:var(--wiki-muted)}
 html[data-theme="dark"] .diff-add{background:#183a2b;color:#a9e0bd}
 html[data-theme="dark"] .diff-remove{background:#492326;color:#ffc0c0}
-html[data-theme="dark"] .namumark-beta-warning{background:#3c2323;color:#ffcaca;border-color:#784747}
+html[data-theme="dark"] .wiki-engine-warning{background:#3c2323;color:#ffcaca;border-color:#784747}
 html[data-theme="dark"] .mk-heading,html[data-theme="dark"] .mk-heading-text{color:#f1c27d}
 html[data-theme="dark"] .mk-table,html[data-theme="dark"] .mk-syntax{color:#e3a6e3}
 html[data-theme="dark"] .mk-link,html[data-theme="dark"] .mk-external,html[data-theme="dark"] .mk-external-url{color:#8dbdff}
