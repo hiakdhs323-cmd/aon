@@ -629,6 +629,32 @@ async function getCachedNamuPageCount(env) {
     .finally(() => { namuPageCountPending = null; });
   return namuPageCountPending;
 }
+async function rewriteNamuImageUrls(env, markup){
+  const source=String(markup||"");
+  if(!/<img\\b/i.test(source))return source;
+  const candidates=await env.DB.prepare("SELECT id, filename FROM images").all();
+  const aliases=await env.DB.prepare("SELECT alias, image_id FROM image_aliases").all();
+  const byHash=new Map();
+  for(const row of candidates.results||[]){
+    const value=String(row.filename||"");
+    const dot=value.lastIndexOf(".");
+    const base=dot>0?value.slice(0,dot):value;
+    const ext=dot>0?value.slice(dot+1).toLowerCase():"jpg";
+    byHash.set(imageFileHash(base).toLowerCase()+"."+ext,row.id);
+  }
+  for(const row of aliases.results||[]){
+    const value=String(row.alias||"");
+    const dot=value.lastIndexOf(".");
+    const base=dot>0?value.slice(0,dot):value;
+    const ext=dot>0?value.slice(dot+1).toLowerCase():"jpg";
+    const key=imageFileHash(base).toLowerCase()+"."+ext;
+    if(!byHash.has(key))byHash.set(key,row.image_id);
+  }
+  return source.replace(/([\"'])\\/image\\/([a-f0-9]{56})\\.([a-z0-9]+)\\.cache_v[0-9]+(?:[?#][^\"']*)?([\"'])/gi,(full,quote,hash,ext,endQuote)=>{
+    const id=byHash.get(hash.toLowerCase()+"."+ext.toLowerCase());
+    return id ? quote+"/media/"+id+endQuote : full;
+  });
+}
 async function sanitizeServerWikiHtml(markup) {
   const source = String(markup || "");
   // NamuMark already escapes source text before generating its trusted HTML.
@@ -946,7 +972,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       parsed.free();
       options.free();
     }
-    const cleanHtml = await sanitizeServerWikiHtml(parsedHtml);
+    const cleanHtml = await rewriteNamuImageUrls(env, await sanitizeServerWikiHtml(parsedHtml));
     // Table contrast requires a second HTMLRewriter pass. Documents without
     // tables do not need it.
     const contrastedHtml = /<table\b/i.test(cleanHtml)
