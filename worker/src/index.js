@@ -607,9 +607,27 @@ async function buildNamuServerDatabase(env, title, content) {
     records.set(categoryTitle, { title: categoryTitle, data: "" });
   }
 
+  const imageMap = new Map();
+  for (const row of imageRows) {
+    const value = String(row.filename || "");
+    const dot = value.lastIndexOf(".");
+    const base = dot > 0 ? value.slice(0, dot) : value;
+    const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
+    if (row.filename && row.id) imageMap.set(imageFileHash(base).toLowerCase() + "." + ext, row.id);
+  }
+  for (const row of imageAliasRows) {
+    const value = String(row.alias || "");
+    const dot = value.lastIndexOf(".");
+    const base = dot > 0 ? value.slice(0, dot) : value;
+    const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
+    const key = imageFileHash(base).toLowerCase() + "." + ext;
+    if (row.alias && row.image_id && !imageMap.has(key)) imageMap.set(key, row.image_id);
+  }
+
   return {
     data: new Array(Math.max(0, Number(pageCount?.total) || 0)),
-    lookup: new Map(records)
+    lookup: new Map(records),
+    imageMap
   };
 }
 
@@ -629,31 +647,14 @@ async function getCachedNamuPageCount(env) {
     .finally(() => { namuPageCountPending = null; });
   return namuPageCountPending;
 }
-async function rewriteNamuImageUrls(env, markup){
+function rewriteNamuImageUrls(markup, imageMap){
   const source=String(markup||"");
-  if(!/<img\\b/i.test(source))return source;
-  const candidates=await env.DB.prepare("SELECT id, filename FROM images").all();
-  const aliases=await env.DB.prepare("SELECT alias, image_id FROM image_aliases").all();
-  const byHash=new Map();
-  for(const row of candidates.results||[]){
-    const value=String(row.filename||"");
-    const dot=value.lastIndexOf(".");
-    const base=dot>0?value.slice(0,dot):value;
-    const ext=dot>0?value.slice(dot+1).toLowerCase():"jpg";
-    byHash.set(imageFileHash(base).toLowerCase()+"."+ext,row.id);
-  }
-  for(const row of aliases.results||[]){
-    const value=String(row.alias||"");
-    const dot=value.lastIndexOf(".");
-    const base=dot>0?value.slice(0,dot):value;
-    const ext=dot>0?value.slice(dot+1).toLowerCase():"jpg";
-    const key=imageFileHash(base).toLowerCase()+"."+ext;
-    if(!byHash.has(key))byHash.set(key,row.image_id);
-  }
-  return source.replace(/([\"'])\\/image\\/([a-f0-9]{56})\\.([a-z0-9]+)\\.cache_v[0-9]+(?:[?#][^\"']*)?([\"'])/gi,(full,quote,hash,ext,endQuote)=>{
-    const id=byHash.get(hash.toLowerCase()+"."+ext.toLowerCase());
-    return id ? quote+"/media/"+id+endQuote : full;
-  });
+  if(!imageMap?.size || !/<img\b/i.test(source)) return source;
+  return source.replace(/([\"'])\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#][^\"']*)?([\"'])/gi,
+    (full, quote, hash, ext, endQuote) => {
+      const id=imageMap.get(hash.toLowerCase()+"."+ext.toLowerCase());
+      return id ? quote+"/media/"+id+endQuote : full;
+    });
 }
 async function sanitizeServerWikiHtml(markup) {
   const source = String(markup || "");
@@ -972,7 +973,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       parsed.free();
       options.free();
     }
-    const cleanHtml = await rewriteNamuImageUrls(env, await sanitizeServerWikiHtml(parsedHtml));
+    const cleanHtml = rewriteNamuImageUrls(await sanitizeServerWikiHtml(parsedHtml), database.imageMap);
     // Table contrast requires a second HTMLRewriter pass. Documents without
     // tables do not need it.
     const contrastedHtml = /<table\b/i.test(cleanHtml)
