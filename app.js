@@ -1303,10 +1303,15 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  const pageCount = Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
  const callbacks = {
   documentExists(name){
-   return lookup.has(String(name||""));
+   const key=String(name||"").trim().replace(/^(?:파일|file):/i,"");
+   return lookup.has(String(name||"").trim())
+     || lookup.has("file:"+key)
+     || lookup.has("category:"+key);
   },
   getDocumentContent(name){
-   const row=lookup.get(String(name||""));
+   const raw=String(name||"").trim();
+   const key=raw.replace(/^(?:파일|file):/i,"");
+   const row=lookup.get(raw)||lookup.get(key)||lookup.get("file:"+key)||lookup.get("category:"+key);
    return row ? row.data : "";
   },
   getPagecount(){
