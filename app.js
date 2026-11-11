@@ -3,6 +3,12 @@ const $=id=>document.getElementById(id);
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
+const aonThemeMedia=window.matchMedia?.("(prefers-color-scheme: dark)");
+function syncAonWikiTheme(){
+ document.documentElement.dataset.theme=aonThemeMedia?.matches?"dark":"light";
+}
+syncAonWikiTheme();
+aonThemeMedia?.addEventListener?.("change",syncAonWikiTheme);
 const initialSsrState=(()=>{const node=document.getElementById("aonwiki-ssr-state");if(!node)return null;try{return JSON.parse(node.textContent||"null")}catch(error){console.warn("AonWiki SSR state parsing failed",error);return null}})();
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=initialSsrState?.canEdit===true?true:null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
 let currentDiscussionView=false;
@@ -1360,6 +1366,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "ëŒ€ë
     if (serverRenderVersions.get(target) !== version) return;
     appendSanitizedServerHtml(target,data.html);
     prepareServerRenderedMarkup(target, docTitle);
+    await activateAonWikiInteractions(target);
     target.dataset.renderEngine = data.engine || "namumark-worker";
     return data.metadata || { categories: [], backlinks: [] };
   } catch (error) {
