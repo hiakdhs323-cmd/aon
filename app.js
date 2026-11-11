@@ -1264,7 +1264,7 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  target.dataset.renderEngine="namumark-wasm";
 }
 
-function ensureClientDocumentToc(root, source){
+function ensureClientDocumentToc(root, source, forcePrepend=false){
  if(!root || !/\[\s*목차\s*\]/i.test(String(source||""))) return;
  if(root.querySelector(".wiki-macro-toc")) return;
  const headings=[...root.querySelectorAll("h1,h2,h3,h4,h5,h6")].filter(h=>h.textContent.trim());
@@ -1297,7 +1297,7 @@ function ensureClientDocumentToc(root, source){
  // Place the generated TOC at the beginning of the article. This is the
  // safe fallback for chunked rendering; non-chunked parser output remains
  // authoritative and is never replaced.
- root.prepend(toc);
+ if(forcePrepend || !root.querySelector(".wiki-macro-toc")) root.prepend(toc);
  applyFinalWikiTypographyAndLinkColors(root);
 }
 function rewriteClientNamuImageUrls(root, imageMap) {
@@ -2266,6 +2266,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   }else{
    appendSanitizedServerHtml(staging,data.html);
    prepareServerRenderedMarkup(staging,displayTitle);
+   ensureClientDocumentToc(staging, data.page.content || "", true);
   }
   if(requestId!==pageNavigationSequence)return;
   const article=$("article");
