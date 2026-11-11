@@ -1,19 +1,19 @@
 :root{
   
-  --wiki-primary:#00a69c;
-  --wiki-primary-dark:#008f86;
-  --wiki-link:#7db9ff;
-  --wiki-link-hover:#a5ceff;
-  --wiki-bg:#111315;
-  --wiki-panel:#1a1d20;
-  --wiki-panel-soft:#22262a;
-  --wiki-text:#e5e7e9;
-  --wiki-muted:#a5abb1;
-  --wiki-border:#34393e;
-  --wiki-border-strong:#50575e;
-  --wiki-warning-bg:#332e1e;
-  --wiki-warning-border:#806a30;
-  --wiki-danger:#ff7777;
+  --wiki-primary:light-dark(#00a69c,#00a69c);
+  --wiki-primary-dark:light-dark(#008f86,#72d6cf);
+  --wiki-link:light-dark(#06c,#7db9ff);
+  --wiki-link-hover:light-dark(#004a99,#a5ceff);
+  --wiki-bg:light-dark(#fff,#111315);
+  --wiki-panel:light-dark(#fff,#1a1d20);
+  --wiki-panel-soft:light-dark(#f5f5f5,#22262a);
+  --wiki-text:light-dark(#212529,#e5e7e9);
+  --wiki-muted:light-dark(#6c757d,#a5abb1);
+  --wiki-border:light-dark(#ddd,#34393e);
+  --wiki-border-strong:light-dark(#aaa,#50575e);
+  --wiki-warning-bg:light-dark(#fff8dc,#332e1e);
+  --wiki-warning-border:light-dark(#d0a72c,#806a30);
+  --wiki-danger:light-dark(#d00,#ff7777);
   --wiki-font:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
   font-family:var(--wiki-font);
   color:var(--wiki-text);
@@ -21,8 +21,8 @@
   font-synthesis:none;
 }
 *{box-sizing:border-box}
-html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg)}
-body{min-height:100vh;max-width:100%;margin:0;overflow-x:hidden;overscroll-behavior-x:none;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font);font-size:14px;line-height:1.65}
+html{min-height:100%;max-width:100%;overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;overscroll-behavior-x:none;background:var(--wiki-bg);color-scheme:light dark}
+body{min-height:100vh;max-width:100%;margin:0;overflow-x:hidden;overscroll-behavior-x:none;background:var(--wiki-bg);color:var(--wiki-text);font-family:var(--wiki-font);line-height:1.65}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
 a{color:var(--wiki-link);text-decoration:none}
