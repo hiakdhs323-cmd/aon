@@ -2014,7 +2014,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
               linkColors: payload.linkColors || linkColors || {},
               records: payload.records || [],
               pageCount: payload.pageCount || 0,
-              imageMap: payload.imageMap || {}
+              imageMap: payload.imageMap || {},
+              source: payload.source || ""
             };
           } else if (page.title === "아온") {
             clientRender = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
