@@ -583,47 +583,6 @@ const wikiFileLookupCache=new Map();
 const wikiFileLookupPending=new Map();
 const renderedDocumentCache=new Map();
 const renderedDocumentPending=new Map();
-async function loadChunkedClientRender(data,title){
- const manifest=data?.clientRender;
- if(!manifest?.chunked)return data;
- // Preview and document rendering must consume the same expanded source.
- // Large documents may receive that source directly from /api/render;
- // otherwise fall back to the chunk endpoint.
- if(typeof manifest.source==="string"){
-  data.clientRender={...manifest,source:manifest.source};
-  if(data.page){data.page.content="";data.page.contentLength=manifest.source.length;}
-  return data;
- }
- const total=Math.max(0,Number(manifest.totalChars)||0);
- const size=Math.max(4096,Math.min(12000,Number(manifest.chunkSize)||8000));
- if(total===0){
-  data.clientRender={...manifest,source:""};
-  if(data.page)data.page.content="";
-  return data;
- }
- const offsets=[];
- for(let offset=0;offset<total;offset+=size)offsets.push(offset);
- const parts=new Array(offsets.length);
- let nextIndex=0;
- const concurrency=Math.min(3,offsets.length);
- const worker=async()=>{
-  while(true){
-   const index=nextIndex++;
-   if(index>=offsets.length)return;
-   const offset=offsets[index],end=Math.min(total,offset+size);
-   const chunk=await api("/api/render-chunk?title="+encodeURIComponent(title)+"&offset="+offset+"&limit="+(end-offset));
-   if(Number(chunk.offset)!==offset||Number(chunk.total)!==total)throw new Error("대용량 문서 청크 검증에 실패했습니다.");
-   parts[index]=String(chunk.chunk||"");
-  }
- };
- await Promise.all(Array.from({length:concurrency},()=>worker()));
- const source=parts.join("");
- if(source.length!==total)throw new Error("대용량 문서 청크가 완전하게 불러와지지 않았습니다.");
- data.clientRender={...manifest,source};
- if(data.page)data.page.content="";
- data.page.contentLength=total;
- return data;
-}
 async function ensureCurrentContentForEdit(){
  if(currentContent)return currentContent;
  if(!currentTitle)return "";
@@ -637,7 +596,7 @@ async function getRenderedDocument(title){
  const cached=renderedDocumentCache.get(key);
  if(cached&&cached.expiresAt>Date.now())return cached.value;
  if(renderedDocumentPending.has(key))return renderedDocumentPending.get(key);
- const pending=api("/api/render?title="+encodeURIComponent(key)).then(data=>loadChunkedClientRender(data,key)).then(data=>{
+ const pending=api("/api/render?title="+encodeURIComponent(key)).then(data=>{
   if(data.page&&String(data.html||"").length<=300000){
    renderedDocumentCache.set(key,{value:data,expiresAt:Date.now()+45*1000});
    if(renderedDocumentCache.size>12)renderedDocumentCache.delete(renderedDocumentCache.keys().next().value);
@@ -1153,29 +1112,6 @@ function prepareServerRenderedMarkup(root,docTitle){
     });
   }
 }
-function splitNamuSourceForFallback(source,maxChars=7000){
- const text=String(source||"");
- if(text.length<=maxChars)return [text];
- const chunks=[];
- let start=0;
- while(start<text.length){
-  const desired=Math.min(text.length,start+maxChars);
-  if(desired>=text.length){chunks.push(text.slice(start));break}
-  let cut=-1;
-  const searchStart=Math.max(start+2000,desired-1800);
-  const region=text.slice(searchStart,Math.min(text.length,desired+1800));
-  const matches=[...region.matchAll(/\n(?:\s*\n|={2,6}\s|\|\||\}\}\}|\}\}\s*$)/gm)];
-  if(matches.length){
-   const m=matches[matches.length-1];
-   cut=searchStart+m.index+1;
-  }
-  if(cut<=start||cut>text.length)cut=text.lastIndexOf("\n",desired);
-  if(cut<=start)cut=desired;
-  chunks.push(text.slice(start,cut));
-  start=cut;
- }
- return chunks.filter(Boolean);
-}
 let aonNamuWasmPromise = null;
 
 async function getAonNamuWasm() {
@@ -1242,7 +1178,6 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  options.document_query_prefix = "/w/";
  options.dark_class = "dark";
  const source=String(clientRender?.source||"");
- const parseOne = chunk => renderer.renderWithMetadata(chunk,{options,callbacks});
  let html="";
  const categories=new Set();
  const backlinks=new Set();
@@ -1253,19 +1188,13 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
   (result?.backlinks||[]).forEach(value=>{if(String(value||"").trim())backlinks.add(String(value).trim())});
   return result;
  };
- if(source.length<=12000){
-  html=consumeResult(parseOne(source)).html||"";
- }else{
-  const chunks=splitNamuSourceForFallback(source,7000);
-  for(const chunk of chunks) html+=consumeResult(parseOne(chunk)).html||"";
- }
+ const result=consumeResult(renderer.renderWithMetadata(source,{options,callbacks}));
+ html=result?.html||"";
  appendSanitizedServerHtml(target,html);
  rewriteClientNamuImageUrls(target, clientRender?.imageMap);
  prepareServerRenderedMarkup(target,docTitle);
- // Large documents are parsed in independent chunks to avoid Worker/WASM
- // limits. That means the parser cannot build a document-wide [목차].
- // Rebuild the TOC from the final heading set when the source explicitly asks
- // for one, so normal documents and previews behave consistently.
+ // Rebuild the TOC only when the engine did not emit one and the source
+ // explicitly asks for it.
  ensureClientDocumentToc(target, source);
  target.dataset.renderEngine="namumark-wasm";
  for(const result of parseResults) {
@@ -1304,9 +1233,7 @@ function ensureClientDocumentToc(root, source, forcePrepend=false){
  });
  contents.append(list);
  toc.append(summary,contents);
- // Place the generated TOC at the beginning of the article. This is the
- // safe fallback for chunked rendering; non-chunked parser output remains
- // authoritative and is never replaced.
+ // Place the generated TOC at the beginning of the article when needed.
  if(forcePrepend || !root.querySelector(".wiki-macro-toc")) root.prepend(toc);
  applyFinalWikiTypographyAndLinkColors(root);
 }
