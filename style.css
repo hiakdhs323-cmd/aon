@@ -4241,38 +4241,3 @@ html[data-theme="dark"] #article.wiki-content details.wiki-macro-toc{
   font-weight: 700 !important;
 }
 
-/* AonWiki 2026 Document Skin */
-:root{--aon-doc-width:980px;--aon-doc-radius:6px;--aon-doc-accent:#00a69c;--aon-doc-heading:#5fb7ff}
-html[data-theme="light"]{--aon-doc-surface:#fff;--aon-doc-surface-2:#f7f8fa;--aon-doc-heading:#006fc9;--aon-doc-rule:#d9dde2;--aon-doc-shadow:0 1px 3px rgba(0,0,0,.06)}
-html[data-theme="dark"]{--aon-doc-surface:#151719;--aon-doc-surface-2:#1b1e21;--aon-doc-heading:#72bcff;--aon-doc-rule:#343a40;--aon-doc-shadow:0 1px 4px rgba(0,0,0,.18)}
-.document-view{max-width:var(--aon-doc-width);margin:0 auto}
-.article{padding:0 28px 28px;border:1px solid var(--aon-doc-rule);border-radius:var(--aon-doc-radius);background:var(--aon-doc-surface);box-shadow:var(--aon-doc-shadow)}
-.article-titlebar{min-height:64px;margin:0 -28px;padding:17px 28px 13px;align-items:flex-end;border-bottom:1px solid var(--aon-doc-rule)}
-.article-titlebar h1{font-size:25px;font-weight:650;letter-spacing:-.35px;line-height:1.25}
-.title-button{min-height:28px;border-radius:4px;border-color:var(--aon-doc-rule);background:transparent}.title-button:hover{background:var(--aon-doc-surface-2)}
-.article-tools{height:38px;margin:0 -28px;padding:0 28px;gap:20px;border-bottom:1px solid var(--aon-doc-rule)}.article-tools button{font-size:12px}.current-tab{border-bottom-color:var(--aon-doc-accent)}
-.notice,.protection-notice{border-radius:4px}
-#article.namumark-wasm-content,#article.wiki-content{padding:20px 0 34px;font-size:14px;line-height:1.78;color:var(--wiki-text)}
-#article.namumark-wasm-content p,#article.wiki-content p{margin:0 0 12px;line-height:1.78}
-#article.namumark-wasm-content h1,#article.namumark-wasm-content h2,#article.namumark-wasm-content h3,#article.namumark-wasm-content h4,#article.namumark-wasm-content h5,#article.namumark-wasm-content h6{font-family:inherit;color:var(--wiki-text);letter-spacing:-.25px}
-#article.namumark-wasm-content h1{margin:30px 0 15px;padding:0 0 8px;border-bottom:2px solid var(--wiki-text);font-size:23px;font-weight:700}
-#article.namumark-wasm-content h2{margin:27px 0 12px;padding:0 0 7px;border-bottom:1px solid var(--aon-doc-rule);font-size:20px;font-weight:700}
-#article.namumark-wasm-content h3{margin:23px 0 9px;padding:0;border:0;font-size:17px;font-weight:700}
-#article.namumark-wasm-content h4{margin:20px 0 8px;padding:0;border:0;font-size:16px;font-weight:700}
-#article.namumark-wasm-content h5{margin:17px 0 7px;font-size:15px;font-weight:700}#article.namumark-wasm-content h6{margin:15px 0 6px;font-size:14px;font-weight:700}
-#article.namumark-wasm-content .wiki-heading-number,#article.namumark-wasm-content .wiki-heading-number-label{color:var(--aon-doc-heading)!important}#article.namumark-wasm-content .wiki-heading-text{color:var(--wiki-text)!important}
-#article.namumark-wasm-content a{color:var(--wiki-link);text-decoration:none;text-underline-offset:2px}#article.namumark-wasm-content a:hover{text-decoration:underline}#article.namumark-wasm-content a.wiki-missing,#article.namumark-wasm-content a.opennamu_link_notfound{color:var(--wiki-danger)!important}
-#article.namumark-wasm-content ul,#article.namumark-wasm-content ol{margin:8px 0 15px;padding-left:27px}#article.namumark-wasm-content li{padding:1px 0}
-#article.namumark-wasm-content hr{margin:25px 0;border:0;border-top:1px solid var(--aon-doc-rule)}
-#article.namumark-wasm-content table{width:auto;max-width:100%;margin:12px auto 16px;border-collapse:collapse;font-size:13px;line-height:1.55}
-#article.namumark-wasm-content th,#article.namumark-wasm-content td{border:1px solid var(--aon-doc-rule);padding:5px 8px;vertical-align:middle}#article.namumark-wasm-content th{background:var(--aon-doc-surface-2);font-weight:700}
-#article.namumark-wasm-content .wiki-table-scroll,#article.namumark-wasm-content .table_safe,#article.namumark-wasm-content .wiki-table{max-width:100%;overflow-x:auto;overflow-y:hidden;margin:10px 0 15px}
-#article.namumark-wasm-content .wiki-table-scroll table,#article.namumark-wasm-content .table_safe table,#article.namumark-wasm-content .wiki-table table{margin:0}
-#article.namumark-wasm-content blockquote{margin:13px 0;padding:9px 14px;border-left:3px solid var(--aon-doc-accent);border-radius:0 4px 4px 0;background:var(--aon-doc-surface-2);color:var(--wiki-muted)}
-#article.namumark-wasm-content pre{margin:14px 0;padding:12px 14px;overflow:auto;border:1px solid var(--aon-doc-rule);border-radius:5px;background:var(--aon-doc-surface-2);line-height:1.55}#article.namumark-wasm-content code{padding:1px 4px;border-radius:3px;background:var(--aon-doc-surface-2);font-size:.9em}#article.namumark-wasm-content pre code{padding:0;background:transparent}
-#article.namumark-wasm-content img{max-width:100%;height:auto}#article.namumark-wasm-content .wiki-image{margin:13px auto 17px;text-align:center}#article.namumark-wasm-content .wiki-image figcaption{margin-top:5px;color:var(--wiki-muted);font-size:12px}
-#article.namumark-wasm-content .wiki-toc,#article.namumark-wasm-content .wiki-macro-toc{display:table;min-width:210px;max-width:100%;margin:0 0 18px;padding:9px 13px;border:1px solid var(--aon-doc-rule);border-radius:4px;background:var(--aon-doc-surface-2);font-size:13px;line-height:1.65}
-#article.namumark-wasm-content .wiki-toc summary,#article.namumark-wasm-content .wiki-toc-title,#article.namumark-wasm-content .wiki-macro-toc{font-weight:700;color:var(--wiki-text)}
-#article.namumark-wasm-content details{margin:10px 0;border:1px solid var(--aon-doc-rule);border-radius:4px;background:var(--aon-doc-surface-2);overflow:hidden}#article.namumark-wasm-content details>summary{padding:7px 10px;cursor:pointer;font-weight:600;color:var(--wiki-text)}#article.namumark-wasm-content details>summary:hover{background:rgba(0,166,156,.08)}
-#article.namumark-wasm-content .wiki-footnotes{margin-top:28px;padding-top:11px;border-top:1px solid var(--aon-doc-rule);font-size:12px}#article.namumark-wasm-content .wiki-category,#article.namumark-wasm-content .wiki-category{margin-top:18px;padding-top:9px;border-top:1px solid var(--aon-doc-rule);color:var(--wiki-muted);font-size:12px}
-@media(max-width:760px){.document-view{width:100%}.article{padding:0 15px 22px;border-left:0;border-right:0;border-radius:0;box-shadow:none}.article-titlebar{margin:0 -15px;padding:14px 15px 11px;align-items:center}.article-titlebar h1{font-size:21px}.article-tools{margin:0 -15px;padding:0 15px;gap:15px;overflow-x:auto}#article.namumark-wasm-content,#article.wiki-content{padding-top:16px;font-size:14px}#article.namumark-wasm-content h1{font-size:21px}#article.namumark-wasm-content h2{font-size:18px}#article.namumark-wasm-content h3{font-size:16px}#article.namumark-wasm-content table{font-size:12px}}
