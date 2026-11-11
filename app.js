@@ -1244,11 +1244,20 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  const source=String(clientRender?.source||"");
  const parseOne = chunk => renderer.renderWithMetadata(chunk,{options,callbacks});
  let html="";
+ const categories=new Set();
+ const backlinks=new Set();
+ const parseResults=[];
+ const consumeResult=result=>{
+  parseResults.push(result);
+  (result?.categories||[]).forEach(value=>{if(String(value||"").trim())categories.add(String(value).trim())});
+  (result?.backlinks||[]).forEach(value=>{if(String(value||"").trim())backlinks.add(String(value).trim())});
+  return result;
+ };
  if(source.length<=12000){
-  html=parseOne(source).html||"";
+  html=consumeResult(parseOne(source)).html||"";
  }else{
   const chunks=splitNamuSourceForFallback(source,7000);
-  for(const chunk of chunks) html+=parseOne(chunk).html||"";
+  for(const chunk of chunks) html+=consumeResult(parseOne(chunk)).html||"";
  }
  appendSanitizedServerHtml(target,html);
  rewriteClientNamuImageUrls(target, clientRender?.imageMap);
@@ -1259,6 +1268,10 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  // for one, so normal documents and previews behave consistently.
  ensureClientDocumentToc(target, source);
  target.dataset.renderEngine="namumark-wasm";
+ for(const result of parseResults) {
+  try { result.free?.(); } catch {}
+ }
+ return { categories:[...categories], backlinks:[...backlinks] };
 }
 
 function ensureClientDocumentToc(root, source, forcePrepend=false){
@@ -1420,6 +1433,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     appendSanitizedServerHtml(target,data.html);
     prepareServerRenderedMarkup(target, docTitle);
     target.dataset.renderEngine = data.engine || "namumark-worker";
+    return data.metadata || { categories: [], backlinks: [] };
   } catch (error) {
     if (serverRenderVersions.get(target) !== version) return;
     target.replaceChildren();
@@ -2203,6 +2217,30 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
     article.append(pagination);
   }
 }
+function renderDocumentMetadata(article, metadata, docTitle) {
+ const categories=[...new Set((metadata?.categories||[]).map(value=>String(value||"").trim()).filter(Boolean))]
+   .map(value=>value.replace(/^(?:분류|category):/i,"").trim()).filter(Boolean);
+ article.querySelector(".wiki-document-metadata")?.remove();
+ if(!categories.length)return;
+ const footer=document.createElement("footer");
+ footer.className="wiki-document-metadata";
+ const label=document.createElement("span");
+ label.className="wiki-document-metadata-label";
+ label.textContent="분류";
+ footer.append(label);
+ const list=document.createElement("div");
+ list.className="wiki-document-category-list";
+ categories.forEach(name=>{
+  const link=document.createElement("a");
+  link.href=routeFor("분류:"+name);
+  link.textContent="분류:"+name;
+  link.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+name)});
+  list.append(link);
+ });
+ footer.append(list);
+ article.append(footer);
+}
+
 async function loadPage(title,pushRoute=true,anchor=""){
  currentDiscussionView=false;
  title=String(title||"").trim();if(!title||title==="대문"){showHome(pushRoute);return}
@@ -2305,8 +2343,9 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
   applyDocumentActionIcons();
   const staging=document.createElement("article");
+  let renderMetadata = data.metadata || { categories: [], backlinks: [] };
   if(data.clientRender){
-   await renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
+   renderMetadata = await renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
   }else{
    appendSanitizedServerHtml(staging,data.html);
    rewriteClientNamuImageUrls(staging,data.imageMap);
@@ -2321,6 +2360,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   article.classList.add("namumark-rendered");
   await activateAonWikiInteractions(article);
   if(requestId!==pageNavigationSequence)return;
+  renderDocumentMetadata(article, renderMetadata, data.page.title||title);
   article.dataset.renderEngine=data.engine||staging.dataset.renderEngine||"worker-ssr";
   requestAnimationFrame(()=>{
    if(requestId!==pageNavigationSequence)return;
