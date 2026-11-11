@@ -1905,16 +1905,39 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           }
           if (!page) return { page: null, html: "", engine: "namumark-worker" };
           const linkColors = await getPageLinkColors(env, page.title);
-          const clientRender = page.title === "아온"
-            ? await buildAonClientRenderPayload(env, page.title, page.content || "", linkColors)
-            : null;
+          const sourceText = String(page.content || "");
+          const largeDocument = sourceText.length > 6000;
+          let clientRender = null;
+          if (largeDocument) {
+            if (page.title === "아온") {
+              const payload = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
+              clientRender = {
+                chunked: true,
+                totalChars: sourceText.length,
+                chunkSize: 8000,
+                linkColors: payload.linkColors || linkColors || {},
+                records: payload.records || [],
+                pageCount: payload.pageCount || 0
+              };
+            } else {
+              clientRender = {
+                chunked: true,
+                totalChars: sourceText.length,
+                chunkSize: 8000,
+                linkColors: linkColors || {}
+              };
+            }
+          } else if (page.title === "아온") {
+            clientRender = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
+          }
           const rendered = clientRender
             ? { html: "" }
-            : await renderNamuMarkupOnWorker(env, page.title, page.content || "", linkColors);
+            : await renderNamuMarkupOnWorker(env, page.title, sourceText, linkColors);
           return {
             page: {
               title: page.title,
-              content: page.content || "",
+              content: largeDocument ? "" : sourceText,
+              contentLength: sourceText.length,
               created_at: page.created_at,
               updated_at: page.updated_at,
               protectionLevel: page.protectionLevel || "none",
@@ -1935,6 +1958,37 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const value = await pending;
         return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "MISS" });
       }
+      if (url.pathname === "/api/render-chunk" && request.method === "GET") {
+        const title = cleanTitle(url.searchParams.get("title"));
+        if (!title) return response({ error: "문서 제목을 입력하세요." }, 400, cors);
+        const requestedOffset = Math.max(0, Number(url.searchParams.get("offset") || 0) || 0);
+        const requestedLimit = Math.max(4096, Math.min(12000, Number(url.searchParams.get("limit") || 8000) || 8000));
+        const selectPage = async pageTitle => env.DB.prepare(
+          "SELECT title, content FROM pages WHERE title = ?"
+        ).bind(pageTitle).first();
+        let page = await selectPage(title);
+        if (!page) {
+          await ensurePageAliasSchema(env);
+          const alias = await env.DB.prepare("SELECT title FROM page_aliases WHERE alias = ? COLLATE NOCASE").bind(title).first();
+          if (alias) page = await selectPage(alias.title);
+        }
+        if (!page) return response({ error: "문서를 찾을 수 없습니다." }, 404, cors);
+        const source = String(page.content || "");
+        const offset = Math.min(requestedOffset, source.length);
+        const end = Math.min(source.length, offset + requestedLimit);
+        return response({
+          title: page.title,
+          offset,
+          end,
+          total: source.length,
+          chunk: source.slice(offset, end)
+        }, 200, {
+          ...cors,
+          "Cache-Control": "private, max-age=30",
+          "X-AonWiki-Render": "namumark-chunk"
+        });
+      }
+
       if (url.pathname === "/api/render" && request.method === "POST") {
         if (await authRateLimited(request, env, "namumark-preview", 240, 60 * 1000)) {
           return response({ error: "미리보기 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
