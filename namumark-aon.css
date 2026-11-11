@@ -892,6 +892,22 @@
 .namumark-wasm-content .wiki-self-link:hover {
   color: var(--wiki-body-link-hover, #0056a8);
 }
+.namumark-wasm-content a.wiki-link-internal,
+.namumark-wasm-content a.wiki-link-internal:visited {
+  color: #ec9f19 !important;
+}
+.namumark-wasm-content a.wiki-link-internal:hover,
+.namumark-wasm-content a.wiki-link-internal:focus-visible {
+  color: #ffbd4c !important;
+}
+.namumark-wasm-content a.wiki-link-internal.not-exist,
+.namumark-wasm-content a.wiki-link-internal.not-exist:visited {
+  color: #dc4343 !important;
+}
+.namumark-wasm-content a.wiki-link-internal.not-exist:hover,
+.namumark-wasm-content a.wiki-link-internal.not-exist:focus-visible {
+  color: #ff6b6b !important;
+}
 .namumark-wasm-content .wiki-macro-toc,
 .namumark-wasm-content .wiki-macro-toc details,
 .namumark-wasm-content .wiki-macro-toc summary,
