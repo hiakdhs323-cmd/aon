@@ -20,8 +20,8 @@ assert.doesNotMatch(worker, /worker\/src\/namumark-parser|namumark-parser\.js/, 
 assert.match(worker, /namutest-main-v2-assets:/, "persistent cache keys must be namespaced by the new renderer identity");
 assert.match(worker, /if \(stored && stored\.source_hash === cacheKey\)/, "old renderer cache entries must never be reused");
 assert.doesNotMatch(worker, /endsWith\("\\:" \+ sourceDigest\)/, "legacy cache compatibility fallback must be removed");
-assert.match(worker, /Namu_test-main\\/namumark\.js/, "Worker static proxy must serve the nested Namu_test-main parser module");
-assert.match(worker, /Namu_test-main\\/namumark_bg\.wasm/, "Worker static proxy must serve the nested Namu_test-main WASM module");
+assert.match(worker, /Namu_test-main\/namumark\.js/, "Worker static proxy must serve the nested Namu_test-main parser module");
+assert.match(worker, /Namu_test-main\/namumark_bg\.wasm/, "Worker static proxy must serve the nested Namu_test-main WASM module");
 
 
 const removedLegacyFiles = [
