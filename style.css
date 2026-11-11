@@ -196,6 +196,11 @@ a:hover{color:var(--wiki-link-hover);text-decoration:underline}
 .protection-notice strong{font-weight:700}
 .protection-reason{margin-top:5px;padding-top:5px;border-top:1px solid var(--wiki-warning-border);color:var(--wiki-muted);font-size:12px}
 .article-footer{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding:10px 0 0;border-top:1px solid var(--wiki-border);color:var(--wiki-muted);font-size:11px}
+.wiki-document-metadata{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-top:14px;padding-top:10px;border-top:1px solid var(--wiki-border);font-size:12px}
+.wiki-document-metadata-label{font-weight:700;color:var(--wiki-muted)}
+.wiki-document-category-list{display:flex;flex-wrap:wrap;gap:4px 8px}
+.wiki-document-category-list a{color:var(--wiki-link);text-decoration:none}
+.wiki-document-category-list a:hover{text-decoration:underline}
 .site-footer{margin:12px 0 30px;padding-top:9px;border-top:1px solid var(--wiki-border);color:var(--wiki-muted);font-size:11px}
 
 /* Category directory, recent changes, backlinks and history */
