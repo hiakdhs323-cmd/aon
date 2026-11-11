@@ -1252,28 +1252,67 @@ function splitNamuSourceForFallback(source,maxChars=7000){
  }
  return chunks.filter(Boolean);
 }
-function renderClientParsedDocument(clientRender, target, docTitle) {
- const Parser=window.NamuMarkBundle?.NamuMark;
- if(typeof Parser!=="function")throw new Error("브라우저 NamuMark 파서를 불러오지 못했습니다.");
+let aonWasmRendererPromise=null;
+async function getAonWasmRenderer(){
+ if(!aonWasmRendererPromise){
+  aonWasmRendererPromise=(async()=>{
+   const mod=await import("./Namu_test-main/wasm.js");
+   await mod.initWasm(new URL("./Namu_test-main/namumark_bg.wasm",import.meta.url));
+   return mod;
+  })().catch(error=>{aonWasmRendererPromise=null;throw error});
+ }
+ return aonWasmRendererPromise;
+}
+async function renderClientWithAonWasm(source,clientRender,docTitle,target){
+ const mod=await getAonWasmRenderer();
  const records=Array.isArray(clientRender?.records)?clientRender.records:[];
  const lookup=new Map();
  for(const record of records){
-  if(record&&typeof record.title==="string"&&record.title)lookup.set(record.title,{title:record.title,data:String(record.data||"")});
+  if(record&&typeof record.title==="string"&&record.title){
+   lookup.set(record.title,{title:record.title,data:String(record.data||"")});
+  }
  }
  const pageCount=Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
- const database={data:new Array(pageCount),lookup};
+ const callbacks={
+  documentExists:name=>lookup.has(String(name||"")),
+  getDocumentContent:(name)=>lookup.get(String(name||""))?.data??"",
+  getPagecount:()=>pageCount
+ };
+ const options=new mod.RendererOptions();
+ options.document_url_prefix="/w/";
+ options.document_query_prefix="/w/";
+ const result=mod.renderWithMetadata(source,{options,callbacks});
+ try{
+  return result.html;
+ }finally{
+  options.free();
+ }
+}
+async function renderClientParsedDocument(clientRender, target, docTitle) {
  const source=String(clientRender?.source||"");
- const parseOne=chunk=>new Parser(chunk,{
-  docName:String(docTitle||"아온"),
-  useTocSet:"default",
-  docType:"view"
- },database).parse()[0]||"";
  let html="";
- if(source.length<=12000){
-  html=parseOne(source);
- }else{
-  const chunks=splitNamuSourceForFallback(source,7000);
-  for(const chunk of chunks)html+=parseOne(chunk);
+ let engine="namumark-client";
+ try{
+  html=await renderClientWithAonWasm(source,clientRender,docTitle,target);
+  engine="namumark-wasm-client";
+ }catch(wasmError){
+  console.warn("AonWiki WASM renderer fallback:",wasmError);
+  const Parser=window.NamuMarkBundle?.NamuMark;
+  if(typeof Parser!=="function")throw wasmError;
+  const records=Array.isArray(clientRender?.records)?clientRender.records:[];
+  const lookup=new Map();
+  for(const record of records){
+   if(record&&typeof record.title==="string"&&record.title)lookup.set(record.title,{title:record.title,data:String(record.data||"")});
+  }
+  const pageCount=Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
+  const database={data:new Array(pageCount),lookup};
+  const parseOne=chunk=>new Parser(chunk,{
+   docName:String(docTitle||"아온"),
+   useTocSet:"default",
+   docType:"view"
+  },database).parse()[0]||"";
+  if(source.length<=12000)html=parseOne(source);
+  else for(const chunk of splitNamuSourceForFallback(source,7000))html+=parseOne(chunk);
  }
  appendSanitizedServerHtml(target,html);
  prepareServerRenderedMarkup(target,docTitle);
@@ -1283,9 +1322,13 @@ function renderClientParsedDocument(clientRender, target, docTitle) {
  if(color&&/^(?:#[0-9a-f]{3,8}|[a-z]{1,20}|rgba?\([\d.% ,/+-]+\)|hsla?\([\d.% ,/+-]+\))$/i.test(color)){
   target.querySelectorAll("a:not(.opennamu_not_exist_link):not(.wiki-heading-number)").forEach(link=>link.style.setProperty("color",color,"important"));
  }
- target.dataset.renderEngine="namumark-client";
+ target.dataset.renderEngine=engine;
+ try{
+  const interactions=window.AonNamuInteractions||(await import("./Namu_test-main/interactions.js")).setupWikiInteractions(target);
+  window.AonNamuInteractions=interactions;
+  interactions?.refresh?.();
+ }catch(error){console.warn("AonWiki wiki interactions setup skipped:",error)}
 }
-
 function appendSanitizedServerHtml(target,html){
  const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
  const allowedTags=new Set(["A","ABBR","B","BDI","BDO","BLOCKQUOTE","BR","CAPTION","CENTER","CODE","COL","COLGROUP","DD","DEL","DETAILS","DIV","DL","DT","EM","FIGCAPTION","FIGURE","FONT","FOOTNOTE_TITLE","H1","H2","H3","H4","H5","H6","HR","I","IFRAME","IMG","INS","KBD","LI","MARK","OL","P","PRE","Q","RUBY","RT","RP","S","SAMP","SMALL","SPAN","STRIKE","STRONG","SUB","SUMMARY","SUP","TABLE","TBODY","TD","TFOOT","TH","THEAD","TR","TT","U","UL","VAR","VIDEO","AUDIO","SOURCE"]);
