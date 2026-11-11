@@ -85,7 +85,7 @@ function splitSafeExpression(input, operator) {
   parts.push(input.slice(start).trim());
   return parts;
 }
-function evaluateSafeNamuIf(expression, pageName) {
+function evaluateSafeNamuIf(expression, pageName, variables = {}) {
   const source = String(expression || "").trim();
   if (!source || source.length > 500) return false;
   const stripOuter = (input) => {
@@ -116,7 +116,8 @@ function evaluateSafeNamuIf(expression, pageName) {
   };
   const valueOf = (raw) => {
     const value = stripOuter(raw);
-    if (/^(docName|title|pagename)$/i.test(value)) return pageName;
+    if (Object.prototype.hasOwnProperty.call(variables, value)) return variables[value];
+  if (/^(docName|title|pagename)$/i.test(value)) return pageName;
     if (/^true$/i.test(value)) return true;
     if (/^false$/i.test(value)) return false;
     if (/^null$/i.test(value)) return null;
@@ -456,10 +457,12 @@ var NamuMark = class _NamuMark {
                   slashAdd = matches2[0];
                 }
               }
-              if (includeChangeList[matches2[1]]) {
+              if (Object.prototype.hasOwnProperty.call(includeChangeList, matches2[1])) {
                 return slashAdd + includeChangeList[matches2[1]];
+              } else if (matches2[1] === "calleeTitle") {
+                return slashAdd + escapeHtml(this.docName);
               } else {
-                return slashAdd + matches2[2];
+                return slashAdd + "";
               }
             }
           };
@@ -467,7 +470,15 @@ var NamuMark = class _NamuMark {
         result.data = result.data.replace(/(\\+)?@([ㄱ-힣a-zA-Z0-9_]+)=((?:\\@|[^@\n])+)@/g, handler());
         result.data = result.data.replace(/(\\+)?@([ㄱ-힣a-zA-Z0-9_]+)@/g, handler());
         result.data = result.data.replace(/^\n+/g, "");
-        const mark = new _NamuMark(result.data, { ...this.config, docName: this.docName, docType: "include" }, this.database).parse();
+        const mark = new _NamuMark(result.data, {
+        ...this.config,
+        docName: this.docName,
+        docType: "include",
+        namuIfVariables: {
+          ...includeChangeList,
+          calleeTitle: this.docName
+        }
+      }, this.database).parse();
         dataName = this.getToolDataStorage(
           "" + includeLink + '<div id="' + includeSubName + '" style="display: inline;">' + mark[0] + "</div>",
           "",
@@ -599,7 +610,7 @@ var NamuMark = class _NamuMark {
         const ifMatch = middleData.match(/^#!if[ \t]+([^\n]+)\n/i);
         const expression = ifMatch ? this.getToolDataRevert(ifMatch[1]).trim() : "";
         const body = this.getToolDataRevert(middleData.replace(/^#!if[^\n]*\n/i, "")).replace(/^\n|\n$/g, "");
-        if (evaluateSafeNamuIf(expression, this.docName)) {
+        if (evaluateSafeNamuIf(expression, this.docName, this.config.namuIfVariables || {})) {
           const interName = "inter_data_" + interCount;
           interData[interName] = body;
           middleDataPass = "<" + interName + ">";
