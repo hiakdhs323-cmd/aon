@@ -4355,7 +4355,7 @@ html[data-theme="dark"] .article{border-color:#454b50}
 .site-footer{margin-top:10px;color:#9ca3a7;border-color:#34383c}
 
 /* NamuWiki places document categories above the title block. */
-#article.namumark-wasm-content > .wiki-categories{
+.article > .wiki-categories{
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -4369,13 +4369,13 @@ html[data-theme="dark"] .article{border-color:#454b50}
   font-size:12px;
   line-height:1.55
 }
-#article.namumark-wasm-content > .wiki-categories .wiki-categories-label{
+.article > .wiki-categories .wiki-categories-label{
   margin-right:5px;
   color:var(--wiki-text);
   font-weight:700
 }
-#article.namumark-wasm-content > .wiki-categories a{color:var(--wiki-link)}
-#article.namumark-wasm-content > .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
+.article > .wiki-categories a{color:var(--wiki-link)}
+.article > .wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
 
 /* The shell stays dark while the renderer remains responsible for document markup. */
 .protection-notice{background:#fff8e1!important;color:#59451b!important}
