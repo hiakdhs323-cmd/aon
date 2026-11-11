@@ -392,12 +392,19 @@
 }
 
 /* Worker-injected automatic contrast must switch with the active color scheme. */
-.namumark-wasm-content .wiki-table td[style*="--aonwiki-table-auto-fg-light"],
-.namumark-wasm-content .wiki-table th[style*="--aonwiki-table-auto-fg-light"] {
-  color: light-dark(
-    var(--aonwiki-table-auto-fg-light, var(--wiki-text)),
-    var(--aonwiki-table-auto-fg-dark, var(--wiki-text))
-  ) !important;
+.namumark-wasm-content .wiki-table td[style*="--aonwiki-table-auto-fg-light"]:not([data-aonwiki-authored-fg]),
+.namumark-wasm-content .wiki-table th[style*="--aonwiki-table-auto-fg-light"]:not([data-aonwiki-authored-fg]) {
+  color: var(--aonwiki-table-auto-fg-light, var(--wiki-text)) !important;
+}
+@media (prefers-color-scheme: dark) {
+  .namumark-wasm-content .wiki-table td[style*="--aonwiki-table-auto-fg-light"]:not([data-aonwiki-authored-fg]),
+  .namumark-wasm-content .wiki-table th[style*="--aonwiki-table-auto-fg-light"]:not([data-aonwiki-authored-fg]) {
+    color: var(--aonwiki-table-auto-fg-dark, var(--wiki-text)) !important;
+  }
+}
+html[data-theme="dark"] .namumark-wasm-content .wiki-table td[style*="--aonwiki-table-auto-fg-light"]:not([data-aonwiki-authored-fg]),
+html[data-theme="dark"] .namumark-wasm-content .wiki-table th[style*="--aonwiki-table-auto-fg-light"]:not([data-aonwiki-authored-fg]) {
+  color: var(--aonwiki-table-auto-fg-dark, var(--wiki-text)) !important;
 }
 
 .namumark-wasm-content .wiki-table td.wiki-table-nopadding,
