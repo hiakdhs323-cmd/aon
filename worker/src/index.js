@@ -563,7 +563,10 @@ async function buildNamuServerDatabase(env, title, content) {
   // expensive and could push a Worker over its resource limit.
   const fileTargets = [...linkTargets]
     .filter(name => name.startsWith("file:"))
-    .map(name => name.slice(5))
+    .map(name => {
+      const raw = name.slice(5);
+      try { return decodeURIComponent(raw); } catch { return raw; }
+    })
     .filter(Boolean)
     .slice(0, 500);
 
@@ -575,9 +578,9 @@ async function buildNamuServerDatabase(env, title, content) {
       const batch = fileTargets.slice(index, index + 90);
       const placeholders = batch.map(() => "?").join(",");
       const [images, aliases] = await Promise.all([
-        env.DB.prepare("SELECT id, filename FROM images WHERE filename IN (" + placeholders + ")")
+        env.DB.prepare("SELECT id, filename FROM images WHERE filename COLLATE NOCASE IN (" + placeholders + ")")
           .bind(...batch).all(),
-        env.DB.prepare("SELECT alias, image_id FROM image_aliases WHERE alias IN (" + placeholders + ")")
+        env.DB.prepare("SELECT alias, image_id FROM image_aliases WHERE alias COLLATE NOCASE IN (" + placeholders + ")")
           .bind(...batch).all()
       ]);
       imageRows.push(...(images.results || []));
@@ -908,7 +911,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "namutest-main-v3-renderer:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v4-images:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -1273,7 +1276,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261111-style-no-theme-v3" : "20261111-assets-v1";
+        const assetCacheVersion = assetName === "style.css" ? "20261111-browser-theme-v1" : "20261111-assets-v2";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
