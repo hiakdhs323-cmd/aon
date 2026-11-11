@@ -1229,6 +1229,29 @@ function prepareServerRenderedMarkup(root,docTitle){
     });
   }
 }
+function splitNamuSourceForFallback(source,maxChars=7000){
+ const text=String(source||"");
+ if(text.length<=maxChars)return [text];
+ const chunks=[];
+ let start=0;
+ while(start<text.length){
+  const desired=Math.min(text.length,start+maxChars);
+  if(desired>=text.length){chunks.push(text.slice(start));break}
+  let cut=-1;
+  const searchStart=Math.max(start+2000,desired-1800);
+  const region=text.slice(searchStart,Math.min(text.length,desired+1800));
+  const matches=[...region.matchAll(/\n(?:\s*\n|={2,6}\s|\|\||\}\}\}|\}\}\s*$)/gm)];
+  if(matches.length){
+   const m=matches[matches.length-1];
+   cut=searchStart+m.index+1;
+  }
+  if(cut<=start||cut>text.length)cut=text.lastIndexOf("\n",desired);
+  if(cut<=start)cut=desired;
+  chunks.push(text.slice(start,cut));
+  start=cut;
+ }
+ return chunks.filter(Boolean);
+}
 function renderClientParsedDocument(clientRender, target, docTitle) {
  const Parser=window.NamuMarkBundle?.NamuMark;
  if(typeof Parser!=="function")throw new Error("브라우저 NamuMark 파서를 불러오지 못했습니다.");
@@ -1239,13 +1262,20 @@ function renderClientParsedDocument(clientRender, target, docTitle) {
  }
  const pageCount=Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
  const database={data:new Array(pageCount),lookup};
- const parser=new Parser(String(clientRender?.source||""),{
+ const source=String(clientRender?.source||"");
+ const parseOne=chunk=>new Parser(chunk,{
   docName:String(docTitle||"아온"),
   useTocSet:"default",
   docType:"view"
- },database);
- const parsed=parser.parse();
- appendSanitizedServerHtml(target,parsed[0]||"");
+ },database).parse()[0]||"";
+ let html="";
+ if(source.length<=12000){
+  html=parseOne(source);
+ }else{
+  const chunks=splitNamuSourceForFallback(source,7000);
+  for(const chunk of chunks)html+=parseOne(chunk);
+ }
+ appendSanitizedServerHtml(target,html);
  prepareServerRenderedMarkup(target,docTitle);
  const colors=clientRender?.linkColors||{};
  const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
