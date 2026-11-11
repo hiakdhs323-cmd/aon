@@ -2061,3 +2061,83 @@ button.aon-has-icon{display:inline-flex;justify-content:center}
     line-height:1.65!important;
   }
 }
+
+
+/* Desktop layout repair: the header controls must share one flex row, while
+   the activity rail stays beside the main content only when there is room. */
+@media (min-width: 821px) {
+  .site-header { padding: 0 20px; }
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: min(1360px, 100%);
+    min-width: 0;
+    margin: 0 auto;
+    padding: 8px 0;
+  }
+  .site-header .brand { flex: 0 0 auto; }
+  .top-nav {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: 3px;
+  }
+  .top-nav-link { flex: 0 0 auto; }
+  .searchbar {
+    flex: 1 1 220px;
+    min-width: 160px;
+    max-width: 520px;
+    margin-left: auto;
+  }
+  .header-actions {
+    flex: 0 0 auto;
+    margin-left: 0;
+  }
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 270px;
+    gap: 22px;
+    width: min(1360px, calc(100% - 40px));
+  }
+  .main, .global-rail { min-width: 0; }
+  .global-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rail-panel { min-width: 0; }
+}
+@media (min-width: 561px) and (max-width: 820px) {
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
+  }
+  .site-header .brand { flex: 0 0 auto; }
+  .top-nav { display: flex; align-items: center; min-width: 0; }
+  .searchbar { min-width: 180px; }
+  .header-actions { display: flex; flex-wrap: wrap; }
+}
+@media (max-width: 700px) {
+  .recent-change-row,
+  .backlink-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .recent-change-row > a,
+  .backlink-row > a {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .recent-change-row > span,
+  .backlink-row > span {
+    max-width: 100%;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+}
