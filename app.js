@@ -2220,7 +2220,8 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
 function renderDocumentMetadata(article, metadata, docTitle) {
  const categories=[...new Set((metadata?.categories||[]).map(value=>String(value||"").trim()).filter(Boolean))]
    .map(value=>value.replace(/^(?:분류|category):/i,"").trim()).filter(Boolean);
- article.querySelector(".wiki-categories")?.remove();
+ const shell=article.closest(".article")||article;
+ shell.querySelector(":scope > .wiki-categories")?.remove();
  if(!categories.length)return;
  const footer=document.createElement("div");
  footer.className="wiki-categories";
@@ -2235,7 +2236,7 @@ function renderDocumentMetadata(article, metadata, docTitle) {
   link.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+name)});
   footer.append(link);
  });
- article.prepend(footer);
+ shell.prepend(footer);
 }
 
 async function loadPage(title,pushRoute=true,anchor=""){
