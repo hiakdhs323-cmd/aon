@@ -2002,24 +2002,20 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           const largeDocument = sourceText.length > 6000;
           let clientRender = null;
           if (largeDocument) {
-            if (page.title === "아온") {
-              const payload = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
-              clientRender = {
-                chunked: true,
-                totalChars: sourceText.length,
-                chunkSize: 8000,
-                linkColors: payload.linkColors || linkColors || {},
-                records: payload.records || [],
-                pageCount: payload.pageCount || 0
-              };
-            } else {
-              clientRender = {
-                chunked: true,
-                totalChars: sourceText.length,
-                chunkSize: 8000,
-                linkColors: linkColors || {}
-              };
-            }
+            // Large documents are parsed in the browser to avoid Worker CPU
+            // limits. Still provide the same expanded include/document/image
+            // database used by preview, otherwise normal document rendering
+            // loses includes, file resolution, and document existence checks.
+            const payload = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
+            clientRender = {
+              chunked: true,
+              totalChars: sourceText.length,
+              chunkSize: 8000,
+              linkColors: payload.linkColors || linkColors || {},
+              records: payload.records || [],
+              pageCount: payload.pageCount || 0,
+              imageMap: payload.imageMap || {}
+            };
           } else if (page.title === "아온") {
             clientRender = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
           }
