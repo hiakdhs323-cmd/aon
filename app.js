@@ -1,31 +1,5 @@
 const $=id=>document.getElementById(id);
 
-const THEME_SETTING = "aonwiki-theme-v2";
-function applyWikiTheme(theme) {
-  const selected = theme === "dark" ? "dark" : "light";
-  document.documentElement.dataset.theme = selected;
-  const button = $("theme-toggle");
-  if (button) {
-    button.textContent = selected === "dark" ? "화이트 모드" : "다크 모드";
-    button.setAttribute("aria-label", selected === "dark" ? "화이트 모드로 전환" : "다크 모드로 전환");
-  }
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = selected === "dark" ? "#050505" : "#ffffff";
-  // Theme switching is a purely client-side operation. Never let table
-  // contrast recalculation break the document or trigger a server-render error.
-  try { refreshWikiTableContrast(document); } catch (error) { console.warn("AonWiki theme contrast refresh skipped:", error); }
-}
-try { applyWikiTheme(localStorage.getItem(THEME_SETTING) || "dark"); } catch (error) { applyWikiTheme("dark"); }
-$("theme-toggle")?.addEventListener("click", () => {
-  try {
-    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    localStorage.setItem(THEME_SETTING, next);
-    applyWikiTheme(next);
-  } catch (error) {
-    console.warn("AonWiki theme switch failed:", error);
-  }
-});
-
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
