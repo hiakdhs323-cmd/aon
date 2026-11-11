@@ -243,6 +243,14 @@
   font-size: .8em;
   vertical-align: super;
 }
+.namumark-wasm-content a.wiki-fn-content,
+.namumark-wasm-content a.wiki-fn-content:visited {
+  color: #ec9f19 !important;
+}
+.namumark-wasm-content a.wiki-fn-content:hover,
+.namumark-wasm-content a.wiki-fn-content:focus-visible {
+  color: #ffbd4c !important;
+}
 
 .namumark-wasm-content .wiki-macro-footnote {
   border-top: 1px solid light-dark(#777,#383840);
@@ -975,4 +983,3 @@ html[data-theme="dark"] .namumark-wasm-content .wiki-table th[style*="--aonwiki-
     color: #a5abb1;
   }
 }
-

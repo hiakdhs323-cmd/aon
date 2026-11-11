@@ -63,8 +63,9 @@ export function setupWikiInteractions(root) {
   }
 
   function noteContent(note) {
-    const href = note.getAttribute("href");
-    if (!href?.startsWith("#")) return null;
+    const href = note.getAttribute("href") ||
+      (note.getAttribute("data-wiki-footnote-target") ? `#${note.getAttribute("data-wiki-footnote-target")}` : "");
+    if (!href.startsWith("#")) return null;
     let id;
     try { id = decodeURIComponent(href.slice(1)); } catch { return null; }
     const anchor = root.ownerDocument.getElementById(id);
@@ -166,6 +167,7 @@ export function setupWikiInteractions(root) {
       // Footnote markers are previews, not page-navigation links. This is
       // especially important on touch devices, where there is no hover.
       event.preventDefault();
+      event.stopPropagation();
       if (activeNote === clickedNote && preview.matches(":popover-open")) hidePreview(true);
       else showPreview(clickedNote);
       return;
@@ -186,7 +188,7 @@ export function setupWikiInteractions(root) {
     hidePreview(true);
     const folded = heading.classList.toggle("wiki-heading-folded");
     content.classList.toggle("wiki-heading-content-folded", folded);
-  });
+  }, true);
 
   root.addEventListener("pointerover", (event) => {
     if (!hoverPointer.matches || event.pointerType === "touch" || !(event.target instanceof Element)) return;
@@ -247,6 +249,21 @@ export function setupWikiInteractions(root) {
         titles.set(note, note.getAttribute("title"));
         note.removeAttribute("title");
       });
+      root.querySelectorAll("a.wiki-fn-content").forEach((note) => {
+        const href = note.getAttribute("href") || "";
+        if (!note.getAttribute("data-wiki-footnote-target") && href.startsWith("#")) {
+          try {
+            note.setAttribute("data-wiki-footnote-target", decodeURIComponent(href.slice(1)));
+          } catch {
+            note.setAttribute("data-wiki-footnote-target", href.slice(1));
+          }
+        }
+        if (noteContent(note)) {
+          note.removeAttribute("href");
+          note.setAttribute("role", "button");
+          note.setAttribute("tabindex", "0");
+        }
+      });
     },
     reset() {
       hidePreview(true);
@@ -257,4 +274,3 @@ export function setupWikiInteractions(root) {
     },
   };
 }
-

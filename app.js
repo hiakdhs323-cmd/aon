@@ -1247,16 +1247,6 @@ function ensureClientDocumentToc(root, source, forcePrepend=false){
 function rewriteClientNamuImageUrls(root, imageMap) {
  const map = imageMap && typeof imageMap === "object" ? imageMap : {};
  if (!root || !Object.keys(map).length) return;
- root.querySelectorAll("img[src]").forEach(img => {
-  const src = String(img.getAttribute("src") || "");
-  const match = src.match(/\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#].*)?$/i);
-  if (!match) return;
-  const id = map[(match[1] + "." + match[2]).toLowerCase()];
-  if (id) img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
- });
- // Match the SSR fallback produced when [[파일:...]] was emitted as a
- // missing-document anchor instead of an <img>. The same imageMap is already
- // returned by the Worker, so no extra database request is needed.
  const hashImageName = value => {
   let hash = 2166136261;
   const input = String(value || "");
@@ -1271,13 +1261,40 @@ function rewriteClientNamuImageUrls(root, imageMap) {
   }
   return parts.join("").slice(0, 56);
  };
+ root.querySelectorAll("img[src]").forEach(img => {
+  const src = String(img.getAttribute("src") || "");
+  const match = src.match(/\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#].*)?$/i);
+  if (match) {
+   const id = map[(match[1] + "." + match[2]).toLowerCase()];
+   if (id) img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
+   return;
+  }
+  const fileMatch = src.match(/\/files\/([^/?#]+)(?:[?#].*)?$/i);
+  if (!fileMatch) return;
+  let filename = fileMatch[1];
+  try { filename = decodeURIComponent(filename); } catch {}
+  const dot = filename.lastIndexOf(".");
+  const base = dot > 0 ? filename.slice(0, dot) : filename;
+  const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
+  const id = map["name:" + filename.toLocaleLowerCase()] || map[hashImageName(base).toLowerCase() + "." + ext];
+  if (id) {
+   img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
+   return;
+  }
+  resolveWikiFile(filename).then(file => {
+   if (img.isConnected) img.setAttribute("src", file.url);
+  }).catch(() => {});
+ });
+ // Match the SSR fallback produced when [[파일:...]] was emitted as a
+ // missing-document anchor instead of an <img>. The same imageMap is already
+ // returned by the Worker, so no extra database request is needed.
  const decode = value => {
   const area = document.createElement("textarea");
   area.innerHTML = String(value || "");
   return area.value;
  };
- root.querySelectorAll('a.wiki-link-internal[title^="파일:"]').forEach(anchor => {
-  const raw = decode(anchor.getAttribute("title") || "").replace(/^파일:/i, "").trim();
+ root.querySelectorAll('a.wiki-link-internal[title^="\uD30C\uC77C:"]').forEach(anchor => {
+  const raw = decode(anchor.getAttribute("title") || "").replace(/^\uD30C\uC77C:/i, "").trim();
   const dot = raw.lastIndexOf(".");
   const base = dot > 0 ? raw.slice(0, dot) : raw;
   const ext = dot > 0 ? raw.slice(dot + 1).toLowerCase() : "jpg";
@@ -1365,6 +1382,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     });
     if (serverRenderVersions.get(target) !== version) return;
     appendSanitizedServerHtml(target,data.html);
+    rewriteClientNamuImageUrls(target,data.imageMap);
     prepareServerRenderedMarkup(target, docTitle);
     await activateAonWikiInteractions(target);
     target.dataset.renderEngine = data.engine || "namumark-worker";
@@ -3760,5 +3778,4 @@ if(document.body.dataset.ssrPage==="true"){
 refreshIdentity().catch(()=>{}).finally(()=>syncDocumentEditControls());
 loadGlobalRail();
 startLivePageWatcher();
-
 

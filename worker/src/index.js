@@ -616,7 +616,10 @@ async function buildNamuServerDatabase(env, title, content) {
     const dot = value.lastIndexOf(".");
     const base = dot > 0 ? value.slice(0, dot) : value;
     const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
-    if (row.filename && row.id) imageMap.set(imageFileHash(base).toLowerCase() + "." + ext, row.id);
+    if (row.filename && row.id) {
+      imageMap.set(imageFileHash(base).toLowerCase() + "." + ext, row.id);
+      imageMap.set("name:" + value.toLocaleLowerCase(), row.id);
+    }
   }
   for (const row of imageAliasRows) {
     const value = String(row.alias || "");
@@ -624,7 +627,10 @@ async function buildNamuServerDatabase(env, title, content) {
     const base = dot > 0 ? value.slice(0, dot) : value;
     const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
     const key = imageFileHash(base).toLowerCase() + "." + ext;
-    if (row.alias && row.image_id && !imageMap.has(key)) imageMap.set(key, row.image_id);
+    if (row.alias && row.image_id) {
+      if (!imageMap.has(key)) imageMap.set(key, row.image_id);
+      imageMap.set("name:" + value.toLocaleLowerCase(), row.image_id);
+    }
   }
 
   return {
@@ -664,7 +670,8 @@ function rewriteNamuImageUrls(markup, imageMap){
       const dot = filename.lastIndexOf(".");
       const base = dot > 0 ? filename.slice(0, dot) : filename;
       const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
-      const id = imageMap.get(imageFileHash(base).toLowerCase() + "." + ext);
+      const id = imageMap.get("name:" + filename.toLocaleLowerCase())
+        || imageMap.get(imageFileHash(base).toLowerCase() + "." + ext);
       return id ? quote + "/media/" + encodeURIComponent(id) + endQuote : full;
     });
 
@@ -704,7 +711,8 @@ function rewriteNamuImageUrls(markup, imageMap){
       const dot = filename.lastIndexOf(".");
       const base = dot > 0 ? filename.slice(0, dot) : filename;
       const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
-      const id = imageMap.get(imageFileHash(base).toLowerCase()+"."+ext);
+      const id = imageMap.get("name:" + filename.toLocaleLowerCase())
+        || imageMap.get(imageFileHash(base).toLowerCase()+"."+ext);
       if (!id) return full;
 
       return '<span class="wiki-image-align-normal"><span class="wiki-image-wrapper"><a href="/media/'+encodeURIComponent(id)+'" rel="nofollow"><img class="wiki-image" src="/media/'+encodeURIComponent(id)+'" alt="'+escAttr(filename)+'" loading="lazy" decoding="async"></a></span></span>';
@@ -1228,7 +1236,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261111-namuwiki-shell-v8",
+        origin + "/?aonwiki-shell=20261112-namuwiki-shell-v2",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1355,7 +1363,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261111-namuwiki-shell-v8" : "20261111-assets-v8";
+        const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v2" : "20261112-assets-v2";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
@@ -2469,4 +2477,3 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
     }
   }
 };
-
