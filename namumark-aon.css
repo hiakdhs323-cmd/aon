@@ -861,3 +861,86 @@
 .namumark-wasm-content img{max-width:100%;}
 .namumark-wasm-content .wiki-table-wrap{max-width:100%;overflow-x:auto;overflow-y:hidden;}
 .namumark-wasm-content .wiki-table{max-width:none;}
+
+/* AonWiki engine boundary: document output owns its own readable palette. */
+.namumark-wasm-content {
+  min-height: 240px;
+  padding: 14px 0 28px;
+  color: var(--wiki-text, #212529);
+  line-height: 1.72;
+  overflow-wrap: anywhere;
+}
+.namumark-wasm-content h1,
+.namumark-wasm-content h2,
+.namumark-wasm-content h3,
+.namumark-wasm-content h4,
+.namumark-wasm-content h5,
+.namumark-wasm-content h6 {
+  color: var(--wiki-text, #212529);
+  overflow-wrap: anywhere;
+  scroll-margin-top: 78px;
+}
+.namumark-wasm-content .wiki-link-internal,
+.namumark-wasm-content .wiki-link-auto,
+.namumark-wasm-content .wiki-self-link,
+.namumark-wasm-content .wiki-heading-number,
+.namumark-wasm-content .wiki-heading-number-label {
+  color: var(--wiki-body-link, #0275d8);
+}
+.namumark-wasm-content .wiki-link-internal:hover,
+.namumark-wasm-content .wiki-link-auto:hover,
+.namumark-wasm-content .wiki-self-link:hover {
+  color: var(--wiki-body-link-hover, #0056a8);
+}
+.namumark-wasm-content .wiki-macro-toc,
+.namumark-wasm-content .wiki-macro-toc details,
+.namumark-wasm-content .wiki-macro-toc summary,
+.namumark-wasm-content .wiki-macro-toc .toc-item,
+.namumark-wasm-content .wiki-macro-toc .toc-indent {
+  color: var(--wiki-text, #212529);
+}
+.namumark-wasm-content .wiki-table,
+.namumark-wasm-content .wiki-table td,
+.namumark-wasm-content .wiki-table th,
+.namumark-wasm-content .wiki-quote,
+.namumark-wasm-content .wiki-fn-content,
+.namumark-wasm-content .wiki-macro-footnote {
+  color: inherit;
+}
+.namumark-wasm-content .broken-image {
+  display: inline-block;
+  padding: 5px;
+  border: 1px solid currentColor;
+  color: var(--wiki-danger, #c62828);
+}
+#article.namumark-wasm-content .wiki-document-metadata {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+  margin: 18px 0 8px;
+  padding: 9px 0 0;
+  border-top: 1px solid light-dark(#dee2e6, #454b50);
+  color: light-dark(#6c757d, #a5abb1);
+  font-size: 12px;
+  line-height: 1.6;
+}
+#article.namumark-wasm-content .wiki-document-metadata-label {
+  color: inherit;
+  font-weight: 700;
+}
+#article.namumark-wasm-content .wiki-document-category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+#article.namumark-wasm-content .wiki-document-category-list a {
+  color: var(--wiki-body-link, #0275d8);
+}
+@media (prefers-color-scheme: dark) {
+  #article.namumark-wasm-content .wiki-document-metadata {
+    border-top-color: #454b50;
+    color: #a5abb1;
+  }
+}
+
