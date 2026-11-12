@@ -2240,14 +2240,17 @@ function renderDocumentMetadata(article, metadata, docTitle) {
  if(!categories.length)return;
  const footer=document.createElement("div");
  footer.className="wiki-categories";
- const label=document.createElement("span");
- label.className="wiki-categories-label";
- label.textContent="분류:";
- footer.append(label);
- categories.forEach(name=>{
+ categories.forEach((name,index)=>{
+  if(index){
+   const separator=document.createElement("span");
+   separator.className="wiki-categories-separator";
+   separator.textContent=" | ";
+   separator.setAttribute("aria-hidden","true");
+   footer.append(separator);
+  }
   const link=document.createElement("a");
   link.href=routeFor("분류:"+name);
-  link.textContent="분류:"+name;
+  link.textContent=index===0?"분류:"+name:name;
   link.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+name)});
   footer.append(link);
  });
@@ -3825,7 +3828,8 @@ if(document.body.dataset.ssrPage==="true"){
    if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
    else requestAnimationFrame(()=>loadPage(currentTitle,false,location.hash?location.hash.slice(1):""));
   }else{
-   prepareServerRenderedMarkup($("article"),currentTitle);
+    prepareServerRenderedMarkup($("article"),currentTitle);
+    renderDocumentMetadata($("article"),initialSsrState?.metadata,currentTitle);
    activateAonWikiInteractions($("article")).catch(error => console.warn("초기 문서 상호작용 초기화 실패",error));
    if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
    else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));

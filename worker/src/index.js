@@ -1277,7 +1277,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261113-link-images-v2",
+        origin + "/?aonwiki-shell=20261113-categories-v1",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1341,6 +1341,7 @@ async function renderFullWikiDocument(request, env, title) {
   const state = {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
+    metadata: found ? (rendered.metadata || { categories: [], backlinks: [] }) : { categories: [], backlinks: [] },
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
     canEdit: found ? (ssrUser ? !ssrEditDenied : false) : false,
@@ -1404,7 +1405,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-      const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v6" : "20261113-assets-v2";
+      const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v6" : "20261113-categories-v1";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
