@@ -3,6 +3,21 @@ const $=id=>document.getElementById(id);
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
+function aonWikiMediaUrl(id,version=id){
+ const key=String(id||"").trim();
+ if(!key)return "";
+ const url=new URL("/media/"+encodeURIComponent(key),apiBase()+"/");
+ url.searchParams.set("aonwiki_image",String(version||key));
+ return url.href;
+}
+function aonWikiVersionedAssetUrl(raw,version=""){
+ try{
+  const url=new URL(String(raw||""),apiBase()+"/");
+  if(["/media/","/files/","/image/"].some(prefix=>url.pathname.startsWith(prefix)))
+   url.searchParams.set("aonwiki_image",String(version||url.pathname));
+  return url.href;
+ }catch{return String(raw||"")}
+}
 const aonThemeMedia=window.matchMedia?.("(prefers-color-scheme: dark)");
 function syncAonWikiTheme(){
  document.documentElement.dataset.theme=aonThemeMedia?.matches?"dark":"light";
@@ -638,7 +653,9 @@ async function resolveWikiFile(filename){
    try{
     const data=await api("/api/file?name="+encodeURIComponent(name));
     if(!data.image||!data.image.url)continue;
-    const mediaUrl=new URL(data.image.url,apiBase()).href;
+    const mediaUrl=data.image.key
+      ? aonWikiMediaUrl(data.image.key,data.image.key)
+      : aonWikiVersionedAssetUrl(data.image.url,raw);
     wikiFileLookupCache.set(key,{url:mediaUrl,expires:Date.now()+5*60*1000});
     return {url:mediaUrl};
    }catch(error){lastError=error}
@@ -685,7 +702,7 @@ function createImage(parent,fileSpec,state,markdownAlt=""){
  let imageFailed=false;
  const fail=()=>{if(imageFailed)return;imageFailed=true;const broken=document.createElement("span");broken.className="broken-image";broken.textContent="[이미지 파일을 불러오지 못함: "+filename+"]";figure.replaceWith(broken)};
  img.addEventListener("error",fail,{once:true});
- if(/^https?:\/\//i.test(filename))img.src=filename;else if(filename.startsWith("/"))img.src=new URL(filename,apiBase()).href;else if(/^[a-f0-9-]{36}$/i.test(filename))img.src=apiBase()+"/media/"+filename;
+ if(/^https?:\/\//i.test(filename))img.src=filename;else if(filename.startsWith("/media/"))img.src=aonWikiVersionedAssetUrl(filename);else if(filename.startsWith("/"))img.src=new URL(filename,apiBase()).href;else if(/^[a-f0-9-]{36}$/i.test(filename))img.src=aonWikiMediaUrl(filename);
  else resolveWikiFile(filename).then(file=>{if(!imageFailed)img.src=file.url}).catch(fail);
 }
 
@@ -1259,7 +1276,7 @@ function ensureClientDocumentToc(root, source, forcePrepend=false){
 }
 function rewriteClientNamuImageUrls(root, imageMap) {
  const map = imageMap && typeof imageMap === "object" ? imageMap : {};
- if (!root || !Object.keys(map).length) return;
+ if (!root) return;
  const hashImageName = value => {
   let hash = 2166136261;
   const input = String(value || "");
@@ -1279,7 +1296,7 @@ function rewriteClientNamuImageUrls(root, imageMap) {
   const match = src.match(/\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#].*)?$/i);
   if (match) {
    const id = map[(match[1] + "." + match[2]).toLowerCase()];
-   if (id) img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
+   if (id) img.setAttribute("src", aonWikiMediaUrl(id,match[1]+"."+match[2]));
    return;
   }
   const fileMatch = src.match(/\/files\/([^/?#]+)(?:[?#].*)?$/i);
@@ -1291,7 +1308,7 @@ function rewriteClientNamuImageUrls(root, imageMap) {
   const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
   const id = map["name:" + filename.toLocaleLowerCase()] || map[hashImageName(base).toLowerCase() + "." + ext];
   if (id) {
-   img.setAttribute("src", apiBase() + "/media/" + encodeURIComponent(id));
+   img.setAttribute("src", aonWikiMediaUrl(id,filename));
    return;
   }
   resolveWikiFile(filename).then(file => {
@@ -1318,11 +1335,11 @@ function rewriteClientNamuImageUrls(root, imageMap) {
   const wrapper = document.createElement("span");
   wrapper.className = "wiki-image-wrapper";
   const link = document.createElement("a");
-  link.href = apiBase() + "/media/" + encodeURIComponent(id);
+  link.href = aonWikiMediaUrl(id,raw);
   link.rel = "nofollow";
   const img = document.createElement("img");
   img.className = "wiki-image";
-  img.src = apiBase() + "/media/" + encodeURIComponent(id);
+  img.src = aonWikiMediaUrl(id,raw);
   img.alt = raw;
   img.loading = "lazy";
   img.decoding = "async";

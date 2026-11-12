@@ -337,6 +337,10 @@ function imageNameMatches(filename, hash, extension) {
   return imageFileHash(base).toLowerCase() === String(hash || "").toLowerCase()
     && ext === String(extension || "").toLowerCase();
 }
+function mediaAssetPath(id) {
+  const key = String(id || "").trim();
+  return "/media/" + encodeURIComponent(key) + "?aonwiki_image=" + encodeURIComponent(key);
+}
 
 
 const SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE".split(" "));
@@ -684,7 +688,7 @@ function rewriteNamuImageUrls(markup, imageMap){
       const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
       const id = imageMap.get("name:" + filename.toLocaleLowerCase())
         || imageMap.get(imageFileHash(base).toLowerCase() + "." + ext);
-      return id ? quote + "/media/" + encodeURIComponent(id) + endQuote : full;
+      return id ? quote + mediaAssetPath(id) + endQuote : full;
     });
 
   // Namu_test-main normally emits /image/<hash>.<ext>.cache_v..., but some
@@ -693,7 +697,7 @@ function rewriteNamuImageUrls(markup, imageMap){
   source=source.replace(/(["'])\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#][^\"']*)?(["'])/gi,
     (full, quote, hash, ext, endQuote) => {
       const id=imageMap.get(hash.toLowerCase()+"."+ext.toLowerCase());
-      return id ? quote+"/media/"+id+endQuote : full;
+      return id ? quote+mediaAssetPath(id)+endQuote : full;
     });
 
   const decodeHtml = value => String(value || "")
@@ -727,7 +731,7 @@ function rewriteNamuImageUrls(markup, imageMap){
         || imageMap.get(imageFileHash(base).toLowerCase()+"."+ext);
       if (!id) return full;
 
-      return '<span class="wiki-image-align-normal"><span class="wiki-image-wrapper"><a href="/media/'+encodeURIComponent(id)+'" rel="nofollow"><img class="wiki-image" src="/media/'+encodeURIComponent(id)+'" alt="'+escAttr(filename)+'" loading="lazy" decoding="async"></a></span></span>';
+      return '<span class="wiki-image-align-normal"><span class="wiki-image-wrapper"><a href="'+mediaAssetPath(id)+'" rel="nofollow"><img class="wiki-image" src="'+mediaAssetPath(id)+'" alt="'+escAttr(filename)+'" loading="lazy" decoding="async"></a></span></span>';
     });
   return source;
 }
@@ -2426,7 +2430,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
-        headers.set("Cache-Control", "public, max-age=86400");
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
         const etag = '"'+match[1]+"."+match[2]+'"';
         headers.set("ETag", etag);
         if (request.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers });
@@ -2437,7 +2443,14 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       if (url.pathname.startsWith("/files/") && request.method === "GET") {
         await ensureImageSchema(env);
         let filename = url.pathname.slice("/files/".length);
-        try { filename = decodeURIComponent(filename); } catch {}
+        try {
+          for (let pass = 0; pass < 2; pass++) {
+            const decoded = decodeURIComponent(filename);
+            if (decoded === filename) break;
+            filename = decoded;
+          }
+        } catch {}
+        filename = filename.replace(/\+/g, " ");
         filename = filename.trim().slice(0, 160);
         if (!filename || filename.includes("/")) return new Response("Not found", { status: 404 });
         let image = await env.DB.prepare("SELECT id, content_type, data_base64 FROM images WHERE filename = ? COLLATE NOCASE LIMIT 1").bind(filename).first();
@@ -2451,7 +2464,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
         headers.set("Content-Length", String(bytes.byteLength));
-        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
         headers.set("ETag", '"' + image.id + '"');
         headers.set("X-Content-Type-Options", "nosniff");
         if (request.headers.get("If-None-Match") === '"' + image.id + '"') return new Response(null, { status: 304, headers });
@@ -2469,7 +2484,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
         headers.set("Content-Length", String(bytes.byteLength));
-        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
         headers.set("ETag", '"' + key + '"');
         headers.set("X-Content-Type-Options", "nosniff");
         if (request.headers.get("If-None-Match") === '"' + key + '"') return new Response(null, { status: 304, headers });

@@ -4520,7 +4520,8 @@ html[data-theme="light"] .article > .wiki-categories a{color:#1769c2}
 .home-notice,
 .protection-notice{
   background:transparent!important;
-  border-color:var(--wiki-border)!important;
-  border-left-color:var(--wiki-border-strong)!important;
+  border:0!important;
+  border-left:0!important;
+  padding-left:0!important;
   color:var(--wiki-text)!important;
 }

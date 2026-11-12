@@ -880,6 +880,10 @@ function imageNameMatches(filename, hash, extension) {
   const ext = dot > 0 ? value.slice(dot + 1).toLowerCase() : "jpg";
   return imageFileHash(base).toLowerCase() === String(hash || "").toLowerCase() && ext === String(extension || "").toLowerCase();
 }
+function mediaAssetPath(id) {
+  const key = String(id || "").trim();
+  return "/media/" + encodeURIComponent(key) + "?aonwiki_image=" + encodeURIComponent(key);
+}
 var SERVER_WIKI_TAGS = new Set("A ABBR B BDI BDO BLOCKQUOTE BR CAPTION CENTER CODE COL COLGROUP DD DEL DETAILS DIV DL DT EM FIGCAPTION FIGURE FONT FOOTNOTE_TITLE H1 H2 H3 H4 H5 H6 HR I IFRAME IMG INS KBD LI MARK OL P PRE Q RUBY RT RP S SAMP SMALL SPAN STRIKE STRONG STYLE SUB SUMMARY SUP TABLE TBODY TD TFOOT TH THEAD TR TT U UL VAR VIDEO AUDIO SOURCE".split(" "));
 var SERVER_WIKI_ATTRS = new Set("alt allow allowfullscreen class colspan data-namumark-action fn_target frameborder height href id lang loading open poster referrerpolicy rel rowspan src start style target title type width align valign controls loop muted".split(" "));
 function sanitizeServerWikiStyle(raw) {
@@ -1125,7 +1129,7 @@ async function buildNamuServerDatabase(env, title, content) {
     }
   }
   const lookup = new Map(records);
-  const normalizedLookup = /* @__PURE__ */ new Map();
+  const normalizedLookup = new Map();
   for (const [key, value] of lookup) normalizedLookup.set(normalizeNamuLookupKey(key), value);
   return {
     data: new Array(Math.max(0, Number(pageCount?.total) || 0)),
@@ -1165,14 +1169,14 @@ function rewriteNamuImageUrls(markup, imageMap) {
       const base = dot > 0 ? filename.slice(0, dot) : filename;
       const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
       const id = imageMap.get("name:" + filename.toLocaleLowerCase()) || imageMap.get(imageFileHash(base).toLowerCase() + "." + ext);
-      return id ? quote + "/media/" + encodeURIComponent(id) + endQuote : full;
+      return id ? quote + mediaAssetPath(id) + endQuote : full;
     }
   );
   source = source.replace(
     /(["'])\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#][^\"']*)?(["'])/gi,
     (full, quote, hash, ext, endQuote) => {
       const id = imageMap.get(hash.toLowerCase() + "." + ext.toLowerCase());
-      return id ? quote + "/media/" + id + endQuote : full;
+      return id ? quote + mediaAssetPath(id) + endQuote : full;
     }
   );
   const decodeHtml = (value) => String(value || "").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">");
@@ -1199,7 +1203,7 @@ function rewriteNamuImageUrls(markup, imageMap) {
       const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
       const id = imageMap.get("name:" + filename.toLocaleLowerCase()) || imageMap.get(imageFileHash(base).toLowerCase() + "." + ext);
       if (!id) return full;
-      return '<span class="wiki-image-align-normal"><span class="wiki-image-wrapper"><a href="/media/' + encodeURIComponent(id) + '" rel="nofollow"><img class="wiki-image" src="/media/' + encodeURIComponent(id) + '" alt="' + escAttr(filename) + '" loading="lazy" decoding="async"></a></span></span>';
+      return '<span class="wiki-image-align-normal"><span class="wiki-image-wrapper"><a href="' + mediaAssetPath(id) + '" rel="nofollow"><img class="wiki-image" src="' + mediaAssetPath(id) + '" alt="' + escAttr(filename) + '" loading="lazy" decoding="async"></a></span></span>';
     }
   );
   return source;
@@ -1773,7 +1777,8 @@ async function renderFullWikiDocument(request, env, title) {
   };
   const protectionLabel = protection?.level === "admin" ? "\uAD00\uB9AC\uC790 \uD3B8\uC9D1 \uBCF4\uD638" : protection?.level === "registered" ? "\uD68C\uC6D0 \uD3B8\uC9D1 \uBCF4\uD638" : "";
   const protectionMessage = protectionLabel ? protection?.reason || (protection.level === "admin" ? "\uC774 \uBB38\uC11C\uB294 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uB3C4\uB85D \uBCF4\uD638\uB418\uC5B4 \uC788\uC2B5\uB2C8\uB2E4." : "\uC774 \uBB38\uC11C\uB294 \uB85C\uADF8\uC778\uD55C \uD68C\uC6D0\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : "";
-  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml(description) + '">\n<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml(description) + '">\n<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml(description) + '">\n<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml(description) + '">\n<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  html = html.replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + rendered.html + '</article>');
   if (!found) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
@@ -2824,7 +2829,9 @@ var index_default = {
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
-        headers.set("Cache-Control", "public, max-age=86400");
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
         const etag = '"' + match[1] + "." + match[2] + '"';
         headers.set("ETag", etag);
         if (request.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers });
@@ -2836,9 +2843,14 @@ var index_default = {
         await ensureImageSchema(env);
         let filename = url.pathname.slice("/files/".length);
         try {
-          filename = decodeURIComponent(filename);
+          for (let pass = 0; pass < 2; pass++) {
+            const decoded = decodeURIComponent(filename);
+            if (decoded === filename) break;
+            filename = decoded;
+          }
         } catch {
         }
+        filename = filename.replace(/\+/g, " ");
         filename = filename.trim().slice(0, 160);
         if (!filename || filename.includes("/")) return new Response("Not found", { status: 404 });
         let image = await env.DB.prepare("SELECT id, content_type, data_base64 FROM images WHERE filename = ? COLLATE NOCASE LIMIT 1").bind(filename).first();
@@ -2852,7 +2864,9 @@ var index_default = {
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
         headers.set("Content-Length", String(bytes.byteLength));
-        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
         headers.set("ETag", '"' + image.id + '"');
         headers.set("X-Content-Type-Options", "nosniff");
         if (request.headers.get("If-None-Match") === '"' + image.id + '"') return new Response(null, { status: 304, headers });
@@ -2870,7 +2884,9 @@ var index_default = {
         const headers = new Headers(cors);
         headers.set("Content-Type", image.content_type);
         headers.set("Content-Length", String(bytes.byteLength));
-        headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
         headers.set("ETag", '"' + key + '"');
         headers.set("X-Content-Type-Options", "nosniff");
         if (request.headers.get("If-None-Match") === '"' + key + '"') return new Response(null, { status: 304, headers });
