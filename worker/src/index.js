@@ -674,7 +674,7 @@ async function getCachedNamuPageCount(env) {
 }
 function rewriteNamuImageUrls(markup, imageMap){
   let source=String(markup||"");
-  if(!imageMap?.size) return source;
+  if(!imageMap?.size) imageMap=new Map();
 
   // Some NamuMark builds emit the original filename as /files/<name>
   // instead of the hashed /image/<hash> path. Resolve it to the stored media
@@ -709,6 +709,29 @@ function rewriteNamuImageUrls(markup, imageMap){
   const escAttr = value => String(value || "")
     .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
     .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // NamuMark can emit an invalid nested anchor for
+  // [[https://example|[[파일:icon.png|width=20]]]]. Keep the external
+  // anchor and replace its nested file anchor with a direct image element.
+  source=source.replace(
+    /(<a\b(?=[^>]*\bhref=["']https?:\/\/[^"']+["'])[^>]*>)(<a\b([^>]*)>([\s\S]*?)<\/a>)(<\/a>)/gi,
+    (full, outerOpen, innerFull, innerAttrs, innerText, outerClose) => {
+      const titleMatch=String(innerAttrs||"").match(/\btitle=["']([^"']+)["']/i);
+      if(!titleMatch)return full;
+      let filename=decodeHtml(titleMatch[1]).trim();
+      if(!/^(?:\uD30C\uC77C|file):/i.test(filename))return full;
+      filename=filename.replace(/^(?:\uD30C\uC77C|file):/i,"").trim();
+      try{filename=decodeURIComponent(filename)}catch{}
+      const dot=filename.lastIndexOf(".");
+      const base=dot>0?filename.slice(0,dot):filename;
+      const ext=dot>0?filename.slice(dot+1).toLowerCase():"jpg";
+      const id=imageMap.get("name:"+filename.toLocaleLowerCase())
+        || imageMap.get(imageFileHash(base).toLowerCase()+"."+ext);
+      const width=decodeHtml(String(innerText||"").replace(/<[^>]+>/g,"")).match(/(?:^|[|&\s])width\s*=\s*(\d+(?:\.\d+)?)/i)?.[1];
+      const widthAttr=width?' width="'+width+'" style="width:'+width+'px"':'';
+      const imageSrc=id?mediaAssetPath(id):"/files/"+encodeURIComponent(filename)+"?aonwiki_image="+encodeURIComponent(filename);
+      return outerOpen+'<img class="wiki-image" src="'+imageSrc+'" alt="'+escAttr(filename)+'" loading="lazy" decoding="async"'+widthAttr+'>'+outerClose;
+    });
 
   source=source.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi,
     (full, attrs, inner) => {
@@ -1254,7 +1277,7 @@ async function loadFrontendShell(env) {
     try {
       const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
       const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261112-live-links-v1",
+        origin + "/?aonwiki-shell=20261113-link-images-v2",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
       if (!shellResponse.ok) {
@@ -1381,7 +1404,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-      const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v6" : "20261112-assets-v6";
+      const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v6" : "20261113-assets-v2";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
@@ -2015,12 +2038,17 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       if (url.pathname === "/api/categories" && request.method === "GET") {
         const result = await env.DB.prepare("SELECT title, content FROM pages ORDER BY title COLLATE NOCASE LIMIT 10000").all();
         const categories = new Map();
+        const normalizeCategoryName = value => {
+          let name = String(value || "").trim();
+          while (/^(?:\uBD84\uB958|category):/i.test(name)) name = name.replace(/^(?:\uBD84\uB958|category):/i, "").trim();
+          return name;
+        };
         for (const page of (result.results || [])) {
           const content = String(page.content || "");
           const isCategoryPage = /^(?:분류|category):/i.test(String(page.title || ""));
           const matches = content.matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:\|[^\]]*)?\]\]/gi);
           for (const match of matches) {
-            const name = String(match[1] || "").trim();
+            const name = normalizeCategoryName(match[1]);
             if (!name) continue;
             const key = name.toLocaleLowerCase();
             const item = categories.get(key) || { name, count: 0, subcategoryCount: 0 };

@@ -1289,6 +1289,41 @@ function rewriteClientNamuImageUrls(root, imageMap) {
   }
   return parts.join("").slice(0, 56);
  };
+ const decode = value => {
+  const area = document.createElement("textarea");
+  area.innerHTML = String(value || "");
+  return area.value;
+ };
+ const imageIdForFilename = rawValue => {
+  let filename = decode(rawValue).replace(/^\uD30C\uC77C:|^file:/i, "").trim();
+  try { filename = decodeURIComponent(filename); } catch {}
+  const dot = filename.lastIndexOf(".");
+  const base = dot > 0 ? filename.slice(0, dot) : filename;
+  const ext = dot > 0 ? filename.slice(dot + 1).toLowerCase() : "jpg";
+  return {
+   filename,
+   id: map["name:" + filename.toLocaleLowerCase()] || map[hashImageName(base).toLowerCase() + "." + ext]
+  };
+ };
+ // Flatten the invalid nested-anchor output produced by
+ // [[https://example|[[파일:icon.png|width=20]]]]. The external link must
+ // remain the only anchor, with the file rendered directly as its image.
+ root.querySelectorAll("a.wiki-link-external").forEach(external => {
+  const fileAnchor = external.querySelector('a.wiki-link-internal[title^="\uD30C\uC77C:"],a.wiki-link-internal[title^="file:"]');
+  if (!fileAnchor) return;
+  const resolved = imageIdForFilename(fileAnchor.getAttribute("title") || "");
+  const image = document.createElement("img");
+  image.className = "wiki-image";
+  image.src = resolved.id
+   ? aonWikiMediaUrl(resolved.id,resolved.filename)
+   : apiBase()+"/files/"+encodeURIComponent(resolved.filename)+"?aonwiki_image="+encodeURIComponent(resolved.filename);
+  image.alt = resolved.filename;
+  image.loading = "lazy";
+  image.decoding = "async";
+  const width = String(fileAnchor.textContent || "").match(/(?:^|[|&\s])width\s*=\s*(\d+(?:\.\d+)?)/i)?.[1];
+  if (width) image.style.width = width + "px";
+  fileAnchor.replaceWith(image);
+ });
  root.querySelectorAll("img[src]").forEach(img => {
   const src = String(img.getAttribute("src") || "");
   const match = src.match(/\/image\/([a-f0-9]{56})\.([a-z0-9]+)\.cache_v[0-9]+(?:[?#].*)?$/i);
@@ -1316,11 +1351,6 @@ function rewriteClientNamuImageUrls(root, imageMap) {
  // Match the SSR fallback produced when [[파일:...]] was emitted as a
  // missing-document anchor instead of an <img>. The same imageMap is already
  // returned by the Worker, so no extra database request is needed.
- const decode = value => {
-  const area = document.createElement("textarea");
-  area.innerHTML = String(value || "");
-  return area.value;
- };
  root.querySelectorAll('a.wiki-link-internal[title^="\uD30C\uC77C:"]').forEach(anchor => {
   const raw = decode(anchor.getAttribute("title") || "").replace(/^\uD30C\uC77C:/i, "").trim();
   const dot = raw.lastIndexOf(".");
@@ -2199,8 +2229,12 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
   }
 }
 function renderDocumentMetadata(article, metadata, docTitle) {
- const categories=[...new Set((metadata?.categories||[]).map(value=>String(value||"").trim()).filter(Boolean))]
-   .map(value=>value.replace(/^(?:분류|category):/i,"").trim()).filter(Boolean);
+ const normalizeCategoryName=value=>{
+  let name=String(value||"").trim();
+  while(/^(?:분류|category):/i.test(name))name=name.replace(/^(?:분류|category):/i,"").trim();
+  return name;
+ };
+ const categories=[...new Set((metadata?.categories||[]).map(normalizeCategoryName).filter(Boolean))];
  const shell=article.closest(".article")||article;
  shell.querySelector(":scope > .wiki-categories")?.remove();
  if(!categories.length)return;

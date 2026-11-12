@@ -49,4 +49,7 @@ assert.match(worker, /SELECT id, filename FROM images/, "image resolver must loa
 assert.match(worker, /SELECT alias, image_id FROM image_aliases/, "image alias resolver must load image IDs");
 assert.match(worker, /imageMap/, "client fallback payload must include image mappings");
 assert.match(app, /rewriteClientNamuImageUrls/, "browser fallback must rewrite NamuMark image cache URLs");
+assert.match(app, /wiki-link-external/, "browser fallback must flatten nested external image links");
+assert.match(worker, /NamuMark can emit an invalid nested anchor/, "Worker SSR must flatten nested external image links");
+assert.match(app, /normalizeCategoryName/, "document category labels must remove repeated prefixes");
 assert.doesNotMatch(read("style.css"), /html\[data-theme=["'](?:dark|light)["']\][^{}]*\.wiki-content/i, "site skin must not override NamuMark theme colors");
