@@ -1332,6 +1332,24 @@ async function findWikiPage(env, title) {
   }
   return page;
 }
+function publicSiteOrigin(request, env) {
+  return new URL(request.url).origin.replace(/\/$/, "");
+}
+function escapeXml(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&apos;", '"': "&quot;" }[char]));
+}
+async function renderSitemapXml(request, env) {
+  const origin = publicSiteOrigin(request, env);
+  const result = await env.DB.prepare("SELECT title, updated_at FROM pages ORDER BY title COLLATE NOCASE ASC LIMIT 5000").all();
+  const urls = [`<url><loc>${escapeXml(origin + "/")}</loc></url>`];
+  for (const page of result.results || []) {
+    const title = String(page.title || "").trim();
+    if (!title || title === "대문") continue;
+    const lastmod = String(page.updated_at || "").trim();
+    urls.push("<url><loc>" + escapeXml(origin + "/w/" + encodeURIComponent(title)) + "</loc>" + (lastmod ? "<lastmod>" + escapeXml(lastmod) + "</lastmod>" : "") + "</url>");
+  }
+  return '<?xml version="1.0" encoding="UTF-8"?>' + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + urls.join("") + "</urlset>";
+}
 async function renderFullWikiDocument(request, env, title) {
   const { shell, origin } = await loadFrontendShell(env);
   const page = await findWikiPage(env, title);
@@ -1417,6 +1435,14 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
+      if (request.method === "GET" && url.pathname === "/robots.txt") {
+        const origin = publicSiteOrigin(request, env);
+        return new Response("User-agent: *\nAllow: /\nSitemap: " + origin + "/sitemap.xml\n", { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+      }
+      if (request.method === "GET" && url.pathname === "/sitemap.xml") {
+        const xml = await renderSitemapXml(request, env);
+        return new Response(xml, { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+      }
       const staticFiles = new Set(["style.css", "app.js", "theme.js", "namumark-wasm.js", "namumark-aon.css", "namumark-interactions-aon.css", "Namu_test-main/namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
