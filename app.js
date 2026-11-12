@@ -3777,6 +3777,7 @@ if(document.body.dataset.ssrPage==="true"){
    else requestAnimationFrame(()=>loadPage(currentTitle,false,location.hash?location.hash.slice(1):""));
   }else{
    prepareServerRenderedMarkup($("article"),currentTitle);
+   activateAonWikiInteractions($("article")).catch(error => console.warn("초기 문서 상호작용 초기화 실패",error));
    if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
    else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));
   }
