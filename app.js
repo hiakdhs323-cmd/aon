@@ -411,8 +411,12 @@ async function loadHome(){
     $("home-bottom-text").textContent=settings.bottomText||"새 문서를 만들거나 기존 문서를 보완해 지식을 함께 쌓을 수 있습니다.";
 
     const notice=$("home-notice");
-    notice.textContent=settings.notice||"";
+    notice.replaceChildren();
     notice.hidden=!settings.notice;
+    if(settings.notice){
+      try{await renderNamuMarkup(settings.notice,notice,"공지");}
+      catch(error){notice.textContent=settings.notice;console.warn("공지 문법 렌더링 실패",error)}
+    }
 
     const content=settings.content||"";
     if(content)await renderNamuMarkup(content,$("home-content"),"대문");
@@ -1138,7 +1142,7 @@ const aonNamuInteractionInstances = new WeakMap();
 async function activateAonWikiInteractions(root) {
  if(!root || !(root instanceof Element)) return;
  if(!aonNamuInteractionModulePromise) {
-  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js")
+  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js?v=20261112-hover-v4")
    .catch(error => { aonNamuInteractionModulePromise = null; throw error; });
  }
  try {
@@ -1160,9 +1164,18 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  const renderer = await getAonNamuWasm();
  const records = Array.isArray(clientRender?.records) ? clientRender.records : [];
  const lookup = new Map();
+ const normalizedLookup = new Map();
+ const normalizeLookupKey = name => {
+  const raw=String(name||"").trim();
+  if(/^(?:\uD30C\uC77C|file):/i.test(raw))return "file:"+raw.replace(/^(?:\uD30C\uC77C|file):/i,"").trim().toLocaleLowerCase();
+  if(/^(?:\uBD84\uB958|category):/i.test(raw))return "category:"+raw.replace(/^(?:\uBD84\uB958|category):/i,"").trim().toLocaleLowerCase();
+  return raw.toLocaleLowerCase();
+ };
  for(const record of records){
   if(record && typeof record.title === "string" && record.title){
-   lookup.set(record.title,{title:record.title,data:String(record.data||"")});
+   const row={title:record.title,data:String(record.data||"")};
+   lookup.set(record.title,row);
+   normalizedLookup.set(normalizeLookupKey(record.title),row);
   }
  }
  const pageCount = Math.max(0,Math.min(100000,Number(clientRender?.pageCount)||0));
@@ -1170,12 +1183,12 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
   documentExists(name){
    const raw=String(name||"").trim();
    const key=raw.replace(/^(?:\uD30C\uC77C|file):/i,"");
-   return lookup.has(raw) || lookup.has(key) || lookup.has("\uD30C\uC77C:"+key) || lookup.has("file:"+key) || lookup.has("category:"+key);
+   return lookup.has(raw) || lookup.has(key) || lookup.has("\uD30C\uC77C:"+key) || lookup.has("file:"+key) || lookup.has("category:"+key) || normalizedLookup.has(normalizeLookupKey(raw));
   },
   getDocumentContent(name){
    const raw=String(name||"").trim();
    const key=raw.replace(/^(?:\uD30C\uC77C|file):/i,"");
-   const row=lookup.get(raw)||lookup.get(key)||lookup.get("\uD30C\uC77C:"+key)||lookup.get("file:"+key)||lookup.get("category:"+key);
+   const row=lookup.get(raw)||lookup.get(key)||lookup.get("\uD30C\uC77C:"+key)||lookup.get("file:"+key)||lookup.get("category:"+key)||normalizedLookup.get(normalizeLookupKey(raw));
    return row ? row.data : "";
   },
   getPagecount(){ return pageCount; }

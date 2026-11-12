@@ -1017,6 +1017,12 @@ function collectWikiLinkTargets(source) {
   }
   return [...targets];
 }
+function normalizeNamuLookupKey(name) {
+  const raw = String(name || "").trim();
+  if (/^(?:\uD30C\uC77C|file):/i.test(raw)) return "file:" + raw.replace(/^(?:\uD30C\uC77C|file):/i, "").trim().toLocaleLowerCase();
+  if (/^(?:\uBD84\uB958|category):/i.test(raw)) return "category:" + raw.replace(/^(?:\uBD84\uB958|category):/i, "").trim().toLocaleLowerCase();
+  return raw.toLocaleLowerCase();
+}
 async function buildNamuServerDatabase(env, title, content) {
   const source = String(content || "");
   const records = /* @__PURE__ */ new Map([[title, { title, data: source }]]);
@@ -1118,9 +1124,13 @@ async function buildNamuServerDatabase(env, title, content) {
       imageMap.set("name:" + value.toLocaleLowerCase(), row.image_id);
     }
   }
+  const lookup = new Map(records);
+  const normalizedLookup = new Map();
+  for (const [key, value] of lookup) normalizedLookup.set(normalizeNamuLookupKey(key), value);
   return {
     data: new Array(Math.max(0, Number(pageCount?.total) || 0)),
-    lookup: new Map(records),
+    lookup,
+    normalizedLookup,
     imageMap
   };
 }
@@ -1504,12 +1514,12 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       documentExists(name) {
         const raw = String(name || "").trim();
         const key = raw.replace(/^(?:\uD30C\uC77C|file):/i, "");
-        return database.lookup.has(raw) || database.lookup.has(key) || database.lookup.has("\uD30C\uC77C:" + key) || database.lookup.has("file:" + key) || database.lookup.has("category:" + key);
+        return database.lookup.has(raw) || database.lookup.has(key) || database.lookup.has("\uD30C\uC77C:" + key) || database.lookup.has("file:" + key) || database.lookup.has("category:" + key) || database.normalizedLookup.has(normalizeNamuLookupKey(raw));
       },
       getDocumentContent(name) {
         const raw = String(name || "").trim();
         const key = raw.replace(/^(?:\uD30C\uC77C|file):/i, "");
-        return (database.lookup.get(raw) || database.lookup.get(key) || database.lookup.get("\uD30C\uC77C:" + key) || database.lookup.get("file:" + key) || database.lookup.get("category:" + key))?.data || "";
+        return (database.lookup.get(raw) || database.lookup.get(key) || database.lookup.get("\uD30C\uC77C:" + key) || database.lookup.get("file:" + key) || database.lookup.get("category:" + key) || database.normalizedLookup.get(normalizeNamuLookupKey(raw)))?.data || "";
       },
       getPagecount() {
         return Number(database.data.length) || 0;
@@ -1763,7 +1773,8 @@ async function renderFullWikiDocument(request, env, title) {
   };
   const protectionLabel = protection?.level === "admin" ? "\uAD00\uB9AC\uC790 \uD3B8\uC9D1 \uBCF4\uD638" : protection?.level === "registered" ? "\uD68C\uC6D0 \uD3B8\uC9D1 \uBCF4\uD638" : "";
   const protectionMessage = protectionLabel ? protection?.reason || (protection.level === "admin" ? "\uC774 \uBB38\uC11C\uB294 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uB3C4\uB85D \uBCF4\uD638\uB418\uC5B4 \uC788\uC2B5\uB2C8\uB2E4." : "\uC774 \uBB38\uC11C\uB294 \uB85C\uADF8\uC778\uD55C \uD68C\uC6D0\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : "";
-  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml(description) + '">\n<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml(description) + '">\n<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml(description) + '">\n<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml(description) + '">\n<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="wiki-content"></article>', '<article id="article" class="wiki-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  html = html.replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + rendered.html + '</article>');
   if (!found) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
@@ -1801,7 +1812,7 @@ var index_default = {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v2" : "20261112-assets-v3";
+        const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v2" : "20261112-assets-v4";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {

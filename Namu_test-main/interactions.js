@@ -3,6 +3,8 @@ export function setupWikiInteractions(root) {
   const hoverPointer = matchMedia("(hover: hover) and (pointer: fine)");
   const foldings = new Map();
   const titles = new Map();
+  const boundHoverNotes = new WeakSet();
+  const footnoteSelector = 'a.wiki-fn-content, a[href^="#fn-"], a[href^="#fn_"]';
   const preview = document.createElement("div");
   preview.className = "nm-footnote-preview";
   preview.id = `${root.id || "wiki"}-footnote-preview`;
@@ -167,9 +169,23 @@ export function setupWikiInteractions(root) {
     }, 120);
   }
 
+  function bindHoverNote(note) {
+    if (boundHoverNotes.has(note)) return;
+    boundHoverNotes.add(note);
+    note.addEventListener("mouseenter", () => {
+      keepPreview();
+      clearTimeout(showTimer);
+      showTimer = setTimeout(() => showPreview(note), 0);
+    });
+    note.addEventListener("mouseleave", (event) => {
+      if (note.contains(event.relatedTarget) || preview.contains(event.relatedTarget)) return;
+      scheduleHide();
+    });
+  }
+
   root.addEventListener("click", (event) => {
     const clickedNote = event.target instanceof Element
-      ? event.target.closest("a.wiki-fn-content")
+      ? event.target.closest(footnoteSelector)
       : null;
     if (clickedNote && root.contains(clickedNote) && !preview.contains(clickedNote)) {
       // Footnote markers are previews, not page-navigation links. This is
@@ -200,7 +216,7 @@ export function setupWikiInteractions(root) {
 
   root.addEventListener("pointerover", (event) => {
     if (!hoverPointer.matches || event.pointerType === "touch" || !(event.target instanceof Element)) return;
-    const note = event.target.closest("a.wiki-fn-content");
+    const note = event.target.closest(footnoteSelector);
     if (!note || preview.contains(note) || note.contains(event.relatedTarget)) return;
     keepPreview();
     clearTimeout(showTimer);
@@ -210,7 +226,7 @@ export function setupWikiInteractions(root) {
 
   root.addEventListener("pointerout", (event) => {
     if (!(event.target instanceof Element)) return;
-    const note = event.target.closest("a.wiki-fn-content");
+    const note = event.target.closest(footnoteSelector);
     if (!note || note.contains(event.relatedTarget) || preview.contains(event.relatedTarget)) return;
     scheduleHide();
   });
@@ -219,7 +235,7 @@ export function setupWikiInteractions(root) {
   preview.addEventListener("pointerleave", scheduleHide);
   root.addEventListener("focusin", (event) => {
     if (!(event.target instanceof Element) || preview.contains(event.target)) return;
-    const note = event.target.closest("a.wiki-fn-content");
+    const note = event.target.closest(footnoteSelector);
     if (note) showPreview(note, true);
   });
 
@@ -257,7 +273,7 @@ export function setupWikiInteractions(root) {
         // positioned preview below supplements it on touch devices.
         titles.set(note, note.getAttribute("title"));
       });
-      root.querySelectorAll("a.wiki-fn-content").forEach((note) => {
+      root.querySelectorAll(footnoteSelector).forEach((note) => {
         const href = note.getAttribute("href") || "";
         if (!note.getAttribute("data-wiki-footnote-target") && href.startsWith("#")) {
           try {
@@ -270,6 +286,7 @@ export function setupWikiInteractions(root) {
           note.removeAttribute("href");
           note.setAttribute("role", "button");
           note.setAttribute("tabindex", "0");
+          bindHoverNote(note);
         }
       });
     },

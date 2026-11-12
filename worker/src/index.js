@@ -497,6 +497,13 @@ function collectWikiLinkTargets(source) {
   return [...targets];
 }
 
+function normalizeNamuLookupKey(name) {
+  const raw = String(name || "").trim();
+  if (/^(?:\uD30C\uC77C|file):/i.test(raw)) return "file:" + raw.replace(/^(?:\uD30C\uC77C|file):/i, "").trim().toLocaleLowerCase();
+  if (/^(?:\uBD84\uB958|category):/i.test(raw)) return "category:" + raw.replace(/^(?:\uBD84\uB958|category):/i, "").trim().toLocaleLowerCase();
+  return raw.toLocaleLowerCase();
+}
+
 // Only load records actually referenced by this document and its transclusions.
 // The parser uses database.data.length for the page-count magic word, and lookup
 // for existence checks, so a sparse array preserves the count without loading
@@ -633,9 +640,14 @@ async function buildNamuServerDatabase(env, title, content) {
     }
   }
 
+  const lookup = new Map(records);
+  const normalizedLookup = new Map();
+  for (const [key, value] of lookup) normalizedLookup.set(normalizeNamuLookupKey(key), value);
+
   return {
     data: new Array(Math.max(0, Number(pageCount?.total) || 0)),
-    lookup: new Map(records),
+    lookup,
+    normalizedLookup,
     imageMap
   };
 }
@@ -1037,7 +1049,8 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
           || database.lookup.has(key)
           || database.lookup.has("\uD30C\uC77C:" + key)
           || database.lookup.has("file:" + key)
-          || database.lookup.has("category:" + key);
+          || database.lookup.has("category:" + key)
+          || database.normalizedLookup.has(normalizeNamuLookupKey(raw));
       },
       getDocumentContent(name) {
         const raw = String(name || "").trim();
@@ -1046,7 +1059,8 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
           || database.lookup.get(key)
           || database.lookup.get("\uD30C\uC77C:" + key)
           || database.lookup.get("file:" + key)
-          || database.lookup.get("category:" + key))?.data || "";
+          || database.lookup.get("category:" + key)
+          || database.normalizedLookup.get(normalizeNamuLookupKey(raw)))?.data || "";
       },
       getPagecount() {
         return Number(database.data.length) || 0;
@@ -1363,7 +1377,7 @@ export default {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v2" : "20261112-assets-v3";
+      const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v2" : "20261112-assets-v4";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
