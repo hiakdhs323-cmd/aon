@@ -618,14 +618,12 @@ async function ensureCurrentContentForEdit(){
 }
 async function getRenderedDocument(title){
  const key=String(title||"").trim();
- const cached=renderedDocumentCache.get(key);
- if(cached&&cached.expiresAt>Date.now())return cached.value;
  if(renderedDocumentPending.has(key))return renderedDocumentPending.get(key);
- const pending=api("/api/render?title="+encodeURIComponent(key)).then(data=>{
-  if(data.page&&String(data.html||"").length<=300000){
-   renderedDocumentCache.set(key,{value:data,expiresAt:Date.now()+45*1000});
-   if(renderedDocumentCache.size>12)renderedDocumentCache.delete(renderedDocumentCache.keys().next().value);
-  }
+ const nonce=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+ const pending=api("/api/render?title="+encodeURIComponent(key)+"&aonwiki_render="+nonce,{cache:"no-store"}).then(data=>{
+  // A page's link colors depend on every other page's existence. Do not
+  // reuse a previously rendered document after another page is created.
+  renderedDocumentCache.delete(key);
   return data;
  }).finally(()=>renderedDocumentPending.delete(key));
  renderedDocumentPending.set(key,pending);

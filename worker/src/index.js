@@ -1005,7 +1005,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "namutest-main-v4-images:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v5-live-links:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -1564,7 +1564,10 @@ export default {
         await ensurePageLinkColorsSchema(env);
         await env.DB.prepare("DELETE FROM page_link_colors WHERE title = ?").bind(title).run();
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env, title);
+        // A document's [[links]] can change from red to blue when any other
+        // page is created, renamed, edited, or deleted. Invalidate every
+        // rendered document, not only the document being changed.
+        await clearPersistentNamuRenderCache(env);
         await env.DB.prepare("DELETE FROM revisions WHERE title = ?").bind(title).run();
         return response({ ok: true, title }, 200, cors);
       }
@@ -2246,7 +2249,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, "이전 버전 #" + id + " 복원").run();
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env, title);
+        await clearPersistentNamuRenderCache(env);
         return response({ ok: true, title, restored_revision: id, updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/page" && request.method === "PUT") {
@@ -2309,7 +2312,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         }
 
         invalidateNamuServerIndexes();
-        await clearPersistentNamuRenderCache(env, title);
+        await clearPersistentNamuRenderCache(env);
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
           .bind(title, content, user.username, now, summary).run();
         if (user.isAdmin) await savePageLinkColors(env, title, extractedLinkColors, user.username);
