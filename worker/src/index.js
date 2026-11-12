@@ -860,6 +860,22 @@ function invalidateNamuServerIndexes() {
   namuRenderPending.clear();
   clearNamuPageResponseCache();
 }
+function extractNamuCategoryNames(source) {
+  const categories = new Set();
+  for (const match of String(source || "").matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)) {
+    let name = String(match[1] || "").trim();
+    while (/^(?:분류|category):/i.test(name)) name = name.replace(/^(?:분류|category):/i, "").trim();
+    if (name) categories.add(name);
+  }
+  return [...categories];
+}
+function mergeNamuRenderMetadata(metadata, source) {
+  const value = metadata && typeof metadata === "object" ? { ...metadata } : {};
+  const parserCategories = Array.isArray(value.categories) ? value.categories : [];
+  const sourceCategories = extractNamuCategoryNames(source);
+  value.categories = [...new Set([...parserCategories, ...sourceCategories].map(item => String(item || "").trim()).filter(Boolean))];
+  return value;
+}
 function parseTableColorRgb(value) {
   const input = String(value || "").trim().toLowerCase();
   const named = {black:"#000000",white:"#ffffff",red:"#ff0000",green:"#008000",blue:"#0000ff",yellow:"#ffff00",orange:"#ffa500",purple:"#800080",gray:"#808080",grey:"#808080",navy:"#000080",teal:"#008080"};
@@ -1042,6 +1058,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       if (stored && stored.source_hash === cacheKey) {
         let metadata = {};
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
+        metadata = mergeNamuRenderMetadata(metadata, sourceText);
         const value = { html: String(stored.html || ""), metadata, imageMap: metadata.imageMap || {} };
         namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
         return value;
@@ -1114,7 +1131,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const contrastedHtml = /<table\b/i.test(cleanHtml)
       ? await applyTableTextContrast(cleanHtml)
       : cleanHtml;
-    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: { ...parsedMetadata, imageMap: Object.fromEntries(database.imageMap || []) }, imageMap: Object.fromEntries(database.imageMap || []) };
+    const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: { ...mergeNamuRenderMetadata(parsedMetadata, sourceText), imageMap: Object.fromEntries(database.imageMap || []) }, imageMap: Object.fromEntries(database.imageMap || []) };
     namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
     if (namuRenderCache.size > 100) {
       const oldest = namuRenderCache.keys().next().value;
@@ -1341,7 +1358,7 @@ async function renderFullWikiDocument(request, env, title) {
   const state = {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
-    metadata: found ? (rendered.metadata || { categories: [], backlinks: [] }) : { categories: [], backlinks: [] },
+    metadata: found ? mergeNamuRenderMetadata(rendered.metadata, page.content || "") : { categories: [], backlinks: [] },
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
     canEdit: found ? (ssrUser ? !ssrEditDenied : false) : false,
@@ -2175,7 +2192,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
               protectionUpdatedAt: page.protectionUpdatedAt || ""
             },
             html: rendered.html,
-            metadata: rendered.metadata || { categories: [], backlinks: [] },
+            metadata: mergeNamuRenderMetadata(rendered.metadata, sourceText),
             imageMap: rendered.imageMap || {},
             clientRender,
             engine: clientRender ? "namumark-client" : "namumark-worker"
