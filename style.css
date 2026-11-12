@@ -4516,3 +4516,11 @@ html[data-theme="light"] .article > .wiki-categories{background:#fff;color:#626b
 html[data-theme="light"] .article > .wiki-categories .wiki-categories-label{color:#20252a}
 html[data-theme="light"] .article > .wiki-categories a{color:#1769c2}
 
+/* Notices keep their layout and authored markup colors without a forced yellow fill. */
+.home-notice,
+.protection-notice{
+  background:transparent!important;
+  border-color:var(--wiki-border)!important;
+  border-left-color:var(--wiki-border-strong)!important;
+  color:var(--wiki-text)!important;
+}
