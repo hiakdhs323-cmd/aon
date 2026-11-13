@@ -1881,7 +1881,7 @@ var index_default = {
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261112-namuwiki-shell-v6" : "20261113-categories-v1";
+        const assetCacheVersion = assetName === "style.css" ? "20261113-editor-v1" : "20261113-categories-v1";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
