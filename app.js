@@ -2566,6 +2566,7 @@ $("delete-page").onclick=async()=>{
 let editorOriginalTitle = "";
 let editorReturnTitle = "";
 let editorIsNew = false;
+let editorDraftTimer = 0;
 
 async function editPage(title = currentTitle, content = currentContent) {
   editorOriginalTitle = String(title || "");
@@ -2618,7 +2619,7 @@ async function editPage(title = currentTitle, content = currentContent) {
     }
   } catch {}
   $("editor-content").value = editorText;
-  updateEditorHighlight();
+  updateEditorHighlight({immediate:true});
   $("editor-counter").textContent = editorText.length.toLocaleString("ko-KR") + " / 200,000자";
   $("editor-summary").value = "";
   $("editor-status").textContent = "";
@@ -2637,6 +2638,7 @@ function cancelEditor(event) {
   event.preventDefault();
   event.stopPropagation();
   if (typeof editorPreviewTimer !== "undefined") clearTimeout(editorPreviewTimer);
+  if (editorDraftTimer) clearTimeout(editorDraftTimer);
   sessionStorage.removeItem("aonwiki-draft");
   document.body.classList.remove("editor-active");
   const destination = editorReturnTitle || editorOriginalTitle;
@@ -2726,15 +2728,22 @@ function saveEditorDraft() {
     content: $("editor-content").value
   }));
 }
+function scheduleEditorDraftSave() {
+  clearTimeout(editorDraftTimer);
+  editorDraftTimer = setTimeout(() => {
+    editorDraftTimer = 0;
+    saveEditorDraft();
+  }, 240);
+}
 $("editor-title").addEventListener("input", () => {
-  saveEditorDraft();
+  scheduleEditorDraftSave();
   if (!$("editor-preview").hidden) scheduleServerEditorPreview();
 });
 $("editor-content").addEventListener("input", () => {
   const content=$("editor-content").value;
   $("editor-counter").textContent=content.length.toLocaleString("ko-KR")+" / 200,000자";
   $("editor-status").textContent=content.length>200000?"문서가 200,000자를 초과했습니다.":"";
-  saveEditorDraft();
+  scheduleEditorDraftSave();
   updateEditorHighlight();
   if (!$("editor-preview").hidden) scheduleServerEditorPreview();
 });
@@ -3015,42 +3024,64 @@ function buildDiscussionBodyEditForm(options={}){
  return form;
 }
 
-function updateEditorHighlight() {
+let editorHighlightFrame = 0;
+let editorHighlightSource = null;
+function updateEditorHighlight({immediate=false}={}) {
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
   if (!field || !code || !pre) return;
-  let insideCode = false;
-  code.innerHTML = field.value.split("\n").map(line => {
-    const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
-    if (opening) {
-      const output = highlightNamuLine(line, false);
-      insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
-      return output;
+  const syncScroll = () => {
+    pre.scrollTop = field.scrollTop;
+    pre.scrollLeft = field.scrollLeft;
+  };
+  const paint = () => {
+    let insideCode = false;
+    const value = field.value;
+    code.innerHTML = value.split("\n").map(line => {
+      const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
+      if (opening) {
+        const output = highlightNamuLine(line, false);
+        insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
+        return output;
+      }
+      if (/^\s*\{\{\{\s*$/.test(line)) {
+        insideCode = true;
+        return '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
+      }
+      if (/^\s*\}\}\}\s*$/.test(line)) {
+        insideCode = false;
+        return highlightNamuLine(line, false);
+      }
+      return highlightNamuLine(line, insideCode);
+    }).join("\n") + (value.endsWith("\n") ? "\n" : "");
+    editorHighlightSource = value;
+    pre.dataset.sourceText = value;
+    const wrap = field.closest(".editor-code-wrap");
+    if (wrap) wrap.classList.add("highlight-active");
+    syncScroll();
+  };
+  if (!immediate) {
+    if (editorHighlightSource === field.value) {
+      syncScroll();
+      return;
     }
-    if (/^\s*\{\{\{\s*$/.test(line)) {
-      insideCode = true;
-      return '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
-    }
-    if (/^\s*\}\}\}\s*$/.test(line)) {
-      insideCode = false;
-      return highlightNamuLine(line, false);
-    }
-    return highlightNamuLine(line, insideCode);
-  }).join("\n") + (field.value.endsWith("\n") ? "\n" : "");
-  const wrap = field.closest(".editor-code-wrap");
-  if (wrap) {
-    pre.dataset.sourceText = field.value;
-    wrap.classList.add("highlight-active");
+    if (editorHighlightFrame) return;
+    editorHighlightFrame = requestAnimationFrame(() => {
+      editorHighlightFrame = 0;
+      if (field.isConnected) paint();
+    });
+    return;
   }
-  pre.scrollTop = field.scrollTop;
-  pre.scrollLeft = field.scrollLeft;
+  if (editorHighlightFrame) {
+    cancelAnimationFrame(editorHighlightFrame);
+    editorHighlightFrame = 0;
+  }
+  paint();
 }
 $("editor-content").addEventListener("scroll", () => {
   const pre = $("editor-highlight");
   if (pre) { pre.scrollTop = $("editor-content").scrollTop; pre.scrollLeft = $("editor-content").scrollLeft; }
 });
 $("editor-content").addEventListener("input", updateEditorHighlight);
-$("editor-content").addEventListener("keyup", updateEditorHighlight);
-$("editor-content").addEventListener("click", updateEditorHighlight);
 $("editor-content").addEventListener("compositionend", updateEditorHighlight);
 
 function insertEditorMarkup(kind){

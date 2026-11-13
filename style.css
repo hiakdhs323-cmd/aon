@@ -2776,6 +2776,30 @@ html[data-theme="dark"] #article.legacy-wiki-content table.wiki-bracket-table td
   -webkit-text-fill-color:var(--wiki-text)!important;
   background:var(--wiki-panel)!important;
 }
+#editor-highlight,
+#editor-content{
+  box-sizing:border-box!important;
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace!important;
+  font-size:13px!important;
+  font-weight:400!important;
+  line-height:1.6!important;
+  letter-spacing:normal!important;
+  word-spacing:normal!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  tab-size:4!important;
+}
+/* Syntax colors must never change glyph width: the transparent textarea owns
+   the caret and selection, while this layer is paint-only. */
+#editor-highlight code,
+#editor-highlight code *{
+  font:inherit!important;
+  font-weight:400!important;
+  font-style:normal!important;
+  letter-spacing:inherit!important;
+  text-decoration:none!important;
+}
 .editor-code-wrap.highlight-active #editor-highlight{visibility:visible!important}
 .editor-code-wrap.highlight-active #editor-content{
   color:transparent!important;
