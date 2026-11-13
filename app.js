@@ -2619,6 +2619,7 @@ async function editPage(title = currentTitle, content = currentContent) {
     }
   } catch {}
   $("editor-content").value = editorText;
+  resetEditorHighlightState();
   updateEditorHighlight({immediate:true});
   $("editor-counter").textContent = editorText.length.toLocaleString("ko-KR") + " / 200,000자";
   $("editor-summary").value = "";
@@ -3026,6 +3027,11 @@ function buildDiscussionBodyEditForm(options={}){
 
 let editorHighlightFrame = 0;
 let editorHighlightSource = null;
+function resetEditorHighlightState() {
+  if (editorHighlightFrame) cancelAnimationFrame(editorHighlightFrame);
+  editorHighlightFrame = 0;
+  editorHighlightSource = null;
+}
 function updateEditorHighlight({immediate=false}={}) {
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
   if (!field || !code || !pre) return;
@@ -3071,10 +3077,7 @@ function updateEditorHighlight({immediate=false}={}) {
     });
     return;
   }
-  if (editorHighlightFrame) {
-    cancelAnimationFrame(editorHighlightFrame);
-    editorHighlightFrame = 0;
-  }
+  resetEditorHighlightState();
   paint();
 }
 $("editor-content").addEventListener("scroll", () => {
