@@ -65,6 +65,10 @@ assert.match(read("worker/src/index.js"), /body\.consent !== true/, "Worker must
 assert.match(read("worker/src/index.js"), /username: ip \? "IP " \+ ip/, "anonymous revisions must keep the complete visitor IP");
 assert.match(read("worker/src/index.js"), /anonymous-discussion-create/, "anonymous discussion creation must be rate limited");
 assert.match(read("worker/src/index.js"), /anonymous-discussion-reply/, "anonymous discussion replies must be rate limited");
+assert.match(read("app.js"), /\$\("upload"\)\.hidden=false/, "anonymous users must see the image upload action");
+assert.match(read("app.js"), /\$\("editor-image"\)\.onclick=\(\)=>\{\$\("file"\)\.click\(\)\}/, "anonymous users must be able to upload images from the editor");
+assert.match(read("worker/src/index.js"), /anonymous-image-upload/, "anonymous image uploads must be rate limited");
+assert.match(read("worker/src/index.js"), /const user = authenticatedUser \|\| anonymousEditorIdentity\(request\)/, "anonymous upload ownership must use the visitor IP identity");
 assert.match(read("app.js"), /else if\(currentTitle==="대문"\)canEdit=Boolean\(isWikiAdmin\)/, "the main page must remain administrator-only for editing");
 
 
