@@ -2563,8 +2563,11 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ ok: true, id, title: editRequest.page_title, status: "accepted", updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "이미지를 업로드하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-image-upload", 5, 10 * 60 * 1000)) {
+          return response({ error: "비로그인 이미지 업로드는 10분에 5회까지 가능합니다." }, 429, cors);
+        }
         const form = await request.formData();
         const file = form.get("file");
         if (!file || typeof file.arrayBuffer !== "function") return response({ error: "이미지 파일을 선택하세요." }, 400, cors);
