@@ -70,16 +70,20 @@ assert.match(read("index.html"), /data-entry-icon="archive"/, "category menus mu
 assert.match(read("index.html"), /class="current-tab"><span class="article-tab-icon"/, "document view must have an icon-led current tab");
 assert.doesNotMatch(read("style.css"), /html\[data-theme=["'](?:dark|light)["']\][^{}]*\.wiki-content/i, "site skin must not override NamuMark theme colors");
 
-assert.match(read("index.html"), /id="editor-tab-split"/, "editor must offer a side-by-side preview mode");
+assert.match(read("index.html"), /id="editor-tab-raw"/, "editor must offer plain RAW edit mode");
 assert.match(read("index.html"), /id="editor-preview-pane"/, "editor must have a dedicated preview panel");
 assert.match(read("index.html"), /id="editor-preview-refresh"/, "editor must provide a preview refresh action");
-assert.match(app, /function setEditorMode\(mode/, "editor mode must be managed centrally");
-assert.match(app, /async function renderEditorPreview\(/, "editor preview must use the shared server renderer");
+assert.match(read("index.html"), /id="editor-line-numbers"/, "editor must show line numbers");
+assert.match(read("index.html"), /id="editor-public-ack"/, "editor must show a public-edit acknowledgement");
+assert.match(app, /function setEditorMode\(mode/, "editor modes must be managed centrally");
+assert.match(app, /async function renderEditorPreview\(/, "editor preview must use the shared renderer");
 assert.match(app, /function scheduleServerEditorPreview\(/, "editor preview must refresh when source changes");
-assert.match(app, /underline:\[/, "editor toolbar must insert underline syntax");
-assert.match(app, /strike:\[/, "editor toolbar must insert strikethrough syntax");
-assert.match(app, /if\(kind==="code"\)/, "editor toolbar must insert code blocks");
-assert.match(app, /if\(kind==="folding"\)/, "editor toolbar must insert folding blocks");
+assert.match(app, /file:\["\[\[파일:/, "editor must support inserting file markup");
+assert.match(app, /template:\["\[\[틀:/, "editor must support inserting template markup");
+assert.match(app, /if \(data\.clientRender\)/, "editor preview must consume browser WASM fallback payloads");
+assert.match(worker, /if \(content\.length > 6000\)/, "long editor previews must bypass Worker parsing");
+assert.match(worker, /editor preview switched to browser WASM/, "failed short previews must fall back to browser WASM");
 assert.match(app, /editor-draft-indicator/, "editor must report draft autosave state");
-
 assert.match(read("style.css"), /\.editor-code-pane\[hidden\].*display:none!important/, "hidden editor and preview panels must remain hidden");
+assert.match(read("style.css"), /\.editor-line-numbers/, "editor line-number gutter must be styled");
+assert.match(read("style.css"), /body\.editor-active \.site-header/, "editor mode must use the focused full-screen canvas");
