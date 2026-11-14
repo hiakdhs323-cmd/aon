@@ -1,5 +1,5 @@
 import * as monaco from "monaco-editor";
-import "../node_modules/monaco-editor/esm/vs/editor/editor.main.css";
+import "../node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.css";
 
 const globalObject = globalThis;
 const currentScript = typeof document !== "undefined" ? document.currentScript : null;
