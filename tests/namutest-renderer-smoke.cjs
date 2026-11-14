@@ -139,3 +139,16 @@ assert.match(app, /backlinks: Array\.isArray\(serverMetadata\.backlinks\) && ser
 assert.match(editorStyles, /body\.editor-active \.site-header\s*\{\s*display:block!important/, "editor mode must preserve the site header");
 assert.match(editorStyles, /body\.editor-active \.global-rail\s*\{\s*display:flex!important/, "editor mode must preserve the recent-activity rail");
 assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*padding:0!important/s, "preview content must use the article's own typography without editor-only padding overrides");
+
+(async () => {
+  const parserSource = read("Namu_test-main/namumark.js");
+  const parserModule = await import("data:text/javascript;base64," + Buffer.from(parserSource, "utf8").toString("base64"));
+  parserModule.initSync({ module: fs.readFileSync("Namu_test-main/namumark_bg.wasm") });
+  const source = "각주 미리보기 검사 문장입니다.[* 실제 각주 본문입니다.]";
+  const html = parserModule.parse_to_html(source);
+  console.log("AON_FOOTNOTE_RENDER_PROBE=" + JSON.stringify(html));
+})().catch(error => {
+  console.error("AON_FOOTNOTE_RENDER_PROBE_FAILED", error);
+  process.exitCode = 1;
+});
+
