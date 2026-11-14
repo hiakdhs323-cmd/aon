@@ -468,8 +468,8 @@ async function savePageLinkColors(env, title, extracted, editor) {
 }
 function isNamuMarkupContainer(source, index) {
   const header = String(source || "").slice(index + 3);
-  return /^#!(?:wiki|folding|if)\\b/i.test(header)
-    || /^(?:#[^\\s}]+|[+-]\\d+)/.test(header);
+  return /^#!(?:wiki|folding|if)(?:[ \\t\\r\\n]|$)/i.test(header)
+    || /^(?:#[^ \\t\\r\\n}]+|[+-][0-9]+)/.test(header);
 }
 function replaceNamuIncludesOutsideCode(source, replacer) {
   const text = String(source || "");
@@ -491,7 +491,7 @@ function replaceNamuIncludesOutsideCode(source, replacer) {
       if (close >= 0) {
         const match = text.slice(cursor, close + 2);
         const rawName = text.slice(cursor + 9, close);
-        if (!/\\[include\\(/i.test(rawName)) {
+        if (!String(rawName || "").toLowerCase().includes("[include(")) {
           output += replacer(match, rawName);
           cursor = close + 2;
           continue;
