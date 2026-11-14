@@ -983,3 +983,18 @@ html[data-theme="dark"] .namumark-wasm-content .wiki-table th[style*="--aonwiki-
     color: #a5abb1;
   }
 }
+
+/* AonWiki: linked images keep their image and destination, without an extra green external-link badge. */
+.namumark-wasm-content a.wiki-link-external-image::before,
+.namumark-wasm-content a.wiki-external-image-link::before,
+.namumark-wasm-content a.wiki-link-external:has(img)::before,
+.namumark-wasm-content a.wiki-link-external:has(picture)::before,
+.namumark-wasm-content a.wiki-link-external:has(.wiki-image)::before,
+.namumark-wasm-content a.wiki-link-external:has(a.wiki-link-internal[title^="파일:"])::before,
+.namumark-wasm-content a.wiki-link-external:has(a.wiki-link-internal[title^="file:"])::before {
+  display: none !important;
+  content: none !important;
+}
+.namumark-wasm-content a.wiki-external-image-link .wiki-external-link-icon {
+  display: none !important;
+}
