@@ -306,7 +306,7 @@ async function refreshIdentity(){
  $("change-password").hidden=!(loggedInName && currentRole==="user");
  $("home-admin-tools").hidden=!isWikiAdmin;
  $("file-manager").hidden=!loggedInName;
- $("upload").hidden=!loggedInName;
+ $("upload").hidden=false;
  $("delete-page").hidden=!isWikiAdmin||!currentTitle;
   const protectionButton=$("page-protection");
   const isArticleView=!$("document-view").hidden&&!$("backlinks-tab").hidden&&!/^(?:분류|category):/i.test(currentTitle)&&!$("message").textContent.includes("이 문서는 아직 존재하지 않습니다");
@@ -412,7 +412,7 @@ function showHome(push=true){
  $("search-view").hidden=true;
  $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
  document.body.classList.remove("editor-active");
- $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=!loggedInName;$("delete-page").hidden=true;
+ $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=false;$("delete-page").hidden=true;
  $("new").classList.remove("active");loadHome()
 }
 async function loadHome(){
@@ -2042,7 +2042,6 @@ function initSpecialMenu(){
   if(type){loadSpecialPage(type,true);return}
   if(action==="board"){loadDiscussionList(true);return}
   if(action==="upload"){
-   if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
    $("file").click();return;
   }
   if(action==="random"){openRandomPage();return}
@@ -4118,14 +4117,8 @@ async function openFileManager(){
 $("file-manager").onclick=()=>openFileManager();
 $("scroll-top")?.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
 $("scroll-bottom")?.addEventListener("click",()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"}));
-$("upload").onclick=()=>{
- if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
- $("file").click()
-};
-$("editor-image").onclick=()=>{
- if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
- $("file").click()
-};
+$("upload").onclick=()=>{$("file").click()};
+$("editor-image").onclick=()=>{$("file").click()};
 const MAX_RAW_IMAGE_BYTES=3*1024*1024;
 const MAX_STORED_IMAGE_BYTES=900*1024;
 async function decodeImageFile(file){
