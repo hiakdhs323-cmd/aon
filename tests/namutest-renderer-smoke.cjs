@@ -85,5 +85,5 @@ assert.match(worker, /if \(content\.length > 6000\)/, "long editor previews must
 assert.match(worker, /editor preview switched to browser WASM/, "failed short previews must fall back to browser WASM");
 assert.match(app, /editor-draft-indicator/, "editor must report draft autosave state");
 assert.match(read("style.css"), /\.editor-code-pane\[hidden\].*display:none!important/, "hidden editor and preview panels must remain hidden");
-assert.match(read("style.css"), /\.editor-line-numbers/, "editor line-number gutter must be styled");
+assert.match(read("style.css"), /#editor-line-numbers/, "editor line-number gutter must be styled");
 assert.match(read("style.css"), /body\.editor-active \.site-header/, "editor mode must use the focused full-screen canvas");
