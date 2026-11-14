@@ -5,6 +5,10 @@ src/
 dist/
 tests/
 node_modules/
+package.json
+package-lock.json
+scripts/
+editor/
 compose.yaml
 wrangler.toml
 .dockerignore
