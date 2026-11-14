@@ -69,3 +69,15 @@ assert.match(read("index.html"), /data-entry-icon="discussion"/, "recent discuss
 assert.match(read("index.html"), /data-entry-icon="archive"/, "category menus must display the EntryWiki archive icon");
 assert.match(read("index.html"), /class="current-tab"><span class="article-tab-icon"/, "document view must have an icon-led current tab");
 assert.doesNotMatch(read("style.css"), /html\[data-theme=["'](?:dark|light)["']\][^{}]*\.wiki-content/i, "site skin must not override NamuMark theme colors");
+
+assert.match(read("index.html"), /id="editor-tab-split"/, "editor must offer a side-by-side preview mode");
+assert.match(read("index.html"), /id="editor-preview-pane"/, "editor must have a dedicated preview panel");
+assert.match(read("index.html"), /id="editor-preview-refresh"/, "editor must provide a preview refresh action");
+assert.match(app, /function setEditorMode\(mode/, "editor mode must be managed centrally");
+assert.match(app, /async function renderEditorPreview\(/, "editor preview must use the shared server renderer");
+assert.match(app, /function scheduleServerEditorPreview\(/, "editor preview must refresh when source changes");
+assert.match(app, /underline:\[/, "editor toolbar must insert underline syntax");
+assert.match(app, /strike:\[/, "editor toolbar must insert strikethrough syntax");
+assert.match(app, /if\(kind==="code"\)/, "editor toolbar must insert code blocks");
+assert.match(app, /if\(kind==="folding"\)/, "editor toolbar must insert folding blocks");
+assert.match(app, /editor-draft-indicator/, "editor must report draft autosave state");
