@@ -154,6 +154,33 @@ assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*
   assert.match(read("Namu_test-main/interactions.js"), /root\.querySelectorAll\("\[id\]"\)/, "footnote targets must be resolved inside their own article root");
   assert.doesNotMatch(read("Namu_test-main/interactions.js"), /root\.ownerDocument\.getElementById\(id\)/, "footnote lookup must not select a duplicate target from the hidden document");
   console.log("AonWiki actual WASM footnote render and preview-root lookup checks passed.");
+
+(async () => {
+  const parserSource = read("Namu_test-main/namumark.js");
+  const parserModule = await import("data:text/javascript;base64," + Buffer.from(parserSource, "utf8").toString("base64"));
+  parserModule.initSync({ module: fs.readFileSync("Namu_test-main/namumark_bg.wasm") });
+  const records = new Map([
+    ["틀:AonWIki 개발자", {title:"틀:AonWIki 개발자", data:"엔진 include 콜백 테스트 본문"}]
+  ]);
+  const options = new parserModule.RendererOptions();
+  const callbacks = {
+    documentExists(name) { return records.has(String(name || "").trim()); },
+    getDocumentContent(name) { return records.get(String(name || "").trim())?.data || ""; },
+    getPagecount() { return records.size; }
+  };
+  const rendered = parserModule.parse_with_callbacks_and_options(
+    "[include(틀:AonWIki 개발자)]", callbacks, options
+  );
+  let html = "";
+  try { html = rendered.html || ""; }
+  finally { rendered.free(); options.free(); }
+  console.log("AON_INCLUDE_CALLBACK_PROBE=" + JSON.stringify(html));
+  assert.match(html, /엔진 include 콜백 테스트 본문/, "WASM include syntax must embed template content supplied by the renderer callbacks");
+})().catch(error => {
+  console.error("AON_INCLUDE_CALLBACK_TEST_FAILED", error);
+  process.exitCode = 1;
+});
+
 })().catch(error => {
   console.error("AON_FOOTNOTE_RENDER_TEST_FAILED", error);
   process.exitCode = 1;
