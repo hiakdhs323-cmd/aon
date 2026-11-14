@@ -2621,6 +2621,13 @@ let editorOriginalTitle = "";
 let editorReturnTitle = "";
 let editorIsNew = false;
 let editorDraftTimer = 0;
+function resizeEditorTitleField() {
+  const field = $("editor-title");
+  if (!field) return;
+  const value = field.value || field.placeholder || "문서 제목";
+  const measuredWidth = Array.from(value).reduce((width, char) => width + (char.charCodeAt(0) > 255 ? 17 : 9), 14);
+  field.style.setProperty("width", Math.max(110, Math.min(680, measuredWidth)) + "px", "important");
+}
 
 async function editPage(title = currentTitle, content = currentContent) {
   editorOriginalTitle = String(title || "");
@@ -2654,6 +2661,7 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-title-wrap").querySelector("label").textContent = "문서 제목";
   $("editor-title-help").hidden = true;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
+  resizeEditorTitleField();
   $("editor-title").readOnly = false;
   $("editor-title").disabled = false;
   $("editor-title").removeAttribute("readonly");
@@ -2836,6 +2844,7 @@ function scheduleEditorDraftSave() {
   }, 240);
 }
 $("editor-title").addEventListener("input", () => {
+  resizeEditorTitleField();
   scheduleEditorDraftSave();
   if (!$("editor-preview-pane").hidden) scheduleServerEditorPreview();
 });
