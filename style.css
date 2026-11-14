@@ -5632,3 +5632,28 @@ body.editor-active .editor-fields{display:block;min-width:0;width:100%;margin:0;
 body.editor-active .editor-fields:disabled{opacity:.68;pointer-events:none;filter:saturate(.8)}
 body.editor-active .editor-title-field[hidden]{display:none!important}
 body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
+
+
+/* Editor preview mirrors the normal document page shell and article typography. */
+.editor-preview-page{
+  flex:1 1 auto;
+  min-width:0;
+  min-height:0;
+  overflow:auto;
+  padding:14px 18px 22px;
+  background:var(--wiki-bg);
+}
+.editor-preview-page .editor-preview-breadcrumbs{margin:0 0 10px}
+.editor-preview-document.article{min-width:0;margin:0}
+.editor-preview-document .editor-preview{
+  display:block;
+  flex:none;
+  min-height:240px;
+  margin:0;
+  padding:0!important;
+  overflow:visible;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:var(--wiki-text);
+}
