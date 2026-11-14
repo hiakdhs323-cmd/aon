@@ -1509,7 +1509,16 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "ëŒ€ë
     await activateAonWikiInteractions(target);
     if (serverRenderVersions.get(target) !== version) return;
     target.dataset.renderEngine = data.engine || (data.clientRender ? "namumark-client" : "namumark-worker");
-    return data.metadata || clientMetadata || { categories: [], backlinks: [] };
+    const serverMetadata = data.metadata || {};
+    return {
+      ...serverMetadata,
+      categories: Array.isArray(serverMetadata.categories) && serverMetadata.categories.length
+        ? serverMetadata.categories
+        : (clientMetadata?.categories || []),
+      backlinks: Array.isArray(serverMetadata.backlinks) && serverMetadata.backlinks.length
+        ? serverMetadata.backlinks
+        : (clientMetadata?.backlinks || [])
+    };
   } catch (error) {
     if (serverRenderVersions.get(target) !== version) return;
     target.replaceChildren();
