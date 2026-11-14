@@ -57,9 +57,6 @@ monaco.languages.setMonarchTokensProvider(languageId, {
     root: [
       [/^\s*(={2,6})(.*?)(={2,6})\s*$/, ["aon.heading.delimiter", "aon.heading", "aon.heading.delimiter"]],
       [/^\s*\[목차\]\s*$/, "aon.directive"],
-      [/\[(?:anchor|ruby|br|clearfix|date|datetime|age|youtube|nicovideo)(?:\([^\]\r\n]*\))?\]/i, "aon.macro"],
-      [/<(?:[a-z][\w-]*(?:=[^>]+)?|-[0-9]+|\|[0-9]+)>/i, "aon.table.attribute"],
-      [/^\s*[0-9]+\.\s/, "aon.list.number"],
       [/\[include\([^\]]+\)\]/i, "aon.directive"],
       [/\[\*[^\]]+\]/, "aon.footnote"],
       [/\[https?:\/\/[^\]]+\]/i, "aon.external"],
@@ -70,8 +67,6 @@ monaco.languages.setMonarchTokensProvider(languageId, {
       [/'''/, { token: "aon.bold", next: "@bold" }],
       [/''/, { token: "aon.italic", next: "@italic" }],
       [/~~/, { token: "aon.strike", next: "@strike" }],
-      [/\{\{\{#[^\s}]+/, { token: "aon.color.delimiter", next: "@colorStyle" }],
-      [/\{\{\{\+[0-9]+/, { token: "aon.size.delimiter", next: "@sizeStyle" }],
       [/\{\{\{#![\w-]+/, "aon.directive"],
       [/\{\{\{/, { token: "aon.code.delimiter", next: "@code" }],
       [/\}\}\}/, "aon.code.delimiter"],
@@ -114,16 +109,6 @@ monaco.languages.setMonarchTokensProvider(languageId, {
       [/[^~]+/, "aon.strike"],
       [/~/, "aon.strike"]
     ],
-    colorStyle: [
-      [/\}\}\}/, { token: "aon.code.delimiter", next: "@pop" }],
-      [/[^}]+/, "aon.color.text"],
-      [/\}/, "aon.color.text"]
-    ],
-    sizeStyle: [
-      [/\}\}\}/, { token: "aon.code.delimiter", next: "@pop" }],
-      [/[^}]+/, "aon.size.text"],
-      [/\}/, "aon.size.text"]
-    ],
     code: [
       [/^\s*\}\}\}\s*$/, { token: "aon.code.delimiter", next: "@pop" }],
       [/.*$/, "aon.code"]
@@ -153,13 +138,6 @@ monaco.editor.defineTheme("aonwiki-dark", {
     { token: "aon.code.delimiter", foreground: "D2A8FF" },
     { token: "aon.code", foreground: "C9D1D9" },
     { token: "aon.list", foreground: "FFA657" },
-    { token: "aon.list.number", foreground: "FFA657", fontStyle: "bold" },
-    { token: "aon.table.attribute", foreground: "79C0FF" },
-    { token: "aon.macro", foreground: "56D4DD" },
-    { token: "aon.color.delimiter", foreground: "FF7B72" },
-    { token: "aon.color.text", foreground: "A5D6FF" },
-    { token: "aon.size.delimiter", foreground: "FF7B72" },
-    { token: "aon.size.text", foreground: "D2A8FF" },
     { token: "comment", foreground: "8B949E", fontStyle: "italic" }
   ],
   colors: {
@@ -188,11 +166,6 @@ const completionItems = [
   { label: "목차", insertText: "[목차]", detail: "목차 삽입" },
   { label: "접기", insertText: "{{{#!folding 제목\n접을 내용\n}}}", detail: "접기 영역" },
   { label: "표", insertText: "||항목 1||항목 2||\n||내용||내용||", detail: "표 삽입" },
-  { label: "표 속성", insertText: "<tablewidth=100%>", detail: "표 너비 지정" },
-  { label: "글자 색상", insertText: "{{{#red 색상 텍스트}}}", detail: "인라인 글자 색상" },
-  { label: "글자 크기", insertText: "{{{+2 큰 글씨}}}", detail: "인라인 글자 크기" },
-  { label: "앵커", insertText: "[anchor(이름)]", detail: "문서 내 이동 지점" },
-  { label: "날짜", insertText: "[date]", detail: "현재 날짜" },
   { label: "굵게", insertText: "'''굵은 글씨'''", detail: "굵은 글씨" },
   { label: "기울임", insertText: "''기울임''", detail: "기울임" },
   { label: "외부 링크", insertText: "[https://example.com|표시 문구]", detail: "외부 링크" },
