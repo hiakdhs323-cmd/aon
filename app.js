@@ -136,20 +136,42 @@ const AON_UI_ICON_SHAPES = {
     ["path",{d:"M9 1.8v3.3h3.2M6 8h4.3M6 10.5h4.3"}]
   ]
 };
+const ENTRYWIKI_ICON_PATHS={
+ clock:{d:"M6.11484 19.2188C7.32682 19.7396 8.62188 20 10 20C11.3844 20 12.6853 19.7396 13.9029 19.2188C15.1204 18.6979 16.1806 17.9818 17.0833 17.0703C17.9861 16.1589 18.6979 15.0971 19.2188 13.8852C19.7396 12.6732 20 11.3781 20 10C20 8.61667 19.7378 7.31667 19.2133 6.1C18.6888 4.88333 17.9771 3.825 17.0781 2.925C16.179 2.025 15.1218 1.3125 13.9065 0.7875C12.6911 0.2625 11.3929 0 10.012 0C8.63108 0 7.33333 0.260417 6.11875 0.78125C4.90417 1.30208 3.84115 2.01389 2.92969 2.91667C2.01823 3.81944 1.30208 4.87847 0.78125 6.09375C0.260417 7.30903 0 8.60712 0 9.98802C0 11.3689 0.260417 12.6667 0.78125 13.8813C1.30208 15.0958 2.01823 16.1589 2.92969 17.0703C3.84115 17.9818 4.90286 18.6979 6.11484 19.2188ZM14.8177 13.099L13.4896 14.4271L9.0625 10V3.75H10.9375V9.21875L14.8177 13.099Z",rule:"evenodd"},
+ discussion:{d:"M20 20L16.25 16.25H6.875C6.35938 16.25 5.91797 16.0664 5.55078 15.6992C5.18359 15.332 5 14.8906 5 14.375V13.125H15C15.5156 13.125 15.957 12.9414 16.3242 12.5742C16.6914 12.207 16.875 11.7656 16.875 11.25V5H18.125C18.6406 5 19.082 5.18359 19.4492 5.55078C19.8164 5.91797 20 6.35938 20 6.875V13.4375V20ZM0 15V1.875C0 1.35938 0.183594 0.917969 0.550781 0.550782C0.917969 0.183594 1.35938 0 1.875 0H13.125C13.6406 0 14.082 0.183594 14.4492 0.550781C14.8164 0.917969 15 1.35938 15 1.875V9.375C15 9.89062 14.8164 10.332 14.4492 10.6992C14.082 11.0664 13.6406 11.25 13.125 11.25H3.75L0 15Z"},
+ archive:{d:"M0.000129937 12.6792V18H20V12.6875H15.7143V13.75H13.5715V12.6875H6.42866V13.75H4.28582V12.6875L0.000129937 12.6792ZM0.000129937 10.5542L4.28582 10.5625V9.5H6.42866V10.5625H13.5715V9.5H15.7143V10.5625H19.9999L20 7.375C20 6.79062 19.7902 6.29037 19.3705 5.87422C18.9509 5.45807 18.4464 5.25 17.8572 5.25H15V3.125C15 2.54062 14.7902 2.04037 14.3706 1.62422C13.9509 1.20807 13.4465 1 12.8572 1H7.14294C6.55366 1 6.04919 1.2066 5.62956 1.61979C5.20992 2.03299 5.0001 2.53266 5.0001 3.1188V5.25H2.14297C1.5537 5.25 1.04923 5.4566 0.62959 5.86979C0.209953 6.28299 0.000129937 6.78197 0.000129937 7.36674V10.5542ZM12.8572 5.25H7.14294V3.125H12.8572V5.25Z",rule:"evenodd"},
+ user:{d:"M10 10.1A4.05 4.05 0 1 0 10 2a4.05 4.05 0 0 0 0 8.1ZM2 18.2c.55-3.7 3.45-5.8 8-5.8s7.45 2.1 8 5.8H2Z",rule:"evenodd"},
+ plus:{d:"M9 2.25h2v6.75h6.75v2H11v6.75H9V11H2.25V9H9V2.25Z"},
+ search:{d:"M8.7 2a6.7 6.7 0 1 0 4.13 11.98l4.2 4.2 1.42-1.42-4.2-4.2A6.7 6.7 0 0 0 8.7 2Zm0 2a4.7 4.7 0 1 1 0 9.4 4.7 4.7 0 0 1 0-9.4Z",rule:"evenodd"},
+ grid:{d:"M2 2h6.5v6.5H2V2Zm9.5 0H18v6.5h-6.5V2ZM2 11.5h6.5V18H2v-6.5Zm9.5 0H18V18h-6.5v-6.5Z"},
+ document:{d:"M4 1.5h7l5 5V18.5H4V1.5Zm2 2v13h8V7.4h-4.2V3.5H6Zm5.8.4v1.5h1.5l-1.5-1.5ZM8 10h5v1.5H8V10Zm0 3h5v1.5H8V13Z",rule:"evenodd"},
+ edit:{d:"M14.7 2.3a1.8 1.8 0 0 1 2.55 0l.45.45a1.8 1.8 0 0 1 0 2.55l-9.9 9.9-4.05 1.05 1.05-4.05 9.9-9.9ZM5.1 13.1l-.3 1.1 1.1-.3 8.9-8.9-.8-.8-8.9 8.9Z"},
+ upload:{d:"M9 13V5.8L6.2 8.6 4.8 7.2 10 2l5.2 5.2-1.4 1.4L11 5.8V13H9Zm-5 2h12v2H4v-2Z"},
+ link:{d:"M7.1 13.9 5.7 15.3a3.3 3.3 0 0 1-4.7-4.7l3.1-3.1a3.3 3.3 0 0 1 4.7 0l.4.4-1.4 1.4-.4-.4a1.3 1.3 0 0 0-1.9 0l-3.1 3.1a1.3 1.3 0 0 0 1.9 1.9l1.4-1.4 1.4 1.4Zm5.8-7.8 1.4-1.4a3.3 3.3 0 0 1 4.7 4.7l-3.1 3.1a3.3 3.3 0 0 1-4.7 0l-.4-.4 1.4-1.4.4.4a1.3 1.3 0 0 0 1.9 0l3.1-3.1a1.3 1.3 0 0 0-1.9-1.9l-1.4 1.4-1.4-1.4Zm-6.2 3h6.6v2H6.7v-2Z"},
+ trash:{d:"M6 2h8l.7 2H18v2H2V4h3.3L6 2Zm-1.5 5h11l-.8 11H5.3L4.5 7Zm3 2 .4 7h1.5L9 9H7.5Zm4.5 0-.4 7h1.5l.4-7H12Z",rule:"evenodd"},
+ file:{d:"M4 1.5h7l5 5V18.5H4V1.5Zm2 2v13h8V7.4h-4.2V3.5H6Z",rule:"evenodd"},
+ shield:{d:"M10 1 17 3.7v5.2c0 4.2-2.8 7.5-7 10.1-4.2-2.6-7-5.9-7-10.1V3.7L10 1Zm0 2.2L5 5.1v3.8c0 3.1 1.9 5.7 5 7.9 3.1-2.2 5-4.8 5-7.9V5.1l-5-1.9Z",rule:"evenodd"},
+ lock:{d:"M5 8V6a5 5 0 0 1 10 0v2h1.5v10h-13V8H5Zm2 0h6V6a3 3 0 0 0-6 0v2Zm2 3v4h2v-4H9Z",rule:"evenodd"},
+ settings:{d:"M10 2.2 12 3l1.3-1 2.1 2.1-1 1.3.8 2 1.6.3v3l-1.6.3-.8 2 1 1.3-2.1 2.1-1.3-1-2 .8-.3 1.6h-3L6.4 16l-2-.8-1.3 1L1 14.1l1-1.3-.8-2-1.6-.3v-3l1.6-.3.8-2-1-1.3L3 1.8l1.3 1 2-.8L6.6.4h3L10 2.2Zm-1 4.3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z",rule:"evenodd"},
+ shuffle:{d:"M15 3h3v3h-2V5.7l-3.8 3.8-1.4-1.4 3.8-3.8H15V3ZM2 5h3.2c1.2 0 2.2.5 3.1 1.4l6.4 6.4c.4.4.8.6 1.3.6H16v-1.5l2.5 2.5L16 17v-1.6h-.3c-1.1 0-2.1-.5-3-1.3L6.3 7.7c-.4-.4-.8-.7-1.3-.7H2V5Zm0 10v-2h3c.5 0 .9-.2 1.3-.6l1.2-1.2 1.4 1.4-1.2 1.2A3.8 3.8 0 0 1 5 15H2Z"}
+};
 function createAonUiIcon(name,className="aon-ui-icon"){
+ const filledName=name==="history"?"clock":name==="message"?"discussion":name==="folder"?"archive":name;
+ const filled=ENTRYWIKI_ICON_PATHS[filledName];
  const ns="http://www.w3.org/2000/svg";
  const svg=document.createElementNS(ns,"svg");
- svg.setAttribute("class",className);
- svg.setAttribute("viewBox","0 0 16 16");
- svg.setAttribute("width","14");
- svg.setAttribute("height","14");
- svg.setAttribute("fill","none");
- svg.setAttribute("stroke","currentColor");
- svg.setAttribute("stroke-width","1.45");
- svg.setAttribute("stroke-linecap","round");
- svg.setAttribute("stroke-linejoin","round");
- svg.setAttribute("aria-hidden","true");
- svg.setAttribute("focusable","false");
+ svg.setAttribute("class",className);svg.setAttribute("viewBox",filled?"0 0 20 20":"0 0 16 16");
+ svg.setAttribute("width","14");svg.setAttribute("height","14");
+ svg.setAttribute("aria-hidden","true");svg.setAttribute("focusable","false");
+ if(filled){
+  svg.setAttribute("fill","currentColor");
+  const path=document.createElementNS(ns,"path");
+  path.setAttribute("d",filled.d);path.setAttribute("fill","currentColor");
+  if(filled.rule)path.setAttribute("fill-rule",filled.rule);
+  svg.append(path);return svg;
+ }
+ svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");
+ svg.setAttribute("stroke-width","1.45");svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round");
  for(const [tag,attributes] of (AON_UI_ICON_SHAPES[name]||AON_UI_ICON_SHAPES.external)){
   const shape=document.createElementNS(ns,tag);
   for(const [key,value] of Object.entries(attributes))shape.setAttribute(key,value);
@@ -167,17 +189,24 @@ function setAonIconLabel(element,iconName,label){
  element.classList.add("aon-has-icon");
  if(element.tagName==="BUTTON")element.setAttribute("aria-label",String(label||""));
 }
+function applyEntryWikiStaticIcons(){
+ document.querySelectorAll("[data-entry-icon]").forEach(slot=>{
+  const icon=createAonUiIcon(slot.dataset.entryIcon,"aon-ui-icon entrywiki-filled-icon");
+  slot.replaceChildren(icon);slot.classList.add("entrywiki-icon-slot");
+ });
+}
+applyEntryWikiStaticIcons();
 function applyDocumentActionIcons(){
  const controls=[
   ["page-protection","shield-lock","편집 보호"],
   ["official-document","file","공식 문서 지정"],
   ["heading-edit","edit","편집"],
   ["edit","edit",($("edit")?.textContent||"편집").trim()||"편집"],
-  ["discussion-tab","message","토론"],
-  ["history-tab","history","역사"],
+  ["discussion-tab","discussion","토론"],
+  ["history-tab","clock","역사"],
   ["backlinks-tab","link","역링크"],
   ["upload","upload","파일 올리기"],
-  ["file-manager","folder","파일 관리"],
+  ["file-manager","archive","파일 관리"],
   ["delete-page","trash","삭제"]
  ];
  controls.forEach(([id,icon,label])=>setAonIconLabel($(id),icon,label));
@@ -263,7 +292,10 @@ async function refreshIdentity(){
   currentRole="anonymous";
   if(!loggedInName) loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
  }
- $("login").textContent=loggedInName?"로그아웃 · "+loggedInName:"로그인";
+ setAonIconLabel($("login"),"user",loggedInName?"로그아웃 · "+loggedInName:"로그인");
+  setAonIconLabel($("settings"),"settings","설정");
+  setAonIconLabel($("labs"),"file","엔진 정보");
+  setAonIconLabel($("change-password"),"lock","비밀번호");
  const roleLabel=$("role-label");
  roleLabel.hidden=!loggedInName;
  roleLabel.textContent=isWikiAdmin?"위키 관리자":"회원";
