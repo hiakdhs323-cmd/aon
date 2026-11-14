@@ -1,0 +1,66 @@
+name: Deploy AonWiki Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app.js"
+      - "index.html"
+      - "style.css"
+      - "theme.js"
+      - "namumark-aon.css"
+      - "namumark-interactions-aon.css"
+      - "Namu_test-main/**"
+      - "worker/src/**"
+      - "wrangler.toml"
+      - ".assetsignore"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aonwiki-worker-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Cloudflare deployment token
+        id: cloudflare-auth
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bundle Worker and NamuMark WASM
+        if: steps.cloudflare-auth.outputs.available == 'true'
+        run: |
+          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --loader:.wasm=binary --outfile=worker/dist/index.js
+          node --check worker/dist/index.js
+
+      - name: Deploy Worker and static assets
+        if: steps.cloudflare-auth.outputs.available == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: c4bd4c129a5392856d36b1a40560e261
+        run: npx --yes wrangler@4 deploy --config wrangler.toml
+
+      - name: Explain skipped deployment
+        if: steps.cloudflare-auth.outputs.available != 'true'
+        run: |
+          echo "Worker deployment skipped. Add the repository Actions secret CLOUDFLARE_API_TOKEN with Workers Scripts Write and Workers Assets Write permissions to enable automatic deployments." >> "$GITHUB_STEP_SUMMARY"
