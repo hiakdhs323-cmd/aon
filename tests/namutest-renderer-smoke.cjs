@@ -25,6 +25,12 @@ assert.doesNotMatch(worker, /endsWith\("\\:" \+ sourceDigest\)/, "legacy cache c
 assert.match(worker, /Namu_test-main\/namumark\.js/, "Worker static proxy must serve the nested Namu_test-main parser module");
 assert.match(worker, /Namu_test-main\/namumark_bg\.wasm/, "Worker static proxy must serve the nested Namu_test-main WASM module");
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
+assert.match(read("index.html"), /id="home-login-action"/, "homepage must expose the login quick action");
+assert.match(read("index.html"), /id="home-create-action"/, "homepage must expose the add-document quick action");
+assert.match(read("index.html"), /id="home-search-action"/, "homepage must expose the search quick action");
+assert.match(read("index.html"), /id="home-categories-action"/, "homepage must expose the category-grid quick action");
+assert.match(app, /home-search-action.*loadSearchPage/s, "homepage search quick action must open the search view");
+assert.match(app, /home-categories-action.*loadCategoryIndex/s, "homepage category quick action must open the category index");
 assert.ok(read("namumark-aon.css").includes(".wiki-link-external:has(img)::before"), "external image links must suppress the automatic external-link badge");
 
 
