@@ -1002,7 +1002,14 @@ async function savePageLinkColors(env, title, extracted, editor) {
 }
 function isNamuMarkupContainer(source, index) {
   const header = String(source || "").slice(index + 3);
-  return /^#!(?:wiki|folding|if)(?:[ \\t\\r\\n]|$)/i.test(header) || /^(?:#[^ \\t\\r\\n}]+|[+-][0-9]+)/.test(header);
+  if (header.startsWith("#!")) {
+    return ["#!wiki", "#!folding", "#!if"].some(
+      (name) => header === name || header.startsWith(name + " ") || header.startsWith(name + "\n") || header.startsWith(name + "\r") || header.startsWith(name + "	")
+    );
+  }
+  const first = header[0] || "";
+  const second = header[1] || "";
+  return first === "#" || (first === "+" || first === "-") && second >= "0" && second <= "9";
 }
 function replaceNamuIncludesOutsideCode(source, replacer) {
   const text = String(source || "");
