@@ -5346,3 +5346,29 @@ body.editor-active #editor-save:disabled{background:#4c6e89!important}
 /* Keep inactive editor panes out of layout even when their parent has display:flex. */
 body.editor-active .editor-code-pane[hidden],
 body.editor-active .editor-preview-pane[hidden]{display:none!important}
+
+/* Screenshot title actions: backlinks, move, delete. */
+body.editor-active .editor-heading-actions{gap:7px!important}
+.editor-context-actions{display:inline-flex;align-items:center;gap:0;flex:0 0 auto}
+body.editor-active .editor-context-actions .button{
+  min-height:36px;padding:0 11px;border:1px solid #4b4b4b!important;
+  border-radius:0!important;background:#171717!important;color:#ddd!important;
+  font-size:12px!important;font-weight:550!important;white-space:nowrap;
+}
+body.editor-active .editor-context-actions .button:first-child{border-radius:6px 0 0 6px!important}
+body.editor-active .editor-context-actions .button+.button{border-left:0!important}
+body.editor-active .editor-context-actions .button:last-child{border-radius:0 6px 6px 0!important}
+body.editor-active .editor-context-actions .button:hover{background:#303030!important;color:#fff!important}
+body.editor-active .editor-context-actions .editor-delete-action{
+  background:#321b1b!important;color:#f2caca!important;border-color:#704040!important;
+}
+body.editor-active .editor-context-actions .editor-delete-action:hover{background:#512424!important}
+body.editor-active .editor-context-actions button[hidden]{display:none!important}
+body.editor-active .editor-public-ack{line-height:1.6}
+@media(max-width:900px){
+  body.editor-active .editor-heading-actions{flex-wrap:wrap;justify-content:flex-start}
+  .editor-context-actions{order:0}
+}
+@media(max-width:700px){
+  .editor-context-actions .button{min-height:31px!important;padding:0 7px!important;font-size:10px!important}
+}
