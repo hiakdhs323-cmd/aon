@@ -737,15 +737,17 @@ async function currentUser(request, env) {
 }
 function anonymousEditorIdentity(request) {
   const raw = String(request.headers.get("CF-Connecting-IP") || "").trim().toLowerCase();
-  let label = "IP \uC54C \uC218 \uC5C6\uC74C";
   const ipv4 = raw.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ipv4 && ipv4.slice(1).every((part) => Number(part) >= 0 && Number(part) <= 255)) {
-    label = "IP " + ipv4[1] + "." + ipv4[2] + "." + ipv4[3] + ".*";
-  } else if (raw.includes(":")) {
-    const groups = raw.split("%")[0].split(":").filter(Boolean);
-    label = groups.length >= 4 ? "IP " + groups.slice(0, 4).join(":") + ":*" : "IP IPv6:*";
-  }
-  return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
+  const validIPv4 = Boolean(ipv4 && ipv4.slice(1).every((part) => Number(part) >= 0 && Number(part) <= 255));
+  const validIPv6 = raw.includes(":") && raw.length <= 45 && /^(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/i.test(raw);
+  const ip = validIPv4 || validIPv6 ? raw : "";
+  return {
+    username: ip ? "IP " + ip : "IP \uC54C \uC218 \uC5C6\uC74C",
+    ip,
+    role: "anonymous",
+    isAdmin: false,
+    isAnonymous: true
+  };
 }
 var pageProtectionSchemaPromise = null;
 var officialDocumentSchemaPromise = null;
@@ -835,6 +837,18 @@ async function ensureDiscussionSchema(env) {
     });
   }
   await discussionSchemaPromise;
+}
+var editRequestSchemaPromise = null;
+async function ensureEditRequestSchema(env) {
+  if (!editRequestSchemaPromise) {
+    editRequestSchemaPromise = env.DB.prepare(
+      "CREATE TABLE IF NOT EXISTS edit_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, page_title TEXT NOT NULL, requester TEXT NOT NULL, proposed_content TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', base_updated_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','rejected')), created_at TEXT NOT NULL, reviewed_by TEXT NOT NULL DEFAULT '', reviewed_at TEXT NOT NULL DEFAULT '')"
+    ).run().catch((error) => {
+      editRequestSchemaPromise = null;
+      throw error;
+    });
+  }
+  await editRequestSchemaPromise;
 }
 function cleanImageName(value, contentType) {
   const extension = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/svg+xml": "svg" }[contentType] || "img";
@@ -1833,14 +1847,15 @@ async function renderFullWikiDocument(request, env, title) {
   const titleText = found ? actualTitle : actualTitle + " (\uBB38\uC11C \uC5C6\uC74C)";
   const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "\uC544\uC9C1 \uC791\uC131\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
   const ssrUser = await currentUser(request, env);
-  const ssrEditDenied = found && ssrUser ? await checkPageEditPermission(env, ssrUser, actualTitle) : null;
+  const ssrEditUser = ssrUser || anonymousEditorIdentity(request);
+  const ssrEditDenied = found ? await checkPageEditPermission(env, ssrEditUser, actualTitle) : null;
   const state = {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
     metadata: found ? mergeNamuRenderMetadata(rendered.metadata, page.content || "") : { categories: [], backlinks: [] },
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
-    canEdit: found ? ssrUser ? !ssrEditDenied : false : false,
+    canEdit: found ? !ssrEditDenied : false,
     exists: found,
     clientRenderPending
   };
@@ -1979,7 +1994,14 @@ var index_default = {
       }
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
-        return response({ authenticated: Boolean(user), username: user?.username || null, role: user?.role || "anonymous", isAdmin: Boolean(user?.isAdmin) }, 200, cors);
+        const anonymous = user ? null : anonymousEditorIdentity(request);
+        return response({
+          authenticated: Boolean(user),
+          username: user?.username || null,
+          role: user?.role || "anonymous",
+          isAdmin: Boolean(user?.isAdmin),
+          ip: anonymous?.ip || null
+        }, 200, cors);
       }
       if (url.pathname === "/api/admin/bootstrap-account" && request.method === "POST") {
         if (!env.ADMIN_BOOTSTRAP_SECRET || env.ADMIN_BOOTSTRAP_SECRET.length < 32) return response({ error: "\uAD00\uB9AC\uC790 \uCD08\uAE30 \uC124\uC815\uC774 \uC11C\uBC84\uC5D0\uC11C \uD65C\uC131\uD654\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4." }, 503, cors);
@@ -2228,8 +2250,9 @@ var index_default = {
         return response({ discussion, posts: posts.results || [] }, 200, cors);
       }
       if (url.pathname === "/api/discussions" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uD1A0\uB860\uC744 \uC2DC\uC791\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-create", 5, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860 \uC0DD\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1e3)) return response({ error: "\uD1A0\uB860 \uC0DD\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -2247,8 +2270,9 @@ var index_default = {
         return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
       }
       if (url.pathname === "/api/discussion/reply" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC791\uC131\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-reply", 15, 5 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00 \uC791\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         if (await authRateLimited(request, env, "discussion-reply", 15, 5 * 60 * 1e3)) return response({ error: "\uB2F5\uAE00 \uC791\uC131 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -2265,8 +2289,9 @@ var index_default = {
         return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
       }
       if (url.pathname === "/api/discussion" && request.method === "PATCH") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uD1A0\uB860 \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-edit", 10, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860 \uBCC0\uACBD \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
         const id = Number(body.id);
@@ -2290,8 +2315,9 @@ var index_default = {
         return response({ ok: true, id, status }, 200, cors);
       }
       if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC218\uC815\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-edit", 10, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00 \uC218\uC815 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
         const id = Number(body.id);
@@ -2308,8 +2334,9 @@ var index_default = {
         return response({ ok: true, id, edited_at: now }, 200, cors);
       }
       if (url.pathname === "/api/discussion/post" && request.method === "DELETE") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uB2F5\uAE00\uC744 \uC0AD\uC81C\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-delete", 10, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00 \uC0AD\uC81C \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uB2F5\uAE00 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
@@ -2322,8 +2349,9 @@ var index_default = {
         return response({ ok: true, id }, 200, cors);
       }
       if (url.pathname === "/api/discussions" && request.method === "DELETE") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uD1A0\uB860\uC744 \uC0AD\uC81C\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-delete", 5, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860 \uC0AD\uC81C \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "\uC62C\uBC14\uB978 \uD1A0\uB860 \uBC88\uD638\uAC00 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
@@ -2757,9 +2785,10 @@ var index_default = {
         await ensureOfficialDocumentSchema(env);
         const protection = page ? await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first() : null;
         const official = page ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(page.title).first() : null;
-        const user = await currentUser(request, env);
-        const editPermission = page && user ? await checkPageEditPermission(env, user, page.title) : null;
-        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: user ? !editPermission : null, editDeniedReason: editPermission?.error || "", official: Boolean(official), officialMarkedBy: official?.marked_by || "", officialUpdatedAt: official?.updated_at || "" } : null }, 200, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        const editPermission = page ? await checkPageEditPermission(env, user, page.title) : null;
+        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: !editPermission, editDeniedReason: editPermission?.error || "", official: Boolean(official), officialMarkedBy: official?.marked_by || "", officialUpdatedAt: official?.updated_at || "" } : null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
@@ -2816,6 +2845,7 @@ var index_default = {
           return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD3B8\uC9D1 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 10\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         }
         const body = await readJsonBody(request);
+        if (body.consent !== true) return response({ error: "\uBB38\uC11C \uACF5\uAC1C \uBC0F \uD3B8\uC9D1 \uAE30\uB85D\uC5D0 \uAD00\uD55C \uB3D9\uC758\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4." }, 400, cors);
         const title = cleanTitle(body.title);
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
@@ -2866,6 +2896,76 @@ var index_default = {
         await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(title, content, user.username, now, summary).run();
         if (user.isAdmin) await savePageLinkColors(env, title, extractedLinkColors, user.username);
         return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
+      }
+      if (url.pathname === "/api/edit-request" && request.method === "POST") {
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-edit-request", 8, 10 * 60 * 1e3)) {
+          return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD3B8\uC9D1 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
+        }
+        const body = await readJsonBody(request);
+        if (body.consent !== true) return response({ error: "\uD3B8\uC9D1 \uC694\uCCAD \uBC0F \uAE30\uB85D\uC5D0 \uAD00\uD55C \uB3D9\uC758\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4." }, 400, cors);
+        const title = cleanTitle(body.title);
+        const content = String(body.content || "");
+        const summary = String(body.summary || "").trim().slice(0, 200);
+        if (!title) return response({ error: "\uD3B8\uC9D1 \uC694\uCCAD \uB300\uC0C1 \uBB38\uC11C\uB97C \uC9C0\uC815\uD558\uC138\uC694." }, 400, cors);
+        if (content.length > 2e5) return response({ error: "\uC81C\uC548 \uBB38\uC11C\uB294 200,000\uC790 \uC774\uD558\uB85C \uC791\uC131\uD574 \uC8FC\uC138\uC694." }, 413, cors);
+        if (!content.trim()) return response({ error: "\uC81C\uC548\uD560 \uBB38\uC11C \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694." }, 400, cors);
+        const page = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "\uD3B8\uC9D1 \uC694\uCCAD \uB300\uC0C1 \uBB38\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        const permission = await checkPageEditPermission(env, user, title);
+        if (!permission) return response({ error: "\uC774 \uBB38\uC11C\uB294 \uC9C1\uC811 \uD3B8\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uD3B8\uC9D1 \uD654\uBA74\uC744 \uC0C8\uB85C\uACE0\uCE68\uD558\uC138\uC694." }, 409, cors);
+        await ensureEditRequestSchema(env);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const result = await env.DB.prepare(
+          "INSERT INTO edit_requests (page_title, requester, proposed_content, summary, base_updated_at, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', ?)"
+        ).bind(title, user.username, content, summary, page.updated_at, now).run();
+        return response({ ok: true, id: Number(result.meta?.last_row_id || 0), title, created_at: now }, 201, cors);
+      }
+      if (url.pathname === "/api/edit-requests" && request.method === "GET") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "\uD3B8\uC9D1 \uC694\uCCAD\uC744 \uD655\uC778\uD558\uB824\uBA74 \uC704\uD0A4 \uAD00\uB9AC\uC790 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 403, cors);
+        await ensureEditRequestSchema(env);
+        const title = cleanTitle(url.searchParams.get("title"));
+        const rows = await env.DB.prepare(
+          "SELECT id, page_title, requester, proposed_content, summary, base_updated_at, created_at FROM edit_requests WHERE status = 'pending' AND (? = '' OR page_title = ?) ORDER BY created_at ASC, id ASC LIMIT 100"
+        ).bind(title, title).all();
+        return response({ requests: rows.results || [] }, 200, cors);
+      }
+      if (url.pathname === "/api/edit-request" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "\uD3B8\uC9D1 \uC694\uCCAD\uC744 \uCC98\uB9AC\uD558\uB824\uBA74 \uC704\uD0A4 \uAD00\uB9AC\uC790 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 403, cors);
+        await ensureEditRequestSchema(env);
+        const body = await readJsonBody(request);
+        const id = Number(body.id);
+        const action = String(body.action || "");
+        if (!Number.isSafeInteger(id) || id < 1 || !["accept", "reject"].includes(action)) {
+          return response({ error: "\uC62C\uBC14\uB978 \uD3B8\uC9D1 \uC694\uCCAD \uCC98\uB9AC \uAC12\uC774 \uC544\uB2D9\uB2C8\uB2E4." }, 400, cors);
+        }
+        const editRequest = await env.DB.prepare(
+          "SELECT id, page_title, requester, proposed_content, summary, base_updated_at, status FROM edit_requests WHERE id = ?"
+        ).bind(id).first();
+        if (!editRequest || editRequest.status !== "pending") return response({ error: "\uB300\uAE30 \uC911\uC778 \uD3B8\uC9D1 \uC694\uCCAD\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        if (action === "reject") {
+          await env.DB.prepare("UPDATE edit_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ? WHERE id = ?").bind(user.username, now, id).run();
+          return response({ ok: true, id, status: "rejected" }, 200, cors);
+        }
+        const page = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE title = ?").bind(editRequest.page_title).first();
+        if (!page) return response({ error: "\uC694\uCCAD \uB300\uC0C1 \uBB38\uC11C\uAC00 \uC0AD\uC81C\uB418\uC5B4 \uC2B9\uC778\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4." }, 404, cors);
+        if (String(page.updated_at || "") !== String(editRequest.base_updated_at || "")) {
+          return response({ error: "\uC694\uCCAD\uC744 \uC81C\uCD9C\uD55C \uB4A4 \uBB38\uC11C\uAC00 \uBCC0\uACBD\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uCD5C\uC2E0 \uBB38\uC11C \uAE30\uC900\uC73C\uB85C \uD3B8\uC9D1 \uC694\uCCAD\uC744 \uB2E4\uC2DC \uC81C\uCD9C\uD574\uC57C \uD569\uB2C8\uB2E4." }, 409, cors);
+        }
+        const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
+        if (!(columns.results || []).some((column) => column.name === "summary")) {
+          await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+        }
+        await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?").bind(editRequest.proposed_content, now, editRequest.page_title).run();
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)").bind(editRequest.page_title, editRequest.proposed_content, user.username, now, "\uD3B8\uC9D1 \uC694\uCCAD #" + id + " \uC2B9\uC778: " + String(editRequest.summary || "").slice(0, 150)).run();
+        await env.DB.prepare("UPDATE edit_requests SET status = 'accepted', reviewed_by = ?, reviewed_at = ? WHERE id = ?").bind(user.username, now, id).run();
+        invalidateNamuServerIndexes();
+        await clearPersistentNamuRenderCache(env);
+        return response({ ok: true, id, title: editRequest.page_title, status: "accepted", updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
         const user = await currentUser(request, env);
