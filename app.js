@@ -2662,6 +2662,9 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-title-help").hidden = true;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
   resizeEditorTitleField();
+  $("editor-backlinks-action").hidden = editorIsNew;
+  $("editor-move-action").hidden = editorIsNew;
+  $("editor-delete-action").hidden = editorIsNew || !isWikiAdmin;
   $("editor-title").readOnly = false;
   $("editor-title").disabled = false;
   $("editor-title").removeAttribute("readonly");
@@ -2720,6 +2723,20 @@ function cancelEditor(event) {
   }
 }
 $("editor-cancel").addEventListener("click", cancelEditor);
+$("editor-backlinks-action").onclick = () => {
+  if (!editorIsNew && currentTitle) $("backlinks-tab").click();
+};
+$("editor-move-action").onclick = () => {
+  const titleField = $("editor-title");
+  if (!titleField) return;
+  $("editor-status").textContent = "제목을 변경한 뒤 저장하면 문서가 새 제목으로 이동합니다.";
+  titleField.focus();
+  titleField.select();
+};
+$("editor-delete-action").onclick = () => {
+  if (!isWikiAdmin || editorIsNew) return;
+  $("delete-page").click();
+};
 $("editor-help-toggle").onclick = () => {
   $("editor-help").hidden = !$("editor-help").hidden;
   $("editor-help-toggle").setAttribute("aria-expanded", $("editor-help").hidden ? "false" : "true");
