@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "Namu_test-main/**"
+      - "editor/**"
+      - "scripts/build-monaco.mjs"
+      - "package.json"
       - "namumark-wasm.js"
       - "app.js"
       - "index.html"
@@ -36,8 +39,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install pinned Monaco build dependency
+        run: npm install --no-audit --no-fund
+      - name: Build local Monaco editor and worker
+        run: node scripts/build-monaco.mjs
       - name: Verify frontend JavaScript syntax
-        run: node --check app.js
+        run: |
+          node --check app.js
+          node --check editor/monaco-entry.js
+          node --check editor/monaco-worker.js
+      - name: Verify Monaco build outputs
+        run: node tests/monaco-editor-smoke.cjs
       - name: Verify single renderer integration
         run: node tests/namutest-renderer-smoke.cjs
       - name: Bundle Cloudflare Worker
@@ -48,7 +60,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add worker/dist/index.js
+          git add worker/dist/index.js editor-monaco/monaco.js editor-monaco/monaco.worker.js editor-monaco/monaco.css editor-monaco/LICENSE.monaco.txt
           if git diff --cached --quiet; then
             echo "Worker bundle is up to date."
           else
