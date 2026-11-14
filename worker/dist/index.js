@@ -2968,8 +2968,11 @@ var index_default = {
         return response({ ok: true, id, title: editRequest.page_title, status: "accepted", updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-image-upload", 5, 10 * 60 * 1e3)) {
+          return response({ error: "\uBE44\uB85C\uADF8\uC778 \uC774\uBBF8\uC9C0 \uC5C5\uB85C\uB4DC\uB294 10\uBD84\uC5D0 5\uD68C\uAE4C\uC9C0 \uAC00\uB2A5\uD569\uB2C8\uB2E4." }, 429, cors);
+        }
         const form = await request.formData();
         const file = form.get("file");
         if (!file || typeof file.arrayBuffer !== "function") return response({ error: "\uC774\uBBF8\uC9C0 \uD30C\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694." }, 400, cors);
