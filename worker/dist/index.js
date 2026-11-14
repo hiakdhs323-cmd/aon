@@ -1000,13 +1000,50 @@ async function savePageLinkColors(env, title, extracted, editor) {
   }
   await env.DB.prepare("INSERT INTO page_link_colors (title, config_json, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET config_json = excluded.config_json, updated_at = excluded.updated_at, updated_by = excluded.updated_by").bind(title, JSON.stringify(extracted.colors), (/* @__PURE__ */ new Date()).toISOString(), String(editor || "")).run();
 }
+function isNamuMarkupContainer(source, index) {
+  const header = String(source || "").slice(index + 3);
+  return /^#!(?:wiki|folding|if)(?:[ \\t\\r\\n]|$)/i.test(header) || /^(?:#[^ \\t\\r\\n}]+|[+-][0-9]+)/.test(header);
+}
+function replaceNamuIncludesOutsideCode(source, replacer) {
+  const text = String(source || "");
+  let output = "";
+  let cursor = 0;
+  while (cursor < text.length) {
+    if (text.startsWith("{{{", cursor) && !isNamuMarkupContainer(text, cursor)) {
+      const close = text.indexOf("}}}", cursor + 3);
+      if (close < 0) {
+        output += text.slice(cursor);
+        break;
+      }
+      output += text.slice(cursor, close + 3);
+      cursor = close + 3;
+      continue;
+    }
+    if (text.slice(cursor, cursor + 9).toLowerCase() === "[include(") {
+      const close = text.indexOf(")]", cursor + 9);
+      if (close >= 0) {
+        const match = text.slice(cursor, close + 2);
+        const rawName = text.slice(cursor + 9, close);
+        if (!String(rawName || "").toLowerCase().includes("[include(")) {
+          output += replacer(match, rawName);
+          cursor = close + 2;
+          continue;
+        }
+      }
+    }
+    output += text[cursor];
+    cursor++;
+  }
+  return output;
+}
 function collectIncludeTargets(source) {
   const targets = [];
-  for (const match of String(source || "").matchAll(/\[include\(((?:(?!\[include\(|\)\]).)+)\)\]/gi)) {
-    const first = String(match[1] || "").split(",")[0].trim();
+  replaceNamuIncludesOutsideCode(source, (match, rawName) => {
+    const first = String(rawName || "").split(",")[0].trim();
     if (first && !first.includes("=")) targets.push(first);
-  }
-  return targets;
+    return match;
+  });
+  return [...new Set(targets)];
 }
 function collectWikiLinkTargets(source) {
   const targets = /* @__PURE__ */ new Set();
@@ -1044,25 +1081,15 @@ function normalizeNamuLookupKey(name) {
 async function buildNamuServerDatabase(env, title, content) {
   const source = String(content || "");
   const records = /* @__PURE__ */ new Map([[title, { title, data: source }]]);
-  const visitedIncludes = /* @__PURE__ */ new Set([title]);
-  let pendingIncludes = collectIncludeTargets(source);
-  let includedCount = 0;
   const maxIncludes = 50;
-  for (let depth = 0; depth < 4 && pendingIncludes.length && includedCount < maxIncludes; depth++) {
-    const batch = [...new Set(pendingIncludes)].filter((name) => name && !visitedIncludes.has(name)).slice(0, Math.min(40, maxIncludes - includedCount));
-    pendingIncludes = [];
-    if (!batch.length) break;
-    batch.forEach((name) => visitedIncludes.add(name));
+  const batch = [...new Set(collectIncludeTargets(source))].filter((name) => name && name !== title).slice(0, maxIncludes);
+  if (batch.length) {
     const placeholders = batch.map(() => "?").join(",");
     const result = await env.DB.prepare(
       "SELECT title, content FROM pages WHERE title IN (" + placeholders + ")"
     ).bind(...batch).all();
     for (const page of result.results || []) {
-      const item = { title: page.title, data: String(page.content || "") };
-      records.set(page.title, item);
-      includedCount++;
-      pendingIncludes.push(...collectIncludeTargets(item.data));
-      if (includedCount >= maxIncludes) break;
+      records.set(page.title, { title: page.title, data: String(page.content || "") });
     }
   }
   const allMarkup = [...records.values()].map((item) => item.data || "").join("\n");
@@ -1074,11 +1101,11 @@ async function buildNamuServerDatabase(env, title, content) {
   const documentTargets = [...linkTargets].filter((name) => !name.startsWith("file:") && !records.has(name)).slice(0, 900);
   const documentRows = [];
   for (let index = 0; index < documentTargets.length; index += 90) {
-    const batch = documentTargets.slice(index, index + 90);
-    const placeholders = batch.map(() => "?").join(",");
+    const batch2 = documentTargets.slice(index, index + 90);
+    const placeholders = batch2.map(() => "?").join(",");
     const result = await env.DB.prepare(
       "SELECT title FROM pages WHERE title IN (" + placeholders + ")"
-    ).bind(...batch).all();
+    ).bind(...batch2).all();
     documentRows.push(...result.results || []);
   }
   const fileTargets = [...linkTargets].filter((name) => name.startsWith("file:")).map((name) => {
@@ -1094,11 +1121,11 @@ async function buildNamuServerDatabase(env, title, content) {
   if (fileTargets.length) {
     await ensureImageSchema(env);
     for (let index = 0; index < fileTargets.length; index += 90) {
-      const batch = fileTargets.slice(index, index + 90);
-      const placeholders = batch.map(() => "?").join(",");
+      const batch2 = fileTargets.slice(index, index + 90);
+      const placeholders = batch2.map(() => "?").join(",");
       const [images, aliases] = await Promise.all([
-        env.DB.prepare("SELECT id, filename FROM images WHERE filename COLLATE NOCASE IN (" + placeholders + ")").bind(...batch).all(),
-        env.DB.prepare("SELECT alias, image_id FROM image_aliases WHERE alias COLLATE NOCASE IN (" + placeholders + ")").bind(...batch).all()
+        env.DB.prepare("SELECT id, filename FROM images WHERE filename COLLATE NOCASE IN (" + placeholders + ")").bind(...batch2).all(),
+        env.DB.prepare("SELECT alias, image_id FROM image_aliases WHERE alias COLLATE NOCASE IN (" + placeholders + ")").bind(...batch2).all()
       ]);
       imageRows.push(...images.results || []);
       imageAliasRows.push(...aliases.results || []);
@@ -1486,32 +1513,26 @@ async function applyTableTextContrast(markup) {
   })).text();
 }
 async function expandAonIncludes(env, source) {
-  let text = String(source || "");
+  const text = String(source || "");
   const seen = /* @__PURE__ */ new Set(["\uC544\uC628"]);
-  for (let depth = 0; depth < 3; depth++) {
-    const matches = [...text.matchAll(/\[include\(([^)]+)\)\]/gi)];
-    const names = [...new Set(matches.map((match) => String(match[1] || "").trim()).filter((name) => name && !name.includes("=") && !seen.has(name)))];
-    if (!names.length) break;
-    const placeholders = names.map(() => "?").join(",");
-    const result = await env.DB.prepare("SELECT title, content FROM pages WHERE title IN (" + placeholders + ")").bind(...names).all();
-    const rows = new Map((result.results || []).map((row) => [String(row.title), String(row.content || "")]));
-    for (const name of names) seen.add(name);
-    let changed = false;
-    text = text.replace(/\[include\(([^)]+)\)\]/gi, (match, rawName) => {
-      const name = String(rawName || "").trim();
-      if (!name || name.includes("=") || !rows.has(name)) return match;
-      changed = true;
-      return "\n" + rows.get(name) + "\n";
-    });
-    if (!changed) break;
-  }
-  return text;
+  const names = [...new Set(collectIncludeTargets(text))].filter((name) => name && !seen.has(name)).slice(0, 50);
+  if (!names.length) return text;
+  const placeholders = names.map(() => "?").join(",");
+  const result = await env.DB.prepare(
+    "SELECT title, content FROM pages WHERE title IN (" + placeholders + ")"
+  ).bind(...names).all();
+  const rows = new Map((result.results || []).map((row) => [String(row.title), String(row.content || "")]));
+  return replaceNamuIncludesOutsideCode(text, (match, rawName) => {
+    const name = String(rawName || "").split(",")[0].trim();
+    if (!name || name.includes("=") || !rows.has(name)) return match;
+    return "\\n" + rows.get(name) + "\\n";
+  });
 }
 async function buildAonClientRenderPayload(env, title, source, linkColors = {}) {
   const expandedSource = await expandAonIncludes(env, source);
   const extracted = extractAdminLinkColors(expandedSource);
   const renderSource = extracted.content;
-  const database = await buildNamuServerDatabase(env, title, renderSource);
+  const database = await buildNamuServerDatabase(env, title, source);
   const records = [...database.lookup.values()].map((item) => ({
     title: String(item.title || ""),
     data: String(item.data || "")
@@ -1561,7 +1582,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     const renderSource = title === "\uC544\uC628" ? await expandAonIncludes(env, sourceText) : sourceText;
     const extracted = extractAdminLinkColors(renderSource);
     const renderText = extracted.content;
-    const database = await buildNamuServerDatabase(env, title, renderText);
+    const database = await buildNamuServerDatabase(env, title, sourceText);
     await ensureAonNamuWasm();
     const options = new RendererOptions();
     options.document_url_prefix = "/w/";
