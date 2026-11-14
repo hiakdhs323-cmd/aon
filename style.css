@@ -5372,3 +5372,26 @@ body.editor-active .editor-public-ack{line-height:1.6}
 @media(max-width:700px){
   .editor-context-actions .button{min-height:31px!important;padding:0 7px!important;font-size:10px!important}
 }
+
+
+/* Monaco-powered AonWiki source editor. The hidden textarea mirrors its model
+   so legacy save, draft, preview, and file-upload handlers remain authoritative. */
+.editor-monaco-host{display:none;width:100%;height:100%;min-width:0;min-height:100%;background:#1e1e1e}
+.editor-code-wrap.monaco-active{position:relative;display:block;overflow:hidden;background:#1e1e1e!important}
+.editor-code-wrap.monaco-active .editor-monaco-host{display:block;position:absolute;inset:0;width:100%;height:100%;min-height:0}
+.editor-code-wrap.monaco-active #editor-line-numbers,
+.editor-code-wrap.monaco-active #editor-highlight,
+.editor-code-wrap.monaco-active #editor-content{display:none!important}
+.editor-code-wrap.monaco-active .monaco-editor,
+.editor-code-wrap.monaco-active .monaco-editor .overflow-guard{width:100%!important;height:100%!important}
+.editor-code-wrap.monaco-active .monaco-editor{background:#1e1e1e!important}
+.editor-code-wrap.monaco-active .monaco-editor .margin{background:#1e1e1e!important}
+.editor-code-wrap.monaco-active .monaco-editor .monaco-scrollable-element>.scrollbar>.slider{background:#68686888}
+.editor-code-wrap.monaco-active .monaco-editor .monaco-scrollable-element>.scrollbar>.slider:hover{background:#888888aa}
+.editor-code-wrap.monaco-active .monaco-editor .view-lines .view-line{line-height:21px}
+.editor-code-wrap.monaco-active .monaco-editor .line-numbers{font-variant-numeric:tabular-nums}
+.editor-code-wrap.monaco-active .monaco-editor .current-line{border:0!important}
+@media(max-width:700px){
+  .editor-code-wrap.monaco-active{height:58dvh!important;min-height:320px!important}
+  .editor-code-wrap.monaco-active .monaco-editor{font-size:12px}
+}
