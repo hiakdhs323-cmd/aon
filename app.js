@@ -2668,11 +2668,8 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-summary").value = "";
   $("editor-status").textContent = "";
   $("editor-preview").replaceChildren();
-  $("editor-preview").hidden = true;
-  $("editor-code-wrap").hidden = false;
-  $("editor-content").hidden = false;
-  $("editor-tab-write").classList.add("active");
-  $("editor-tab-preview").classList.remove("active");
+  setEditorMode("write", { render: false });
+  $("editor-draft-indicator").textContent = "초안 자동 저장 준비";
   $("editor-save").textContent = editorIsNew ? "문서 등록" : "저장";
   $("editor-save").disabled = false;
   $("editor-help").hidden = true;
@@ -2697,43 +2694,72 @@ function cancelEditor(event) {
 $("editor-cancel").addEventListener("click", cancelEditor);
 $("editor-help-toggle").onclick = () => {
   $("editor-help").hidden = !$("editor-help").hidden;
+  $("editor-help-toggle").setAttribute("aria-expanded", $("editor-help").hidden ? "false" : "true");
 };
-$("editor-tab-write").onclick = () => {
-  $("editor-code-wrap").hidden = false;
-  $("editor-content").hidden = false;
-  $("editor-preview").hidden = true;
-  $("editor-tab-write").classList.add("active");
-  $("editor-tab-preview").classList.remove("active");
-};
+function setEditorMode(mode, { render = true } = {}) {
+  const nextMode = ["write", "preview", "split"].includes(mode) ? mode : "write";
+  const codePane = $("editor-code-pane");
+  const previewPane = $("editor-preview-pane");
+  const workspace = $("editor-workspace");
+  if (!codePane || !previewPane || !workspace) return;
+  workspace.dataset.mode = nextMode;
+  codePane.hidden = nextMode === "preview";
+  previewPane.hidden = nextMode === "write";
+  $("editor-preview").hidden = nextMode === "write";
+  [
+    ["editor-tab-write", "write"],
+    ["editor-tab-preview", "preview"],
+    ["editor-tab-split", "split"]
+  ].forEach(([id, value]) => {
+    const active = value === nextMode;
+    const button = $(id);
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  if (render && nextMode !== "write") renderEditorPreview();
+}
 let editorPreviewTimer = null;
+async function renderEditorPreview() {
+  const preview = $("editor-preview");
+  const status = $("editor-preview-status");
+  if (!preview || $("editor-preview-pane").hidden) return;
+  const title = $("editor-title").value.trim() || editorOriginalTitle || "미리보기";
+  if (status) status.textContent = "서버에서 미리보기를 생성하고 있습니다…";
+  try {
+    await renderNamuMarkup($("editor-content").value, preview, title);
+    if (status) status.textContent = "미리보기 갱신 · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  } catch (error) {
+    if (status) status.textContent = "미리보기를 불러오지 못했습니다: " + String(error?.message || error);
+    console.warn("Worker SSR preview failed", error);
+  }
+}
 function scheduleServerEditorPreview() {
   clearTimeout(editorPreviewTimer);
   editorPreviewTimer = setTimeout(() => {
-    if ($("editor-preview").hidden) return;
-    renderNamuMarkup(
-      $("editor-content").value,
-      $("editor-preview"),
-      $("editor-title").value.trim() || editorOriginalTitle
-    ).catch(error => console.error("Worker SSR preview failed", error));
-  }, 350);
+    if ($("editor-preview-pane").hidden) return;
+    renderEditorPreview();
+  }, 400);
 }
-$("editor-tab-preview").onclick = () => {
-  $("editor-code-wrap").hidden = true;
-  $("editor-content").hidden = true;
-  $("editor-preview").hidden = false;
-  $("editor-tab-preview").classList.add("active");
-  $("editor-tab-write").classList.remove("active");
-  renderNamuMarkup($("editor-content").value, $("editor-preview"), $("editor-title").value.trim() || editorOriginalTitle).catch(error => console.error("Worker SSR preview failed", error));
-};
+$("editor-tab-write").onclick = () => setEditorMode("write", { render: false });
+$("editor-tab-preview").onclick = () => setEditorMode("preview");
+$("editor-tab-split").onclick = () => setEditorMode("split");
+$("editor-preview-refresh").onclick = () => renderEditorPreview();
 $("editor-content").addEventListener("keydown", event => {
   if (event.key === "Tab") {
     event.preventDefault();
     const field = event.currentTarget;
     field.setRangeText("    ", field.selectionStart, field.selectionEnd, "end");
+    field.dispatchEvent(new Event("input", { bubbles: true }));
   }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
-    event.preventDefault();
-    $("editor-form").requestSubmit();
+  if (event.ctrlKey || event.metaKey) {
+    const key = event.key.toLowerCase();
+    if (key === "s") {
+      event.preventDefault();
+      $("editor-form").requestSubmit();
+    } else if (key === "b" || key === "i" || key === "k") {
+      event.preventDefault();
+      insertEditorMarkup(key === "b" ? "bold" : key === "i" ? "italic" : "link");
+    }
   }
 });
 $("editor-form").onsubmit = async event => {
@@ -2771,9 +2797,11 @@ function saveEditorDraft() {
     title: $("editor-title").value,
     content: $("editor-content").value
   }));
+  $("editor-draft-indicator").textContent = "초안 자동 저장됨";
 }
 function scheduleEditorDraftSave() {
   clearTimeout(editorDraftTimer);
+  $("editor-draft-indicator").textContent = "초안 저장 중…";
   editorDraftTimer = setTimeout(() => {
     editorDraftTimer = 0;
     saveEditorDraft();
@@ -2781,7 +2809,7 @@ function scheduleEditorDraftSave() {
 }
 $("editor-title").addEventListener("input", () => {
   scheduleEditorDraftSave();
-  if (!$("editor-preview").hidden) scheduleServerEditorPreview();
+  if (!$("editor-preview-pane").hidden) scheduleServerEditorPreview();
 });
 $("editor-content").addEventListener("input", () => {
   const content=$("editor-content").value;
@@ -2789,7 +2817,7 @@ $("editor-content").addEventListener("input", () => {
   $("editor-status").textContent=content.length>200000?"문서가 200,000자를 초과했습니다.":"";
   scheduleEditorDraftSave();
   updateEditorHighlight();
-  if (!$("editor-preview").hidden) scheduleServerEditorPreview();
+  if (!$("editor-preview-pane").hidden) scheduleServerEditorPreview();
 });
 
 function runEditorCorrectionBot() {
@@ -3131,36 +3159,54 @@ $("editor-content").addEventListener("input", updateEditorHighlight);
 $("editor-content").addEventListener("compositionend", updateEditorHighlight);
 
 function insertEditorMarkup(kind){
- const field=$("editor-content"),start=field.selectionStart,end=field.selectionEnd;
+ const field=$("editor-content");
+ if(!field)return;
+ const start=field.selectionStart,end=field.selectionEnd;
  const selected=field.value.slice(start,end);
  const templates={
   heading:["== "," ==","문단 제목"],
   bold:["'''","'''","굵게"],
   italic:["''","''","기울임"],
+  underline:["__","__","밑줄"],
+  strike:["~~","~~","취소선"],
+  sup:["^^","^^","위첨자"],
+  sub:[",,",",,","아래첨자"],
   link:["[[","]]","문서 제목"],
   list:["* ","","목록 항목"],
   footnote:["[* ","]","각주 내용"],
   category:["[[분류:","]]","분류명"],
   external:["[https://example.com|","]","표시문구"]
  };
- if(kind==="category"||kind==="external"){
-  const item=templates[kind],value=item[0]+(selected||item[2])+item[1];
-  field.setRangeText(value,start,end,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
-  if(!selected)field.setSelectionRange(start+item[0].length,start+item[0].length+item[2].length);
-  return;
- }
- if(kind==="hr"||kind==="table"){
-  const value=kind==="hr"?"\n----\n":"\n||항목 1||항목 2||\n||내용||내용||\n";
+ const insert=(value,selectFrom=null,selectTo=null)=>{
   field.setRangeText(value,start,end,"end");
   field.dispatchEvent(new Event("input",{bubbles:true}));
-  field.focus();return;
+  field.focus();
+  if(selectFrom!==null)field.setSelectionRange(start+selectFrom,start+(selectTo??selectFrom));
+ };
+ if(kind==="category"||kind==="external"){
+  const item=templates[kind],value=item[0]+(selected||item[2])+item[1];
+  insert(value,selected?null:item[0].length,selected?null:item[0].length+item[2].length);
+  return;
+ }
+ if(kind==="toc"){insert((selected?"":"\n")+"[목차]\n");return}
+ if(kind==="hr"||kind==="table"){
+  const value=kind==="hr"?"\n----\n":"\n||항목 1||항목 2||\n||내용||내용||\n";
+  insert(value);return;
+ }
+ if(kind==="code"){
+  const before="{{{\n",placeholder="코드를 입력하세요";
+  insert(before+(selected||placeholder)+"\n}}}",selected?null:before.length,selected?null:before.length+placeholder.length);
+  return;
+ }
+ if(kind==="folding"){
+  const before="{{{#!folding 제목\n",placeholder="접을 내용을 입력하세요";
+  const titleStart="{{{#!folding ".length;
+  insert(before+(selected||placeholder)+"\n}}}",titleStart,titleStart+2);
+  return;
  }
  const item=templates[kind];if(!item)return;
  const value=item[0]+(selected||item[2])+item[1];
- field.setRangeText(value,start,end,"end");
- field.dispatchEvent(new Event("input",{bubbles:true}));
- field.focus();
- if(!selected)field.setSelectionRange(start+item[0].length,start+item[0].length+item[2].length);
+ insert(value,selected?null:item[0].length,selected?null:item[0].length+item[2].length);
 }
 document.querySelectorAll("[data-markup]").forEach(button=>{
  button.addEventListener("click",()=>insertEditorMarkup(button.dataset.markup));
