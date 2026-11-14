@@ -2705,10 +2705,43 @@ var index_default = {
           const existingPage = await findWikiPage(env, title);
           if (existingPage) linkColors = await getPageLinkColors(env, existingPage.title);
         }
-        const rendered = await renderNamuMarkupOnWorker(env, title, content, linkColors);
-        return response({ html: rendered.html, engine: "namumark-worker", title }, 200, {
+        let rendered = { html: "", metadata: {}, imageMap: {} };
+        let clientRender = null;
+        if (content.length > 6e3) {
+          const payload = await buildAonClientRenderPayload(env, title, content, linkColors);
+          clientRender = {
+            linkColors: payload.linkColors || linkColors || {},
+            records: payload.records || [],
+            pageCount: payload.pageCount || 0,
+            imageMap: payload.imageMap || {},
+            source: payload.source || ""
+          };
+        } else {
+          try {
+            rendered = await renderNamuMarkupOnWorker(env, title, content, linkColors);
+          } catch (error) {
+            console.warn("AonWiki editor preview switched to browser WASM:", title, error?.message || error);
+            const payload = await buildAonClientRenderPayload(env, title, content, linkColors);
+            clientRender = {
+              linkColors: payload.linkColors || linkColors || {},
+              records: payload.records || [],
+              pageCount: payload.pageCount || 0,
+              imageMap: payload.imageMap || {},
+              source: payload.source || ""
+            };
+          }
+        }
+        const engine = clientRender ? "namumark-client" : "namumark-worker";
+        return response({
+          html: rendered.html || "",
+          metadata: rendered.metadata || {},
+          imageMap: rendered.imageMap || {},
+          clientRender,
+          engine,
+          title
+        }, 200, {
           ...cors,
-          "X-AonWiki-Render": "namumark-worker"
+          "X-AonWiki-Render": engine
         });
       }
       if (url.pathname === "/api/page" && request.method === "GET") {
