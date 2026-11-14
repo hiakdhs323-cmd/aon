@@ -3134,6 +3134,10 @@ document.querySelectorAll("[data-markup]").forEach(button=>{
  button.addEventListener("click",()=>insertEditorMarkup(button.dataset.markup));
 });
 $("home").onclick=()=>showHome(true);
+$("home-login-action").onclick=()=>$("login").click();
+$("home-create-action").onclick=()=>editPage("","");
+$("home-search-action").onclick=()=>loadSearchPage("","all",true);
+$("home-categories-action").onclick=()=>loadCategoryIndex(true);
 $("discussion-tab").onclick=()=>loadDiscussionList(true,currentTitle);
 $("recent-changes").onclick=()=>loadRecentChanges(true);
 $("categories").onclick=()=>loadCategoryIndex(true);
