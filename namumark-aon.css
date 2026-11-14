@@ -953,7 +953,7 @@ html[data-theme="dark"] .namumark-wasm-content .wiki-table th[style*="--aonwiki-
   border: 1px solid currentColor;
   color: var(--wiki-danger, #c62828);
 }
-#article.namumark-wasm-content .wiki-document-metadata {
+:is(#article.namumark-wasm-content,.editor-preview.namumark-wasm-content) .wiki-document-metadata {
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap;
@@ -965,20 +965,20 @@ html[data-theme="dark"] .namumark-wasm-content .wiki-table th[style*="--aonwiki-
   font-size: 12px;
   line-height: 1.6;
 }
-#article.namumark-wasm-content .wiki-document-metadata-label {
+:is(#article.namumark-wasm-content,.editor-preview.namumark-wasm-content) .wiki-document-metadata-label {
   color: inherit;
   font-weight: 700;
 }
-#article.namumark-wasm-content .wiki-document-category-list {
+:is(#article.namumark-wasm-content,.editor-preview.namumark-wasm-content) .wiki-document-category-list {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
 }
-#article.namumark-wasm-content .wiki-document-category-list a {
+:is(#article.namumark-wasm-content,.editor-preview.namumark-wasm-content) .wiki-document-category-list a {
   color: var(--wiki-body-link, #0275d8);
 }
 @media (prefers-color-scheme: dark) {
-  #article.namumark-wasm-content .wiki-document-metadata {
+  :is(#article.namumark-wasm-content,.editor-preview.namumark-wasm-content) .wiki-document-metadata {
     border-top-color: #454b50;
     color: #a5abb1;
   }
