@@ -205,15 +205,17 @@ async function currentUser(request, env) {
 }
 function anonymousEditorIdentity(request) {
   const raw = String(request.headers.get("CF-Connecting-IP") || "").trim().toLowerCase();
-  let label = "IP 알 수 없음";
   const ipv4 = raw.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ipv4 && ipv4.slice(1).every(part => Number(part) >= 0 && Number(part) <= 255)) {
-    label = "IP " + ipv4[1] + "." + ipv4[2] + "." + ipv4[3] + ".*";
-  } else if (raw.includes(":")) {
-    const groups = raw.split("%")[0].split(":").filter(Boolean);
-    label = groups.length >= 4 ? "IP " + groups.slice(0, 4).join(":") + ":*" : "IP IPv6:*";
-  }
-  return { username: label, role: "anonymous", isAdmin: false, isAnonymous: true };
+  const validIPv4 = Boolean(ipv4 && ipv4.slice(1).every(part => Number(part) >= 0 && Number(part) <= 255));
+  const validIPv6 = raw.includes(":") && raw.length <= 45 && /^(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/i.test(raw);
+  const ip = validIPv4 || validIPv6 ? raw : "";
+  return {
+    username: ip ? "IP " + ip : "IP 알 수 없음",
+    ip,
+    role: "anonymous",
+    isAdmin: false,
+    isAnonymous: true
+  };
 }
 let pageProtectionSchemaPromise = null;
 let officialDocumentSchemaPromise = null;
@@ -289,6 +291,16 @@ async function ensureDiscussionSchema(env) {
     })().catch(error => { discussionSchemaPromise = null; throw error; });
   }
   await discussionSchemaPromise;
+}
+
+let editRequestSchemaPromise = null;
+async function ensureEditRequestSchema(env) {
+  if (!editRequestSchemaPromise) {
+    editRequestSchemaPromise = env.DB.prepare(
+      "CREATE TABLE IF NOT EXISTS edit_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, page_title TEXT NOT NULL, requester TEXT NOT NULL, proposed_content TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', base_updated_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','rejected')), created_at TEXT NOT NULL, reviewed_by TEXT NOT NULL DEFAULT '', reviewed_at TEXT NOT NULL DEFAULT '')"
+    ).run().catch(error => { editRequestSchemaPromise = null; throw error; });
+  }
+  await editRequestSchemaPromise;
 }
 
 function cleanImageName(value, contentType) {
@@ -1377,14 +1389,15 @@ async function renderFullWikiDocument(request, env, title) {
   const titleText = found ? actualTitle : actualTitle + " (문서 없음)";
   const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "아직 작성되지 않은 문서입니다.";
   const ssrUser = await currentUser(request, env);
-  const ssrEditDenied = found && ssrUser ? await checkPageEditPermission(env, ssrUser, actualTitle) : null;
+  const ssrEditUser = ssrUser || anonymousEditorIdentity(request);
+  const ssrEditDenied = found ? await checkPageEditPermission(env, ssrEditUser, actualTitle) : null;
   const state = {
     title: actualTitle,
     content: found ? String(page.content || "") : "",
     metadata: found ? mergeNamuRenderMetadata(rendered.metadata, page.content || "") : { categories: [], backlinks: [] },
     protection: { level: protection?.level || "none", reason: protection?.reason || "" },
     official: Boolean(official),
-    canEdit: found ? (ssrUser ? !ssrEditDenied : false) : false,
+    canEdit: found ? !ssrEditDenied : false,
     exists: found,
     clientRenderPending
   };
@@ -1539,7 +1552,14 @@ export default {
       }
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
-        return response({ authenticated: Boolean(user), username: user?.username || null, role: user?.role || "anonymous", isAdmin: Boolean(user?.isAdmin) }, 200, cors);
+        const anonymous = user ? null : anonymousEditorIdentity(request);
+        return response({
+          authenticated: Boolean(user),
+          username: user?.username || null,
+          role: user?.role || "anonymous",
+          isAdmin: Boolean(user?.isAdmin),
+          ip: anonymous?.ip || null
+        }, 200, cors);
       }
       if (url.pathname === "/api/admin/bootstrap-account" && request.method === "POST") {
         if (!env.ADMIN_BOOTSTRAP_SECRET || env.ADMIN_BOOTSTRAP_SECRET.length < 32) return response({ error: "관리자 초기 설정이 서버에서 활성화되지 않았습니다." }, 503, cors);
@@ -1793,8 +1813,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ discussion, posts: posts.results || [] }, 200, cors);
       }
       if (url.pathname === "/api/discussions" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "토론을 시작하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-create", 5, 10 * 60 * 1000)) return response({ error: "비로그인 토론 생성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         if (await authRateLimited(request, env, "discussion-create", 5, 10 * 60 * 1000)) return response({ error: "토론 생성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -1812,8 +1833,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
       }
       if (url.pathname === "/api/discussion/reply" && request.method === "POST") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "답글을 작성하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-reply", 15, 5 * 60 * 1000)) return response({ error: "비로그인 답글 작성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         if (await authRateLimited(request, env, "discussion-reply", 15, 5 * 60 * 1000)) return response({ error: "답글 작성 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -1830,8 +1852,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ ok: true, id: Number(result.meta?.last_row_id || 0), created_at: now }, 201, cors);
       }
       if (url.pathname === "/api/discussion" && request.method === "PATCH") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "토론 상태를 변경하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-edit", 10, 10 * 60 * 1000)) return response({ error: "비로그인 토론 변경 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
         const id = Number(body.id);
@@ -1855,8 +1878,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ ok: true, id, status }, 200, cors);
       }
       if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "답글을 수정하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-edit", 10, 10 * 60 * 1000)) return response({ error: "비로그인 답글 수정 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
         const id = Number(body.id);
@@ -1873,8 +1897,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ ok: true, id, edited_at: now }, 200, cors);
       }
       if (url.pathname === "/api/discussion/post" && request.method === "DELETE") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "답글을 삭제하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-delete", 10, 10 * 60 * 1000)) return response({ error: "비로그인 답글 삭제 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 답글 번호가 아닙니다." }, 400, cors);
@@ -1887,8 +1912,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         return response({ ok: true, id }, 200, cors);
       }
       if (url.pathname === "/api/discussions" && request.method === "DELETE") {
-        const user = await currentUser(request, env);
-        if (!user) return response({ error: "토론을 삭제하려면 로그인하세요." }, 401, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-delete", 5, 10 * 60 * 1000)) return response({ error: "비로그인 토론 삭제 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
         if (!Number.isSafeInteger(id) || id < 1) return response({ error: "올바른 토론 번호가 아닙니다." }, 400, cors);
@@ -2339,9 +2365,10 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         await ensureOfficialDocumentSchema(env);
         const protection = page ? await env.DB.prepare("SELECT level, reason, protected_by, updated_at FROM page_protections WHERE title = ?").bind(page.title).first() : null;
         const official = page ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(page.title).first() : null;
-        const user = await currentUser(request, env);
-        const editPermission = page && user ? await checkPageEditPermission(env, user, page.title) : null;
-        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: user ? !editPermission : null, editDeniedReason: editPermission?.error || "", official: Boolean(official), officialMarkedBy: official?.marked_by || "", officialUpdatedAt: official?.updated_at || "" } : null }, 200, cors);
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        const editPermission = page ? await checkPageEditPermission(env, user, page.title) : null;
+        return response({ page: page ? { ...page, protectionLevel: protection?.level || "none", protectionReason: protection?.reason || "", protectedBy: protection?.protected_by || "", protectionUpdatedAt: protection?.updated_at || "", canEdit: !editPermission, editDeniedReason: editPermission?.error || "", official: Boolean(official), officialMarkedBy: official?.marked_by || "", officialUpdatedAt: official?.updated_at || "" } : null }, 200, cors);
       }
       if (url.pathname === "/api/history" && request.method === "GET") {
         const title = cleanTitle(url.searchParams.get("title"));
@@ -2401,6 +2428,7 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           return response({ error: "비로그인 편집 요청이 너무 많습니다. 10분 뒤 다시 시도하세요." }, 429, cors);
         }
         const body = await readJsonBody(request);
+        if (body.consent !== true) return response({ error: "문서 공개 및 편집 기록에 관한 동의가 필요합니다." }, 400, cors);
         const title = cleanTitle(body.title);
         const originalTitle = body.createOnly ? "" : cleanTitle(body.originalTitle || "");
         const content = String(body.content || "");
@@ -2459,6 +2487,80 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           .bind(title, content, user.username, now, summary).run();
         if (user.isAdmin) await savePageLinkColors(env, title, extractedLinkColors, user.username);
         return response({ ok: true, title, previous_title: originalTitle && originalTitle !== title ? originalTitle : null, updated_at: now }, 200, cors);
+      }
+      if (url.pathname === "/api/edit-request" && request.method === "POST") {
+        const authenticatedUser = await currentUser(request, env);
+        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-edit-request", 8, 10 * 60 * 1000)) {
+          return response({ error: "비로그인 편집 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
+        }
+        const body = await readJsonBody(request);
+        if (body.consent !== true) return response({ error: "편집 요청 및 기록에 관한 동의가 필요합니다." }, 400, cors);
+        const title = cleanTitle(body.title);
+        const content = String(body.content || "");
+        const summary = String(body.summary || "").trim().slice(0, 200);
+        if (!title) return response({ error: "편집 요청 대상 문서를 지정하세요." }, 400, cors);
+        if (content.length > 200000) return response({ error: "제안 문서는 200,000자 이하로 작성해 주세요." }, 413, cors);
+        if (!content.trim()) return response({ error: "제안할 문서 내용을 입력하세요." }, 400, cors);
+        const page = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE title = ?").bind(title).first();
+        if (!page) return response({ error: "편집 요청 대상 문서를 찾을 수 없습니다." }, 404, cors);
+        const permission = await checkPageEditPermission(env, user, title);
+        if (!permission) return response({ error: "이 문서는 직접 편집할 수 있습니다. 편집 화면을 새로고침하세요." }, 409, cors);
+        await ensureEditRequestSchema(env);
+        const now = new Date().toISOString();
+        const result = await env.DB.prepare(
+          "INSERT INTO edit_requests (page_title, requester, proposed_content, summary, base_updated_at, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', ?)"
+        ).bind(title, user.username, content, summary, page.updated_at, now).run();
+        return response({ ok: true, id: Number(result.meta?.last_row_id || 0), title, created_at: now }, 201, cors);
+      }
+      if (url.pathname === "/api/edit-requests" && request.method === "GET") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "편집 요청을 확인하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        await ensureEditRequestSchema(env);
+        const title = cleanTitle(url.searchParams.get("title"));
+        const rows = await env.DB.prepare(
+          "SELECT id, page_title, requester, proposed_content, summary, base_updated_at, created_at FROM edit_requests WHERE status = 'pending' AND (? = '' OR page_title = ?) ORDER BY created_at ASC, id ASC LIMIT 100"
+        ).bind(title, title).all();
+        return response({ requests: rows.results || [] }, 200, cors);
+      }
+      if (url.pathname === "/api/edit-request" && request.method === "PATCH") {
+        const user = await currentUser(request, env);
+        if (!user?.isAdmin) return response({ error: "편집 요청을 처리하려면 위키 관리자 권한이 필요합니다." }, 403, cors);
+        await ensureEditRequestSchema(env);
+        const body = await readJsonBody(request);
+        const id = Number(body.id);
+        const action = String(body.action || "");
+        if (!Number.isSafeInteger(id) || id < 1 || !["accept", "reject"].includes(action)) {
+          return response({ error: "올바른 편집 요청 처리 값이 아닙니다." }, 400, cors);
+        }
+        const editRequest = await env.DB.prepare(
+          "SELECT id, page_title, requester, proposed_content, summary, base_updated_at, status FROM edit_requests WHERE id = ?"
+        ).bind(id).first();
+        if (!editRequest || editRequest.status !== "pending") return response({ error: "대기 중인 편집 요청을 찾을 수 없습니다." }, 404, cors);
+        const now = new Date().toISOString();
+        if (action === "reject") {
+          await env.DB.prepare("UPDATE edit_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ? WHERE id = ?")
+            .bind(user.username, now, id).run();
+          return response({ ok: true, id, status: "rejected" }, 200, cors);
+        }
+        const page = await env.DB.prepare("SELECT title, updated_at FROM pages WHERE title = ?").bind(editRequest.page_title).first();
+        if (!page) return response({ error: "요청 대상 문서가 삭제되어 승인할 수 없습니다." }, 404, cors);
+        if (String(page.updated_at || "") !== String(editRequest.base_updated_at || "")) {
+          return response({ error: "요청을 제출한 뒤 문서가 변경되었습니다. 최신 문서 기준으로 편집 요청을 다시 제출해야 합니다." }, 409, cors);
+        }
+        const columns = await env.DB.prepare("PRAGMA table_info(revisions)").all();
+        if (!(columns.results || []).some(column => column.name === "summary")) {
+          await env.DB.prepare("ALTER TABLE revisions ADD COLUMN summary TEXT NOT NULL DEFAULT ''").run();
+        }
+        await env.DB.prepare("UPDATE pages SET content = ?, updated_at = ? WHERE title = ?")
+          .bind(editRequest.proposed_content, now, editRequest.page_title).run();
+        await env.DB.prepare("INSERT INTO revisions (title, content, editor, created_at, summary) VALUES (?, ?, ?, ?, ?)")
+          .bind(editRequest.page_title, editRequest.proposed_content, user.username, now, "편집 요청 #" + id + " 승인: " + String(editRequest.summary || "").slice(0, 150)).run();
+        await env.DB.prepare("UPDATE edit_requests SET status = 'accepted', reviewed_by = ?, reviewed_at = ? WHERE id = ?")
+          .bind(user.username, now, id).run();
+        invalidateNamuServerIndexes();
+        await clearPersistentNamuRenderCache(env);
+        return response({ ok: true, id, title: editRequest.page_title, status: "accepted", updated_at: now }, 200, cors);
       }
       if (url.pathname === "/api/upload" && request.method === "POST") {
         const user = await currentUser(request, env);
