@@ -1044,7 +1044,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "namutest-main-v5-live-links:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v6-single-footnote-private-assets:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -1060,7 +1060,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
         try { metadata = JSON.parse(stored.metadata_json || "{}"); } catch {}
         metadata = mergeNamuRenderMetadata(metadata, sourceText);
         const value = { html: String(stored.html || ""), metadata, imageMap: metadata.imageMap || {} };
-        namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
+        namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 15 * 60 * 1000 });
         return value;
       }
     } catch (error) {
@@ -1132,8 +1132,8 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       ? await applyTableTextContrast(cleanHtml)
       : cleanHtml;
     const value = { html: buildAdminLinkColorMarkup(contrastedHtml, colors), metadata: { ...mergeNamuRenderMetadata(parsedMetadata, sourceText), imageMap: Object.fromEntries(database.imageMap || []) }, imageMap: Object.fromEntries(database.imageMap || []) };
-    namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 5 * 60 * 1000 });
-    if (namuRenderCache.size > 100) {
+    namuRenderCache.set(cacheKey, { value, expiresAt: Date.now() + 15 * 60 * 1000 });
+    if (namuRenderCache.size > 300) {
       const oldest = namuRenderCache.keys().next().value;
       if (oldest) namuRenderCache.delete(oldest);
     }
@@ -1169,21 +1169,14 @@ function escapeHtml(value) {
 function safeJsonForHtml(value) {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 }
-function rewriteFrontendAssets(html, frontendOrigin) {
+function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
   const baseUrl = new URL(frontendOrigin.replace(/\/+$/, "") + "/");
   const basePath = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : baseUrl.pathname + "/";
   const staticAssets = new Set([
-    "style.css",
-    "app.js",
-    "theme.js",
-    "namumark-wasm.js",
-    "namumark-aon.css",
-    "namumark-interactions-aon.css",
-    "Namu_test-main/namumark.js",
-    "Namu_test-main/namumark_bg.wasm",
-    "Namu_test-main/interactions.js",
-    "Namu_test-main/interactions.css",
-    "aonwiki-mark.svg"
+    "style.css", "app.js", "theme.js", "namumark-wasm.js", "namumark-aon.css",
+    "namumark-interactions-aon.css", "Namu_test-main/namumark.js",
+    "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js",
+    "Namu_test-main/interactions.css", "aonwiki-mark.svg"
   ]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
@@ -1194,8 +1187,9 @@ function rewriteFrontendAssets(html, frontendOrigin) {
     try { assetPath = decodeURIComponent(parsed.pathname.slice(basePath.length)); }
     catch { return attribute; }
     if (!staticAssets.has(assetPath)) return attribute;
-    parsed.searchParams.set("aonfix", "20261111-namutest-main-v1");
-    return name + "=" + quote + "/aon/" + assetPath + parsed.search + parsed.hash + quote;
+    parsed.searchParams.set("aonfix", localAssets ? "20261114-private-assets-v1" : "20261114-pages-fallback-v1");
+    const prefix = localAssets ? "/" : "/aon/";
+    return name + "=" + quote + prefix + assetPath + parsed.search + parsed.hash + quote;
   });
 }
 const FRONTEND_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -1265,7 +1259,7 @@ async function loadFrontendAsset(assetUrl, acceptHeader) {
     const entry = {
       body,
       contentType: upstream.headers.get("Content-Type") || "application/octet-stream",
-      expiresAt: Date.now() + 5 * 60 * 1000,
+      expiresAt: Date.now() + 15 * 60 * 1000,
       staleUntil: Date.now() + 24 * 60 * 60 * 1000
     };
     if (body.byteLength <= 2 * 1024 * 1024) {
@@ -1292,11 +1286,15 @@ async function loadFrontendShell(env) {
 
   frontendShellPending = (async () => {
     try {
-      const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-      const shellResponse = await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261113-editor-v3",
-        { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
-      );
+      const localAssets = Boolean(env.ASSETS && typeof env.ASSETS.fetch === "function");
+      const origin = localAssets ? "https://aonwiki-assets.local" :
+        String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+      const shellResponse = localAssets
+        ? await env.ASSETS.fetch(new Request(origin + "/index.html", { headers: { "Accept": "text/html" } }))
+        : await fetchFrontendWithRetry(
+            origin + "/?aonwiki-shell=20261114-private-assets-v1",
+            { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
+          );
       if (!shellResponse.ok) {
         const error = new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
         error.status = shellResponse.status;
@@ -1304,10 +1302,10 @@ async function loadFrontendShell(env) {
       }
       const shell = await shellResponse.text();
       if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
-      const value = { shell: rewriteFrontendAssets(shell, origin), origin };
+      const value = { shell: rewriteFrontendAssets(shell, origin, localAssets), origin };
       frontendShellCache = {
         value,
-        expiresAt: Date.now() + 5 * 60 * 1000,
+        expiresAt: Date.now() + 15 * 60 * 1000,
         staleUntil: Date.now() + 24 * 60 * 60 * 1000
       };
       return value;
@@ -1356,10 +1354,17 @@ async function renderFullWikiDocument(request, env, title) {
   const found = Boolean(page);
   const actualTitle = found ? page.title : title;
   const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
-  const clientRenderPending = found && actualTitle === "아온";
-  const rendered = found && !clientRenderPending
-    ? await renderNamuMarkupOnWorker(env, actualTitle, page.content || "", linkColors)
-    : { html: "" };
+  const sourceText = found ? String(page.content || "") : "";
+  let clientRenderPending = found && (actualTitle === "아온" || sourceText.length > 6000);
+  let rendered = { html: "", metadata: {} };
+  if (found && !clientRenderPending) {
+    try {
+      rendered = await renderNamuMarkupOnWorker(env, actualTitle, sourceText, linkColors);
+    } catch (error) {
+      console.warn("AonWiki full-document SSR switched to browser WASM:", actualTitle, error?.message || error);
+      clientRenderPending = true;
+    }
+  }
   let protection = null;
   if (found) {
     await ensurePageProtectionSchema(env);
@@ -1447,8 +1452,25 @@ export default {
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
+        if (env.ASSETS && typeof env.ASSETS.fetch === "function") {
+          try {
+            const localAssetUrl = new URL("/" + assetName, request.url);
+            localAssetUrl.search = url.search;
+            const localAsset = await env.ASSETS.fetch(new Request(localAssetUrl.toString(), { method: "GET", headers: request.headers }));
+            if (localAsset.ok) {
+              const headers = new Headers(localAsset.headers);
+              headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              headers.set("X-AonWiki-Asset-Proxy", "1");
+              headers.set("X-AonWiki-Asset-Cache", "WORKER-ASSETS");
+              return new Response(localAsset.body, { status: localAsset.status, headers });
+            }
+            if (localAsset.status !== 404) return localAsset;
+          } catch (error) {
+            console.warn("AonWiki local asset fetch failed; trying Pages compatibility origin:", assetName, error?.message || error);
+          }
+        }
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-      const assetCacheVersion = assetName === "style.css" ? "20261113-editor-v1" : "20261113-editor-v3";
+        const assetCacheVersion = assetName === "style.css" ? "20261114-search-footnote-v1" : "20261114-private-assets-v1";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
@@ -2202,9 +2224,22 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           } else if (page.title === "아온") {
             clientRender = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
           }
-          const rendered = clientRender
-            ? { html: "" }
-            : await renderNamuMarkupOnWorker(env, page.title, sourceText, linkColors);
+          let rendered = { html: "", metadata: {} };
+          if (!clientRender) {
+            try {
+              rendered = await renderNamuMarkupOnWorker(env, page.title, sourceText, linkColors);
+            } catch (error) {
+              console.warn("AonWiki API render switched to browser WASM:", page.title, error?.message || error);
+              const payload = await buildAonClientRenderPayload(env, page.title, sourceText, linkColors);
+              clientRender = {
+                linkColors: payload.linkColors || linkColors || {},
+                records: payload.records || [],
+                pageCount: payload.pageCount || 0,
+                imageMap: payload.imageMap || {},
+                source: payload.source || ""
+              };
+            }
+          }
           return {
             page: {
               title: page.title,
@@ -2224,8 +2259,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
             engine: clientRender ? "namumark-client" : "namumark-worker"
           };
         })().then(value => {
-          namuPageResponseCache.set(title, { value, expiresAt: Date.now() + 30 * 1000 });
-          if (namuPageResponseCache.size > 100) namuPageResponseCache.delete(namuPageResponseCache.keys().next().value);
+          namuPageResponseCache.set(title, { value, expiresAt: Date.now() + 60 * 1000 });
+          if (namuPageResponseCache.size > 200) namuPageResponseCache.delete(namuPageResponseCache.keys().next().value);
           return value;
         }).finally(() => namuPageResponsePending.delete(title));
         namuPageResponsePending.set(title, pending);
