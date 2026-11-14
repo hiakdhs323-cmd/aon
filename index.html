@@ -82,10 +82,26 @@
       </header>
 
       <nav class="home-quick-nav" aria-label="대문 바로가기">
-        <a href="#/recent"><span class="home-quick-index">01</span><span>최근 변경</span></a>
-        <a href="#/categories"><span class="home-quick-index">02</span><span>분류 목록</span></a>
-        <a href="#/w/AonWiki"><span class="home-quick-index">03</span><span>AonWiki 소개</span></a>
-        <a href="#/w/AonWiki%3A%EB%AC%B8%EB%B2%95"><span class="home-quick-index">04</span><span>문법 도움말</span></a>
+        <button class="home-shortcut home-shortcut-account" id="home-login-action" type="button">
+          <span class="home-shortcut-icon" aria-hidden="true">♙</span>
+          <span class="home-shortcut-copy"><strong>로그인</strong><small>계정으로 AonWiki 이용하기</small></span>
+          <span class="home-shortcut-arrow" aria-hidden="true">›</span>
+        </button>
+        <button class="home-shortcut home-shortcut-create" id="home-create-action" type="button">
+          <span class="home-shortcut-icon" aria-hidden="true">＋</span>
+          <span class="home-shortcut-copy"><strong>새 문서 추가</strong><small>새로운 지식 등록하기</small></span>
+          <span class="home-shortcut-arrow" aria-hidden="true">›</span>
+        </button>
+        <button class="home-shortcut home-shortcut-search" id="home-search-action" type="button">
+          <span class="home-shortcut-icon" aria-hidden="true">⌕</span>
+          <span class="home-shortcut-copy"><strong>문서 검색</strong><small>제목과 본문에서 찾기</small></span>
+          <span class="home-shortcut-arrow" aria-hidden="true">›</span>
+        </button>
+        <button class="home-shortcut home-shortcut-categories" id="home-categories-action" type="button">
+          <span class="home-shortcut-icon" aria-hidden="true">▦</span>
+          <span class="home-shortcut-copy"><strong>분류 목록</strong><small>주제별 문서 둘러보기</small></span>
+          <span class="home-shortcut-arrow" aria-hidden="true">›</span>
+        </button>
       </nav>
 
       <div id="home-notice" class="home-notice" hidden></div>
