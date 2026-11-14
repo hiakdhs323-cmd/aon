@@ -2671,6 +2671,7 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-title").removeAttribute("disabled");
   const anonymousEditing = !loggedInName && !sessionStorage.getItem(TOKEN_SETTING);
   $("editor-title").readOnly = anonymousEditing && !editorIsNew;
+  $("editor-move-action").hidden = editorIsNew || anonymousEditing;
   $("editor-ip-warning").hidden = !anonymousEditing;
   $("editor-login-note").hidden = anonymousEditing;
   $("editor-public-ack").checked = true;
