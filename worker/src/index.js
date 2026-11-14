@@ -1046,7 +1046,7 @@ async function expandAonIncludes(env, source) {
   return replaceNamuIncludesOutsideCode(text, (match, rawName) => {
     const name = String(rawName || "").split(",")[0].trim();
     if (!name || name.includes("=") || !rows.has(name)) return match;
-    return "\\n" + rows.get(name) + "\\n";
+    return "\n" + rows.get(name) + "\n";
   });
 }
 
