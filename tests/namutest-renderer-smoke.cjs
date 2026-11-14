@@ -25,7 +25,7 @@ assert.doesNotMatch(worker, /endsWith\("\\:" \+ sourceDigest\)/, "legacy cache c
 assert.match(worker, /Namu_test-main\/namumark\.js/, "Worker static proxy must serve the nested Namu_test-main parser module");
 assert.match(worker, /Namu_test-main\/namumark_bg\.wasm/, "Worker static proxy must serve the nested Namu_test-main WASM module");
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
-assert.match(read("namumark-aon.css"), /wiki-link-external:has\\(img\\)::before/, "external image links must suppress the automatic external-link badge");
+assert.ok(read("namumark-aon.css").includes(".wiki-link-external:has(img)::before"), "external image links must suppress the automatic external-link badge");
 
 
 const removedLegacyFiles = [
