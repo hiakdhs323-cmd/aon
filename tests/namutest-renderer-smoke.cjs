@@ -101,3 +101,9 @@ assert.match(app, /initializeAonMonacoEditor/, "Monaco must initialize on enteri
 assert.match(app, /syncAonTextareaFromMonaco/, "Monaco source changes must feed the existing save and draft pipeline");
 assert.match(app, /focusAonWikiEditor/, "toolbar and file inserts must focus the active Monaco editor");
 assert.match(worker, /editor-monaco\/monaco\.worker\.js/, "Worker must expose the local Monaco web worker");
+
+const editorStyles = read("style.css");
+assert.match(editorStyles, /:is\(#article\.wiki-content,\.editor-preview\.wiki-content\)/, "actual wiki article typography and table styles must apply to editor preview");
+assert.match(editorStyles, /body\.editor-active \.site-header\s*\{\s*display:block!important/, "editor mode must preserve the site header");
+assert.match(editorStyles, /body\.editor-active \.global-rail\s*\{\s*display:flex!important/, "editor mode must preserve the recent-activity rail");
+assert.match(editorStyles, /\.editor-preview\.wiki-content\s*\{[^}]*font-size:14px/s, "preview must use readable article typography");
