@@ -1,0 +1,15 @@
+.git/
+.github/
+worker/
+src/
+dist/
+tests/
+node_modules/
+compose.yaml
+wrangler.toml
+.dockerignore
+README.md
+PARSER-LICENSES.md
+UPSTREAM-NOTICE.md
+CNAME
+*.map
