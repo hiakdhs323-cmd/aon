@@ -52,6 +52,54 @@ for (const path of removedLegacyFiles) {
 assert.doesNotMatch(read("style.css"), /opennamu_/i, "site skin must not contain legacy OpenNAMU renderer selectors");
 assert.doesNotMatch(read("UPSTREAM-NOTICE.md"), /builds and runs.*openNAMU/i, "upstream notice must not claim OpenNAMU is the active runtime");
 
+const includeHelperStart = worker.indexOf("function isNamuMarkupContainer(source, index)");
+const includeHelperEnd = worker.indexOf("function collectCategoryTargets(source)", includeHelperStart);
+assert.ok(includeHelperStart >= 0 && includeHelperEnd > includeHelperStart, "Worker must expose its bounded include-scanning helpers");
+const includeHelpers = new Function(
+  worker.slice(includeHelperStart, includeHelperEnd) +
+  "\\nreturn { collectIncludeTargets, replaceNamuIncludesOutsideCode };"
+)();
+assert.deepEqual(
+  includeHelpers.collectIncludeTargets("[include(틀:A)] [include(틀:B)]"),
+  ["틀:A", "틀:B"],
+  "only direct include directives in a document must be collected"
+);
+assert.deepEqual(
+  includeHelpers.collectIncludeTargets("{{{[include(틀:코드)]}}}"),
+  [],
+  "include-like text inside a literal code block must not be collected"
+);
+assert.deepEqual(
+  includeHelpers.collectIncludeTargets("{{{#!wiki style=\\"color:red\\"\\n[include(틀:위키블록)]\\n}}}"),
+  ["틀:위키블록"],
+  "include directives inside wiki markup containers must remain active"
+);
+const literalInclude = "{{{[include(틀:코드)]}}}";
+let literalIncludeCalls = 0;
+assert.equal(
+  includeHelpers.replaceNamuIncludesOutsideCode(literalInclude, () => {
+    literalIncludeCalls++;
+    return "실행됨";
+  }),
+  literalInclude,
+  "pre-expansion must leave include-like text in literal code unchanged"
+);
+assert.equal(literalIncludeCalls, 0, "literal code must never trigger include lookups");
+let expansionCalls = 0;
+assert.equal(
+  includeHelpers.replaceNamuIncludesOutsideCode("[include(틀:A)]", () => {
+    expansionCalls++;
+    return "[include(틀:B)]";
+  }),
+  "[include(틀:B)]",
+  "replacement output must not be recursively expanded"
+);
+assert.equal(expansionCalls, 1, "a source include must be expanded only once");
+assert.match(worker, /Only first-level includes from the document are resolved/, "nested template includes must be explicitly disabled");
+assert.doesNotMatch(worker, /pendingIncludes\\.push|for \\(let depth = 0; depth < 3; depth\\+\\+\\)/, "Worker must not recursively fetch or expand nested includes");
+assert.match(worker, /buildNamuServerDatabase\\(env, title, source\\)/, "browser fallback database must be built from original document source, not pre-expanded templates");
+assert.match(worker, /buildNamuServerDatabase\\(env, title, sourceText\\)/, "Worker SSR database must be built from original document source, not expanded template contents");
+
 console.log("AonWiki single-renderer integration checks passed.");
 
 assert.match(read("index.html"), /class="editor-terms-block"/, "editor must show the compact contribution consent notice below the summary");
