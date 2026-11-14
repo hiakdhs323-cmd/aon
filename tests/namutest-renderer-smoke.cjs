@@ -169,12 +169,12 @@ assert.match(app, /editor-move-action.*titleField\.focus/s, "move action must fo
 assert.match(app, /editor-delete-action.*\$\("delete-page"\)\.click/s, "editor delete action must reuse the guarded delete flow");
 assert.match(read("index.html"), /CC0/, "editor must display the CC0 contribution notice");
 
-assert.match(read("index.html"), /editor-monaco\/monaco\.js/, "Monaco bundle must load on the editor page");
-assert.match(read("index.html"), /editor-monaco\/monaco\.css/, "Monaco CSS must load on the editor page");
-assert.match(app, /initializeAonMonacoEditor/, "Monaco must initialize on entering edit mode");
-assert.match(app, /syncAonTextareaFromMonaco/, "Monaco source changes must feed the existing save and draft pipeline");
-assert.match(app, /focusAonWikiEditor/, "toolbar and file inserts must focus the active Monaco editor");
-assert.match(worker, /editor-monaco\/monaco\.worker\.js/, "Worker must expose the local Monaco web worker");
+assert.match(read("index.html"), /id="editor-highlight-code"/, "editor must include the original NamuMark highlight overlay");
+assert.doesNotMatch(read("index.html"), /editor-monaco\/monaco\.(?:js|css)|editor-monaco-host/, "editor page must use the original source overlay, not Monaco");
+assert.match(app, /function highlightNamuLine\(/, "editor must keep the original NamuMark token highlighter");
+assert.match(app, /function updateEditorHighlight\(/, "editor must repaint the original syntax overlay as the source changes");
+assert.match(app, /function focusAonWikiEditor\(\)\s*\{\s*\$\("editor-content"\)\?\.focus\(\)/, "toolbar and file inserts must focus the original source textarea");
+assert.match(read("style.css"), /\.editor-code-wrap\.highlight-active #editor-content/, "editor must use the synchronized highlight overlay for source editing");
 
 const editorStyles = read("style.css");
 assert.match(editorStyles, /\.editor-preview-document\.article/, "editor preview must use the same article shell as a normal document");
