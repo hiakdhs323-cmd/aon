@@ -266,6 +266,7 @@ function syncDocumentEditControls(){
  let canEdit=false;
  if(currentCanEdit===true)canEdit=true;
  else if(currentCanEdit===false)canEdit=false;
+ else if(currentTitle==="대문")canEdit=Boolean(isWikiAdmin);
  else if(currentProtection.level==="admin")canEdit=Boolean(isWikiAdmin);
  else if(currentProtection.level==="registered")canEdit=authenticated;
  else canEdit=true;
