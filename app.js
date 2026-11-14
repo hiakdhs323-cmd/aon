@@ -2793,8 +2793,10 @@ function resizeEditorTitleField() {
 
 function syncEditorConsentLock(){
  const accepted=Boolean($("editor-public-ack")?.checked);
- const fields=$("editor-fields");if(fields)fields.disabled=!accepted;
- const panel=$("editor-consent-panel");if(panel)panel.classList.toggle("is-accepted",accepted);
+ const fields=$("editor-fields");
+ const save=$("editor-save");
+ if(fields)fields.disabled=!accepted;
+ if(save)save.disabled=!accepted;
 }
 $("editor-public-ack").addEventListener("change",syncEditorConsentLock);
 async function startEditRequest(){if(!currentTitle)return;await editPage(currentTitle,currentContent,{request:true});}
@@ -2831,6 +2833,8 @@ async function editPage(title = currentTitle, content = currentContent, options 
   $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + (editorRequestMode ? " 편집 요청" : " 편집");
   $("editor-title-wrap").hidden = false;
   $("editor-title-wrap").querySelector("label").textContent = "문서 제목";
+  const titleFieldRow=$("editor-title-wrap").closest(".editor-title-field");
+  if(titleFieldRow)titleFieldRow.hidden=!editorIsNew;
   $("editor-title-help").hidden = true;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
   resizeEditorTitleField();
@@ -2903,6 +2907,8 @@ $("editor-backlinks-action").onclick = () => {
 $("editor-move-action").onclick = () => {
   const titleField = $("editor-title");
   if (!titleField) return;
+  const titleFieldRow=titleField.closest(".editor-title-field");
+  if(titleFieldRow)titleFieldRow.hidden=false;
   $("editor-status").textContent = "제목을 변경한 뒤 저장하면 문서가 새 제목으로 이동합니다.";
   titleField.focus();
   titleField.select();
