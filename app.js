@@ -1871,8 +1871,6 @@ async function loadDiscussionDetail(id,pushRoute=true){
    article.append(form);
   }else{
    makeDiscussionNotice(article,"이 토론은 종료되었습니다. 작성자 또는 위키 관리자가 다시 열면 답글을 작성할 수 있습니다.");
-  }  }else{
-   makeDiscussionNotice(article,"이 토론은 종료되었습니다. 작성자 또는 위키 관리자가 다시 열면 답글을 작성할 수 있습니다.");
   }
  }catch(error){
   if(requestId!==pageNavigationSequence)return;
