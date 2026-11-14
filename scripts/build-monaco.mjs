@@ -1,5 +1,6 @@
 import { build } from "esbuild";
-import { copyFile, mkdir, stat } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
+import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 
 const outputDirectory = "editor-monaco";
 await mkdir(outputDirectory, { recursive: true });
@@ -29,6 +30,15 @@ await build({
   sourcemap: false,
   loader: { ".ttf": "dataurl", ".woff": "dataurl", ".woff2": "dataurl" }
 });
+
+// Include the exact editor stylesheet uploaded for this integration, then append
+// Monaco's codicon font CSS (the font itself is inlined by esbuild's dataurl loader).
+const uploadedEditorCss = gunzipSync(Buffer.from(
+  (await readFile("editor/monaco-user.css.gz.b64", "utf8")).trim(),
+  "base64"
+));
+const codiconCss = await readFile(`${outputDirectory}/monaco.css`, "utf8");
+await writeFile(`${outputDirectory}/monaco.css`, uploadedEditorCss.toString("utf8") + "\\n" + codiconCss);
 
 await copyFile("node_modules/monaco-editor/LICENSE", `${outputDirectory}/LICENSE.monaco.txt`);
 
