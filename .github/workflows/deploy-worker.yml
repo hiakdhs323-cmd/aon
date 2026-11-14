@@ -11,6 +11,9 @@ on:
       - "namumark-aon.css"
       - "namumark-interactions-aon.css"
       - "Namu_test-main/**"
+      - "editor/**"
+      - "scripts/build-monaco.mjs"
+      - "package.json"
       - "worker/src/**"
       - "wrangler.toml"
       - ".assetsignore"
@@ -50,6 +53,8 @@ jobs:
       - name: Bundle Worker and NamuMark WASM
         if: steps.cloudflare-auth.outputs.available == 'true'
         run: |
+          npm install --no-audit --no-fund
+          node scripts/build-monaco.mjs
           npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --loader:.wasm=binary --outfile=worker/dist/index.js
           node --check worker/dist/index.js
 
