@@ -1,0 +1,32 @@
+const fs = require("node:fs");
+const assert = require("node:assert/strict");
+const read = (path) => fs.readFileSync(path, "utf8");
+
+const pkg = JSON.parse(read("package.json"));
+assert.equal(pkg.devDependencies["monaco-editor"], "0.57.0", "Monaco version must remain pinned");
+const entry = read("editor/monaco-entry.js");
+assert.match(entry, /setMonarchTokensProvider/, "NamuMark syntax highlighting must use Monaco Monarch");
+assert.match(entry, /registerCompletionItemProvider/, "NamuMark autocomplete must be registered");
+assert.match(entry, /getWorker\(/, "Monaco worker routing must be local");
+const app = read("app.js");
+assert.match(app, /initializeAonMonacoEditor/, "AonWiki must initialize Monaco in the edit view");
+assert.match(app, /syncAonTextareaFromMonaco/, "Monaco content must sync to the legacy save pipeline");
+assert.match(app, /setLanguage\(aonMonacoEditor/, "RAW edit mode must switch to plain text");
+const html = read("index.html");
+assert.match(html, /editor-monaco\/monaco\.js/, "Monaco main bundle must load before app.js");
+assert.match(html, /editor-monaco\/monaco\.css/, "Monaco stylesheet must load");
+const worker = read("worker/src/index.js");
+assert.match(worker, /editor-monaco\/monaco\.js/, "Worker must expose the Monaco main bundle");
+assert.match(worker, /editor-monaco\/monaco\.worker\.js/, "Worker must expose Monaco's web worker");
+assert.match(worker, /editor-monaco\/monaco\.css/, "Worker must expose Monaco's CSS");
+
+for (const file of [
+  "editor-monaco/monaco.js",
+  "editor-monaco/monaco.worker.js",
+  "editor-monaco/monaco.css",
+  "editor-monaco/LICENSE.monaco.txt"
+]) {
+  assert.ok(fs.existsSync(file), `missing built Monaco asset: ${file}`);
+  assert.ok(fs.statSync(file).size > 100, `empty built Monaco asset: ${file}`);
+}
+console.log("Monaco editor integration smoke tests passed.");
