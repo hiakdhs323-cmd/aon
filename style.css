@@ -4573,7 +4573,7 @@ html[data-theme="light"] .article > .wiki-categories a{color:#1769c2}
 }
 .namumark-wasm-content a.wiki-fn-content,
 .namumark-wasm-content a[href^="#fn-"],
-.namumark-wasm-content a[href^="#fn_"] { cursor: help !important; }
+.namumark-wasm-content a[href^="#fn_"] { cursor: pointer !important; }
 .namumark-wasm-content .nm-footnote-preview,
 .namumark-wasm-content .nm-footnote-preview * { cursor: default !important; }
 
