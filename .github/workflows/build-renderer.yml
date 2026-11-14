@@ -9,6 +9,7 @@ on:
       - "app.js"
       - "index.html"
       - "style.css"
+      - "namumark-aon.css"
       - "namumark-interactions-aon.css"
       - "Namu_test-main/interactions.js"
       - "worker/src/index.js"
