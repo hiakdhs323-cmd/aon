@@ -1,8 +1,6 @@
-name: Deploy AonWiki to GitHub Pages
+name: Optional legacy GitHub Pages mirror
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
