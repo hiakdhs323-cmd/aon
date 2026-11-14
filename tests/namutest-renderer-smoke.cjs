@@ -87,3 +87,10 @@ assert.match(app, /editor-draft-indicator/, "editor must report draft autosave s
 assert.match(read("style.css"), /\.editor-code-pane\[hidden\].*display:none!important/, "hidden editor and preview panels must remain hidden");
 assert.match(read("style.css"), /#editor-line-numbers/, "editor line-number gutter must be styled");
 assert.match(read("style.css"), /body\.editor-active \.site-header/, "editor mode must use the focused full-screen canvas");
+
+assert.match(read("index.html"), /id="editor-backlinks-action"/, "editor title bar must include backlinks action");
+assert.match(read("index.html"), /id="editor-move-action"/, "editor title bar must include move/rename action");
+assert.match(read("index.html"), /id="editor-delete-action"/, "editor title bar must include delete action");
+assert.match(app, /editor-move-action.*titleField\.focus/s, "move action must focus the title field");
+assert.match(app, /editor-delete-action.*\$\("delete-page"\)\.click/s, "editor delete action must reuse the guarded delete flow");
+assert.match(read("index.html"), /CC0/, "editor must display the CC0 contribution notice");
