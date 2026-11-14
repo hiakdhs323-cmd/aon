@@ -13,7 +13,8 @@ await build({
   target: ["es2020"],
   outfile: `${outputDirectory}/monaco.js`,
   legalComments: "eof",
-  sourcemap: false
+  sourcemap: false,
+  loader: { ".ttf": "dataurl", ".woff": "dataurl", ".woff2": "dataurl" }
 });
 
 await build({
@@ -25,7 +26,8 @@ await build({
   target: ["es2020"],
   outfile: `${outputDirectory}/monaco.worker.js`,
   legalComments: "eof",
-  sourcemap: false
+  sourcemap: false,
+  loader: { ".ttf": "dataurl", ".woff": "dataurl", ".woff2": "dataurl" }
 });
 
 await copyFile("node_modules/monaco-editor/LICENSE", `${outputDirectory}/LICENSE.monaco.txt`);
