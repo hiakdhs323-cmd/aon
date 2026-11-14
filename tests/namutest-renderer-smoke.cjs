@@ -57,7 +57,7 @@ const includeHelperEnd = worker.indexOf("function collectCategoryTargets(source)
 assert.ok(includeHelperStart >= 0 && includeHelperEnd > includeHelperStart, "Worker must expose its bounded include-scanning helpers");
 const includeHelpers = new Function(
   worker.slice(includeHelperStart, includeHelperEnd) +
-  "\\nreturn { collectIncludeTargets, replaceNamuIncludesOutsideCode };"
+  "\nreturn { collectIncludeTargets, replaceNamuIncludesOutsideCode };"
 )();
 assert.deepEqual(
   includeHelpers.collectIncludeTargets("[include(틀:A)] [include(틀:B)]"),
@@ -70,7 +70,7 @@ assert.deepEqual(
   "include-like text inside a literal code block must not be collected"
 );
 assert.deepEqual(
-  includeHelpers.collectIncludeTargets("{{{#!wiki style=\\"color:red\\"\\n[include(틀:위키블록)]\\n}}}"),
+  includeHelpers.collectIncludeTargets("{{{#!wiki style=\"color:red\"\n[include(틀:위키블록)]\n}}}"),
   ["틀:위키블록"],
   "include directives inside wiki markup containers must remain active"
 );
@@ -96,9 +96,9 @@ assert.equal(
 );
 assert.equal(expansionCalls, 1, "a source include must be expanded only once");
 assert.match(worker, /Only first-level includes from the document are resolved/, "nested template includes must be explicitly disabled");
-assert.doesNotMatch(worker, /pendingIncludes\\.push|for \\(let depth = 0; depth < 3; depth\\+\\+\\)/, "Worker must not recursively fetch or expand nested includes");
-assert.match(worker, /buildNamuServerDatabase\\(env, title, source\\)/, "browser fallback database must be built from original document source, not pre-expanded templates");
-assert.match(worker, /buildNamuServerDatabase\\(env, title, sourceText\\)/, "Worker SSR database must be built from original document source, not expanded template contents");
+assert.doesNotMatch(worker, /pendingIncludes\.push|for \(let depth = 0; depth < 3; depth\+\+\)/, "Worker must not recursively fetch or expand nested includes");
+assert.match(worker, /buildNamuServerDatabase\(env, title, source\)/, "browser fallback database must be built from original document source, not pre-expanded templates");
+assert.match(worker, /buildNamuServerDatabase\(env, title, sourceText\)/, "Worker SSR database must be built from original document source, not expanded template contents");
 
 console.log("AonWiki single-renderer integration checks passed.");
 
