@@ -49,3 +49,10 @@
     --nm-collapse-duration: 0ms;
   }
 }
+
+/* One positioned footnote preview; suppress the browser's native title popup. */
+.namumark-wasm-content a.wiki-fn-content,
+.namumark-wasm-content a[href^="#fn-"],
+.namumark-wasm-content a[href^="#fn_"] { cursor: help !important; }
+.namumark-wasm-content .nm-footnote-preview,
+.namumark-wasm-content .nm-footnote-preview * { cursor: default !important; }
