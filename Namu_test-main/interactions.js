@@ -73,8 +73,11 @@ export function setupWikiInteractions(root) {
     if (!href.startsWith("#")) return null;
     let id;
     try { id = decodeURIComponent(href.slice(1)); } catch { return null; }
-    const anchor = root.ownerDocument.getElementById(id);
-    return anchor && root.contains(anchor) ? anchor.closest(".footnote-list") : null;
+    // Preview and the hidden document view coexist in the DOM. A document-wide
+    // getElementById() can return the hidden page's duplicate fn-1 before the
+    // current preview's target. Resolve the footnote strictly within this root.
+    const anchor = [...root.querySelectorAll("[id]")].find((element) => element.id === id);
+    return anchor?.closest(".footnote-list") || null;
   }
 
   function positionPreview() {
