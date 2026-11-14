@@ -1,10 +1,21 @@
 const fs = require("node:fs");
 const assert = require("node:assert/strict");
+const zlib = require("node:zlib");
 const read = (path) => fs.readFileSync(path, "utf8");
 
 const pkg = JSON.parse(read("package.json"));
 assert.equal(pkg.devDependencies["monaco-editor"], "0.57.0", "Monaco version must remain pinned");
 const entry = read("editor/monaco-entry.js");
+const buildScript = read("scripts/build-monaco.mjs");
+const extraCss = zlib.gunzipSync(fs.readFileSync("editor/monaco-extra.css.gz")).toString("utf8");
+assert.match(buildScript, /gunzipSync/, "the uploaded Monaco widget CSS must be included in the editor build");
+assert.match(extraCss, /\.monaco-editor \.selection-anchor/, "the uploaded Monaco CSS must include selection styling");
+assert.match(extraCss, /\.monaco-editor \.tokens-inspect-widget/, "the uploaded Monaco CSS must include token inspection styling");
+assert.doesNotMatch(extraCss, /\/skins\/nbs\/assets\/codicon-/, "the uploaded CSS must not depend on the external NBS Codicon font");
+assert.match(entry, /aon\.table\.attribute/, "NamuMark table attributes must receive syntax highlighting");
+assert.match(entry, /aon\.color\.text/, "NamuMark inline color markup must receive syntax highlighting");
+assert.match(entry, /aon\.size\.text/, "NamuMark inline size markup must receive syntax highlighting");
+assert.match(entry, /aon\.list\.number/, "numbered lists must receive syntax highlighting");
 assert.match(entry, /setMonarchTokensProvider/, "NamuMark syntax highlighting must use Monaco Monarch");
 assert.match(entry, /registerCompletionItemProvider/, "NamuMark autocomplete must be registered");
 assert.match(entry, /getWorker\(/, "Monaco worker routing must be local");

@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { gunzipSync } from "node:zlib";
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 
 const outputDirectory = "editor-monaco";
@@ -30,11 +31,16 @@ await build({
   loader: { ".ttf": "dataurl", ".woff": "dataurl", ".woff2": "dataurl" }
 });
 
-// Include the exact editor stylesheet uploaded for this integration, then append
-// Monaco's codicon font CSS (the font itself is inlined by esbuild's dataurl loader).
+// Combine the existing editor skin, the separately uploaded Monaco widget CSS,
+// and Monaco's bundled Codicon font CSS. The external NBS font reference was
+// removed from the uploaded stylesheet; use the locally bundled Codicon instead.
 const uploadedEditorCss = await readFile("editor/monaco-user.css", "utf8");
+const uploadedExtraCss = gunzipSync(await readFile("editor/monaco-extra.css.gz")).toString("utf8");
+if (/\/skins\/nbs\/assets\/codicon-/i.test(uploadedExtraCss)) {
+  throw new Error("Monaco extra CSS must not reference the external NBS Codicon font.");
+}
 const codiconCss = await readFile(`${outputDirectory}/monaco.css`, "utf8");
-await writeFile(`${outputDirectory}/monaco.css`, uploadedEditorCss + "\n" + codiconCss);
+await writeFile(`${outputDirectory}/monaco.css`, uploadedEditorCss + "\n" + uploadedExtraCss + "\n" + codiconCss);
 
 await copyFile("node_modules/monaco-editor/LICENSE", `${outputDirectory}/LICENSE.monaco.txt`);
 
