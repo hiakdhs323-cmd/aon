@@ -81,3 +81,5 @@ assert.match(app, /strike:\[/, "editor toolbar must insert strikethrough syntax"
 assert.match(app, /if\(kind==="code"\)/, "editor toolbar must insert code blocks");
 assert.match(app, /if\(kind==="folding"\)/, "editor toolbar must insert folding blocks");
 assert.match(app, /editor-draft-indicator/, "editor must report draft autosave state");
+
+assert.match(read("style.css"), /\.editor-code-pane\[hidden\].*display:none!important/, "hidden editor and preview panels must remain hidden");
