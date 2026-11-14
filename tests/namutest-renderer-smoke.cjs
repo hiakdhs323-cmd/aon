@@ -53,6 +53,20 @@ assert.doesNotMatch(read("UPSTREAM-NOTICE.md"), /builds and runs.*openNAMU/i, "u
 
 console.log("AonWiki single-renderer integration checks passed.");
 
+assert.match(read("index.html"), /id="editor-consent-panel"/, "editor must present the consent panel before the editor fields");
+assert.match(read("index.html"), /id="editor-fields" class="editor-fields" disabled/, "editor fields must start locked until consent is given");
+assert.match(read("index.html"), /id="edit-requests"/, "administrators must have an edit request review action");
+assert.match(read("app.js"), /function syncEditorConsentLock\(\)/, "editor controls must be locked until the consent checkbox is checked");
+assert.match(read("app.js"), /api\("\/api\/edit-request"/, "users without edit permission must be able to submit an edit request");
+assert.match(read("app.js"), /function openEditRequests\(\)/, "administrators must be able to review edit requests");
+assert.match(read("app.js"), /본인이 사용하는 IP\(/, "anonymous editor disclosure must display the visitor IP");
+assert.match(read("app.js"), /주소 전체가 영구히 기록됩니다/, "anonymous editor disclosure must explain permanent full-IP history");
+assert.match(read("worker/src/index.js"), /body\.consent !== true/, "Worker must reject page saves without explicit consent");
+assert.match(read("worker/src/index.js"), /username: ip \? "IP " \+ ip/, "anonymous revisions must keep the complete visitor IP");
+assert.match(read("worker/src/index.js"), /anonymous-discussion-create/, "anonymous discussion creation must be rate limited");
+assert.match(read("worker/src/index.js"), /anonymous-discussion-reply/, "anonymous discussion replies must be rate limited");
+
+
 assert.match(worker, /SELECT id, filename FROM images/, "image resolver must load image IDs");
 assert.match(worker, /SELECT alias, image_id FROM image_aliases/, "image alias resolver must load image IDs");
 assert.match(worker, /imageMap/, "client fallback payload must include image mappings");
