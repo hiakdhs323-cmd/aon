@@ -114,18 +114,18 @@ monaco.languages.setMonarchTokensProvider(languageId, {
       [/[^~]+/, "aon.strike"],
       [/~/, "aon.strike"]
     ],
-    code: [
     colorStyle: [
-      [/\}\}\}/, { token: "aon.code.delimiter", next: "@pop" }],
+      [/\\}\\}\\}/, { token: "aon.code.delimiter", next: "@pop" }],
       [/[^}]+/, "aon.color.text"],
-      [/\}/, "aon.color.text"]
+      [/\\}/, "aon.color.text"]
     ],
     sizeStyle: [
-      [/\}\}\}/, { token: "aon.code.delimiter", next: "@pop" }],
+      [/\\}\\}\\}/, { token: "aon.code.delimiter", next: "@pop" }],
       [/[^}]+/, "aon.size.text"],
-      [/\}/, "aon.size.text"]
+      [/\\}/, "aon.size.text"]
     ],
-      [/^\s*\}\}\}\s*$/, { token: "aon.code.delimiter", next: "@pop" }],
+    code: [
+      [/^\\s*\\}\\}\\}\\s*$/, { token: "aon.code.delimiter", next: "@pop" }],
       [/.*$/, "aon.code"]
     ]
   }
