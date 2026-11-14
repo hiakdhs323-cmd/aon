@@ -1448,7 +1448,7 @@ export default {
         const xml = await renderSitemapXml(request, env);
         return new Response(xml, { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
       }
-      const staticFiles = new Set(["style.css", "app.js", "theme.js", "namumark-wasm.js", "namumark-aon.css", "namumark-interactions-aon.css", "Namu_test-main/namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
+      const staticFiles = new Set(["style.css", "app.js", "theme.js", "namumark-wasm.js", "namumark-aon.css", "namumark-interactions-aon.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "Namu_test-main/namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
@@ -1470,7 +1470,7 @@ export default {
           }
         }
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261114-search-footnote-v1" : "20261114-private-assets-v1";
+        const assetCacheVersion = assetName === "style.css" ? "20261114-monaco-editor-v1" : assetName.startsWith("editor-monaco/") ? "20261114-monaco-0570" : "20261114-private-assets-v1";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
