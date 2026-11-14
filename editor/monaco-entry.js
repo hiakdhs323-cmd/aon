@@ -1,5 +1,5 @@
 import * as monaco from "monaco-editor";
-import "monaco-editor/esm/vs/editor/editor.main.css";
+import "../node_modules/monaco-editor/esm/vs/editor/editor.main.css";
 
 const globalObject = globalThis;
 const currentScript = typeof document !== "undefined" ? document.currentScript : null;
