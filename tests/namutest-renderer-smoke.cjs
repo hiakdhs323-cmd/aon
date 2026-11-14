@@ -146,9 +146,15 @@ assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*
   parserModule.initSync({ module: fs.readFileSync("Namu_test-main/namumark_bg.wasm") });
   const source = "각주 미리보기 검사 문장입니다.[* 실제 각주 본문입니다.]";
   const html = parserModule.parse_to_html(source);
-  console.log("AON_FOOTNOTE_RENDER_PROBE=" + JSON.stringify(html));
+  assert.match(html, /class="wiki-fn-content"/, "WASM renderer must emit the visible footnote marker");
+  assert.match(html, /class="footnote-list"/, "WASM renderer must emit the footnote body list");
+  assert.match(html, /id="fn-1"/, "WASM renderer must emit a stable footnote target");
+  assert.match(html, /실제 각주 본문입니다\./, "WASM renderer must preserve the footnote body text");
+  assert.match(read("Namu_test-main/interactions.js"), /root\.querySelectorAll\("\[id\]"\)/, "footnote targets must be resolved inside their own article root");
+  assert.doesNotMatch(read("Namu_test-main/interactions.js"), /root\.ownerDocument\.getElementById\(id\)/, "footnote lookup must not select a duplicate target from the hidden document");
+  console.log("AonWiki actual WASM footnote render and preview-root lookup checks passed.");
 })().catch(error => {
-  console.error("AON_FOOTNOTE_RENDER_PROBE_FAILED", error);
+  console.error("AON_FOOTNOTE_RENDER_TEST_FAILED", error);
   process.exitCode = 1;
 });
 
