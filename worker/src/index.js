@@ -466,13 +466,51 @@ async function savePageLinkColors(env, title, extracted, editor) {
   await env.DB.prepare("INSERT INTO page_link_colors (title, config_json, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT(title) DO UPDATE SET config_json = excluded.config_json, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
     .bind(title, JSON.stringify(extracted.colors), new Date().toISOString(), String(editor || "")).run();
 }
-function collectIncludeTargets(source) {
-  const targets=[];
-  for(const match of String(source||"").matchAll(/\[include\(((?:(?!\[include\(|\)\]).)+)\)\]/gi)){
-    const first=String(match[1]||"").split(",")[0].trim();
-    if(first&&!first.includes("="))targets.push(first);
+function isNamuMarkupContainer(source, index) {
+  const header = String(source || "").slice(index + 3);
+  return /^#!(?:wiki|folding|if)\\b/i.test(header)
+    || /^(?:#[^\\s}]+|[+-]\\d+)/.test(header);
+}
+function replaceNamuIncludesOutsideCode(source, replacer) {
+  const text = String(source || "");
+  let output = "";
+  let cursor = 0;
+  while (cursor < text.length) {
+    if (text.startsWith("{{{", cursor) && !isNamuMarkupContainer(text, cursor)) {
+      const close = text.indexOf("}}}", cursor + 3);
+      if (close < 0) {
+        output += text.slice(cursor);
+        break;
+      }
+      output += text.slice(cursor, close + 3);
+      cursor = close + 3;
+      continue;
+    }
+    if (text.slice(cursor, cursor + 9).toLowerCase() === "[include(") {
+      const close = text.indexOf(")]", cursor + 9);
+      if (close >= 0) {
+        const match = text.slice(cursor, close + 2);
+        const rawName = text.slice(cursor + 9, close);
+        if (!/\\[include\\(/i.test(rawName)) {
+          output += replacer(match, rawName);
+          cursor = close + 2;
+          continue;
+        }
+      }
+    }
+    output += text[cursor];
+    cursor++;
   }
-  return targets;
+  return output;
+}
+function collectIncludeTargets(source) {
+  const targets = [];
+  replaceNamuIncludesOutsideCode(source, (match, rawName) => {
+    const first = String(rawName || "").split(",")[0].trim();
+    if (first && !first.includes("=")) targets.push(first);
+    return match;
+  });
+  return [...new Set(targets)];
 }
 function collectCategoryTargets(source) {
   const targets=[];
@@ -527,31 +565,20 @@ function normalizeNamuLookupKey(name) {
 async function buildNamuServerDatabase(env, title, content) {
   const source = String(content || "");
   const records = new Map([[title, { title, data: source }]]);
-  const visitedIncludes = new Set([title]);
-  let pendingIncludes = collectIncludeTargets(source);
-  let includedCount = 0;
   const maxIncludes = 50;
-
-  // Includes are intentionally bounded. A malformed include graph must never
-  // turn one page render into an unbounded D1/CPU workload.
-  for (let depth = 0; depth < 4 && pendingIncludes.length && includedCount < maxIncludes; depth++) {
-    const batch = [...new Set(pendingIncludes)]
-      .filter(name => name && !visitedIncludes.has(name))
-      .slice(0, Math.min(40, maxIncludes - includedCount));
-    pendingIncludes = [];
-    if (!batch.length) break;
-    batch.forEach(name => visitedIncludes.add(name));
+  // Only first-level includes from the document are resolved. Included
+  // templates are not scanned for further includes: nested includes are
+  // intentionally unsupported.
+  const batch = [...new Set(collectIncludeTargets(source))]
+    .filter(name => name && name !== title)
+    .slice(0, maxIncludes);
+  if (batch.length) {
     const placeholders = batch.map(() => "?").join(",");
     const result = await env.DB.prepare(
       "SELECT title, content FROM pages WHERE title IN (" + placeholders + ")"
     ).bind(...batch).all();
-
     for (const page of result.results || []) {
-      const item = { title: page.title, data: String(page.content || "") };
-      records.set(page.title, item);
-      includedCount++;
-      pendingIncludes.push(...collectIncludeTargets(item.data));
-      if (includedCount >= maxIncludes) break;
+      records.set(page.title, { title: page.title, data: String(page.content || "") });
     }
   }
 
@@ -999,26 +1026,22 @@ async function applyTableTextContrast(markup) {
 }
 
 async function expandAonIncludes(env, source) {
-  let text = String(source || "");
+  const text = String(source || "");
   const seen = new Set(["아온"]);
-  for (let depth = 0; depth < 3; depth++) {
-    const matches = [...text.matchAll(/\[include\(([^)]+)\)\]/gi)];
-    const names = [...new Set(matches.map(match => String(match[1] || "").trim()).filter(name => name && !name.includes("=") && !seen.has(name)))];
-    if (!names.length) break;
-    const placeholders = names.map(() => "?").join(",");
-    const result = await env.DB.prepare("SELECT title, content FROM pages WHERE title IN (" + placeholders + ")").bind(...names).all();
-    const rows = new Map((result.results || []).map(row => [String(row.title), String(row.content || "")]));
-    for (const name of names) seen.add(name);
-    let changed = false;
-    text = text.replace(/\[include\(([^)]+)\)\]/gi, (match, rawName) => {
-      const name = String(rawName || "").trim();
-      if (!name || name.includes("=") || !rows.has(name)) return match;
-      changed = true;
-      return "\n" + rows.get(name) + "\n";
-    });
-    if (!changed) break;
-  }
-  return text;
+  const names = [...new Set(collectIncludeTargets(text))]
+    .filter(name => name && !seen.has(name))
+    .slice(0, 50);
+  if (!names.length) return text;
+  const placeholders = names.map(() => "?").join(",");
+  const result = await env.DB.prepare(
+    "SELECT title, content FROM pages WHERE title IN (" + placeholders + ")"
+  ).bind(...names).all();
+  const rows = new Map((result.results || []).map(row => [String(row.title), String(row.content || "")]));
+  return replaceNamuIncludesOutsideCode(text, (match, rawName) => {
+    const name = String(rawName || "").split(",")[0].trim();
+    if (!name || name.includes("=") || !rows.has(name)) return match;
+    return "\\n" + rows.get(name) + "\\n";
+  });
 }
 
 async function buildAonClientRenderPayload(env, title, source, linkColors = {}) {
@@ -1028,7 +1051,7 @@ async function buildAonClientRenderPayload(env, title, source, linkColors = {}) 
   const expandedSource = await expandAonIncludes(env, source);
   const extracted = extractAdminLinkColors(expandedSource);
   const renderSource = extracted.content;
-  const database = await buildNamuServerDatabase(env, title, renderSource);
+  const database = await buildNamuServerDatabase(env, title, source);
   const records = [...database.lookup.values()].map(item => ({
     title: String(item.title || ""),
     data: String(item.data || "")
@@ -1087,7 +1110,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
       : sourceText;
     const extracted = extractAdminLinkColors(renderSource);
     const renderText = extracted.content;
-    const database = await buildNamuServerDatabase(env, title, renderText);
+    const database = await buildNamuServerDatabase(env, title, sourceText);
 
     // Use the exact Namu_test-main WASM renderer for SSR as well as the
     // browser fallback. D1 resolution is prepared before parsing so the WASM
