@@ -128,7 +128,12 @@ assert.match(app, /focusAonWikiEditor/, "toolbar and file inserts must focus the
 assert.match(worker, /editor-monaco\/monaco\.worker\.js/, "Worker must expose the local Monaco web worker");
 
 const editorStyles = read("style.css");
-assert.match(editorStyles, /:is\(#article\.wiki-content,\.editor-preview\.wiki-content\)/, "actual wiki article typography and table styles must apply to editor preview");
+assert.match(editorStyles, /\.editor-preview-document\.article/, "editor preview must use the same article shell as a normal document");
+assert.match(html, /id="editor-preview" class="namumark-content-host editor-preview"/, "editor preview must not use the separate wiki-content typography class");
+assert.match(html, /id="editor-preview-title"/, "editor preview must show the document title");
+assert.match(app, /target\.classList\.add\("namumark-wasm-content", "namumark-rendered"\)/, "both preview renderer paths must use the normal rendered-document classes");
+assert.match(app, /ensureClientDocumentToc\(target, source, true\)/, "server-rendered previews must receive the same TOC fallback as normal documents");
+assert.match(app, /renderDocumentMetadata\(preview, metadata, title\)/, "preview must display document categories like the normal page");
 assert.match(editorStyles, /body\.editor-active \.site-header\s*\{\s*display:block!important/, "editor mode must preserve the site header");
 assert.match(editorStyles, /body\.editor-active \.global-rail\s*\{\s*display:flex!important/, "editor mode must preserve the recent-activity rail");
-assert.match(editorStyles, /\.editor-preview\.wiki-content\s*\{[^}]*font-size:14px/s, "preview must use readable article typography");
+assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*padding:0!important/s, "preview content must use the article's own typography without editor-only padding overrides");
