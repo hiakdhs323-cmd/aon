@@ -60,4 +60,12 @@ assert.match(app, /rewriteClientNamuImageUrls/, "browser fallback must rewrite N
 assert.match(app, /wiki-link-external/, "browser fallback must flatten nested external image links");
 assert.match(worker, /NamuMark can emit an invalid nested anchor/, "Worker SSR must flatten nested external image links");
 assert.match(app, /normalizeCategoryName/, "document category labels must remove repeated prefixes");
+assert.match(app, /6\\.11484 19\\.2188C7\\.32682 19\\.7396/, "EntryWiki clock path must be present");
+assert.match(app, /M20 20L16\\.25 16\\.25H6\\.875/, "EntryWiki discussion path must be present");
+assert.match(app, /0\\.000129937 12\\.6792V18H20/, "EntryWiki archive path must be present");
+assert.match(app, /function applyEntryWikiStaticIcons\\(\\)/, "static EntryWiki icon slots must be hydrated");
+assert.match(read("index.html"), /data-entry-icon="clock"/, "recent changes must display the EntryWiki clock icon");
+assert.match(read("index.html"), /data-entry-icon="discussion"/, "recent discussion must display the EntryWiki speech icon");
+assert.match(read("index.html"), /data-entry-icon="archive"/, "category menus must display the EntryWiki archive icon");
+assert.match(read("index.html"), /class="current-tab"><span class="article-tab-icon"/, "document view must have an icon-led current tab");
 assert.doesNotMatch(read("style.css"), /html\[data-theme=["'](?:dark|light)["']\][^{}]*\.wiki-content/i, "site skin must not override NamuMark theme colors");
