@@ -28,6 +28,16 @@ assert.match(worker, /editor-monaco\/monaco\.js/, "Worker must expose the Monaco
 assert.match(worker, /editor-monaco\/monaco\.worker\.js/, "Worker must expose Monaco's web worker");
 assert.match(worker, /editor-monaco\/monaco\.css/, "Worker must expose Monaco's CSS");
 
+const styles = read("style.css");
+assert.match(styles, /Mobile-first editing controls/, "mobile editor accessibility overrides must be present");
+assert.match(styles, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/, "mobile editor tabs must stay visible in one row");
+assert.match(styles, /flex-wrap:wrap!important/, "mobile markup toolbar controls must wrap instead of requiring horizontal scrolling");
+assert.match(styles, /env\(safe-area-inset-bottom/, "mobile save action must account for the device safe area");
+assert.match(styles, /min-height:48px!important/, "mobile save action must have a comfortable touch target");
+assert.match(styles, /font-size:16px!important/, "mobile summary input must avoid automatic zoom on iOS");
+assert.match(styles, /height:clamp\(260px,52dvh,540px\)!important/, "mobile Monaco editor height must adapt to the dynamic viewport");
+
+
 for (const file of [
   "editor-monaco/monaco.js",
   "editor-monaco/monaco.worker.js",
