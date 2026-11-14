@@ -1203,7 +1203,7 @@ const aonNamuInteractionInstances = new WeakMap();
 async function activateAonWikiInteractions(root) {
  if(!root || !(root instanceof Element)) return;
  if(!aonNamuInteractionModulePromise) {
-  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js?v=20261114-single-footnote-preview-v1")
+  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js?v=20261114-preview-footnote-root-scope-v2")
    .catch(error => { aonNamuInteractionModulePromise = null; throw error; });
  }
  try {
