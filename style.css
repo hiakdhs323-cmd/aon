@@ -5121,7 +5121,7 @@ body.editor-active .editor-tabs{
 body.editor-active .editor-tabs button{
   display:inline-flex;align-items:center;justify-content:center;
   min-height:36px;padding:0 14px;
-  border:1px solid #454545!important;border-bottom:0!important;
+  border:1px solid var(--wiki-border)!important;border-bottom:0!important;
   border-radius:0!important;
   background:#242424!important;color:#d7d7d7!important;
   font-size:12px;font-weight:450;white-space:nowrap;
@@ -5374,34 +5374,12 @@ body.editor-active .editor-public-ack{line-height:1.6}
 }
 
 
-/* Monaco-powered AonWiki source editor. The hidden textarea mirrors its model
-   so legacy save, draft, preview, and file-upload handlers remain authoritative. */
-.editor-monaco-host{display:none;width:100%;height:100%;min-width:0;min-height:100%;background:#1e1e1e}
-.editor-code-wrap.monaco-active{position:relative;display:block;overflow:hidden;background:#1e1e1e!important}
-.editor-code-wrap.monaco-active .editor-monaco-host{display:block;position:absolute;inset:0;width:100%;height:100%;min-height:0}
-.editor-code-wrap.monaco-active #editor-line-numbers,
-.editor-code-wrap.monaco-active #editor-highlight,
-.editor-code-wrap.monaco-active #editor-content{display:none!important}
-.editor-code-wrap.monaco-active .monaco-editor,
-.editor-code-wrap.monaco-active .monaco-editor .overflow-guard{width:100%!important;height:100%!important}
-.editor-code-wrap.monaco-active .monaco-editor{background:#1e1e1e!important}
-.editor-code-wrap.monaco-active .monaco-editor .margin{background:#1e1e1e!important}
-.editor-code-wrap.monaco-active .monaco-editor .monaco-scrollable-element>.scrollbar>.slider{background:#68686888}
-.editor-code-wrap.monaco-active .monaco-editor .monaco-scrollable-element>.scrollbar>.slider:hover{background:#888888aa}
-.editor-code-wrap.monaco-active .monaco-editor .view-lines .view-line{line-height:21px}
-.editor-code-wrap.monaco-active .monaco-editor .line-numbers{font-variant-numeric:tabular-nums}
-.editor-code-wrap.monaco-active .monaco-editor .current-line{border:0!important}
-@media(max-width:700px){
-  .editor-code-wrap.monaco-active{height:58dvh!important;min-height:320px!important}
-  .editor-code-wrap.monaco-active .monaco-editor{font-size:12px}
-}
-
 
 /* Final EntryWiki-style editing shell: keep the site header and activity rail
    visible while giving the source editor the same focused reading width. */
 body.editor-active{
-  background:#222!important;
-  color:#eee!important;
+  background:var(--wiki-bg)!important;
+  color:var(--wiki-text)!important;
 }
 body.editor-active .site-header{
   display:block!important;
@@ -5451,17 +5429,17 @@ body.editor-active .editor-card{
   margin:0!important;
   padding:0!important;
   overflow:hidden!important;
-  border:1px solid #45494d!important;
+  border:1px solid var(--wiki-border-strong)!important;
   border-radius:4px!important;
-  background:#151617!important;
-  color:#eee!important;
+  background:var(--wiki-panel)!important;
+  color:var(--wiki-text)!important;
   box-shadow:none!important;
 }
 body.editor-active .editor-page-heading{
   min-height:74px!important;
   padding:14px 20px 12px!important;
-  border-bottom:0!important;
-  background:#151617!important;
+  border-bottom:1px solid var(--wiki-border)!important;
+  background:var(--wiki-panel-soft)!important;
 }
 body.editor-active .editor-main-field{
   margin:0!important;
@@ -5481,9 +5459,9 @@ body.editor-active .editor-preview-pane{
   height:min(68vh,760px)!important;
   min-height:500px!important;
   max-height:900px!important;
-  border:1px solid #444!important;
+  border:1px solid var(--wiki-border-strong)!important;
   border-top:0!important;
-  background:#1e1e1e!important;
+  background:var(--wiki-panel)!important;
 }
 body.editor-active .editor-preview-pane .editor-preview{
   display:block!important;
@@ -5498,8 +5476,8 @@ body.editor-active .editor-preview-pane .editor-preview{
   overflow:auto!important;
   border:0!important;
   border-radius:0!important;
-  background:#1e1e1e!important;
-  color:#e7e7e7!important;
+  background:var(--wiki-panel)!important;
+  color:var(--wiki-text)!important;
   font-family:var(--wiki-font)!important;
   font-size:14px!important;
   line-height:1.7!important;
@@ -5708,7 +5686,7 @@ body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
     flex:1 1 0!important;
     min-width:0!important;
     min-height:42px!important;
-    border:1px solid #414141!important;
+    border:1px solid var(--wiki-border-strong)!important;
     border-radius:5px!important;
     font-size:14px!important;
     touch-action:manipulation;
@@ -5795,7 +5773,7 @@ body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
     gap:4px!important;
     padding:5px!important;
     overflow:visible!important;
-    border-bottom:1px solid #454545!important;
+    border-bottom:1px solid var(--wiki-border)!important;
   }
   body.editor-active .editor-tabs button{
     box-sizing:border-box!important;
@@ -5810,7 +5788,7 @@ body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
     white-space:normal!important;
     text-align:center!important;
   }
-  body.editor-active .editor-tabs button.active{border-color:#707070!important;border-bottom-color:#1687dd!important}
+  body.editor-active .editor-tabs button.active{border-color:var(--wiki-border-strong)!important;border-bottom-color:var(--wiki-primary)!important}
   body.editor-active .editor-markup-toolbar{
     display:flex!important;
     flex-wrap:wrap!important;
@@ -5956,8 +5934,8 @@ body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
     justify-content:stretch!important;
     margin:0!important;
     padding:9px 12px calc(9px + env(safe-area-inset-bottom, 0px))!important;
-    border-top:1px solid #4a4a4a!important;
-    background:rgba(20,20,20,.96)!important;
+    border-top:1px solid var(--wiki-border)!important;
+    background:var(--wiki-panel)!important;
     -webkit-backdrop-filter:blur(12px);
     backdrop-filter:blur(12px);
   }

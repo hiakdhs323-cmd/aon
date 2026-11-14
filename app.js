@@ -2678,126 +2678,8 @@ let editorReturnTitle = "";
 let editorIsNew = false;
 let editorDraftTimer = 0;
 
-let aonMonacoEditor = null;
-let aonMonacoTextareaSync = false;
-let aonMonacoTextareaInputBound = false;
-
-function syncAonMonacoSelectionFromTextarea() {
-  if (!aonMonacoEditor) return;
-  const field = $("editor-content");
-  const model = aonMonacoEditor.getModel();
-  if (!field || !model) return;
-  const startOffset = Number.isInteger(field.selectionStart) ? field.selectionStart : field.value.length;
-  const endOffset = Number.isInteger(field.selectionEnd) ? field.selectionEnd : startOffset;
-  const start = model.getPositionAt(startOffset);
-  const end = model.getPositionAt(endOffset);
-  aonMonacoEditor.setSelection({
-    startLineNumber: start.lineNumber,
-    startColumn: start.column,
-    endLineNumber: end.lineNumber,
-    endColumn: end.column
-  });
-}
-
-function syncAonMonacoFromTextarea() {
-  if (!aonMonacoEditor || aonMonacoTextareaSync) return;
-  const field = $("editor-content");
-  if (!field) return;
-  if (aonMonacoEditor.getValue() !== field.value) aonMonacoEditor.setValue(field.value);
-  syncAonMonacoSelectionFromTextarea();
-}
-
-function syncAonTextareaFromMonaco() {
-  if (!aonMonacoEditor || aonMonacoTextareaSync) return;
-  const field = $("editor-content");
-  const model = aonMonacoEditor.getModel();
-  if (!field || !model) return;
-  const value = aonMonacoEditor.getValue();
-  const selection = aonMonacoEditor.getSelection();
-  if (selection) {
-    const start = model.getOffsetAt(selection.getStartPosition());
-    const end = model.getOffsetAt(selection.getEndPosition());
-    field.setSelectionRange(start, end);
-  }
-  if (field.value === value) return;
-  field.value = value;
-  aonMonacoTextareaSync = true;
-  try {
-    field.dispatchEvent(new Event("input", { bubbles: true }));
-  } finally {
-    aonMonacoTextareaSync = false;
-  }
-}
-
 function focusAonWikiEditor() {
-  if (aonMonacoEditor) {
-    aonMonacoEditor.focus();
-    return;
-  }
   $("editor-content")?.focus();
-}
-
-function initializeAonMonacoEditor() {
-  const field = $("editor-content");
-  const host = $("editor-monaco-host");
-  const wrap = $("editor-code-wrap");
-  const bridge = window.AonMonacoEditor;
-  if (!field || !host || !wrap || !bridge?.createEditor || !bridge?.monaco) {
-    console.warn("Monaco bundle is unavailable; using the built-in NamuMark editor.");
-    return false;
-  }
-  if (aonMonacoEditor) {
-    syncAonMonacoFromTextarea();
-    requestAnimationFrame(() => aonMonacoEditor?.layout());
-    return true;
-  }
-  try {
-    aonMonacoEditor = bridge.createEditor(host, field.value, {
-      ariaLabel: "AonWiki 나무마크 문서 원문",
-      readOnly: false
-    });
-    wrap.classList.add("monaco-active");
-    field.setAttribute("aria-hidden", "true");
-    field.tabIndex = -1;
-
-    if (!aonMonacoTextareaInputBound) {
-      field.addEventListener("input", () => {
-        if (!aonMonacoTextareaSync) syncAonMonacoFromTextarea();
-      });
-      aonMonacoTextareaInputBound = true;
-    }
-    aonMonacoEditor.onDidChangeModelContent(syncAonTextareaFromMonaco);
-    aonMonacoEditor.onDidChangeCursorSelection(syncAonTextareaFromMonaco);
-
-    const monaco = bridge.monaco;
-    if (monaco.KeyMod?.CtrlCmd !== undefined && monaco.KeyCode?.KeyS !== undefined) {
-      aonMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => $("editor-form").requestSubmit());
-    }
-    if (monaco.KeyMod?.CtrlCmd !== undefined && monaco.KeyCode?.KeyB !== undefined) {
-      aonMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB, () => insertEditorMarkup("bold"));
-    }
-    if (monaco.KeyMod?.CtrlCmd !== undefined && monaco.KeyCode?.KeyI !== undefined) {
-      aonMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => insertEditorMarkup("italic"));
-    }
-    if (monaco.KeyMod?.CtrlCmd !== undefined && monaco.KeyCode?.KeyK !== undefined) {
-      aonMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => insertEditorMarkup("link"));
-    }
-
-    requestAnimationFrame(() => {
-      if (!aonMonacoEditor) return;
-      aonMonacoEditor.layout();
-      aonMonacoEditor.focus();
-    });
-    console.info("AonWiki Monaco editor initialized", bridge.version || "");
-    return true;
-  } catch (error) {
-    console.error("Monaco editor initialization failed; using the built-in editor.", error);
-    aonMonacoEditor = null;
-    wrap.classList.remove("monaco-active");
-    field.removeAttribute("aria-hidden");
-    field.removeAttribute("tabindex");
-    return false;
-  }
 }
 
 function resizeEditorTitleField() {
@@ -2885,8 +2767,6 @@ async function editPage(title = currentTitle, content = currentContent, options 
     }
   } catch {}
   $("editor-content").value = editorText;
-  initializeAonMonacoEditor();
-  syncAonMonacoFromTextarea();
   resetEditorHighlightState();
   updateEditorHighlight({immediate:true});
   $("editor-counter").textContent = editorText.length.toLocaleString("ko-KR") + " / 200,000자";
@@ -2950,10 +2830,6 @@ function setEditorMode(mode, { render = true } = {}) {
   previewPane.hidden = nextMode !== "preview";
   $("editor-preview").hidden = nextMode !== "preview";
   codeWrap.classList.toggle("raw-mode", nextMode === "raw");
-  if (aonMonacoEditor) {
-    window.AonMonacoEditor?.setLanguage(aonMonacoEditor, nextMode);
-    if (nextMode !== "preview") requestAnimationFrame(() => aonMonacoEditor?.layout());
-  }
   [
     ["editor-tab-write", "write"],
     ["editor-tab-raw", "raw"],
@@ -3168,7 +3044,6 @@ function runEditorCorrectionBot() {
   field.value = correctedLines.join("\n");
   field.dispatchEvent(new Event("input", { bubbles: true }));
   field.setSelectionRange(Math.min(selectionStart, field.value.length), Math.min(selectionEnd, field.value.length));
-  syncAonMonacoSelectionFromTextarea();
   $("editor-status").textContent = "교정 BOT: " + changes.length + "건을 수정했습니다. 저장 전 미리보기에서 확인하세요.";
   focusAonWikiEditor();
 }
@@ -3372,7 +3247,6 @@ function resetEditorHighlightState() {
   editorHighlightSource = null;
 }
 function updateEditorHighlight({immediate=false}={}) {
-  if (aonMonacoEditor) return;
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
   if (!field || !code || !pre) return;
   const lineNumbers = $("editor-line-numbers");
@@ -3465,7 +3339,6 @@ function insertEditorMarkup(kind){
   field.setRangeText(value,start,end,"end");
   field.dispatchEvent(new Event("input",{bubbles:true}));
   if(selectFrom!==null)field.setSelectionRange(start+selectFrom,start+(selectTo??selectFrom));
-  syncAonMonacoSelectionFromTextarea();
   focusAonWikiEditor();
  };
  if(kind==="category"||kind==="external"||kind==="file"||kind==="template"){
@@ -4130,7 +4003,7 @@ async function openFileManager(){
    insert.onclick=async()=>{
     const markup="[[파일:"+file.filename+"|width=500]]";
     if(!$("editor-view").hidden){
-     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));syncAonMonacoSelectionFromTextarea();focusAonWikiEditor();$("dialog").close()
+     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));focusAonWikiEditor();$("dialog").close()
     }else{
      try{await navigator.clipboard.writeText(markup);insert.textContent="복사됨"}catch{insert.textContent="복사 권한 없음"}
     }
@@ -4209,7 +4082,7 @@ $("file").onchange=async()=>{
   const markup="[[파일:"+data.filename+"|width=500]]";
   const compressionNote=compressed.isSvg?"SVG 벡터 이미지를 원본 형식으로 업로드했습니다.":compressed.compressed?"원본 "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+"로 자동 압축했습니다.":"원본 파일을 그대로 업로드했습니다.";
   if(!$("editor-view").hidden){
-   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));syncAonMonacoSelectionFromTextarea();focusAonWikiEditor();
+   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));focusAonWikiEditor();
    $("editor-status").textContent=compressionNote;
   }else if(currentTitle){
    $("dialog").close();editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);return
