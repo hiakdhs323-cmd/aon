@@ -1485,23 +1485,31 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
       })
     });
     if (serverRenderVersions.get(target) !== version) return;
+    let clientMetadata = null;
     if (data.clientRender) {
       const staging = document.createElement("article");
-      const clientMetadata = await renderClientParsedDocument(data.clientRender, staging, docTitle);
+      clientMetadata = await renderClientParsedDocument(data.clientRender, staging, docTitle);
       if (serverRenderVersions.get(target) !== version) return;
       target.replaceChildren(...staging.childNodes);
-      await activateAonWikiInteractions(target);
-      if (serverRenderVersions.get(target) !== version) return;
-      target.dataset.renderEngine = data.engine || "namumark-client";
-      return data.metadata || clientMetadata || { categories: [], backlinks: [] };
+      // renderClientParsedDocument prepares the temporary article. Mirror the
+      // exact document-root classes on the preview host after moving its nodes.
+      target.classList.remove("namumark-content-host", "wiki-content");
+      target.classList.add("namumark-wasm-content", "namumark-rendered");
+      target.dataset.namumarkWasm = "true";
+    } else {
+      appendSanitizedServerHtml(target,data.html);
+      rewriteClientNamuImageUrls(target,data.imageMap);
+      prepareServerRenderedMarkup(target, docTitle);
+      // The normal GET document route applies this same TOC fallback after SSR.
+      ensureClientDocumentToc(target, source, true);
     }
-    appendSanitizedServerHtml(target,data.html);
-    rewriteClientNamuImageUrls(target,data.imageMap);
-    prepareServerRenderedMarkup(target, docTitle);
+    target.classList.remove("namumark-content-host", "wiki-content");
+    target.classList.add("namumark-wasm-content", "namumark-rendered");
+    target.dataset.namumarkWasm = "true";
     await activateAonWikiInteractions(target);
     if (serverRenderVersions.get(target) !== version) return;
-    target.dataset.renderEngine = data.engine || "namumark-worker";
-    return data.metadata || { categories: [], backlinks: [] };
+    target.dataset.renderEngine = data.engine || (data.clientRender ? "namumark-client" : "namumark-worker");
+    return data.metadata || clientMetadata || { categories: [], backlinks: [] };
   } catch (error) {
     if (serverRenderVersions.get(target) !== version) return;
     target.replaceChildren();
@@ -2956,9 +2964,12 @@ async function renderEditorPreview() {
   const status = $("editor-preview-status");
   if (!preview || $("editor-preview-pane").hidden) return;
   const title = $("editor-title").value.trim() || editorOriginalTitle || "미리보기";
-  if (status) status.textContent = "서버에서 미리보기를 생성하고 있습니다…";
+  $("editor-preview-title").textContent = title;
+  $("editor-preview-crumb").textContent = title;
+  if (status) status.textContent = "실제 문서와 같은 렌더러로 미리보기를 생성하고 있습니다…";
   try {
-    await renderNamuMarkup($("editor-content").value, preview, title);
+    const metadata = await renderNamuMarkup($("editor-content").value, preview, title);
+    renderDocumentMetadata(preview, metadata, title);
     if (status) status.textContent = "미리보기 갱신 · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   } catch (error) {
     if (status) status.textContent = "미리보기를 불러오지 못했습니다: " + String(error?.message || error);
