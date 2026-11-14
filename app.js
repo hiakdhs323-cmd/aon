@@ -1777,6 +1777,9 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true)
 }
 async function loadDiscussionDetail(id,pushRoute=true){
  id=Number(id);if(!Number.isSafeInteger(id)||id<1){loadDiscussionList(pushRoute);return}
+ if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!currentVisitorIp){
+  try{const identity=await api("/api/me");currentVisitorIp=String(identity.ip||"")}catch{}
+ }
  const requestId=prepareDiscussionView("토론 #"+id,"#/discussion/"+id,pushRoute);
  document.title="토론 #"+id+" - AonWiki";
  const article=$("article");
