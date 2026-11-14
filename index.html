@@ -352,7 +352,22 @@
                     <button id="editor-preview-refresh" type="button" title="미리보기 새로고침">새로고침</button>
                   </div>
                 </div>
-                <article id="editor-preview" class="wiki-content editor-preview" hidden></article>
+                <div class="editor-preview-page">
+                  <div class="breadcrumbs editor-preview-breadcrumbs"><span>AonWiki</span><span>›</span><span id="editor-preview-crumb"></span></div>
+                  <section class="article editor-preview-document">
+                    <div class="article-titlebar">
+                      <h1 id="editor-preview-title"></h1>
+                      <div class="title-actions"><span class="optional-label">미리보기</span></div>
+                    </div>
+                    <div class="article-tools">
+                      <span class="current-tab"><span class="article-tab-icon" data-entry-icon="document" aria-hidden="true"></span><span>문서</span></span>
+                      <span class="tool-spacer"></span>
+                      <span class="article-language">한국어</span>
+                    </div>
+                    <article id="editor-preview" class="namumark-content-host editor-preview" hidden></article>
+                    <footer class="article-footer"><span>AonWiki</span><span>저장 전 문서 렌더링 미리보기입니다.</span></footer>
+                  </section>
+                </div>
               </section>
             </div>
             <div class="editor-counterbar">
