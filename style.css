@@ -4816,3 +4816,65 @@ html[data-theme="light"] .home-shortcut:hover{box-shadow:0 6px 16px rgba(32,81,1
   .home-shortcut{min-height:57px;padding:9px 11px}
   .home-shortcut-icon{flex-basis:34px;width:34px;height:34px}
 }
+
+/* EntryWiki filled 20px icons and reference-style article tabs. */
+.entrywiki-icon-slot{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;line-height:0}
+.entrywiki-icon-slot>.aon-ui-icon{display:block;width:18px;height:18px;flex:0 0 18px;vertical-align:middle}
+.top-nav-icon{width:17px;height:17px}
+.top-nav-icon>.aon-ui-icon{width:17px;height:17px;flex-basis:17px}
+.special-menu-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px}
+.special-menu-icon>.aon-ui-icon{width:17px;height:17px;flex-basis:17px}
+.home-shortcut-icon{display:grid;place-items:center}
+.home-shortcut-icon>.aon-ui-icon{width:21px;height:21px;flex-basis:21px}
+.article-tab-icon{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px}
+.article-tab-icon>.aon-ui-icon{width:17px;height:17px;flex-basis:17px}
+.article-tools .aon-ui-icon{width:16px;height:16px;flex-basis:16px}
+.article-tools .aon-icon-label{display:inline-flex;align-items:center;gap:6px}
+.article-titlebar{align-items:flex-end;gap:14px;padding-bottom:11px;border-bottom:1px solid var(--wiki-border-strong)}
+.article-titlebar h1{font-size:26px;font-weight:700;letter-spacing:-.45px}
+.article-tools{
+ display:flex;align-items:stretch;gap:3px;min-height:46px;height:auto;
+ margin:0 0 10px;padding:4px 0 0;
+ border-bottom:1px solid var(--wiki-border-strong);
+ font-size:12px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin
+}
+.article-tools>*{flex:0 0 auto}
+.article-tools .current-tab,.article-tools button{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:39px;height:39px;padding:0 12px;
+ border:1px solid transparent;border-bottom:2px solid transparent;
+ border-radius:5px 5px 0 0;background:transparent;
+ color:var(--wiki-muted);font-size:12px;font-weight:600;
+ text-decoration:none;white-space:nowrap
+}
+.article-tools .current-tab{
+ border-bottom-color:var(--wiki-primary);color:var(--wiki-text);font-weight:750
+}
+.article-tools button:hover{
+ border-color:var(--wiki-border);border-bottom-color:var(--wiki-primary);
+ background:var(--wiki-panel-soft);color:var(--wiki-link);text-decoration:none
+}
+.article-tools button.aon-has-icon{display:inline-flex;align-items:center;justify-content:center}
+.article-tools .tool-spacer{flex:1 1 auto;min-width:6px}
+.article-tools .article-language{align-self:center;margin-left:4px;padding:0 5px;white-space:nowrap}
+.article-tools #edit,.article-tools #upload,.article-tools #file-manager,.article-tools #delete-page{
+ margin:4px 0;min-height:31px;height:31px;padding:0 10px;
+ border:1px solid var(--wiki-border)!important;border-radius:6px;
+ background:var(--wiki-panel-soft);color:var(--wiki-text)
+}
+.article-tools #edit:hover,.article-tools #upload:hover,.article-tools #file-manager:hover{
+ border-color:var(--wiki-primary)!important;background:var(--wiki-panel)
+}
+.article-tools #delete-page{color:#cf5151}
+.article-tools #delete-page:hover{border-color:#cf5151!important;background:rgba(207,81,81,.08)}
+.article-tools #history{display:none!important}
+.title-actions .aon-ui-icon{width:15px;height:15px;flex-basis:15px}
+.title-actions .title-button.aon-has-icon{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:700px){
+ .article-titlebar{align-items:flex-start;flex-direction:column;gap:7px}
+ .title-actions{justify-content:flex-start;width:100%}
+ .article-tools{gap:2px;min-height:43px}
+ .article-tools .current-tab,.article-tools button{min-height:36px;height:36px;padding-inline:9px;font-size:11px}
+ .article-tools #edit,.article-tools #upload,.article-tools #file-manager,.article-tools #delete-page{margin:3px 0;min-height:30px;height:30px;padding-inline:8px}
+ .article-tools .tool-spacer{flex:1 0 5px}
+}
