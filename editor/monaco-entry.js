@@ -57,6 +57,9 @@ monaco.languages.setMonarchTokensProvider(languageId, {
     root: [
       [/^\s*(={2,6})(.*?)(={2,6})\s*$/, ["aon.heading.delimiter", "aon.heading", "aon.heading.delimiter"]],
       [/^\s*\[목차\]\s*$/, "aon.directive"],
+      [/\[(?:anchor|ruby|br|clearfix|date|datetime|age|youtube|nicovideo)(?:\([^\]\r\n]*\))?\]/i, "aon.macro"],
+      [/<(?:[a-z][\w-]*(?:=[^>]+)?|-[0-9]+|\|[0-9]+)>/i, "aon.table.attribute"],
+      [/^\s*[0-9]+\.\s/, "aon.list.number"],
       [/\[include\([^\]]+\)\]/i, "aon.directive"],
       [/\[\*[^\]]+\]/, "aon.footnote"],
       [/\[https?:\/\/[^\]]+\]/i, "aon.external"],
@@ -67,6 +70,8 @@ monaco.languages.setMonarchTokensProvider(languageId, {
       [/'''/, { token: "aon.bold", next: "@bold" }],
       [/''/, { token: "aon.italic", next: "@italic" }],
       [/~~/, { token: "aon.strike", next: "@strike" }],
+      [/\{\{\{#[^\s}]+/, { token: "aon.color.delimiter", next: "@colorStyle" }],
+      [/\{\{\{\+[0-9]+/, { token: "aon.size.delimiter", next: "@sizeStyle" }],
       [/\{\{\{#![\w-]+/, "aon.directive"],
       [/\{\{\{/, { token: "aon.code.delimiter", next: "@code" }],
       [/\}\}\}/, "aon.code.delimiter"],
@@ -110,6 +115,16 @@ monaco.languages.setMonarchTokensProvider(languageId, {
       [/~/, "aon.strike"]
     ],
     code: [
+    colorStyle: [
+      [/\}\}\}/, { token: "aon.code.delimiter", next: "@pop" }],
+      [/[^}]+/, "aon.color.text"],
+      [/\}/, "aon.color.text"]
+    ],
+    sizeStyle: [
+      [/\}\}\}/, { token: "aon.code.delimiter", next: "@pop" }],
+      [/[^}]+/, "aon.size.text"],
+      [/\}/, "aon.size.text"]
+    ],
       [/^\s*\}\}\}\s*$/, { token: "aon.code.delimiter", next: "@pop" }],
       [/.*$/, "aon.code"]
     ]
@@ -138,6 +153,13 @@ monaco.editor.defineTheme("aonwiki-dark", {
     { token: "aon.code.delimiter", foreground: "D2A8FF" },
     { token: "aon.code", foreground: "C9D1D9" },
     { token: "aon.list", foreground: "FFA657" },
+    { token: "aon.list.number", foreground: "FFA657", fontStyle: "bold" },
+    { token: "aon.table.attribute", foreground: "79C0FF" },
+    { token: "aon.macro", foreground: "56D4DD" },
+    { token: "aon.color.delimiter", foreground: "FF7B72" },
+    { token: "aon.color.text", foreground: "A5D6FF" },
+    { token: "aon.size.delimiter", foreground: "FF7B72" },
+    { token: "aon.size.text", foreground: "D2A8FF" },
     { token: "comment", foreground: "8B949E", fontStyle: "italic" }
   ],
   colors: {
