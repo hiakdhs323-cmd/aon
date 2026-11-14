@@ -1482,10 +1482,21 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
       })
     });
     if (serverRenderVersions.get(target) !== version) return;
+    if (data.clientRender) {
+      const staging = document.createElement("article");
+      const clientMetadata = await renderClientParsedDocument(data.clientRender, staging, docTitle);
+      if (serverRenderVersions.get(target) !== version) return;
+      target.replaceChildren(...staging.childNodes);
+      await activateAonWikiInteractions(target);
+      if (serverRenderVersions.get(target) !== version) return;
+      target.dataset.renderEngine = data.engine || "namumark-client";
+      return data.metadata || clientMetadata || { categories: [], backlinks: [] };
+    }
     appendSanitizedServerHtml(target,data.html);
     rewriteClientNamuImageUrls(target,data.imageMap);
     prepareServerRenderedMarkup(target, docTitle);
     await activateAonWikiInteractions(target);
+    if (serverRenderVersions.get(target) !== version) return;
     target.dataset.renderEngine = data.engine || "namumark-worker";
     return data.metadata || { categories: [], backlinks: [] };
   } catch (error) {
@@ -2637,11 +2648,11 @@ async function editPage(title = currentTitle, content = currentContent) {
   document.body.classList.add("editor-active");
   $("home").classList.remove("active");
   $("new").classList.add("active");
-  $("editor-heading").textContent = editorIsNew ? "새 문서 작성" : "문서 편집";
+  $("editor-heading").textContent = editorIsNew ? "(새 문서)" : "(편집)";
   $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
   $("editor-title-wrap").hidden = false;
-  $("editor-title-wrap").querySelector("label").textContent = editorIsNew ? "문서 제목" : "문서 제목 변경";
-  $("editor-title-help").hidden = editorIsNew;
+  $("editor-title-wrap").querySelector("label").textContent = "문서 제목";
+  $("editor-title-help").hidden = true;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
   $("editor-title").readOnly = false;
   $("editor-title").disabled = false;
@@ -2649,7 +2660,16 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-title").removeAttribute("disabled");
   const anonymousEditing = !loggedInName && !sessionStorage.getItem(TOKEN_SETTING);
   $("editor-title").readOnly = anonymousEditing && !editorIsNew;
-  if (anonymousEditing) $("editor-breadcrumb").textContent += " · IP 편집";
+  $("editor-ip-warning").hidden = !anonymousEditing;
+  $("editor-login-note").hidden = anonymousEditing;
+  $("editor-public-ack").checked = true;
+  if (anonymousEditing) {
+    $("editor-ip-warning").textContent = "비로그인 상태로 편집합니다. 저장하면 IP 주소 일부가 가려진 형태로 편집 이력에 기록됩니다.";
+    $("editor-breadcrumb").textContent = editorOriginalTitle + " · IP 편집";
+  } else {
+    $("editor-login-note").textContent = "로그인 계정이 편집 기록에 표시됩니다.";
+    $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
+  }
   let editorText = String(content || "");
   try {
     const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
@@ -2697,26 +2717,29 @@ $("editor-help-toggle").onclick = () => {
   $("editor-help-toggle").setAttribute("aria-expanded", $("editor-help").hidden ? "false" : "true");
 };
 function setEditorMode(mode, { render = true } = {}) {
-  const nextMode = ["write", "preview", "split"].includes(mode) ? mode : "write";
+  const nextMode = ["write", "raw", "preview"].includes(mode) ? mode : "write";
   const codePane = $("editor-code-pane");
   const previewPane = $("editor-preview-pane");
   const workspace = $("editor-workspace");
-  if (!codePane || !previewPane || !workspace) return;
+  const codeWrap = $("editor-code-wrap");
+  if (!codePane || !previewPane || !workspace || !codeWrap) return;
   workspace.dataset.mode = nextMode;
   codePane.hidden = nextMode === "preview";
-  previewPane.hidden = nextMode === "write";
-  $("editor-preview").hidden = nextMode === "write";
+  previewPane.hidden = nextMode !== "preview";
+  $("editor-preview").hidden = nextMode !== "preview";
+  codeWrap.classList.toggle("raw-mode", nextMode === "raw");
   [
     ["editor-tab-write", "write"],
-    ["editor-tab-preview", "preview"],
-    ["editor-tab-split", "split"]
+    ["editor-tab-raw", "raw"],
+    ["editor-tab-preview", "preview"]
   ].forEach(([id, value]) => {
     const active = value === nextMode;
     const button = $(id);
     button.classList.toggle("active", active);
     button.setAttribute("aria-selected", active ? "true" : "false");
   });
-  if (render && nextMode !== "write") renderEditorPreview();
+  if (nextMode !== "preview") updateEditorHighlight({ immediate: true });
+  if (render && nextMode === "preview") renderEditorPreview();
 }
 let editorPreviewTimer = null;
 async function renderEditorPreview() {
@@ -2738,11 +2761,11 @@ function scheduleServerEditorPreview() {
   editorPreviewTimer = setTimeout(() => {
     if ($("editor-preview-pane").hidden) return;
     renderEditorPreview();
-  }, 400);
+  }, 650);
 }
 $("editor-tab-write").onclick = () => setEditorMode("write", { render: false });
+$("editor-tab-raw").onclick = () => setEditorMode("raw", { render: false });
 $("editor-tab-preview").onclick = () => setEditorMode("preview");
-$("editor-tab-split").onclick = () => setEditorMode("split");
 $("editor-preview-refresh").onclick = () => renderEditorPreview();
 $("editor-content").addEventListener("keydown", event => {
   if (event.key === "Tab") {
@@ -2770,6 +2793,11 @@ $("editor-form").onsubmit = async event => {
   const status = $("editor-status");
   const saveButton = $("editor-save");
   status.textContent = "";
+  if (!$("editor-public-ack").checked) {
+    status.textContent = "문서가 공개 문서에 반영된다는 점을 확인해 주세요.";
+    $("editor-public-ack").focus();
+    return;
+  }
   if (!title) { status.textContent = "문서 제목을 입력하세요."; return; }
   if (title === "대문" && !isWikiAdmin) { status.textContent = "대문은 위키 관리자만 편집할 수 있습니다."; return; }
   if (content.length > 200000) { status.textContent = "문서는 200,000자 이하로 작성해 주세요."; return; }
@@ -3106,9 +3134,19 @@ function resetEditorHighlightState() {
 function updateEditorHighlight({immediate=false}={}) {
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
   if (!field || !code || !pre) return;
+  const lineNumbers = $("editor-line-numbers");
   const syncScroll = () => {
     pre.scrollTop = field.scrollTop;
     pre.scrollLeft = field.scrollLeft;
+    if (lineNumbers) lineNumbers.scrollTop = field.scrollTop;
+  };
+  const updateLineNumbers = () => {
+    if (!lineNumbers) return;
+    const count = Math.max(1, field.value.split("\n").length);
+    if (lineNumbers.dataset.lineCount !== String(count)) {
+      lineNumbers.textContent = Array.from({ length: count }, (_, index) => String(index + 1)).join("\n");
+      lineNumbers.dataset.lineCount = String(count);
+    }
   };
   const paint = () => {
     let insideCode = false;
@@ -3132,6 +3170,7 @@ function updateEditorHighlight({immediate=false}={}) {
     }).join("\n") + (value.endsWith("\n") ? "\n" : "");
     editorHighlightSource = value;
     pre.dataset.sourceText = value;
+    updateLineNumbers();
     const wrap = field.closest(".editor-code-wrap");
     if (wrap) wrap.classList.add("highlight-active");
     syncScroll();
@@ -3153,7 +3192,9 @@ function updateEditorHighlight({immediate=false}={}) {
 }
 $("editor-content").addEventListener("scroll", () => {
   const pre = $("editor-highlight");
+  const gutter = $("editor-line-numbers");
   if (pre) { pre.scrollTop = $("editor-content").scrollTop; pre.scrollLeft = $("editor-content").scrollLeft; }
+  if (gutter) gutter.scrollTop = $("editor-content").scrollTop;
 });
 $("editor-content").addEventListener("input", updateEditorHighlight);
 $("editor-content").addEventListener("compositionend", updateEditorHighlight);
@@ -3175,7 +3216,9 @@ function insertEditorMarkup(kind){
   list:["* ","","목록 항목"],
   footnote:["[* ","]","각주 내용"],
   category:["[[분류:","]]","분류명"],
-  external:["[https://example.com|","]","표시문구"]
+  external:["[https://example.com|","]","표시문구"],
+  file:["[[파일:","]]","파일명.png"],
+  template:["[[틀:","]]","틀 이름"]
  };
  const insert=(value,selectFrom=null,selectTo=null)=>{
   field.setRangeText(value,start,end,"end");
@@ -3183,7 +3226,7 @@ function insertEditorMarkup(kind){
   field.focus();
   if(selectFrom!==null)field.setSelectionRange(start+selectFrom,start+(selectTo??selectFrom));
  };
- if(kind==="category"||kind==="external"){
+ if(kind==="category"||kind==="external"||kind==="file"||kind==="template"){
   const item=templates[kind],value=item[0]+(selected||item[2])+item[1];
   insert(value,selected?null:item[0].length,selected?null:item[0].length+item[2].length);
   return;
