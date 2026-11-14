@@ -53,8 +53,14 @@ assert.doesNotMatch(read("UPSTREAM-NOTICE.md"), /builds and runs.*openNAMU/i, "u
 
 console.log("AonWiki single-renderer integration checks passed.");
 
-assert.match(read("index.html"), /id="editor-consent-panel"/, "editor must present the consent panel before the editor fields");
+assert.match(read("index.html"), /class="editor-terms-block"/, "editor must show the compact contribution consent notice below the summary");
 assert.match(read("index.html"), /id="editor-fields" class="editor-fields" disabled/, "editor fields must start locked until consent is given");
+assert.match(read("index.html"), /id="editor-save" class="button button-primary" type="submit" disabled/, "save must start disabled until consent is given");
+assert.doesNotMatch(read("index.html"), /id="editor-public-ack"[^>]*checked/, "consent must not be pre-checked");
+assert.ok(read("index.html").indexOf('id="editor-summary"') < read("index.html").indexOf('class="editor-terms-block"'), "consent must appear below the edit summary");
+assert.ok(read("index.html").indexOf("</fieldset>") < read("index.html").indexOf('id="editor-save"'), "save button must remain operable after consent is checked");
+assert.match(read("index.html"), /id="editor-tab-write".*id="editor-tab-raw".*id="editor-tab-preview"/s, "editor, raw and preview tabs must be retained");
+assert.match(read("index.html"), /class="editor-markup-toolbar"/, "the existing markup toolbar must be retained");
 assert.match(read("index.html"), /id="edit-requests"/, "administrators must have an edit request review action");
 assert.match(read("app.js"), /function syncEditorConsentLock\(\)/, "editor controls must be locked until the consent checkbox is checked");
 assert.match(read("app.js"), /api\("\/api\/edit-request"/, "users without edit permission must be able to submit an edit request");
