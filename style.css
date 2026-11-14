@@ -4640,3 +4640,179 @@ html[data-theme="light"] .article > .wiki-categories a{color:#1769c2}
   .search-result-title { font-size: 13px; }
   .search-result-snippet { font-size: 11px; }
 }
+
+
+/* EntryWiki-inspired homepage actions and unified top navigation.
+   Keep AonWiki's existing destinations and click handlers unchanged. */
+.site-header{
+  background:linear-gradient(180deg,#171b20 0%,#111519 100%)!important;
+  border-bottom:1px solid #303943!important;
+  box-shadow:0 3px 14px rgba(0,0,0,.13)!important;
+}
+.topbar-inner{min-height:60px;gap:12px}
+.site-header .brand{min-height:42px}
+.site-header .brand-symbol{width:31px;height:31px;flex-basis:31px}
+.site-header .brand-name{font-size:20px;font-weight:800;letter-spacing:-.65px}
+.top-nav{gap:5px}
+.top-nav-link{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:36px;padding:0 12px;
+  border:1px solid #38434d!important;border-bottom:1px solid #38434d!important;
+  border-radius:8px;background:#1b2127!important;
+  color:#dce5ec!important;font-size:12px;font-weight:650;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease;
+}
+.top-nav-link:hover{
+  border-color:#5b7890!important;background:#27333d!important;
+  color:#fff!important;text-decoration:none;transform:translateY(-1px);
+}
+.top-nav-link.active{
+  border-color:#b8d8f6!important;background:#eaf4ff!important;
+  color:#145c9d!important;box-shadow:0 1px 0 rgba(255,255,255,.28) inset;
+}
+.top-nav-link.active:hover{background:#dceeff!important;color:#104f89!important}
+.special-menu-toggle{min-width:112px}
+.special-chevron{opacity:.75}
+.searchbar{max-width:360px;gap:0}
+.searchbar input{
+  min-height:37px;height:37px;padding-inline:13px;
+  border:1px solid #46525e!important;border-right:0!important;
+  border-radius:8px 0 0 8px!important;background:#20272e!important;color:#f4f7fa!important;
+  font-size:12px;
+}
+.searchbar input::placeholder{color:#a6b2bc}
+.searchbar input:focus{border-color:#80b8ec!important;box-shadow:0 0 0 3px rgba(81,157,224,.16)}
+.searchbar button{
+  min-width:40px;height:37px;
+  border:1px solid #46525e!important;border-radius:0 8px 8px 0!important;
+  background:#28333d!important;color:#f4f7fa!important;font-size:18px;
+}
+.searchbar button:hover{background:#354554!important;border-color:#6485a1!important}
+.header-actions{gap:5px}
+.header-actions .button{
+  min-height:36px;padding:0 11px;
+  border:1px solid #38434d!important;border-radius:8px!important;
+  background:#1b2127!important;color:#dce5ec!important;
+  font-size:11px;font-weight:650;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease;
+}
+.header-actions .button:hover{
+  border-color:#5b7890!important;background:#27333d!important;
+  color:#fff!important;transform:translateY(-1px);
+}
+.header-actions #login{
+  border-color:#4b96db!important;background:#287bc0!important;color:#fff!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
+}
+.header-actions #login:hover{border-color:#77b5eb!important;background:#368bd0!important}
+.role-label{padding:4px 8px;border:1px solid #45515c;border-radius:7px;background:#20272e;color:#dce5ec}
+
+/* Four clear homepage actions: login, add page, search, browse categories. */
+.home-quick-nav{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px!important;margin:0 0 14px!important;
+  border:0!important;background:transparent!important;
+}
+.home-shortcut{
+  display:flex;align-items:center;gap:10px;min-width:0;min-height:68px;
+  padding:11px 13px;border:1px solid var(--wiki-border)!important;border-radius:9px!important;
+  background:var(--wiki-panel)!important;color:var(--wiki-text)!important;
+  text-align:left;cursor:pointer;
+  box-shadow:0 1px 2px rgba(0,0,0,.035);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.home-shortcut:hover{
+  transform:translateY(-2px);border-color:#8fb6d8!important;
+  background:var(--wiki-panel-soft)!important;
+  box-shadow:0 5px 15px rgba(21,67,107,.09);
+}
+.home-shortcut:focus-visible,.top-nav-link:focus-visible,.header-actions .button:focus-visible{
+  outline:3px solid rgba(74,151,218,.32);outline-offset:2px;
+}
+.home-shortcut-icon{
+  display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;
+  border:1px solid transparent;border-radius:9px;
+  background:#e9f3ff;color:#2269a8;font-size:20px;font-weight:750;line-height:1;
+}
+.home-shortcut-account .home-shortcut-icon{background:#edf2ff;color:#536fbd}
+.home-shortcut-create .home-shortcut-icon{background:#e7f7ee;color:#19824f}
+.home-shortcut-search .home-shortcut-icon{background:#e8f5fa;color:#287c99}
+.home-shortcut-categories .home-shortcut-icon{background:#f2edff;color:#7554b2}
+.home-shortcut-copy{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
+.home-shortcut-copy strong{overflow:hidden;color:var(--wiki-text);font-size:12px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.home-shortcut-copy small{overflow:hidden;color:var(--wiki-muted);font-size:10px;line-height:1.4;text-overflow:ellipsis;white-space:nowrap}
+.home-shortcut-arrow{flex:0 0 auto;color:var(--wiki-muted);font-size:21px;line-height:1}
+.home-shortcut:hover .home-shortcut-arrow{color:var(--wiki-link);transform:translateX(2px)}
+.home-shortcut-arrow{transition:transform .16s ease,color .16s ease}
+
+/* Light mode */
+html[data-theme="light"] .site-header{
+  background:linear-gradient(180deg,#fff 0%,#f7f9fb 100%)!important;
+  border-bottom-color:#d9e0e6!important;
+  box-shadow:0 3px 12px rgba(29,51,71,.055)!important;
+}
+html[data-theme="light"] .site-header .brand-name,
+html[data-theme="light"] .site-header .brand-name span{color:#202a33!important}
+html[data-theme="light"] .top-nav-link{
+  border-color:#d7e0e8!important;background:#fff!important;color:#465462!important;
+}
+html[data-theme="light"] .top-nav-link:hover{border-color:#a9c7e1!important;background:#f1f7fc!important;color:#175d99!important}
+html[data-theme="light"] .top-nav-link.active{
+  border-color:#a9cbed!important;background:#e8f3ff!important;color:#155b96!important;
+}
+html[data-theme="light"] .searchbar input{
+  border-color:#cbd6df!important;background:#fff!important;color:#202a33!important;
+}
+html[data-theme="light"] .searchbar input::placeholder{color:#7b8791}
+html[data-theme="light"] .searchbar button{
+  border-color:#cbd6df!important;background:#f0f5f9!important;color:#344b5e!important;
+}
+html[data-theme="light"] .searchbar button:hover{background:#e2eef8!important}
+html[data-theme="light"] .header-actions .button{
+  border-color:#d7e0e8!important;background:#fff!important;color:#465462!important;
+}
+html[data-theme="light"] .header-actions .button:hover{border-color:#a9c7e1!important;background:#f1f7fc!important;color:#175d99!important}
+html[data-theme="light"] .header-actions #login{
+  border-color:#2679bd!important;background:#287bc0!important;color:#fff!important;
+}
+html[data-theme="light"] .role-label{border-color:#d7e0e8;background:#f6f9fc;color:#405466}
+html[data-theme="light"] .home-shortcut{box-shadow:0 1px 3px rgba(32,62,91,.055)}
+html[data-theme="light"] .home-shortcut:hover{box-shadow:0 6px 16px rgba(32,81,124,.10)}
+
+/* Follow OS light mode when the theme selector is automatic. */
+@media(prefers-color-scheme:light){
+  html:not([data-theme="dark"]) .site-header{
+    background:linear-gradient(180deg,#fff 0%,#f7f9fb 100%)!important;
+    border-bottom-color:#d9e0e6!important;box-shadow:0 3px 12px rgba(29,51,71,.055)!important;
+  }
+  html:not([data-theme="dark"]) .site-header .brand-name,
+  html:not([data-theme="dark"]) .site-header .brand-name span{color:#202a33!important}
+  html:not([data-theme="dark"]) .top-nav-link{border-color:#d7e0e8!important;background:#fff!important;color:#465462!important}
+  html:not([data-theme="dark"]) .top-nav-link:hover{border-color:#a9c7e1!important;background:#f1f7fc!important;color:#175d99!important}
+  html:not([data-theme="dark"]) .top-nav-link.active{border-color:#a9cbed!important;background:#e8f3ff!important;color:#155b96!important}
+  html:not([data-theme="dark"]) .searchbar input{border-color:#cbd6df!important;background:#fff!important;color:#202a33!important}
+  html:not([data-theme="dark"]) .searchbar input::placeholder{color:#7b8791}
+  html:not([data-theme="dark"]) .searchbar button{border-color:#cbd6df!important;background:#f0f5f9!important;color:#344b5e!important}
+  html:not([data-theme="dark"]) .header-actions .button{border-color:#d7e0e8!important;background:#fff!important;color:#465462!important}
+  html:not([data-theme="dark"]) .header-actions #login{border-color:#2679bd!important;background:#287bc0!important;color:#fff!important}
+}
+
+@media(max-width:820px){
+  .topbar-inner{gap:8px}
+  .top-nav{gap:5px}
+  .top-nav-link{min-height:34px;padding-inline:10px}
+  .header-actions{gap:4px}
+  .home-quick-nav{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:560px){
+  .topbar-inner{gap:6px}
+  .top-nav{gap:5px;padding:3px 1px}
+  .top-nav-link{min-height:34px;padding-inline:9px;font-size:11px}
+  .special-menu-toggle{min-width:0}
+  .header-actions{gap:4px}
+  .header-actions .button{min-height:33px;padding-inline:9px;font-size:11px}
+  .searchbar{flex:1 1 100%;max-width:none;order:4}
+  .home-quick-nav{grid-template-columns:1fr!important;gap:7px!important}
+  .home-shortcut{min-height:57px;padding:9px 11px}
+  .home-shortcut-icon{flex-basis:34px;width:34px;height:34px}
+}
