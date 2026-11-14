@@ -54,3 +54,15 @@ for (const file of [
   assert.ok(fs.statSync(file).size > 100, `empty built Monaco asset: ${file}`);
 }
 console.log("Monaco editor integration smoke tests passed.");
+
+assert.match(entry, /defineTheme\("aonwiki-light"/, "Monaco must provide a real light editor theme");
+assert.match(entry, /defineTheme\("aonwiki-dark"/, "Monaco must preserve the dark editor theme");
+assert.match(entry, /theme: getAonMonacoThemeName\(\)/, "Monaco editor must start with the active AonWiki theme");
+assert.match(entry, /new MutationObserver\(syncAonMonacoTheme\)/, "Monaco theme must update when the site appearance changes");
+assert.match(entry, /monaco\.editor\.setTheme\(getAonMonacoThemeName\(\)\)/, "Monaco must switch themes without recreating the editor");
+
+const builtMonaco = read("editor-monaco/monaco.js");
+assert.ok(builtMonaco.includes("aon.heading"), "built Monaco bundle must contain NamuMark syntax tokens");
+assert.ok(builtMonaco.includes("aon.color.text"), "built Monaco bundle must preserve inline style highlighting");
+assert.ok(builtMonaco.includes("aonwiki-dark"), "built Monaco bundle must preserve dark syntax colors");
+assert.ok(builtMonaco.includes("aonwiki-light"), "built Monaco bundle must include light syntax colors");

@@ -131,37 +131,39 @@ monaco.languages.setMonarchTokensProvider(languageId, {
   }
 });
 
+const syntaxTokenRules = [
+  { token: "aon.heading", foreground: "79B8FF", fontStyle: "bold" },
+  { token: "aon.heading.delimiter", foreground: "58A6FF" },
+  { token: "aon.bold", foreground: "F0F6FC", fontStyle: "bold" },
+  { token: "aon.italic", foreground: "D2A8FF", fontStyle: "italic" },
+  { token: "aon.strike", foreground: "A5A5A5", fontStyle: "strikethrough" },
+  { token: "aon.link", foreground: "79C0FF" },
+  { token: "aon.link.delimiter", foreground: "8B949E" },
+  { token: "aon.category", foreground: "FFA657" },
+  { token: "aon.file", foreground: "7EE787" },
+  { token: "aon.template", foreground: "D2A8FF" },
+  { token: "aon.url", foreground: "F0883E", underline: true },
+  { token: "aon.external", foreground: "F0883E", underline: true },
+  { token: "aon.footnote", foreground: "E3B341" },
+  { token: "aon.directive", foreground: "FF7B72" },
+  { token: "aon.table.delimiter", foreground: "8B949E" },
+  { token: "aon.code.delimiter", foreground: "D2A8FF" },
+  { token: "aon.code", foreground: "C9D1D9" },
+  { token: "aon.list", foreground: "FFA657" },
+  { token: "aon.list.number", foreground: "FFA657", fontStyle: "bold" },
+  { token: "aon.table.attribute", foreground: "79C0FF" },
+  { token: "aon.macro", foreground: "56D4DD" },
+  { token: "aon.color.delimiter", foreground: "FF7B72" },
+  { token: "aon.color.text", foreground: "A5D6FF" },
+  { token: "aon.size.delimiter", foreground: "FF7B72" },
+  { token: "aon.size.text", foreground: "D2A8FF" },
+  { token: "comment", foreground: "8B949E", fontStyle: "italic" }
+];
+
 monaco.editor.defineTheme("aonwiki-dark", {
   base: "vs-dark",
   inherit: true,
-  rules: [
-    { token: "aon.heading", foreground: "79B8FF", fontStyle: "bold" },
-    { token: "aon.heading.delimiter", foreground: "58A6FF" },
-    { token: "aon.bold", foreground: "F0F6FC", fontStyle: "bold" },
-    { token: "aon.italic", foreground: "D2A8FF", fontStyle: "italic" },
-    { token: "aon.strike", foreground: "A5A5A5", fontStyle: "strikethrough" },
-    { token: "aon.link", foreground: "79C0FF" },
-    { token: "aon.link.delimiter", foreground: "8B949E" },
-    { token: "aon.category", foreground: "FFA657" },
-    { token: "aon.file", foreground: "7EE787" },
-    { token: "aon.template", foreground: "D2A8FF" },
-    { token: "aon.url", foreground: "F0883E", underline: true },
-    { token: "aon.external", foreground: "F0883E", underline: true },
-    { token: "aon.footnote", foreground: "E3B341" },
-    { token: "aon.directive", foreground: "FF7B72" },
-    { token: "aon.table.delimiter", foreground: "8B949E" },
-    { token: "aon.code.delimiter", foreground: "D2A8FF" },
-    { token: "aon.code", foreground: "C9D1D9" },
-    { token: "aon.list", foreground: "FFA657" },
-    { token: "aon.list.number", foreground: "FFA657", fontStyle: "bold" },
-    { token: "aon.table.attribute", foreground: "79C0FF" },
-    { token: "aon.macro", foreground: "56D4DD" },
-    { token: "aon.color.delimiter", foreground: "FF7B72" },
-    { token: "aon.color.text", foreground: "A5D6FF" },
-    { token: "aon.size.delimiter", foreground: "FF7B72" },
-    { token: "aon.size.text", foreground: "D2A8FF" },
-    { token: "comment", foreground: "8B949E", fontStyle: "italic" }
-  ],
+  rules: syntaxTokenRules,
   colors: {
     "editor.background": "#1e1e1e",
     "editor.foreground": "#d4d4d4",
@@ -178,6 +180,75 @@ monaco.editor.defineTheme("aonwiki-dark", {
     "editorWidget.border": "#454545"
   }
 });
+
+monaco.editor.defineTheme("aonwiki-light", {
+  base: "vs",
+  inherit: true,
+  rules: [
+    ...syntaxTokenRules,
+    { token: "aon.heading", foreground: "0550AE", fontStyle: "bold" },
+    { token: "aon.heading.delimiter", foreground: "0969DA" },
+    { token: "aon.bold", foreground: "24292F", fontStyle: "bold" },
+    { token: "aon.italic", foreground: "8250DF", fontStyle: "italic" },
+    { token: "aon.strike", foreground: "6E7781", fontStyle: "strikethrough" },
+    { token: "aon.link", foreground: "0969DA" },
+    { token: "aon.link.delimiter", foreground: "57606A" },
+    { token: "aon.category", foreground: "953800" },
+    { token: "aon.file", foreground: "1A7F37" },
+    { token: "aon.template", foreground: "8250DF" },
+    { token: "aon.url", foreground: "BC4C00", underline: true },
+    { token: "aon.external", foreground: "BC4C00", underline: true },
+    { token: "aon.footnote", foreground: "9A6700" },
+    { token: "aon.directive", foreground: "CF222E" },
+    { token: "aon.table.delimiter", foreground: "6E7781" },
+    { token: "aon.code.delimiter", foreground: "8250DF" },
+    { token: "aon.code", foreground: "24292F" },
+    { token: "aon.list", foreground: "953800" },
+    { token: "aon.list.number", foreground: "953800", fontStyle: "bold" },
+    { token: "aon.table.attribute", foreground: "0550AE" },
+    { token: "aon.macro", foreground: "0A7882" },
+    { token: "aon.color.delimiter", foreground: "CF222E" },
+    { token: "aon.color.text", foreground: "0550AE" },
+    { token: "aon.size.delimiter", foreground: "CF222E" },
+    { token: "aon.size.text", foreground: "8250DF" },
+    { token: "comment", foreground: "6E7781", fontStyle: "italic" }
+  ],
+  colors: {
+    "editor.background": "#ffffff",
+    "editor.foreground": "#24292f",
+    "editorGutter.background": "#f6f8fa",
+    "editorLineNumber.foreground": "#6e7781",
+    "editorLineNumber.activeForeground": "#24292f",
+    "editor.selectionBackground": "#b6d7ff",
+    "editor.lineHighlightBackground": "#f6f8fa",
+    "editorCursor.foreground": "#24292f",
+    "editorWhitespace.foreground": "#d0d7de",
+    "editorIndentGuide.background": "#d8dee4",
+    "editorIndentGuide.activeBackground": "#afb8c1",
+    "editorWidget.background": "#ffffff",
+    "editorWidget.border": "#d0d7de"
+  }
+});
+
+function getAonMonacoThemeName() {
+  return document.documentElement.dataset.theme === "dark" ? "aonwiki-dark" : "aonwiki-light";
+}
+
+function syncAonMonacoTheme() {
+  monaco.editor.setTheme(getAonMonacoThemeName());
+}
+
+if (typeof document !== "undefined") {
+  syncAonMonacoTheme();
+  if (typeof MutationObserver !== "undefined") {
+    const themeObserver = new MutationObserver(syncAonMonacoTheme);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"]
+    });
+    globalObject.__aonMonacoThemeObserver = themeObserver;
+  }
+}
 
 const completionItems = [
   { label: "문서 링크", insertText: "[[문서명]]", detail: "내부 문서 링크" },
@@ -214,7 +285,7 @@ function createEditor(container, value, options = {}) {
   return monaco.editor.create(container, {
     value: String(value ?? ""),
     language: languageId,
-    theme: "aonwiki-dark",
+    theme: getAonMonacoThemeName(),
     automaticLayout: true,
     fontSize: 13,
     lineHeight: 21,
