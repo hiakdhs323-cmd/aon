@@ -202,7 +202,9 @@ function decorateExternalLinks(root){
   let url;
   try{url=new URL(link.getAttribute("href")||"",location.href)}catch{return}
   if(!/^https?:$/.test(url.protocol))return;
-  const linkedImage=Boolean(link.querySelector("img,picture,figure,.wiki-image,.wiki-file-image"));
+  const linkedImage=link.classList.contains("wiki-link-external-image") ||
+   Boolean(link.querySelector('img,picture,figure,.wiki-image,.wiki-file-image,a.wiki-link-internal[title^="파일:"],a.wiki-link-internal[title^="file:"]'));
+  if(linkedImage)link.classList.add("wiki-external-image-link");
   if(!linkedImage){
    const icon=createAonUiIcon("link","wiki-external-link-icon");
    icon.setAttribute("aria-label","외부 링크");
