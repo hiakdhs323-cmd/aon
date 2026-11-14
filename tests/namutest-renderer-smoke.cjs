@@ -224,6 +224,24 @@ assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*
   finally { rendered.free(); options.free(); }
   console.log("AON_INCLUDE_CALLBACK_PROBE=" + JSON.stringify(html));
   assert.match(html, /엔진 include 콜백 테스트 본문/, "WASM include syntax must embed template content supplied by the renderer callbacks");
+  const nestedRecords = new Map([
+    ["틀:상위", {title:"틀:상위", data:"상위 템플릿 본문 [include(틀:하위)]"}],
+    ["틀:하위", {title:"틀:하위", data:"중첩 템플릿은 실행되면 안 됨"}]
+  ]);
+  const nestedOptions = new parserModule.RendererOptions();
+  const nestedCallbacks = {
+    documentExists(name) { return nestedRecords.has(String(name || "").trim()); },
+    getDocumentContent(name) { return nestedRecords.get(String(name || "").trim())?.data || ""; },
+    getPagecount() { return nestedRecords.size; }
+  };
+  const nestedRendered = parserModule.parse_with_callbacks_and_options(
+    "[include(틀:상위)]", nestedCallbacks, nestedOptions
+  );
+  let nestedHtml = "";
+  try { nestedHtml = nestedRendered.html || ""; }
+  finally { nestedRendered.free(); nestedOptions.free(); }
+  assert.doesNotMatch(nestedHtml, /중첩 템플릿은 실행되면 안 됨/, "WASM renderer must not resolve an include nested inside an included template");
+
 })().catch(error => {
   console.error("AON_INCLUDE_CALLBACK_TEST_FAILED", error);
   process.exitCode = 1;
