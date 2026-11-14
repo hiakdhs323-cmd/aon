@@ -2,7 +2,6 @@ export function setupWikiInteractions(root) {
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const hoverPointer = matchMedia("(hover: hover) and (pointer: fine)");
   const foldings = new Map();
-  const titles = new Map();
   const boundHoverNotes = new WeakSet();
   const footnoteSelector = 'a.wiki-fn-content, a[href^="#fn-"], a[href^="#fn_"]';
   const preview = document.createElement("div");
@@ -267,12 +266,6 @@ export function setupWikiInteractions(root) {
 
   return {
     refresh() {
-      root.querySelectorAll("a.wiki-fn-content[title]").forEach((note) => {
-        if (!noteContent(note)) return;
-        // Keep the engine's native title tooltip for desktop hover. The
-        // positioned preview below supplements it on touch devices.
-        titles.set(note, note.getAttribute("title"));
-      });
       root.querySelectorAll(footnoteSelector).forEach((note) => {
         const href = note.getAttribute("href") || "";
         if (!note.getAttribute("data-wiki-footnote-target") && href.startsWith("#")) {
@@ -283,6 +276,7 @@ export function setupWikiInteractions(root) {
           }
         }
         if (noteContent(note)) {
+          note.removeAttribute("title");
           note.removeAttribute("href");
           note.setAttribute("role", "button");
           note.setAttribute("tabindex", "0");
@@ -294,8 +288,6 @@ export function setupWikiInteractions(root) {
       hidePreview(true);
       preview.remove();
       [...foldings.values()].forEach((state) => state.finish());
-      titles.forEach((title, note) => note.setAttribute("title", title));
-      titles.clear();
     },
   };
 }
