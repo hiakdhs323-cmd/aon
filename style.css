@@ -4992,3 +4992,5 @@ body.editor-active .editor-view{width:100%;max-width:none}
  .editor-actions-hint{display:none}
  .editor-actions .button{min-width:78px;min-height:35px}
 }
+
+.editor-code-pane[hidden],.editor-preview-pane[hidden]{display:none!important}
