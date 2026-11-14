@@ -37,6 +37,12 @@ assert.match(styles, /min-height:48px!important/, "mobile save action must have 
 assert.match(styles, /font-size:16px!important/, "mobile summary input must avoid automatic zoom on iOS");
 assert.match(styles, /height:clamp\(260px,52dvh,540px\)!important/, "mobile Monaco editor height must adapt to the dynamic viewport");
 
+assert.match(styles, /body\.editor-active \.global-rail\s*\{[^}]*display:grid!important/s, "recent changes and discussions must remain visible on mobile edit screens");
+assert.match(styles, /body\.editor-active \.global-rail\s*\{[^}]*grid-column:1\/-1!important/s, "mobile activity rail must be placed below the main editor");
+assert.match(styles, /body\.editor-active \.global-rail \.rail-scroll-tools\s*\{[^}]*grid-column:1\/-1!important/s, "top and bottom page controls must move below the activity panels");
+assert.match(styles, /body\.editor-active \.global-rail \.rail-scroll-tools button\s*\{[^}]*min-height:42px!important/s, "mobile page movement controls must have touch-friendly targets");
+
+
 
 for (const file of [
   "editor-monaco/monaco.js",
