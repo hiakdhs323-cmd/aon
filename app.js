@@ -26,6 +26,8 @@ syncAonWikiTheme();
 aonThemeMedia?.addEventListener?.("change",syncAonWikiTheme);
 const initialSsrState=(()=>{const node=document.getElementById("aonwiki-ssr-state");if(!node)return null;try{return JSON.parse(node.textContent||"null")}catch(error){console.warn("AonWiki SSR state parsing failed",error);return null}})();
 let currentTitle=initialSsrState?.title||"",currentContent=initialSsrState?.content||"",currentProtection=initialSsrState?.protection||{level:"none",reason:""},currentOfficial=Boolean(initialSsrState?.official),currentCanEdit=initialSsrState?.canEdit===true?true:null,loggedInName=sessionStorage.getItem(NAME_SETTING)||"";
+let currentVisitorIp="",editorRequestMode=false;
+const currentDisplayName=()=>loggedInName||(currentVisitorIp?"IP "+currentVisitorIp:"IP 알 수 없음");
 let currentDiscussionView=false;
 const isHomeRoute=()=>location.pathname==="/"||location.pathname==="/index.html"||location.hash==="#"||location.hash==="#/";
 function routeFor(title,anchor=""){
@@ -189,6 +191,14 @@ function setAonIconLabel(element,iconName,label){
  element.classList.add("aon-has-icon");
  if(element.tagName==="BUTTON")element.setAttribute("aria-label",String(label||""));
 }
+const EDIT_REQUEST_ICON="data:image/svg+xml,%3csvg%20width='20'%20height='20'%20viewBox='0%200%2020%2020'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M0%2016.6923V14.0769C0%2013.6592%200.115741%2013.2642%200.347222%2012.8918C0.578704%2012.5195%200.898148%2012.2062%201.30556%2011.9519C2.32407%2011.3707%203.40148%2010.9257%204.53778%2010.617C5.67407%2010.3082%206.82815%2010.1538%208%2010.1538C8.69778%2010.1538%209.38611%2010.2083%2010.065%2010.3173C10.7439%2010.4263%2011.4074%2010.5807%2012.0556%2010.7804L10.4444%2012.3606C10.037%2012.2698%209.63315%2012.2062%209.23278%2012.1699C8.83241%2012.1335%208.42148%2012.1154%208%2012.1154C6.98148%2012.1154%205.99074%2012.2425%205.02778%2012.4968C4.06482%2012.7511%203.15741%2013.1325%202.30556%2013.641C2.21296%2013.7137%202.13889%2013.7838%202.08333%2013.8513C2.02778%2013.9191%202%2013.9943%202%2014.0769V14.7308H8.66667V16.6923H0ZM10.6667%2018V14.9215L16.5%209.22756C16.6344%209.09298%2016.7838%208.99572%2016.9481%208.93579C17.1123%208.87603%2017.2756%208.84615%2017.4378%208.84615C17.6146%208.84615%2017.7842%208.87794%2017.9464%208.94151C18.1086%209.00508%2018.2561%209.10043%2018.3889%209.22756L19.6111%2010.4535C19.7331%2010.5854%2019.8284%2010.7319%2019.8969%2010.893C19.9656%2011.0541%2020%2011.2142%2020%2011.3733C20%2011.5324%2019.9695%2011.6951%2019.9086%2011.8615C19.8475%2012.0277%2019.7483%2012.1759%2019.6111%2012.3061L13.8056%2018H10.6667ZM5.16667%207.70192C4.38889%206.9391%204%206.01282%204%204.92308C4%203.83333%204.38889%202.90705%205.16667%202.14423C5.94444%201.38141%206.88889%201%208%201C9.11111%201%2010.0556%201.38141%2010.8333%202.14423C11.6111%202.90705%2012%203.83333%2012%204.92308C12%206.01282%2011.6111%206.9391%2010.8333%207.70192C10.0556%208.46474%209.11111%208.84615%208%208.84615C6.88889%208.84615%205.94444%208.46474%205.16667%207.70192Z'%20fill='white'/%3e%3c/svg%3e";
+function setEditRequestAction(element){
+ if(!element)return;
+ const icon=document.createElement("img");icon.className="edit-request-icon";icon.src=EDIT_REQUEST_ICON;icon.alt="";
+ const label=document.createElement("span");label.className="aon-icon-label";label.textContent="편집요청";
+ element.replaceChildren(icon,label);element.classList.add("aon-has-icon","edit-request-button");
+ element.setAttribute("aria-label","편집요청");
+}
 function applyEntryWikiStaticIcons(){
  document.querySelectorAll("[data-entry-icon]").forEach(slot=>{
   const icon=createAonUiIcon(slot.dataset.entryIcon,"aon-ui-icon entrywiki-filled-icon");
@@ -252,34 +262,26 @@ function decorateExternalLinks(root){
 }
 function syncDocumentEditControls(){
  const hasDocument=Boolean(currentTitle&&!isHomeRoute()&&!$("document-view").hidden);
- // SSR cannot read sessionStorage, so an authenticated refresh can legitimately
- // arrive with canEdit=false even though the current browser session may edit.
- // Treat that SSR-only false as unknown until the client identity is restored.
  const authenticated=Boolean(loggedInName||sessionStorage.getItem(TOKEN_SETTING)||isWikiAdmin);
- const permissionFallback=authenticated && (currentProtection.level!=="admin" || isWikiAdmin);
- // Never let a transient /api/me failure or SSR's anonymous view erase an
- // already authenticated browser session's edit controls.
- const canEdit=hasDocument && (
-   currentCanEdit===true ||
-   permissionFallback ||
-   (!identityResolved && Boolean(sessionStorage.getItem(TOKEN_SETTING)))
- );
- const canShowHeadingEdit=canEdit && (
-   authenticated || (!identityResolved && Boolean(sessionStorage.getItem(TOKEN_SETTING)))
- );
- $("edit").hidden=!canEdit;
- $("heading-edit").hidden=!canShowHeadingEdit;
- if(hasDocument){
-  $("edit").textContent="편집";
-  $("edit").onclick=()=>editPage(currentTitle,currentContent);
-  $("heading-edit").textContent="편집";
-  $("heading-edit").onclick=()=>editPage(currentTitle,currentContent);
- }
+ let canEdit=false;
+ if(currentCanEdit===true)canEdit=true;
+ else if(currentCanEdit===false)canEdit=false;
+ else if(currentProtection.level==="admin")canEdit=Boolean(isWikiAdmin);
+ else if(currentProtection.level==="registered")canEdit=authenticated;
+ else canEdit=true;
  applyDocumentActionIcons();
+ const setAction=element=>{
+  if(!element)return;element.hidden=!hasDocument;if(!hasDocument)return;
+  if(canEdit){setAonIconLabel(element,"edit","편집");element.classList.remove("edit-request-button");element.onclick=()=>editPage(currentTitle,currentContent);}
+  else{setEditRequestAction(element);element.onclick=()=>startEditRequest();}
+ };
+ setAction($("edit"));setAction($("heading-edit"));
+ const requestButton=$("edit-requests");if(requestButton)requestButton.hidden=!isWikiAdmin;
 }
 async function refreshIdentity(){
  try{
   const me=await api("/api/me");
+  currentVisitorIp=me.authenticated?"":String(me.ip||"");
   isWikiAdmin=Boolean(me.isAdmin);
   currentRole=me.role||"anonymous";
   loggedInName=me.authenticated?(me.username||""):"";
@@ -1647,7 +1649,6 @@ function buildDiscussionCreateForm(pageTitle=""){
  form.append(titleLabel,pageLabel,bodyLabel,footer,status);
  form.addEventListener("submit",async event=>{
   event.preventDefault();
-  if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}
   submit.disabled=true;status.textContent="토론을 생성하고 있습니다…";
   try{
    const result=await api("/api/discussions",{method:"POST",body:JSON.stringify({title:titleInput.value,pageTitle:pageInput.value,body:bodyInput.value})});
@@ -1680,7 +1681,7 @@ async function loadDiscussionList(pushRoute=true,pageTitle="",filters={}){
  const actions=document.createElement("div");actions.className="discussion-page-actions";
  const create=document.createElement("button");create.type="button";create.className="primary-button";create.textContent="새 토론 시작";
  const form=buildDiscussionCreateForm(pageTitle);
- create.addEventListener("click",()=>{if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)){openLogin();return}form.hidden=!form.hidden;if(!form.hidden)form.querySelector("input")?.focus()});
+ create.addEventListener("click",()=>{form.hidden=!form.hidden;if(!form.hidden)form.querySelector("input")?.focus()});
  actions.append(create);head.append(actions);article.append(head,form);
  const listWrap=document.createElement("section");listWrap.className="discussion-list-section";
  const listTitle=addText(listWrap,"h3","토론 목록");listTitle.className="discussion-section-title";
@@ -1737,7 +1738,7 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true)
  if(Number(post.is_deleted)){discussionText(card,"삭제된 답글입니다.","discussion-body is-deleted",docTitle);return card}
  discussionText(card,post.body,"discussion-body",docTitle);
  const actions=document.createElement("div");actions.className="discussion-post-actions";
- if(allowQuote&&(loggedInName||sessionStorage.getItem(TOKEN_SETTING))){
+ if(allowQuote){
   const quote=document.createElement("button");quote.type="button";quote.className="text-action";quote.textContent="인용";
   quote.addEventListener("click",()=>{
    const textarea=document.querySelector(".discussion-reply-form textarea");if(!textarea)return;
@@ -1751,7 +1752,7 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true)
   });
   actions.append(quote);
  }
- if(isWikiAdmin||loggedInName===post.author){
+ if(isWikiAdmin||currentDisplayName()===post.author){
   const edit=document.createElement("button");edit.type="button";edit.className="text-action";edit.textContent="수정";
   edit.addEventListener("click",()=>{
    const existing=card.querySelector(".discussion-inline-edit-form");
@@ -1812,7 +1813,7 @@ async function loadDiscussionDetail(id,pushRoute=true){
   addText(originalHeader,"span",discussionDate(topic.created_at)+" · 원문");
   original.append(originalHeader);discussionText(original,topic.body,"discussion-body","토론:"+String(topic.title||topic.page_title||id));article.append(original);
   const controls=document.createElement("div");controls.className="discussion-topic-actions";
-  if(isWikiAdmin||loggedInName===topic.author){
+  if(isWikiAdmin||currentDisplayName()===topic.author){
    const editTopic=document.createElement("button");editTopic.type="button";editTopic.className="title-button";editTopic.textContent="토론 수정";
    editTopic.addEventListener("click",()=>{
     const existing=article.querySelector(".discussion-inline-edit-form.topic-edit-form");
@@ -1855,25 +1856,22 @@ async function loadDiscussionDetail(id,pushRoute=true){
   else posts.forEach((post,index)=>replyList.append(buildDiscussionPostCard(post,index,"토론:"+String(topic.title||topic.page_title||id),topic.status==="open")));
   replySection.append(replyList);article.append(replySection);
   if(topic.status==="open"){
-   if(loggedInName||sessionStorage.getItem(TOKEN_SETTING)){
-    const form=document.createElement("form");form.className="discussion-reply-form";
-    addText(form,"h3","답글 작성").className="discussion-form-heading";
-    const replyEditor=createDiscussionSyntaxEditor({required:true,maxLength:6000,rows:5,placeholder:"토론에 대한 의견을 작성하세요."});
-    const textarea=replyEditor.textarea;
-    const footer=document.createElement("div");footer.className="discussion-form-actions";
-    const submit=document.createElement("button");submit.type="submit";submit.className="primary-button";submit.textContent="답글 등록";
-    footer.append(submit);const status=addText(form,"p","");status.className="discussion-form-status";
-    form.append(replyEditor.wrap,footer,status);form.addEventListener("submit",async event=>{
-     event.preventDefault();submit.disabled=true;status.textContent="답글을 등록하고 있습니다…";
-     try{await api("/api/discussion/reply",{method:"POST",body:JSON.stringify({id:topic.id,body:textarea.value})});await loadDiscussionDetail(topic.id,false);loadGlobalRail()}
-     catch(error){status.textContent=error.message;submit.disabled=false}
-    });
-    article.append(form);
-   }else{
-    const login=document.createElement("button");login.type="button";login.className="primary-button";login.textContent="로그인 후 답글 작성";
-    login.addEventListener("click",openLogin);article.append(login);
-   }
+   const form=document.createElement("form");form.className="discussion-reply-form";
+   addText(form,"h3","답글 작성").className="discussion-form-heading";
+   const replyEditor=createDiscussionSyntaxEditor({required:true,maxLength:6000,rows:5,placeholder:"토론에 대한 의견을 작성하세요."});
+   const textarea=replyEditor.textarea;
+   const footer=document.createElement("div");footer.className="discussion-form-actions";
+   const submit=document.createElement("button");submit.type="submit";submit.className="primary-button";submit.textContent="답글 등록";
+   footer.append(submit);const status=addText(form,"p","");status.className="discussion-form-status";
+   form.append(replyEditor.wrap,footer,status);form.addEventListener("submit",async event=>{
+    event.preventDefault();submit.disabled=true;status.textContent="답글을 등록하고 있습니다…";
+    try{await api("/api/discussion/reply",{method:"POST",body:JSON.stringify({id:topic.id,body:textarea.value})});await loadDiscussionDetail(topic.id,false);loadGlobalRail()}
+    catch(error){status.textContent=error.message;submit.disabled=false}
+   });
+   article.append(form);
   }else{
+   makeDiscussionNotice(article,"이 토론은 종료되었습니다. 작성자 또는 위키 관리자가 다시 열면 답글을 작성할 수 있습니다.");
+  }  }else{
    makeDiscussionNotice(article,"이 토론은 종료되었습니다. 작성자 또는 위키 관리자가 다시 열면 답글을 작성할 수 있습니다.");
   }
  }catch(error){
@@ -2372,10 +2370,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   currentContent=data.page.content||"";
   currentProtection={level:data.page.protectionLevel||"none",reason:data.page.protectionReason||""};
   currentCanEdit=typeof data.page.canEdit==="boolean" ? data.page.canEdit : null;
-  const authenticated=Boolean(loggedInName||sessionStorage.getItem(TOKEN_SETTING)||isWikiAdmin);
-  const canEditDocument = currentCanEdit===true || (authenticated && (currentProtection.level !== "admin" || isWikiAdmin));
-  $("edit").hidden=!canEditDocument;
-  $("heading-edit").hidden=!canEditDocument || !authenticated;
+  syncDocumentEditControls();
   $("delete-page").hidden=!isWikiAdmin||currentProtection.level==="admin";
   const protectionStatus=$("protection-status"),protectionNotice=$("protection-notice");
   if(currentProtection.level==="admin"){
@@ -2408,12 +2403,10 @@ async function loadPage(title,pushRoute=true,anchor=""){
   $("page-protection").hidden=!isWikiAdmin;
   $("official-document").hidden=!isWikiAdmin;
   $("official-document").textContent=currentOfficial?"공식 문서 해제":"공식 문서 지정";
-  $("heading-edit").hidden=!canEditDocument || (!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!isWikiAdmin);
   $("message").textContent="";
   const redirect=currentContent.match(/^\s*#redirect\s+(?:\[\[)?([^\]\n]+?)(?:\]\])?\s*$/im);
   if(redirect&&redirect[1].trim()!==title){loadPage(redirect[1].trim(),true);return}
-  $("edit").textContent="문서 편집";$("heading-edit").textContent="편집";
-  applyDocumentActionIcons();
+  syncDocumentEditControls();
   const staging=document.createElement("article");
   let renderMetadata = data.metadata || { categories: [], backlinks: [] };
   if(data.clientRender){
@@ -2448,10 +2441,55 @@ async function loadPage(title,pushRoute=true,anchor=""){
 $("cancel").addEventListener("click",()=>{if($("dialog").open)$("dialog").close()});
 $("dialog").addEventListener("click",event=>{if(event.target===$("dialog"))$("dialog").close()});
 function showDialog(title,fields,onSave,label="저장"){
+ $("save").hidden=false;
  $("dialog-title").textContent=title;const body=$("dialog-body");body.replaceChildren();
  for(const field of fields){addText(body,"label",field.label);const input=document.createElement(field.multiline?"textarea":"input");input.id=field.id;input.value=field.value||"";if(field.type)input.type=field.type;if(field.placeholder)input.placeholder=field.placeholder;body.append(input)}
  $("dialog-status").textContent="";$("save").textContent=label;$("dialog").showModal();$("save").onclick=async()=>{try{await onSave()}catch(error){$("dialog-status").textContent=error.message}}
 }
+async function openEditRequests(){
+ if(!isWikiAdmin)return;
+ const dialog=$("dialog"),body=$("dialog-body"),status=$("dialog-status"),save=$("save");
+ $("dialog-title").textContent="편집 요청 관리";save.hidden=true;body.replaceChildren();
+ status.textContent="대기 중인 요청을 불러오는 중입니다…";if(!dialog.open)dialog.showModal();
+ try{
+  const data=await api("/api/edit-requests");body.replaceChildren();
+  const requests=data.requests||[];
+  if(!requests.length){const empty=addText(body,"p","현재 대기 중인 편집 요청이 없습니다.");empty.className="dialog-empty-state";}
+  else{
+   const list=document.createElement("div");list.className="edit-request-list";
+   requests.forEach(item=>{
+    const card=document.createElement("article");card.className="edit-request-card";
+    addText(card,"h3","#"+item.id+" · "+item.page_title);
+    const meta=addText(card,"p",(item.requester||"알 수 없음")+" · "+new Date(item.created_at).toLocaleString("ko-KR"));meta.className="edit-request-meta";
+    if(item.summary){const summary=addText(card,"p",item.summary);summary.className="edit-request-summary";}
+    const details=document.createElement("details");details.className="edit-request-source";
+    addText(details,"summary","제안한 전체 문서 원문 보기");
+    const pre=addText(details,"pre",item.proposed_content||"");details.append(pre);card.append(details);
+    const actions=document.createElement("div");actions.className="edit-request-actions";
+    const reject=document.createElement("button");reject.type="button";reject.className="is-reject";reject.textContent="반려";
+    const accept=document.createElement("button");accept.type="button";accept.className="is-accept";accept.textContent="승인 및 반영";
+    reject.addEventListener("click",async()=>{
+     reject.disabled=true;accept.disabled=true;status.textContent="요청을 반려하는 중입니다…";
+     try{await api("/api/edit-request",{method:"PATCH",body:JSON.stringify({id:item.id,action:"reject"})});await openEditRequests();}
+     catch(error){status.textContent=error.message;reject.disabled=false;accept.disabled=false}
+    });
+    accept.addEventListener("click",async()=>{
+     if(!confirm("이 편집 요청의 원문을 문서에 반영할까요?"))return;
+     reject.disabled=true;accept.disabled=true;status.textContent="요청을 승인하고 문서에 반영하는 중입니다…";
+     try{
+      const result=await api("/api/edit-request",{method:"PATCH",body:JSON.stringify({id:item.id,action:"accept"})});
+      if(result.title===currentTitle)await loadPage(currentTitle,false);
+      await openEditRequests();status.textContent="편집 요청 #"+item.id+"을 승인했습니다.";
+     }catch(error){status.textContent=error.message;reject.disabled=false;accept.disabled=false}
+    });
+    actions.append(reject,accept);card.append(actions);list.append(card);
+   });
+   body.append(list);
+  }
+  status.textContent=requests.length?requests.length+"건의 대기 요청":"";
+ }catch(error){body.replaceChildren();status.textContent=error.message}
+}
+$("edit-requests").addEventListener("click",openEditRequests);
 function openLogin(){
  let mode="login";
  showDialog("로그인",[{id:"auth-username",label:"아이디",placeholder:"2~20자"},{id:"auth-password",label:"비밀번호",type:"password",placeholder:"8자 이상"}],async()=>{
@@ -2752,7 +2790,15 @@ function resizeEditorTitleField() {
   field.style.setProperty("width", Math.max(110, Math.min(680, measuredWidth)) + "px", "important");
 }
 
-async function editPage(title = currentTitle, content = currentContent) {
+function syncEditorConsentLock(){
+ const accepted=Boolean($("editor-public-ack")?.checked);
+ const fields=$("editor-fields");if(fields)fields.disabled=!accepted;
+ const panel=$("editor-consent-panel");if(panel)panel.classList.toggle("is-accepted",accepted);
+}
+$("editor-public-ack").addEventListener("change",syncEditorConsentLock);
+async function startEditRequest(){if(!currentTitle)return;await editPage(currentTitle,currentContent,{request:true});}
+async function editPage(title = currentTitle, content = currentContent, options = {}) {
+  editorRequestMode=Boolean(options.request);
   editorOriginalTitle = String(title || "");
   // Always refresh the source text when opening an existing document for editing.
   // SSR state can be present while the client-side currentContent is still stale/empty.
@@ -2770,7 +2816,9 @@ async function editPage(title = currentTitle, content = currentContent) {
   }
   editorReturnTitle = String(currentTitle || editorOriginalTitle || "");
   editorIsNew = !editorOriginalTitle;
-  document.title = (editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집") + " - AonWiki";
+  const anonymousEditing = !loggedInName && !sessionStorage.getItem(TOKEN_SETTING);
+  if(anonymousEditing&&!currentVisitorIp){try{const identity=await api("/api/me");currentVisitorIp=String(identity.ip||"")}catch{}}
+  document.title = (editorIsNew ? "새 문서 작성" : editorOriginalTitle + (editorRequestMode ? " 편집 요청" : " (편집)")) + " - AonWiki";
   $("search-view").hidden = true;
   $("home-view").hidden = true;
   $("document-view").hidden = true;
@@ -2778,8 +2826,8 @@ async function editPage(title = currentTitle, content = currentContent) {
   document.body.classList.add("editor-active");
   $("home").classList.remove("active");
   $("new").classList.add("active");
-  $("editor-heading").textContent = editorIsNew ? "(새 문서)" : "(편집)";
-  $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
+  $("editor-heading").textContent = editorIsNew ? "새 문서 (작성)" : editorOriginalTitle + (editorRequestMode ? " (편집 요청)" : " (편집)");
+  $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + (editorRequestMode ? " 편집 요청" : " 편집");
   $("editor-title-wrap").hidden = false;
   $("editor-title-wrap").querySelector("label").textContent = "문서 제목";
   $("editor-title-help").hidden = true;
@@ -2792,19 +2840,17 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-title").disabled = false;
   $("editor-title").removeAttribute("readonly");
   $("editor-title").removeAttribute("disabled");
-  const anonymousEditing = !loggedInName && !sessionStorage.getItem(TOKEN_SETTING);
-  $("editor-title").readOnly = anonymousEditing && !editorIsNew;
-  $("editor-move-action").hidden = editorIsNew || anonymousEditing;
+  $("editor-title").readOnly = editorRequestMode || (anonymousEditing && !editorIsNew);
+  $("editor-move-action").hidden = editorIsNew || anonymousEditing || editorRequestMode;
   $("editor-ip-warning").hidden = !anonymousEditing;
   $("editor-login-note").hidden = anonymousEditing;
-  $("editor-public-ack").checked = true;
-  if (anonymousEditing) {
-    $("editor-ip-warning").textContent = "비로그인 상태로 편집합니다. 저장하면 IP 주소 일부가 가려진 형태로 편집 이력에 기록됩니다.";
-    $("editor-breadcrumb").textContent = editorOriginalTitle + " · IP 편집";
-  } else {
-    $("editor-login-note").textContent = "로그인 계정이 편집 기록에 표시됩니다.";
-    $("editor-breadcrumb").textContent = editorIsNew ? "새 문서 작성" : editorOriginalTitle + " 편집";
-  }
+  $("editor-public-ack").checked = false;
+  $("editor-ip-warning").textContent = editorRequestMode
+    ? "비로그인 상태로 편집 요청을 제출하면, 요청 기록에 본인이 사용하는 IP(" + (currentVisitorIp||"확인할 수 없음") + ") 주소 전체가 기록됩니다."
+    : "비로그인 상태로 편집합니다. 로그인하지 않은 상태로 문서 편집을 저장하면, 편집 역사에 본인이 사용하는 IP(" + (currentVisitorIp||"확인할 수 없음") + ") 주소 전체가 영구히 기록됩니다.";
+  if (anonymousEditing) $("editor-breadcrumb").textContent = editorOriginalTitle + " · IP 편집";
+  else $("editor-login-note").textContent = "로그인 계정이 편집 기록에 표시됩니다.";
+  syncEditorConsentLock();
   let editorText = String(content || "");
   try {
     const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
@@ -2827,9 +2873,10 @@ async function editPage(title = currentTitle, content = currentContent) {
   $("editor-preview").replaceChildren();
   setEditorMode("write", { render: false });
   $("editor-draft-indicator").textContent = "초안 자동 저장 준비";
-  $("editor-save").textContent = editorIsNew ? "문서 등록" : "저장";
+  $("editor-save").textContent = editorRequestMode ? "편집 요청 제출" : editorIsNew ? "문서 등록" : "저장";
   $("editor-save").disabled = false;
   $("editor-help").hidden = true;
+  syncEditorConsentLock();
 }
 
 function cancelEditor(event) {
@@ -2957,11 +3004,19 @@ $("editor-form").onsubmit = async event => {
   if (title === "대문" && !isWikiAdmin) { status.textContent = "대문은 위키 관리자만 편집할 수 있습니다."; return; }
   if (content.length > 200000) { status.textContent = "문서는 200,000자 이하로 작성해 주세요."; return; }
   saveButton.disabled = true;
-  saveButton.textContent = "저장 중…";
+  saveButton.textContent = editorRequestMode ? "요청 제출 중…" : "저장 중…";
   try {
+    if(editorRequestMode){
+      const requestResult=await api("/api/edit-request",{method:"POST",body:JSON.stringify({title:editorOriginalTitle,content,summary,consent:true})});
+      sessionStorage.removeItem("aonwiki-draft");document.body.classList.remove("editor-active");
+      history.replaceState(null,"",routeFor(editorOriginalTitle));
+      await loadPage(editorOriginalTitle,false);
+      $("message").textContent="편집 요청 #"+requestResult.id+"을 제출했습니다. 관리자가 검토한 뒤 반영합니다.";
+      return;
+    }
     await api("/api/page", {
       method: "PUT",
-      body: JSON.stringify({ title, originalTitle: editorIsNew ? "" : editorOriginalTitle, content, summary, createOnly: editorIsNew })
+      body: JSON.stringify({ title, originalTitle: editorIsNew ? "" : editorOriginalTitle, content, summary, createOnly: editorIsNew, consent: true })
     });
     invalidateNamuDatabaseCache();
     sessionStorage.removeItem("aonwiki-draft");
@@ -2971,7 +3026,7 @@ $("editor-form").onsubmit = async event => {
   } catch (error) {
     status.textContent = error.message;
     saveButton.disabled = false;
-    saveButton.textContent = editorIsNew ? "문서 등록" : "저장";
+    saveButton.textContent = editorRequestMode ? "편집 요청 제출" : editorIsNew ? "문서 등록" : "저장";
   }
 };
 function saveEditorDraft() {
@@ -2992,6 +3047,7 @@ function scheduleEditorDraftSave() {
 }
 $("editor-title").addEventListener("input", () => {
   resizeEditorTitleField();
+  if(!editorIsNew)$("editor-heading").textContent=$("editor-title").value.trim()+(editorRequestMode?" (편집 요청)":" (편집)");
   scheduleEditorDraftSave();
   if (!$("editor-preview-pane").hidden) scheduleServerEditorPreview();
 });
