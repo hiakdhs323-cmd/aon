@@ -134,6 +134,8 @@ assert.match(html, /id="editor-preview-title"/, "editor preview must show the do
 assert.match(app, /target\.classList\.add\("namumark-wasm-content", "namumark-rendered"\)/, "both preview renderer paths must use the normal rendered-document classes");
 assert.match(app, /ensureClientDocumentToc\(target, source, true\)/, "server-rendered previews must receive the same TOC fallback as normal documents");
 assert.match(app, /renderDocumentMetadata\(preview, metadata, title\)/, "preview must display document categories like the normal page");
+assert.match(app, /categories: Array\.isArray\(serverMetadata\.categories\) && serverMetadata\.categories\.length/, "long-document browser fallback metadata must preserve parsed categories");
+assert.match(app, /backlinks: Array\.isArray\(serverMetadata\.backlinks\) && serverMetadata\.backlinks\.length/, "long-document browser fallback metadata must preserve parsed backlinks");
 assert.match(editorStyles, /body\.editor-active \.site-header\s*\{\s*display:block!important/, "editor mode must preserve the site header");
 assert.match(editorStyles, /body\.editor-active \.global-rail\s*\{\s*display:flex!important/, "editor mode must preserve the recent-activity rail");
 assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*padding:0!important/s, "preview content must use the article's own typography without editor-only padding overrides");
