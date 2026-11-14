@@ -302,6 +302,11 @@
               <span id="editor-breadcrumb" class="editor-breadcrumb-state" aria-hidden="true"></span>
             </div>
             <div class="editor-heading-actions">
+              <div class="editor-context-actions" aria-label="문서 작업">
+                <button id="editor-backlinks-action" class="button" type="button">⚓ 역링크</button>
+                <button id="editor-move-action" class="button" type="button">● 이동</button>
+                <button id="editor-delete-action" class="button editor-delete-action" type="button">▤ 삭제</button>
+              </div>
               <button id="editor-help-toggle" class="button" type="button" aria-expanded="false">문법 도움말</button>
               <a class="button editor-guide-link" href="#/w/AonWiki%3A%EB%AC%B8%EB%B2%95" target="_blank" rel="noopener noreferrer">문법</a>
               <button id="editor-cancel" class="button" type="button">취소</button>
@@ -352,7 +357,7 @@
           </div>
           <div class="editor-field editor-summary-field"><label for="editor-summary">요약</label><input id="editor-summary" maxlength="200" placeholder="편집 요약을 입력하세요."></div>
           <div class="editor-terms-block">
-            <label class="editor-public-ack"><input id="editor-public-ack" type="checkbox" checked> 문서를 저장하면 내용이 공개되고 다른 이용자가 열람할 수 있음을 확인합니다.</label>
+            <label class="editor-public-ack"><input id="editor-public-ack" type="checkbox" checked> 문서 편집을 저장하면 기여한 내용을 CC0으로 배포하고, 기여한 문서에 대한 하이퍼링크나 URL을 이용한 저작자 표시로 충분하다는 데 동의하는 것입니다. 이 동의는 철회할 수 없습니다.</label>
             <p id="editor-ip-warning" class="editor-ip-warning" hidden></p>
             <p id="editor-login-note" class="editor-login-note" hidden></p>
           </div>
