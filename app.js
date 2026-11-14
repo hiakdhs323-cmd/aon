@@ -202,10 +202,13 @@ function decorateExternalLinks(root){
   let url;
   try{url=new URL(link.getAttribute("href")||"",location.href)}catch{return}
   if(!/^https?:$/.test(url.protocol))return;
-  const icon=createAonUiIcon("link","wiki-external-link-icon");
-  icon.setAttribute("aria-label","외부 링크");
-  icon.setAttribute("title","외부 사이트로 이동");
-  link.prepend(icon);
+  const linkedImage=Boolean(link.querySelector("img,picture,figure,.wiki-image,.wiki-file-image"));
+  if(!linkedImage){
+   const icon=createAonUiIcon("link","wiki-external-link-icon");
+   icon.setAttribute("aria-label","외부 링크");
+   icon.setAttribute("title","외부 사이트로 이동");
+   link.prepend(icon);
+  }
   link.classList.add("wiki-external-link");
   link.dataset.aonExternalDecorated="true";
   link.setAttribute("target","_blank");
@@ -303,6 +306,7 @@ async function checkForNewPages(){
   pages.forEach(page=>liveSeenTitles.add(page.title));
   fresh.sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
   fresh.forEach(showNewPageNotice);
+  if(fresh.length)invalidateNamuDatabaseCache();
   if(fresh.length&&isHomeRoute())await loadHome();
  }catch(error){console.warn("새 문서 실시간 확인 실패:",error)}
  finally{livePollBusy=false}
@@ -618,12 +622,17 @@ async function ensureCurrentContentForEdit(){
 }
 async function getRenderedDocument(title){
  const key=String(title||"").trim();
+ if(!key)return null;
+ const cached=renderedDocumentCache.get(key);
+ if(cached&&cached.expiresAt>Date.now())return cached.value;
+ if(cached)renderedDocumentCache.delete(key);
  if(renderedDocumentPending.has(key))return renderedDocumentPending.get(key);
- const nonce=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
- const pending=api("/api/render?title="+encodeURIComponent(key)+"&aonwiki_render="+nonce,{cache:"no-store"}).then(data=>{
-  // A page's link colors depend on every other page's existence. Do not
-  // reuse a previously rendered document after another page is created.
-  renderedDocumentCache.delete(key);
+ const pending=api("/api/render?title="+encodeURIComponent(key),{cache:"no-store"}).then(data=>{
+  renderedDocumentCache.set(key,{value:data,expiresAt:Date.now()+45000});
+  while(renderedDocumentCache.size>120){
+   const oldest=renderedDocumentCache.keys().next().value;
+   if(oldest)renderedDocumentCache.delete(oldest);else break;
+  }
   return data;
  }).finally(()=>renderedDocumentPending.delete(key));
  renderedDocumentPending.set(key,pending);
@@ -1157,7 +1166,7 @@ const aonNamuInteractionInstances = new WeakMap();
 async function activateAonWikiInteractions(root) {
  if(!root || !(root instanceof Element)) return;
  if(!aonNamuInteractionModulePromise) {
-  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js?v=20261112-hover-v4")
+  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js?v=20261114-single-footnote-preview-v1)
    .catch(error => { aonNamuInteractionModulePromise = null; throw error; });
  }
  try {
