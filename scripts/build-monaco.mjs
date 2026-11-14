@@ -38,7 +38,7 @@ const uploadedEditorCss = gunzipSync(Buffer.from(
   "base64"
 ));
 const codiconCss = await readFile(`${outputDirectory}/monaco.css`, "utf8");
-await writeFile(`${outputDirectory}/monaco.css`, uploadedEditorCss.toString("utf8") + "\\n" + codiconCss);
+await writeFile(`${outputDirectory}/monaco.css`, uploadedEditorCss.toString("utf8") + "\n" + codiconCss);
 
 await copyFile("node_modules/monaco-editor/LICENSE", `${outputDirectory}/LICENSE.monaco.txt`);
 
