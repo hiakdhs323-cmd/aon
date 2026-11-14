@@ -94,3 +94,10 @@ assert.match(read("index.html"), /id="editor-delete-action"/, "editor title bar 
 assert.match(app, /editor-move-action.*titleField\.focus/s, "move action must focus the title field");
 assert.match(app, /editor-delete-action.*\$\("delete-page"\)\.click/s, "editor delete action must reuse the guarded delete flow");
 assert.match(read("index.html"), /CC0/, "editor must display the CC0 contribution notice");
+
+assert.match(read("index.html"), /editor-monaco\/monaco\.js/, "Monaco bundle must load on the editor page");
+assert.match(read("index.html"), /editor-monaco\/monaco\.css/, "Monaco CSS must load on the editor page");
+assert.match(app, /initializeAonMonacoEditor/, "Monaco must initialize on entering edit mode");
+assert.match(app, /syncAonTextareaFromMonaco/, "Monaco source changes must feed the existing save and draft pipeline");
+assert.match(app, /focusAonWikiEditor/, "toolbar and file inserts must focus the active Monaco editor");
+assert.match(worker, /editor-monaco\/monaco\.worker\.js/, "Worker must expose the local Monaco web worker");
