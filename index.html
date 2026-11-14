@@ -270,7 +270,7 @@
     <section id="document-view" class="document-view" hidden>
       <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>
       <section class="article">
-        <div class="article-titlebar"><h1 id="title"></h1><div class="title-actions"><span id="template-status" class="template-status" hidden>공식 틀 문서</span><span id="official-status" class="official-status" hidden>공식 문서</span><span id="protection-status" class="protection-status" hidden></span><button id="page-protection" class="title-button admin-protection-button" type="button" hidden>편집 보호</button><button id="official-document" class="title-button admin-official-button" type="button" hidden>공식 문서 지정</button><button id="heading-edit" class="title-button" type="button">편집</button></div></div><div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>
+        <div class="article-titlebar"><h1 id="title"></h1><div class="title-actions"><span id="template-status" class="template-status" hidden>공식 틀 문서</span><span id="official-status" class="official-status" hidden>공식 문서</span><span id="protection-status" class="protection-status" hidden></span><button id="page-protection" class="title-button admin-protection-button" type="button" hidden>편집 보호</button><button id="official-document" class="title-button admin-official-button" type="button" hidden>공식 문서 지정</button><button id="edit-requests" class="title-button" type="button" hidden>편집 요청</button><button id="heading-edit" class="title-button" type="button">편집</button></div></div><div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>
         <div class="article-tools">
           <span class="current-tab"><span class="article-tab-icon" data-entry-icon="document" aria-hidden="true"></span><span>문서</span></span>
           <button id="discussion-tab" type="button" hidden>토론</button>
@@ -295,11 +295,7 @@
         <form id="editor-form">
           <div class="editor-page-heading">
             <div class="editor-title-line">
-              <div id="editor-title-wrap" class="editor-title-inline">
-                <label class="sr-only" for="editor-title">문서 제목</label>
-                <input id="editor-title" maxlength="120" placeholder="문서 제목을 입력하세요." autocomplete="off">
-              </div>
-              <h1 id="editor-heading" class="editor-mode-label">(편집)</h1>
+              <h1 id="editor-heading" class="editor-mode-label">문서이름 (편집)</h1>
               <span id="editor-breadcrumb" class="editor-breadcrumb-state" aria-hidden="true"></span>
             </div>
             <div class="editor-heading-actions">
@@ -313,7 +309,21 @@
               <button id="editor-cancel" class="button" type="button">취소</button>
             </div>
           </div>
-          <p id="editor-title-help" class="editor-field-help" hidden>제목을 바꾸면 기존 제목으로 접속해도 새 문서로 연결됩니다.</p>
+          <section id="editor-consent-panel" class="editor-consent-panel" aria-labelledby="editor-consent-title">
+            <h2 id="editor-consent-title">편집 전 동의</h2>
+            <label class="editor-public-ack"><input id="editor-public-ack" type="checkbox"> 편집 내용을 공개 문서에 반영하고, 기여 내용을 CC0으로 배포하는 데 동의합니다. 비로그인 편집이라면 전체 IP 주소가 편집 기록에 저장됩니다. 이 동의는 철회할 수 없습니다.</label>
+            <p id="editor-ip-warning" class="editor-ip-warning" hidden></p>
+            <p id="editor-login-note" class="editor-login-note" hidden></p>
+            <p class="editor-consent-help">동의하지 않으면 편집기 사용 및 저장을 진행할 수 없습니다.</p>
+          </section>
+          <fieldset id="editor-fields" class="editor-fields" disabled>
+          <div class="editor-field editor-title-field">
+            <div id="editor-title-wrap" class="editor-title-inline">
+              <label for="editor-title">문서 제목</label>
+              <input id="editor-title" maxlength="120" placeholder="문서 제목을 입력하세요." autocomplete="off">
+            </div>
+            <p id="editor-title-help" class="editor-field-help" hidden>제목을 바꾸면 기존 제목으로 접속해도 새 문서로 연결됩니다.</p>
+          </div>
           <div class="editor-field editor-main-field">
             <div class="editor-toolbar-line">
               <div class="editor-tabs" role="tablist" aria-label="편집 화면">
@@ -358,11 +368,6 @@
             </div>
           </div>
           <div class="editor-field editor-summary-field"><label for="editor-summary">요약</label><input id="editor-summary" maxlength="200" placeholder="편집 요약을 입력하세요."></div>
-          <div class="editor-terms-block">
-            <label class="editor-public-ack"><input id="editor-public-ack" type="checkbox" checked> 문서 편집을 저장하면 기여한 내용을 CC0으로 배포하고, 기여한 문서에 대한 하이퍼링크나 URL을 이용한 저작자 표시로 충분하다는 데 동의하는 것입니다. 이 동의는 철회할 수 없습니다.</label>
-            <p id="editor-ip-warning" class="editor-ip-warning" hidden></p>
-            <p id="editor-login-note" class="editor-login-note" hidden></p>
-          </div>
           <div id="editor-help" class="editor-help" hidden>
 <h2>나무마크 문법 도움말</h2>
 <p class="syntax-intro">자주 사용하는 문법을 종류별로 정리했습니다. 입력 예시를 그대로 복사해 사용할 수 있으며, 저장 전에 미리보기로 결과를 확인하세요.</p>
@@ -403,6 +408,7 @@ hover-dark: #a5d6ff
 </div>
           <p id="editor-status" class="editor-status" role="status"></p>
           <div class="editor-actions"><button id="editor-save" class="button button-primary" type="submit">저장</button></div>
+          </fieldset>
         </form>
       </section>
     </section>
