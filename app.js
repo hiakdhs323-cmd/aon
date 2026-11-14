@@ -3085,8 +3085,9 @@ function runEditorCorrectionBot() {
   field.value = correctedLines.join("\n");
   field.dispatchEvent(new Event("input", { bubbles: true }));
   field.setSelectionRange(Math.min(selectionStart, field.value.length), Math.min(selectionEnd, field.value.length));
+  syncAonMonacoSelectionFromTextarea();
   $("editor-status").textContent = "교정 BOT: " + changes.length + "건을 수정했습니다. 저장 전 미리보기에서 확인하세요.";
-  field.focus();
+  focusAonWikiEditor();
 }
 $("editor-autocorrect")?.addEventListener("click",runEditorCorrectionBot);
 
@@ -3380,8 +3381,9 @@ function insertEditorMarkup(kind){
  const insert=(value,selectFrom=null,selectTo=null)=>{
   field.setRangeText(value,start,end,"end");
   field.dispatchEvent(new Event("input",{bubbles:true}));
-  field.focus();
   if(selectFrom!==null)field.setSelectionRange(start+selectFrom,start+(selectTo??selectFrom));
+  syncAonMonacoSelectionFromTextarea();
+  focusAonWikiEditor();
  };
  if(kind==="category"||kind==="external"||kind==="file"||kind==="template"){
   const item=templates[kind],value=item[0]+(selected||item[2])+item[1];
@@ -4045,7 +4047,7 @@ async function openFileManager(){
    insert.onclick=async()=>{
     const markup="[[파일:"+file.filename+"|width=500]]";
     if(!$("editor-view").hidden){
-     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();$("dialog").close()
+     const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));syncAonMonacoSelectionFromTextarea();focusAonWikiEditor();$("dialog").close()
     }else{
      try{await navigator.clipboard.writeText(markup);insert.textContent="복사됨"}catch{insert.textContent="복사 권한 없음"}
     }
@@ -4130,7 +4132,7 @@ $("file").onchange=async()=>{
   const markup="[[파일:"+data.filename+"|width=500]]";
   const compressionNote=compressed.isSvg?"SVG 벡터 이미지를 원본 형식으로 업로드했습니다.":compressed.compressed?"원본 "+formatImageSize(compressed.originalSize)+" → "+formatImageSize(compressed.blob.size)+"로 자동 압축했습니다.":"원본 파일을 그대로 업로드했습니다.";
   if(!$("editor-view").hidden){
-   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();
+   const field=$("editor-content");field.setRangeText(markup,field.selectionStart,field.selectionEnd,"end");field.dispatchEvent(new Event("input",{bubbles:true}));syncAonMonacoSelectionFromTextarea();focusAonWikiEditor();
    $("editor-status").textContent=compressionNote;
   }else if(currentTitle){
    $("dialog").close();editPage(currentTitle,currentContent+(currentContent?"\n\n":"")+markup);return
