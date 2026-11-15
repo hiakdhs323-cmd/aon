@@ -3133,15 +3133,12 @@ function highlightNamuPlainText(value,cssMode=false) {
    output+='<span class="mk-css-important">'+escapeHighlightText(token)+'</span>';
   }else if(/^-?\d/.test(token)){
    output+='<span class="mk-number">'+escapeHighlightText(token)+'</span>';
+  }else if(/^(?:linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient|var|calc|min|max|clamp|url)\(/i.test(token)){
+   output+='<span class="mk-css-function">'+escapeHighlightText(token)+'</span>';
+  }else if(/^(?:solid|dashed|dotted|double|groove|ridge|inset|outset|none|auto|inherit|initial|unset|revert|center|left|right|top|bottom|cover|contain|repeat|no-repeat|bold|bolder|lighter|normal|italic|pointer|flex|grid|block|inline|inline-block|absolute|relative|fixed|sticky|hidden|visible|nowrap|wrap|start|end|space-between|space-around|space-evenly)$/i.test(token)){
+   output+='<span class="mk-css-keyword">'+escapeHighlightText(token)+'</span>';
   }else{
-   }else if(/^(?:linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient|var|calc|min|max|clamp|url)\\(/i.test(token)){
-    output+='<span class="mk-css-function">'+escapeHighlightText(token)+'</span>';
-   }else if(/^-?\\d/.test(token)){
-    output+='<span class="mk-number">'+escapeHighlightText(token)+'</span>';
-   }else if(/^(?:solid|dashed|dotted|double|groove|ridge|inset|outset|none|auto|inherit|initial|unset|revert|center|left|right|top|bottom|cover|contain|repeat|no-repeat|bold|bolder|lighter|normal|italic|pointer|flex|grid|block|inline|inline-block|absolute|relative|fixed|sticky|hidden|visible|nowrap|wrap|start|end|space-between|space-around|space-evenly)$/i.test(token)){
-    output+='<span class="mk-css-keyword">'+escapeHighlightText(token)+'</span>';
-   }else{
-    output+='<span class="'+highlightNamuCssPropertyClass(token)+'">'+escapeHighlightText(token)+'</span>';
+   output+='<span class="'+highlightNamuCssPropertyClass(token)+'">'+escapeHighlightText(token)+'</span>';
   }
   last=pattern.lastIndex;
  }
