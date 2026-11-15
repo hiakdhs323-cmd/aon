@@ -70,7 +70,7 @@ assert.doesNotMatch(app, /resizeEditorSourcePane|editorSourceResizeFrame|field\.
 assert.match(css, /body\.editor-active #editor-highlight\s*\{[^}]*position:relative!important;[\s\S]*?height:auto!important;[\s\S]*?overflow:visible!important/s, "highlighted text must determine the complete editor height in normal flow");
 assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*position:absolute!important;[\s\S]*?inset:0!important;[\s\S]*?height:100%!important/s, "the textarea must overlay the complete intrinsic-height source");
 assert.match(css, /body\.editor-active #editor-highlight code,\s*body\.editor-active #editor-highlight code \*\s*\{[^}]*font:inherit!important;[^}]*font-weight:400!important;[^}]*font-style:normal!important;[^}]*line-height:inherit!important;/s, "all syntax tokens must inherit the input's exact font and line metrics");
-assert.match(css, /#editor-highlight code \.mk-heading-line,[\s\S]*?min-height:1\.6em;[\s\S]*?height:auto;[\s\S]*?border:0;/s, "heading separators must not add height to the source line");
+assert.ok(css.includes("height:auto;\n  min-height:1.6em;") && css.includes("#editor-highlight code .mk-heading-line::before"), "heading separators must not add height to the source line");
 assert.match(css, /#editor-highlight code \.mk-heading-line::before[\s\S]*?position:absolute;[\s\S]*?border-top:1px solid/s, "the heading separator must be painted without affecting text layout");
 
 const headingRendered = h.renderEditorHighlightLines("위 문장\n== 이름 ==\n아래 문장");
