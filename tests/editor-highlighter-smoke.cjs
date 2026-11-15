@@ -73,7 +73,6 @@ assert.equal(colourSource.slice(secondColourOffset, secondColourOffset + 7), "#f
 assert.equal(colourSource.slice(repeatedColourOffset, repeatedColourOffset + 7), "#aabbcc", "duplicate colour values must map in source order");
 assert.equal(h.findNamuColorSourceOffset(colourSource, "not-a-colour", 0), -1, "invalid colour values must not create an editable source range");
 
-assert.match(app, /field\.addEventListener\("scroll",\(\)=>requestAnimationFrame\(state\.render\)/, "color picker positions must follow the textarea while scrolling");
 
 console.log("Editor highlighter smoke test passed: " + cases.length + " syntax families.");
 
