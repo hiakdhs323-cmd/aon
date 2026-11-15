@@ -6144,10 +6144,11 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
 #editor-highlight code .mk-heading-line,
 .discussion-code-highlight code .mk-heading-line{
   display:block;
+  box-sizing:border-box;
   width:100%;
   min-height:1.6em;
   line-height:inherit;
-  box-shadow:inset 0 1px 0 var(--wiki-border-strong);
+  border-top:1px solid var(--wiki-border-strong);
 }
 
 
@@ -6182,15 +6183,16 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
 html:has(body.editor-active){
   height:auto!important;
   min-height:100%!important;
+  max-height:none!important;
   overflow-x:clip!important;
-  overflow-y:auto!important;
+  overflow-y:visible!important;
+  scroll-behavior:auto;
 }
 body.editor-active{
   height:auto!important;
   min-height:100vh!important;
   max-height:none!important;
-  overflow-x:hidden!important;
-  overflow-y:auto!important;
+  overflow:visible!important;
   overscroll-behavior-y:auto!important;
 }
 body.editor-active .layout,

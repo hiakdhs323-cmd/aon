@@ -69,3 +69,28 @@ assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:auto!importa
 assert.match(css, /body\.editor-active \.editor-card\{[^}]*overflow:visible!important/s, "the editor card must not clip the form bottom");
 assert.match(css, /body\.editor-active \.editor-fields,[\s\S]*?overflow:visible!important/s, "editor form ancestors must retain their full content height");
 assert.match(app, /requestAnimationFrame\(\(\)\s*=>\s*\{\s*window\.scrollTo\(\{top:0,left:0,behavior:"auto"\}\)/, "opening the editor must start at the top of its complete page");
+
+
+const expandedCases = [
+  ["datetime and time magic", h.highlightNamuInline("[datetime] [time] [date] [pagecount] [clearfix]"), ["mk-magic"]],
+  ["unfinished document link", h.highlightNamuInline("[[문서명"), ["mk-link-target"]],
+  ["unfinished category", h.highlightNamuInline("[[분류:유저"), ["mk-category-label"]],
+  ["unfinished include", h.highlightNamuInline("[include(틀:AonWiki 개발자"), ["mk-include-target"]],
+  ["unfinished bold", h.highlightNamuInline("'''입력 중"), ["mk-bold-text"]],
+  ["unfinished underline", h.highlightNamuInline("__입력 중"), ["mk-underline-text"]],
+  ["unfinished text size", h.highlightNamuInline("{{{+2 큰 글씨"), ["mk-size-value"]],
+  ["unfinished colour macro", h.highlightNamuInline("{{{#aabfdd 색상"), ["mk-color-value"]],
+  ["level six heading", h.highlightNamuLine("====== 최상위 제목 ======", false), ["mk-heading-line", "mk-heading-text"]],
+  ["unfinished heading", h.highlightNamuLine("== 제목 입력 중", false), ["mk-heading-line", "mk-heading-text"]],
+  ["table spans", h.highlightNamuInline("||<^|2><-3>셀"), ["mk-table-option"]],
+  ["inline HTML attributes", h.highlightNamuInline("<span class=wide style=\"color:#aabfdd\">텍스트</span>"), ["mk-tag-name", "mk-attribute-name", "mk-css-property-color"]]
+];
+for (const [name, output, expectedClasses] of expandedCases) {
+  for (const className of expectedClasses) {
+    assert.ok(output.includes(className), name + ": expected " + className);
+  }
+}
+assert.match(css, /\\.mk-heading-line[\\s\\S]*?display:block;[\\s\\S]*?border-top:1px solid var\\(--wiki-border-strong\\)/, "heading line must draw a full-width separator above the heading");
+assert.match(app, /const left=rect\\.right-wrapRect\\.left-wrap\\.clientLeft\\+4;/, "colour picker must appear beside, not on top of, the source colour code");
+assert.match(css, /html:has\\(body\\.editor-active\\)\\{[^}]*overflow-y:visible!important/s, "the html viewport must own vertical editor scrolling");
+assert.match(css, /body\\.editor-active\\{[^}]*overflow:visible!important/s, "body must not create a nested scroll container while editing");
