@@ -1429,6 +1429,94 @@ async function renderSitemapXml(request, env) {
   }
   return '<?xml version="1.0" encoding="UTF-8"?>' + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + urls.join("") + "</urlset>";
 }
+function decodePreviewEntities(value) {
+  return String(value || "")
+    .replace(/&#x([0-9a-f]{1,8});?/gi, (_match, hex) => {
+      const point = Number.parseInt(hex, 16);
+      return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff)
+        ? String.fromCodePoint(point)
+        : " ";
+    })
+    .replace(/&#([0-9]{1,8});?/g, (_match, decimal) => {
+      const point = Number.parseInt(decimal, 10);
+      return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff)
+        ? String.fromCodePoint(point)
+        : " ";
+    })
+    .replace(/&nbsp;|&ensp;|&emsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;|&#39;/gi, "'")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&mdash;/gi, "—")
+    .replace(/&lsquo;|&rsquo;/gi, "'")
+    .replace(/&ldquo;|&rdquo;/gi, '"');
+}
+
+function renderedHtmlToPreviewText(markup) {
+  return decodePreviewEntities(String(markup || "")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|noscript|svg|iframe)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ")
+    .replace(/<img\b[^>]*\balt=(["'])(.*?)\1[^>]*>/gi, " $2 ")
+    .replace(/<br\b[^>]*>|<\/(?:p|div|li|h[1-6]|tr|td|th|section|article|blockquote|pre|ul|ol|table|figure|figcaption)\s*>/gi, " ")
+    .replace(/<[^>]+>/g, " "))
+    .replace(/[\u00a0\s]+/g, " ")
+    .trim();
+}
+
+function namuSourceToPreviewText(source) {
+  let value = String(source || "")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/\[include\([\s\S]*?\)\]/gi, " ")
+    .replace(/^\s*\[\[(?:분류|category):[^\]]+\]\]\s*$/gim, " ")
+    .replace(/\[\[(?:분류|category):[^\]]+\]\]/gi, " ")
+    .replace(/\[\[(?:파일|file):([^\]|]+)(?:\|([^\]]*))?\]\]/gi, (_match, _filename, caption) => caption ? " " + caption + " " : " ")
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/^\s*={1,6}\s*(.*?)\s*={1,6}\s*$/gm, "$1")
+    .replace(/^\s*\[\s*(?:목차|clearfix|tableofcontents)\s*\]\s*$/gim, " ")
+    .replace(/\[\*([^\]]*)\]/g, "$1")
+    .replace(/\{\{\{#!(?:wiki|folding|fold|if|linkcolor)\b[^\r\n]*(?:\r?\n)?/gi, " ")
+    .replace(/\{\{\{(?:#[\w-]+|\+\d+|-\d+)?\s*/g, " ")
+    .replace(/\}\}\}/g, " ")
+    .replace(/'''|''|~~|\^\^|,,/g, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\|\|/g, " ")
+    .replace(/^\s*\|[-:| ]+\|\s*$/gm, " ");
+  return decodePreviewEntities(value).replace(/[\u00a0\s]+/g, " ").trim();
+}
+
+function buildWikiPageStructuredData({ title, description, url, siteUrl, createdAt, updatedAt }) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": title,
+    "headline": title,
+    "description": description,
+    "url": url,
+    "inLanguage": "ko-KR",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "아온 위키",
+      "alternateName": "AonWiki",
+      "url": siteUrl
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "아온 위키", "item": siteUrl },
+        { "@type": "ListItem", "position": 2, "name": title, "item": url }
+      ]
+    }
+  };
+  if (createdAt) data.datePublished = String(createdAt);
+  if (updatedAt) data.dateModified = String(updatedAt);
+  return data;
+}
+
 async function renderFullWikiDocument(request, env, title) {
   const { shell, origin } = await loadFrontendShell(env);
   const page = await findWikiPage(env, title);
@@ -1456,7 +1544,22 @@ async function renderFullWikiDocument(request, env, title) {
     ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(actualTitle).first()
     : null;
   const titleText = found ? actualTitle : actualTitle + " (문서 없음)";
-  const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "아직 작성되지 않은 문서입니다.";
+  // Social previews and search snippets must use visible rendered text, never raw NamuMark source.
+  const renderedPreviewText = found && rendered.html ? renderedHtmlToPreviewText(rendered.html) : "";
+  const sourcePreviewText = found ? namuSourceToPreviewText(sourceText) : "";
+  const description = found
+    ? (renderedPreviewText || sourcePreviewText || actualTitle + " 문서").slice(0, 240)
+    : "아직 작성되지 않은 문서입니다.";
+  const siteUrl = new URL(request.url).origin + "/";
+  const canonicalUrl = new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle);
+  const pageStructuredData = buildWikiPageStructuredData({
+    title: titleText + " - AonWiki",
+    description,
+    url: canonicalUrl,
+    siteUrl,
+    createdAt: found ? page.created_at : "",
+    updatedAt: found ? page.updated_at : ""
+  });
   const ssrUser = await currentUser(request, env);
   const ssrEditUser = ssrUser || anonymousEditorIdentity(request);
   const ssrEditDenied = found ? await checkPageEditPermission(env, ssrEditUser, actualTitle) : null;
@@ -1474,9 +1577,31 @@ async function renderFullWikiDocument(request, env, title) {
   const protectionMessage = protectionLabel
     ? (protection?.reason || (protection.level === "admin" ? "이 문서는 관리자만 편집할 수 있도록 보호되어 있습니다." : "이 문서는 로그인한 회원만 편집할 수 있습니다."))
     : "";
+  const pageSeoTags = [
+    '<meta name="description" content="' + escapeHtml(description) + '">',
+    '<meta name="robots" content="' + (found ? "index,follow,max-snippet:-1,max-image-preview:large" : "noindex,follow") + '">',
+    '<meta property="og:type" content="article">',
+    '<meta property="og:site_name" content="아온 위키 (AonWiki)">',
+    '<meta property="og:locale" content="ko_KR">',
+    '<meta property="og:title" content="' + escapeHtml(titleText + " - AonWiki") + '">',
+    '<meta property="og:description" content="' + escapeHtml(description) + '">',
+    '<meta property="og:url" content="' + escapeHtml(canonicalUrl) + '">',
+    '<meta name="twitter:card" content="summary">',
+    '<meta name="twitter:title" content="' + escapeHtml(titleText + " - AonWiki") + '">',
+    '<meta name="twitter:description" content="' + escapeHtml(description) + '">',
+    '<link rel="canonical" href="' + escapeHtml(canonicalUrl) + '">',
+    '<script type="application/ld+json" id="aonwiki-page-jsonld">' + safeJsonForHtml(pageStructuredData) + '</script>'
+  ].join("\\n");
   let html = shell
-    .replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
-    .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">' + "\n" + '<meta name="description" content="' + escapeHtml(description) + '">' + "\n" + '<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">' + "\n" + '<meta property="og:description" content="' + escapeHtml(description) + '">' + "\n" + '<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">')
+    .replace(/<title>[\\s\\S]*?<\\/title>/i, "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
+    .replace(/<meta name="description"[^>]*>\\s*/gi, "")
+    .replace(/<meta name="robots"[^>]*>\\s*/gi, "")
+    .replace(/<meta property="og:[^"]+"[^>]*>\\s*/gi, "")
+    .replace(/<meta name="twitter:[^"]+"[^>]*>\\s*/gi, "")
+    .replace(/<link rel="canonical"[^>]*>\\s*/gi, "")
+    .replace(/<script[^>]*id="aonwiki-(?:website|page)-jsonld"[^>]*>[\\s\\S]*?<\\/script>\\s*/gi, "")
+    .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\\n' + pageSeoTags)
+    .replace(/<\\/head>/i, pageSeoTags + "\\n</head>");
     .replace("<body>", '<body data-ssr-page="true">')
     .replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>')
     .replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">')

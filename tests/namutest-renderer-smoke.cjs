@@ -32,6 +32,20 @@ assert.match(worker, /AonWiki document SSR failed; serving client-side route fal
 assert.match(worker, /X-AonWiki-SSR-Fallback/, "client-side fallback responses must be identifiable in the response headers");
 assert.match(worker, /url\.pathname === "\/favicon\.ico"/, "the default browser favicon request must redirect to the AonWiki SVG mark");
 assert.match(read("wrangler.toml"), /\[observability\][\s\S]*enabled = true/, "Worker observability must be enabled for server-side exception diagnostics");
+assert.match(html, /<meta name="google-site-verification" content="[^"]+"/, "existing Search Console ownership verification tag must be retained");
+assert.match(html, /<link rel="canonical" href="https:\/\/aon\.hiakdhs323\.workers\.dev\/">/, "homepage canonical URL must use the production Worker host");
+assert.match(html, /<meta name="description" content="[^"]*아온 위키/, "homepage must expose a Korean search description");
+assert.match(html, /<meta property="og:description"/, "homepage must expose an Open Graph description for chat previews");
+assert.match(html, /"@type": "WebSite"/, "homepage must expose WebSite structured data for the AonWiki name");
+assert.match(worker, /function renderedHtmlToPreviewText\(/, "document social descriptions must be extracted from rendered HTML");
+assert.match(worker, /function namuSourceToPreviewText\(/, "long/client-rendered documents must have NamuMark syntax stripped from fallback descriptions");
+assert.match(worker, /renderedPreviewText \|\| sourcePreviewText/, "document descriptions must prefer actual rendered text");
+assert.match(worker, /property="og:description"/, "document responses must publish their rendered description to Open Graph");
+assert.match(worker, /id="aonwiki-page-jsonld"/, "document responses must publish per-page structured data");
+assert.match(worker, /max-image-preview:large/, "indexable document responses must allow rich search snippets");
+assert.match(worker, /SELECT title, updated_at FROM pages ORDER BY title COLLATE NOCASE ASC LIMIT 5000/, "dynamic sitemap must continue enumerating all public wiki documents");
+assert.match(robots, /Sitemap: https:\/\/aon\.hiakdhs323\.workers\.dev\/sitemap\.xml/, "robots.txt must reference the canonical dynamic sitemap");
+
 
 const ssrBundleScriptPattern = /<script\b(?=[^>]*\bsrc=["'](?:\/aon)?\/?(?:app\.bundle\.js|app\.js)(?:\?[^"']*)?["'])[^>]*>\s*<\/script>/i;
 assert.match(html, ssrBundleScriptPattern, "document SSR must recognize the bundled module script in index.html");
