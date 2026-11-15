@@ -1325,24 +1325,64 @@ async function loadFrontendShell(env) {
     : null;
 
   frontendShellPending = (async () => {
+    const frontendOrigin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+    const hasLocalAssets = Boolean(env.ASSETS && typeof env.ASSETS.fetch === "function");
+    let localAssetError = null;
+
+    // Prefer the Worker Static Assets binding, but never make the whole wiki
+    // unavailable just because the local index.html asset is missing or stale.
+    if (hasLocalAssets) {
+      try {
+        const localOrigin = "https://aonwiki-assets.local";
+        const localResponse = await env.ASSETS.fetch(new Request(localOrigin + "/index.html", {
+          headers: { "Accept": "text/html" }
+        }));
+        if (!localResponse.ok) {
+          localAssetError = new Error("Worker Assets index.html returned " + localResponse.status);
+        } else {
+          const localShell = await localResponse.text();
+          if (!localShell.includes('id="article"')) {
+            localAssetError = new Error("Worker Assets index.html has no article template");
+          } else {
+            const value = {
+              shell: rewriteFrontendAssets(localShell, localOrigin, true),
+              origin: localOrigin
+            };
+            frontendShellCache = {
+              value,
+              expiresAt: Date.now() + 15 * 60 * 1000,
+              staleUntil: Date.now() + 24 * 60 * 60 * 1000
+            };
+            return value;
+          }
+        }
+      } catch (error) {
+        localAssetError = error;
+      }
+      console.warn("AonWiki local frontend shell unavailable; falling back to FRONTEND_ORIGIN:",
+        localAssetError?.message || localAssetError);
+    }
+
     try {
-      const localAssets = Boolean(env.ASSETS && typeof env.ASSETS.fetch === "function");
-      const origin = localAssets ? "https://aonwiki-assets.local" :
-        String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-      const shellResponse = localAssets
-        ? await env.ASSETS.fetch(new Request(origin + "/index.html", { headers: { "Accept": "text/html" } }))
-        : await fetchFrontendWithRetry(
-            origin + "/?aonwiki-shell=20261115-include-category-isolation-v1",
-            { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
-          );
-      if (!shellResponse.ok) {
-        const error = new Error("프런트엔드 HTML을 불러오지 못했습니다: " + shellResponse.status);
-        error.status = shellResponse.status;
+      const upstream = await fetchFrontendWithRetry(
+        frontendOrigin + "/?aonwiki-shell=20261115-static-shell-fallback-v1",
+        { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
+      );
+      if (!upstream.ok) {
+        const error = new Error("프런트엔드 HTML을 불러오지 못했습니다: " + upstream.status);
+        error.status = FRONTEND_TRANSIENT_STATUSES.has(upstream.status) ? 503 : upstream.status;
         throw error;
       }
-      const shell = await shellResponse.text();
-      if (!shell.includes('id="article"')) throw new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
-      const value = { shell: rewriteFrontendAssets(shell, origin, localAssets), origin };
+      const shell = await upstream.text();
+      if (!shell.includes('id="article"')) {
+        const error = new Error("프런트엔드 문서 템플릿에 article 영역이 없습니다.");
+        error.status = 502;
+        throw error;
+      }
+      const value = {
+        shell: rewriteFrontendAssets(shell, frontendOrigin, false),
+        origin: frontendOrigin
+      };
       frontendShellCache = {
         value,
         expiresAt: Date.now() + 15 * 60 * 1000,
@@ -1356,6 +1396,7 @@ async function loadFrontendShell(env) {
         frontendShellCache.expiresAt = Date.now() + 15 * 1000;
         return staleShell;
       }
+      if (localAssetError && !Number(error?.status)) error.status = 503;
       throw error;
     }
   })().finally(() => { frontendShellPending = null; });

@@ -25,6 +25,10 @@ assert.match(worker, /if \(stored && stored\.source_hash === cacheKey\)/, "old r
 assert.doesNotMatch(worker, /endsWith\("\\:" \+ sourceDigest\)/, "legacy cache compatibility fallback must be removed");
 assert.match(worker, /Namu_test-main\/namumark\.js/, "Worker static proxy must serve the nested Namu_test-main parser module");
 assert.match(worker, /Namu_test-main\/namumark_bg\.wasm/, "Worker static proxy must serve the nested Namu_test-main WASM module");
+assert.match(worker, /local frontend shell unavailable; falling back to FRONTEND_ORIGIN/, "SSR must fall back to the configured frontend origin when Worker Assets cannot supply index.html");
+assert.match(worker, /rewriteFrontendAssets\(shell, frontendOrigin, false\)/, "the fallback shell must rewrite static assets to the frontend proxy path");
+assert.match(worker, /Worker Assets index\.html returned/, "a missing local shell must be recorded and trigger the fallback path");
+
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
 assert.match(read("index.html"), /id="home-login-action"/, "homepage must expose the login quick action");
 assert.match(read("index.html"), /id="home-create-action"/, "homepage must expose the add-document quick action");
