@@ -2312,17 +2312,21 @@ function renderDocumentMetadata(article, metadata, docTitle) {
  host.hidden=false;
  const footer=document.createElement("div");
  footer.className="wiki-categories";
+ const label=document.createElement("span");
+ label.className="wiki-categories-label";
+ label.textContent="분류:";
+ footer.append(label);
  categories.forEach((name,index)=>{
   if(index){
    const separator=document.createElement("span");
    separator.className="wiki-categories-separator";
-   separator.textContent=" | ";
+   separator.textContent="|";
    separator.setAttribute("aria-hidden","true");
    footer.append(separator);
   }
   const link=document.createElement("a");
   link.href=routeFor("분류:"+name);
-  link.textContent=index===0?"분류:"+name:name;
+  link.textContent=name;
   link.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+name)});
   footer.append(link);
  });
