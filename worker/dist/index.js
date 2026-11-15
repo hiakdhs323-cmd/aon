@@ -1779,21 +1779,62 @@ async function loadFrontendShell(env) {
   if (frontendShellPending) return frontendShellPending;
   const staleShell = frontendShellCache.value && frontendShellCache.staleUntil > Date.now() ? frontendShellCache.value : null;
   frontendShellPending = (async () => {
+    const frontendOrigin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
+    const hasLocalAssets = Boolean(env.ASSETS && typeof env.ASSETS.fetch === "function");
+    let localAssetError = null;
+    if (hasLocalAssets) {
+      try {
+        const localOrigin = "https://aonwiki-assets.local";
+        const localResponse = await env.ASSETS.fetch(new Request(localOrigin + "/index.html", {
+          headers: { "Accept": "text/html" }
+        }));
+        if (!localResponse.ok) {
+          localAssetError = new Error("Worker Assets index.html returned " + localResponse.status);
+        } else {
+          const localShell = await localResponse.text();
+          if (!localShell.includes('id="article"')) {
+            localAssetError = new Error("Worker Assets index.html has no article template");
+          } else {
+            const value = {
+              shell: rewriteFrontendAssets(localShell, localOrigin, true),
+              origin: localOrigin
+            };
+            frontendShellCache = {
+              value,
+              expiresAt: Date.now() + 15 * 60 * 1e3,
+              staleUntil: Date.now() + 24 * 60 * 60 * 1e3
+            };
+            return value;
+          }
+        }
+      } catch (error) {
+        localAssetError = error;
+      }
+      console.warn(
+        "AonWiki local frontend shell unavailable; falling back to FRONTEND_ORIGIN:",
+        localAssetError?.message || localAssetError
+      );
+    }
     try {
-      const localAssets = Boolean(env.ASSETS && typeof env.ASSETS.fetch === "function");
-      const origin = localAssets ? "https://aonwiki-assets.local" : String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-      const shellResponse = localAssets ? await env.ASSETS.fetch(new Request(origin + "/index.html", { headers: { "Accept": "text/html" } })) : await fetchFrontendWithRetry(
-        origin + "/?aonwiki-shell=20261115-include-category-isolation-v1",
+      const upstream = await fetchFrontendWithRetry(
+        frontendOrigin + "/?aonwiki-shell=20261115-static-shell-fallback-v1",
         { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
       );
-      if (!shellResponse.ok) {
-        const error = new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + shellResponse.status);
-        error.status = shellResponse.status;
+      if (!upstream.ok) {
+        const error = new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC HTML\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + upstream.status);
+        error.status = FRONTEND_TRANSIENT_STATUSES.has(upstream.status) ? 503 : upstream.status;
         throw error;
       }
-      const shell = await shellResponse.text();
-      if (!shell.includes('id="article"')) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
-      const value = { shell: rewriteFrontendAssets(shell, origin, localAssets), origin };
+      const shell = await upstream.text();
+      if (!shell.includes('id="article"')) {
+        const error = new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC \uBB38\uC11C \uD15C\uD50C\uB9BF\uC5D0 article \uC601\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+        error.status = 502;
+        throw error;
+      }
+      const value = {
+        shell: rewriteFrontendAssets(shell, frontendOrigin, false),
+        origin: frontendOrigin
+      };
       frontendShellCache = {
         value,
         expiresAt: Date.now() + 15 * 60 * 1e3,
@@ -1807,6 +1848,7 @@ async function loadFrontendShell(env) {
         frontendShellCache.expiresAt = Date.now() + 15 * 1e3;
         return staleShell;
       }
+      if (localAssetError && !Number(error?.status)) error.status = 503;
       throw error;
     }
   })().finally(() => {
