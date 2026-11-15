@@ -98,4 +98,4 @@ assert.match(css, /body\.editor-active\{[^}]*overflow:visible!important/s, "body
 assert.match(app, /function resizeEditorSourcePane\(\)[\s\S]*?field\.scrollHeight[\s\S]*?wrap\.style\.setProperty\("height"/, "the source editor must grow to the full document height");
 assert.match(app, /updateLineNumbers\(\);\s*resizeEditorSourcePane\(\);/, "source height must be recalculated whenever syntax highlighting is painted");
 assert.match(css, /body\.editor-active \.editor-code-wrap,[\s\S]*?height:auto!important;[\s\S]*?max-height:none!important/, "the source editor must not have a viewport-height cap");
-assert.match(css, /body\.editor-active #editor-content\{[^}]*overflow-y:hidden!important/s, "the source textarea must not trap the document's lower lines in an inner scrollbar");
+assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*overflow-y:hidden!important/s, "the source textarea must not trap the document's lower lines in an inner scrollbar");
