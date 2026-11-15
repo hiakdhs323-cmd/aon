@@ -6078,3 +6078,53 @@ html[data-theme="dark"] #editor-highlight .mk-css-property-layout,
 html[data-theme="dark"] #editor-highlight .mk-attribute-layout{color:#e3b341!important}
 html[data-theme="dark"] #editor-highlight .mk-css-variable{color:#ffa657!important}
 html[data-theme="dark"] #editor-highlight .mk-css-function{color:#79c0ff!important}
+
+
+/* Actual inline formatting in the source overlay.
+   Paint transforms/decorations keep the textarea's monospace caret positions aligned. */
+#editor-highlight code .mk-bold-text,
+#editor-highlight code .mk-bold-text .mk-content,
+.discussion-code-highlight code .mk-bold-text{
+  font-weight:700!important;
+}
+#editor-highlight code .mk-italic-text,
+#editor-highlight code .mk-italic-text .mk-content,
+.discussion-code-highlight code .mk-italic-text{
+  font-style:italic!important;
+}
+#editor-highlight code .mk-underline-text,
+#editor-highlight code .mk-underline-text .mk-content,
+.discussion-code-highlight code .mk-underline-text{
+  text-decoration-line:underline!important;
+  text-decoration-style:solid!important;
+  text-decoration-thickness:1px!important;
+  text-decoration-color:currentColor!important;
+}
+#editor-highlight code .mk-strike-text,
+#editor-highlight code .mk-strike-text .mk-content,
+.discussion-code-highlight code .mk-strike-text{
+  text-decoration-line:line-through!important;
+  text-decoration-style:solid!important;
+  text-decoration-thickness:1.35px!important;
+  text-decoration-color:currentColor!important;
+}
+#editor-highlight code sup.mk-script-text,
+#editor-highlight code sub.mk-script-text,
+.discussion-code-highlight code sup.mk-script-text,
+.discussion-code-highlight code sub.mk-script-text{
+  display:inline-block!important;
+  vertical-align:baseline!important;
+  font-size:inherit!important;
+  line-height:inherit!important;
+  transform-origin:center center;
+}
+#editor-highlight code sup.mk-script-text,
+.discussion-code-highlight code sup.mk-script-text{
+  transform:translateY(-.22em) scale(.82);
+}
+#editor-highlight code sub.mk-script-text,
+.discussion-code-highlight code sub.mk-script-text{
+  transform:translateY(.18em) scale(.82);
+}
+#editor-highlight code .mk-syntax-footnote{color:#b42372!important}
+html[data-theme="dark"] #editor-highlight code .mk-syntax-footnote{color:#ff7eb6!important}

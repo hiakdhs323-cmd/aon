@@ -172,6 +172,16 @@ assert.match(read("index.html"), /CC0/, "editor must display the CC0 contributio
 assert.match(read("index.html"), /id="editor-highlight-code"/, "editor must include the original NamuMark highlight overlay");
 assert.doesNotMatch(read("index.html"), /editor-monaco\/monaco\.(?:js|css)|editor-monaco-host/, "editor page must use the original source overlay, not Monaco");
 assert.match(app, /function highlightNamuLine\(/, "editor must keep the original NamuMark token highlighter");
+assert.ok(app.includes("function handleNamuSquareBracketKeydown("), "editor must auto-pair square brackets while typing");
+assert.ok(app.includes('field.setRangeText("["+selected+"]",start,end,"end")'), "opening square brackets must insert a closing bracket and keep the caret inside");
+assert.ok(app.includes('token==="[*"||token==="[^"'), "footnote opening markers must receive their own syntax token");
+assert.ok(app.includes("\\[\\*[^\\]\\n]*(?:\\]|$)"), "unfinished [* footnotes must be highlighted before the closing bracket is typed");
+assert.ok(read("style.css").includes("text-decoration-line:line-through!important"), "completed strike-through markup must visibly draw a line through its text");
+assert.ok(read("style.css").includes("text-decoration-line:underline!important"), "completed underline markup must visibly underline its text");
+assert.ok(read("style.css").includes("font-weight:700!important"), "completed bold markup must be visibly bold");
+assert.ok(read("style.css").includes("font-style:italic!important"), "completed italic markup must be visibly italic");
+assert.ok(read("style.css").includes("transform:translateY(-.22em) scale(.82)"), "superscript markup must be visibly raised without changing its layout width");
+assert.ok(read("style.css").includes("transform:translateY(.18em) scale(.82)"), "subscript markup must be visibly lowered without changing its layout width");
 assert.match(app, /function updateEditorHighlight\(/, "editor must repaint the original syntax overlay as the source changes");
 
 assert.match(app, /function highlightNamuSyntaxToken\(/, "existing syntax delimiters must receive semantic colors");

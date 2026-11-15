@@ -2892,9 +2892,10 @@ $("editor-tab-raw").onclick = () => setEditorMode("raw", { render: false });
 $("editor-tab-preview").onclick = () => setEditorMode("preview");
 $("editor-preview-refresh").onclick = () => renderEditorPreview();
 $("editor-content").addEventListener("keydown", event => {
+  const field = event.currentTarget;
+  if (handleNamuSquareBracketKeydown(field,event)) return;
   if (event.key === "Tab") {
     event.preventDefault();
-    const field = event.currentTarget;
     field.setRangeText("    ", field.selectionStart, field.selectionEnd, "end");
     field.dispatchEvent(new Event("input", { bubbles: true }));
   }
@@ -3100,6 +3101,7 @@ function highlightNamuSyntaxToken(value) {
  let kind="punctuation";
  if(token.startsWith("{{{")||token.startsWith("}}}"))kind="macro";
  else if(token==="[["||token==="]]"||token.startsWith("[include(")||token.startsWith("[anchor("))kind="link";
+ else if(token==="[*"||token==="[^")kind="footnote";
  else if(token==="||"||token==="|")kind="table";
  else if(token==="''"||token==="'''"||token==="__"||token==="~~"||token==="--"||token==="^^"||token===",," )kind="format";
  else if(token.startsWith("<")||token===">"||token==="=")kind="attribute";
@@ -3196,7 +3198,7 @@ function highlightNamuTagToken(token,syntax) {
 function highlightNamuInline(line) {
  const syntax=highlightNamuSyntaxToken;
  const content=value=>'<span class="mk-content">'+highlightNamuPlainText(value)+'</span>';
- const tokenPattern=/(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]\n]*\]|\[\^[^\]\n]*\]|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\[(?:목차|각주|br|date|clearfix|pagecount|toc)(?:\([^\]\n]*\))?\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-6][^}]*\}\}\}|\{\{\{#[^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|\{\{\{[^}]*\}\}\}|<(?:\/?(?:table|row|col|tablewidth|tableheight|tablealign|tabletextalign|tablebgcolor|tablecolor|tablebordercolor|rowbgcolor|rowcolor|colbgcolor|colcolor|width|height|align|textalign|bgcolor|color|bordercolor|class|style|id)(?:=[^>\n]*)?|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|--.*?--|\^\^.*?\^\^|,,.*?,,|\x60[^\x60\n]*\x60|\[\/?(?:table|tr|th|td)(?:\([^\]\n]*\)|=\d+)?\]|\|\||https?:\/\/[^\s<>\]]+|#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\b|(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(\s*[\d.%\s,+\/-]+\))/gi;
+ const tokenPattern=/(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]\n]*(?:\]|$)|\[\^[^\]\n]*(?:\]|$)|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\[(?:목차|각주|br|date|clearfix|pagecount|toc)(?:\([^\]\n]*\))?\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-6][^}]*\}\}\}|\{\{\{#[^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|\{\{\{[^}]*\}\}\}|<(?:\/?(?:table|row|col|tablewidth|tableheight|tablealign|tabletextalign|tablebgcolor|tablecolor|tablebordercolor|rowbgcolor|rowcolor|colbgcolor|colcolor|width|height|align|textalign|bgcolor|color|bordercolor|class|style|id)(?:=[^>\n]*)?|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|--.*?--|\^\^.*?\^\^|,,.*?,,|\x60[^\x60\n]*\x60|\[\/?(?:table|tr|th|td)(?:\([^\]\n]*\)|=\d+)?\]|\|\||https?:\/\/[^\s<>\]]+|#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\b|(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(\s*[\d.%\s,+\/-]+\))/gi;
  const text=String(line);
  let output="",last=0,match;
  while((match=tokenPattern.exec(text))){
@@ -3234,9 +3236,11 @@ function highlightNamuInline(line) {
      (separator>=0?syntax("|")+highlightNamuPlainText(inner.slice(separator+1)):"")+syntax("]]");
    }
   }else if(token.startsWith("[*")||token.startsWith("[^")){
-   const marker=token.startsWith("[*")?"[*":"[^",inner=token.slice(2,-1),split=inner.search(/\s/);
+   const complete=token.endsWith("]");
+   const marker=token.startsWith("[*")?"[*":"[^";
+   const inner=complete?token.slice(2,-1):token.slice(2),split=inner.search(/\s/);
    output+=syntax(marker)+'<span class="mk-footnote">'+highlightNamuPlainText(split>=0?inner.slice(0,split):inner)+'</span>'+
-    (split>=0?highlightNamuPlainText(inner.slice(split)):"")+syntax("]");
+    (split>=0?highlightNamuPlainText(inner.slice(split)):"")+(complete?syntax("]"):"");
   }else if(/^\[https?:\/\//i.test(token)){
    const inner=token.slice(1,-1),pipe=inner.indexOf("|"),separator=pipe>=0?pipe:inner.search(/\s/);
    const url=separator>=0?inner.slice(0,separator):inner,label=separator>=0?inner.slice(separator+(pipe>=0?1:0)).trim():"";
@@ -3313,6 +3317,38 @@ function highlightNamuLine(line,insideCode) {
  return highlightNamuInline(text);
 }
 
+function handleNamuSquareBracketKeydown(field,event) {
+ if(!field||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return false;
+ const start=field.selectionStart??0,end=field.selectionEnd??start;
+ const value=String(field.value||"");
+ if(event.key==="["){
+  event.preventDefault();
+  if(start===end&&value[start-1]==="["&&value[start]==="]"){
+   field.setRangeText("[]]",start,end+1,"end");
+   field.setSelectionRange(start+1,start+1);
+  }else{
+   const selected=value.slice(start,end);
+   field.setRangeText("["+selected+"]",start,end,"end");
+   const caret=start+1+selected.length;
+   field.setSelectionRange(selected?start+1:caret,selected?caret:caret);
+  }
+  field.dispatchEvent(new Event("input",{bubbles:true}));
+  return true;
+ }
+ if(event.key==="]"&&start===end&&value[start]==="]"){
+  event.preventDefault();
+  field.setSelectionRange(start+1,start+1);
+  return true;
+ }
+ if(event.key==="Backspace"&&start===end&&value[start-1]==="["&&value[start]==="]"){
+  event.preventDefault();
+  field.setRangeText("",start-1,start+1,"end");
+  field.dispatchEvent(new Event("input",{bubbles:true}));
+  return true;
+ }
+ return false;
+}
+
 function createDiscussionSyntaxEditor(options={}){
  const wrap=document.createElement("div");
  wrap.className="discussion-code-wrap";
@@ -3352,7 +3388,8 @@ function createDiscussionSyntaxEditor(options={}){
   pre.scrollTop=textarea.scrollTop;
   pre.scrollLeft=textarea.scrollLeft;
  };
- textarea.addEventListener("input",update);
+ textarea.addEventListener("keydown",event=>handleNamuSquareBracketKeydown(textarea,event));
+  textarea.addEventListener("input",update);
  textarea.addEventListener("keyup",update);
  textarea.addEventListener("click",update);
  textarea.addEventListener("scroll",()=>{
