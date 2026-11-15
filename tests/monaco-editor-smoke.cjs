@@ -19,7 +19,7 @@ assert.doesNotMatch(html, /editor-monaco\/monaco\.(?:js|css)|editor-monaco-host/
 
 assert.match(styles, /\.editor-code-wrap\.highlight-active #editor-content/, "the textarea must become transparent only after the matching overlay is ready");
 assert.match(styles, /body\.editor-active #editor-highlight\s*\{[^}]*position:relative!important;[\s\S]*?overflow:visible!important/s, "source highlight must contribute its full natural height");
-assert.match(styles, /#editor-highlight code \\.mk-heading-line::before/, "heading separator must not alter the line box height");
+assert.ok(styles.includes("#editor-highlight code .mk-heading-line::before"), "heading separator must not alter the line box height");
 assert.match(styles, /#editor-highlight \.mk-syntax/, "the original syntax token colors must remain defined");
 assert.match(styles, /#editor-highlight \.mk-include-target/, "include tokens must keep their dedicated color");
 assert.match(styles, /html\[data-theme="light"\] #editor-highlight/, "legacy syntax colors must support light mode");
