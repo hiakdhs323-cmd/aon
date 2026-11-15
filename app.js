@@ -3078,17 +3078,24 @@ const NAMU_HIGHLIGHT_COLOR_NAMES = new Set((
  "aliceblue antiquewhite aqua aquamarine azure beige bisque black blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgrey darkgreen darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray grey green greenyellow honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgrey lightgreen lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen transparent currentcolor"
 ).split(/\s+/));
 
-function highlightNamuColorValue(value) {
+function highlightNamuColorValue(value,interactivePicker=true) {
  const raw=String(value||"").trim(),lower=raw.toLowerCase();
  const validHex=/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw);
  const validFunction=/^(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(\s*[\d.%\s,+\/-]+\)$/i.test(raw);
  if(!validHex&&!validFunction&&!NAMU_HIGHLIGHT_COLOR_NAMES.has(lower))return escapeHighlightText(raw);
- return '<span class="mk-color-value" style="--mk-color-preview:'+escapeHighlightText(lower)+'" title="색상 미리보기: '+escapeHighlightText(raw)+'">'+escapeHighlightText(raw)+'</span>';
+ const pickerMatch=interactivePicker?raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i):null;
+ const pickerValue=pickerMatch&&pickerMatch[1].length===3
+  ?"#"+pickerMatch[1].split("").map(char=>char+char).join("").toLowerCase()
+  :pickerMatch?raw.toLowerCase():"";
+ const picker=pickerMatch
+  ?'<input class="mk-color-picker-inline" type="color" value="'+pickerValue+'" aria-label="색상 선택" title="색상 선택">'
+  :"";
+ return '<span class="mk-color-value'+(pickerMatch?' mk-color-value-has-picker':'')+'" data-source-color="'+escapeHighlightText(raw)+'" style="--mk-color-preview:'+escapeHighlightText(lower)+'" title="색상 미리보기: '+escapeHighlightText(raw)+'">'+picker+escapeHighlightText(raw)+'</span>';
 }
 
 function highlightNamuCssPropertyClass(property) {
  const name=String(property||"").toLowerCase();
- if(/^(?:color|fill|stroke|outline-color|text-decoration-color)$/.test(name))return "mk-css-property-color";
+ if(/^(?:color|fill|stroke|outline-color|text-decoration-color|accent-color|caret-color|column-rule-color|-webkit-text-fill-color|-webkit-text-stroke-color)$/.test(name))return "mk-css-property-color";
  if(/^(?:background|background-color|background-image)$/.test(name))return "mk-css-property-background";
  if(/^(?:border|border-.+|outline|outline-.+|box-shadow)$/.test(name))return "mk-css-property-border";
  if(/^(?:font-.+|text-.+|line-height|letter-spacing|word-spacing|white-space)$/.test(name))return "mk-css-property-text";
@@ -3109,7 +3116,7 @@ function highlightNamuSyntaxToken(value) {
  return '<span class="mk-syntax mk-syntax-'+kind+'">'+escapeHighlightText(token)+'</span>';
 }
 
-function highlightNamuPlainText(value,cssMode=false) {
+function highlightNamuPlainText(value,cssMode=false,interactivePicker=true) {
  const text=String(value??"");
  const alternatives=[
   '#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\\b',
@@ -3130,7 +3137,7 @@ function highlightNamuPlainText(value,cssMode=false) {
   output+=escapeHighlightText(text.slice(last,match.index));
   const token=match[0],lower=token.toLowerCase();
   if(token.startsWith("#")||/^(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(/i.test(token)||NAMU_HIGHLIGHT_COLOR_NAMES.has(lower)){
-   output+=highlightNamuColorValue(token);
+   output+=highlightNamuColorValue(token,interactivePicker);
   }else if(token==="!important"){
    output+='<span class="mk-css-important">'+escapeHighlightText(token)+'</span>';
   }else if(/^-?\d/.test(token)){
@@ -3149,7 +3156,7 @@ function highlightNamuPlainText(value,cssMode=false) {
 }
 
 function highlightNamuCssFragment(value) {
- const text=String(value||""),propertyPattern=/([a-z-]+)(\s*:\s*)/gi;
+ const text=String(value||""),propertyPattern=/(-{0,2}[a-z_][a-z0-9_-]*)(\s*:\s*)/gi;
  let output="",last=0,match;
  while((match=propertyPattern.exec(text))){
   output+=highlightNamuPlainText(text.slice(last,match.index),true);
@@ -3272,9 +3279,9 @@ function highlightNamuInline(line) {
   }else if(/^\{\{\{#/.test(token)){
    const macro=token.match(/^(\{\{\{)(#[^,\s}]+)(?:,([^,\s}]+))?(\s+)([\s\S]*?)(\}\}\})$/);
    if(macro)output+=syntax(macro[1])+highlightNamuColorValue(macro[2])+(macro[3]?syntax(",")+highlightNamuColorValue(macro[3]):"")+syntax(macro[4])+content(macro[5])+syntax(macro[6]);
-   else output+=syntax("{{{")+highlightNamuPlainText(token.slice(3,-3),true)+syntax("}}}");
+   else output+=syntax("{{{")+highlightNamuPlainText(token.slice(3,-3),true,false)+syntax("}}}");
   }else if(token.startsWith("{{{")){
-   output+=syntax("{{{")+'<span class="mk-inline-code">'+highlightNamuPlainText(token.slice(3,-3),true)+'</span>'+syntax("}}}");
+   output+=syntax("{{{")+'<span class="mk-inline-code">'+highlightNamuPlainText(token.slice(3,-3),true,false)+'</span>'+syntax("}}}");
   }else if(token==="||"){
    output+='<span class="mk-table-delimiter">'+syntax(token)+'</span>';
   }else if(token.startsWith("[/")||/^\[(?:table|tr|th|td)/i.test(token)){
@@ -3294,10 +3301,10 @@ function highlightNamuLine(line,insideCode) {
  const text=String(line||"");
  const syntax=highlightNamuSyntaxToken;
  if(text.trim()==="}}}")return syntax(text.trim());
- if(insideCode)return '<span class="mk-code-line">'+highlightNamuPlainText(text,true)+'</span>';
+ if(insideCode)return '<span class="mk-code-line">'+highlightNamuPlainText(text,true,false)+'</span>';
  if(/^\s*={2,6}.*?={2,6}\s*$/.test(text)){
   const match=text.match(/^(\s*)(={2,6})(.*?)(={2,6})(\s*)$/);
-  if(match)return escapeHighlightText(match[1])+syntax(match[2])+'<span class="mk-heading-text">'+highlightNamuInline(match[3])+'</span>'+syntax(match[4])+escapeHighlightText(match[5]);
+  if(match)return '<span class="mk-heading-line">'+escapeHighlightText(match[1])+syntax(match[2])+'<span class="mk-heading-text">'+highlightNamuInline(match[3])+'</span>'+syntax(match[4])+escapeHighlightText(match[5])+'</span>';
  }
  if(/^\s*\|\|/.test(text))return '<span class="mk-table-line">'+highlightNamuInline(text)+'</span>';
  if(/^\s*(?:\*+|\d+\.)\s/.test(text)){
@@ -3386,6 +3393,7 @@ function createDiscussionSyntaxEditor(options={}){
   pre.scrollTop=textarea.scrollTop;
   pre.scrollLeft=textarea.scrollLeft;
  };
+ bindNamuInlineColorPickers(code,textarea);
  textarea.addEventListener("keydown",event=>handleNamuSquareBracketKeydown(textarea,event));
   textarea.addEventListener("input",update);
  textarea.addEventListener("keyup",update);
@@ -3452,6 +3460,38 @@ function buildDiscussionBodyEditForm(options={}){
  return form;
 }
 
+
+function bindNamuInlineColorPickers(code,field) {
+ if(!code||!field||code.dataset.colorPickerBound==="true")return;
+ code.dataset.colorPickerBound="true";
+ code.addEventListener("input",event=>{
+  const picker=event.target?.closest?.("input.mk-color-picker-inline");
+  if(!picker||!code.contains(picker))return;
+  const token=picker.closest(".mk-color-value");
+  if(token)token.style.setProperty("--mk-color-preview",picker.value);
+ });
+ code.addEventListener("change",event=>{
+  const picker=event.target?.closest?.("input.mk-color-picker-inline");
+  if(!picker||!code.contains(picker))return;
+  const token=picker.closest(".mk-color-value");
+  if(!token)return;
+  const sourceColor=String(token.dataset.sourceColor||token.textContent||"").trim();
+  if(!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return;
+  const range=document.createRange();
+  range.selectNodeContents(code);
+  range.setEndBefore(token);
+  const start=range.toString().length;
+  if(field.value.slice(start,start+sourceColor.length).toLowerCase()!==sourceColor.toLowerCase())return;
+  const nextColor=String(picker.value||"").toLowerCase();
+  if(!/^#[0-9a-f]{6}$/i.test(nextColor))return;
+  field.setRangeText(nextColor,start,start+sourceColor.length,"end");
+  field.dispatchEvent(new Event("input",{bubbles:true}));
+  const caret=start+nextColor.length;
+  field.focus({preventScroll:true});
+  field.setSelectionRange(caret,caret);
+ });
+}
+
 let editorHighlightFrame = 0;
 let editorHighlightSource = null;
 function resetEditorHighlightState() {
@@ -3462,6 +3502,7 @@ function resetEditorHighlightState() {
 function updateEditorHighlight({immediate=false}={}) {
   const field = $("editor-content"), code = $("editor-highlight-code"), pre = $("editor-highlight");
   if (!field || !code || !pre) return;
+  bindNamuInlineColorPickers(code,field);
   const lineNumbers = $("editor-line-numbers");
   const syncScroll = () => {
     pre.scrollTop = field.scrollTop;
