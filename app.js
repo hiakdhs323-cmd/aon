@@ -3341,6 +3341,46 @@ function highlightNamuLine(line,insideCode) {
  if(/^\s*##[\s\S]*##\s*$/.test(text))return '<span class="mk-comment">'+escapeHighlightText(text)+'</span>';
  return highlightNamuInline(text);
 }
+function renderEditorHighlightLines(value) {
+  const source = String(value ?? "");
+  const lines = source.split("\n");
+  let insideCode = false;
+  let previousWasBlockHeading = false;
+  let trailingEmptyAfterHeading = false;
+  let output = "";
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
+    let rendered;
+
+    if (opening) {
+      rendered = highlightNamuLine(line, false);
+      insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
+    } else if (/^\s*\{\{\{\s*$/.test(line)) {
+      insideCode = true;
+      rendered = '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
+    } else if (/^\s*\}\}\}\s*$/.test(line)) {
+      insideCode = false;
+      rendered = highlightNamuLine(line, false);
+    } else {
+      rendered = highlightNamuLine(line, insideCode);
+    }
+
+    if (index > 0 && !previousWasBlockHeading) output += "\n";
+    output += rendered;
+
+    const isBlockHeading = rendered.startsWith('<span class="mk-heading-line">');
+    trailingEmptyAfterHeading = index === lines.length - 1 && line === "" && previousWasBlockHeading;
+    previousWasBlockHeading = isBlockHeading;
+  }
+
+  // A block heading already creates a line boundary. Preserve a final editable
+  // blank line only when the source ends immediately after that block.
+  if (source.endsWith("\n") && trailingEmptyAfterHeading) output += "\n";
+  return output;
+}
+
 function handleNamuSquareBracketKeydown(field,event) {
  if(!field||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return false;
  const start=field.selectionStart??0,end=field.selectionEnd??start;
@@ -3558,45 +3598,6 @@ function bindNamuInlineColorPickers(code,field) {
   NAMU_COLOR_PICKER_BINDINGS.set(code,state);
  }
  return state.render;
-}
-function renderEditorHighlightLines(value) {
-  const source = String(value ?? "");
-  const lines = source.split("\n");
-  let insideCode = false;
-  let previousWasBlockHeading = false;
-  let trailingEmptyAfterHeading = false;
-  let output = "";
-
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
-    const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
-    let rendered;
-
-    if (opening) {
-      rendered = highlightNamuLine(line, false);
-      insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
-    } else if (/^\s*\{\{\{\s*$/.test(line)) {
-      insideCode = true;
-      rendered = '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
-    } else if (/^\s*\}\}\}\s*$/.test(line)) {
-      insideCode = false;
-      rendered = highlightNamuLine(line, false);
-    } else {
-      rendered = highlightNamuLine(line, insideCode);
-    }
-
-    if (index > 0 && !previousWasBlockHeading) output += "\n";
-    output += rendered;
-
-    const isBlockHeading = rendered.startsWith('<span class="mk-heading-line">');
-    trailingEmptyAfterHeading = index === lines.length - 1 && line === "" && previousWasBlockHeading;
-    previousWasBlockHeading = isBlockHeading;
-  }
-
-  // A block heading already creates a line boundary. Preserve a final editable
-  // blank line only when the source ends immediately after that block.
-  if (source.endsWith("\n") && trailingEmptyAfterHeading) output += "\n";
-  return output;
 }
 let editorHighlightFrame = 0;
 let editorHighlightSource = null;
