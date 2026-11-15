@@ -916,9 +916,10 @@ function extractNamuCategoryNames(source) {
 }
 function mergeNamuRenderMetadata(metadata, source) {
   const value = metadata && typeof metadata === "object" ? { ...metadata } : {};
-  const parserCategories = Array.isArray(value.categories) ? value.categories : [];
-  const sourceCategories = extractNamuCategoryNames(source);
-  value.categories = [...new Set([...parserCategories, ...sourceCategories].map(item => String(item || "").trim()).filter(Boolean))];
+  // Categories belong to the page being rendered. Parser metadata can include
+  // categories encountered inside transcluded [include] documents, so derive
+  // this field exclusively from the original page source.
+  value.categories = extractNamuCategoryNames(source);
   return value;
 }
 function parseTableColorRgb(value) {
@@ -1085,7 +1086,7 @@ async function renderNamuMarkupOnWorker(env, title, source, linkColors = {}) {
     if (color) colors[key] = color;
   }
   const sourceDigest = namuFileHash(sourceText + "\n" + JSON.stringify(colors));
-  const cacheKey = "namutest-main-v6-single-footnote-private-assets:" + String(title) + ":" + sourceDigest;
+  const cacheKey = "namutest-main-v7-include-category-isolation:" + String(title) + ":" + sourceDigest;
   const cached = namuRenderCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (namuRenderPending.has(cacheKey)) return namuRenderPending.get(cacheKey);
@@ -1228,7 +1229,7 @@ function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
     try { assetPath = decodeURIComponent(parsed.pathname.slice(basePath.length)); }
     catch { return attribute; }
     if (!staticAssets.has(assetPath)) return attribute;
-    parsed.searchParams.set("aonfix", localAssets ? "20261114-private-assets-v1" : "20261114-pages-fallback-v1");
+    parsed.searchParams.set("aonfix", "20261115-include-category-isolation-v1");
     const prefix = localAssets ? "/" : "/aon/";
     return name + "=" + quote + prefix + assetPath + parsed.search + parsed.hash + quote;
   });
@@ -1333,7 +1334,7 @@ async function loadFrontendShell(env) {
       const shellResponse = localAssets
         ? await env.ASSETS.fetch(new Request(origin + "/index.html", { headers: { "Accept": "text/html" } }))
         : await fetchFrontendWithRetry(
-            origin + "/?aonwiki-shell=20261114-private-assets-v1",
+            origin + "/?aonwiki-shell=20261115-include-category-isolation-v1",
             { headers: { "Accept": "text/html" }, cf: { cacheTtl: 300, cacheEverything: true } }
           );
       if (!shellResponse.ok) {

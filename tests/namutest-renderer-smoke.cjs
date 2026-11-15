@@ -18,7 +18,7 @@ assert.match(wrapper, /from "\.\/Namu_test-main\/namumark\.js"/, "browser wrappe
 assert.match(worker, /from "\.\.\/\.\.\/Namu_test-main\/namumark\.js"/, "Worker SSR must use the same Namu_test-main parser glue");
 assert.match(worker, /from "\.\.\/\.\.\/Namu_test-main\/namumark_bg\.wasm"/, "Worker SSR must use the Namu_test-main WASM binary");
 assert.doesNotMatch(worker, /worker\/src\/namumark-parser|namumark-parser\.js/, "Worker must not include the retired parser bundle");
-assert.match(worker, /namutest-main-v6-single-footnote-private-assets:/, "persistent cache keys must be namespaced by the current renderer and asset version");
+assert.match(worker, /namutest-main-v7-include-category-isolation:/, "persistent cache keys must be namespaced by the category-isolation renderer version");
 assert.match(worker, /clearPersistentNamuRenderCache\(env\);/, "page mutations must invalidate all rendered link states");
 assert.match(app, /renderedDocumentCache\.set\(key,\{value:data,expiresAt:Date\.now\(\)\+45000\}\)/, "document renders must use a bounded browser cache");
 assert.match(worker, /if \(stored && stored\.source_hash === cacheKey\)/, "old renderer cache entries must never be reused");
@@ -252,6 +252,15 @@ assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*
   process.exitCode = 1;
 });
 
+
+const metadataMerger = worker.slice(worker.indexOf("function mergeNamuRenderMetadata"), worker.indexOf("function parseTableColorRgb"));
+assert.match(metadataMerger, /value\.categories\s*=\s*extractNamuCategoryNames\(source\)/, "server categories must come only from the owning page source");
+assert.doesNotMatch(metadataMerger, /parserCategories/, "included parser categories must not leak into the owning page metadata");
+const clientRenderer = app.slice(app.indexOf("async function renderClientParsedDocument"), app.indexOf("function ensureClientDocumentToc"));
+assert.match(clientRenderer, /extractClientNamuCategoryNames\(sourceForCategories\)/, "browser fallback categories must come from the original page source");
+assert.doesNotMatch(clientRenderer, /result\?\.categories/, "browser parser metadata must not add categories from included documents");
+assert.match(app, /renderClientParsedDocument\(data\.clientRender, staging, docTitle, source\)/, "editor preview must pass its unexpanded source for category metadata");
+assert.match(app, /renderClientParsedDocument\(data\.clientRender,staging,data\.page\.title\|\|title,data\.page\.content\|\|""\)/, "document rendering must pass its unexpanded source for category metadata");
 
 assert.match(read("index.html"), /id="wiki-categories" class="wiki-categories-host"/, "document category host must sit below the article tools");
 assert.match(app, /const host=document\.getElementById\("wiki-categories"\)/, "document categories must render into the dedicated host");

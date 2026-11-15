@@ -1221,7 +1221,17 @@ async function activateAonWikiInteractions(root) {
  }
 }
 
-async function renderClientParsedDocument(clientRender, target, docTitle) {
+function extractClientNamuCategoryNames(source) {
+ const categories=new Set();
+ for(const match of String(source||"").matchAll(/\[\[(?:분류|category):([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)){
+  let name=String(match[1]||"").trim();
+  while(/^(?:분류|category):/i.test(name))name=name.replace(/^(?:분류|category):/i,"").trim();
+  if(name)categories.add(name);
+ }
+ return [...categories];
+}
+
+async function renderClientParsedDocument(clientRender, target, docTitle, categorySource = null) {
  const renderer = await getAonNamuWasm();
  const records = Array.isArray(clientRender?.records) ? clientRender.records : [];
  const lookup = new Map();
@@ -1259,13 +1269,15 @@ async function renderClientParsedDocument(clientRender, target, docTitle) {
  options.document_query_prefix = "/w/";
  options.dark_class = "dark";
  const source=String(clientRender?.source||"");
+ const sourceForCategories=categorySource == null ? source : String(categorySource);
  let html="";
- const categories=new Set();
+ // Expanded [include] markup can contain another page's categories. Only
+ // collect the owning document's categories from its original, unexpanded text.
+ const categories=new Set(extractClientNamuCategoryNames(sourceForCategories));
  const backlinks=new Set();
  const parseResults=[];
  const consumeResult=result=>{
   parseResults.push(result);
-  (result?.categories||[]).forEach(value=>{if(String(value||"").trim())categories.add(String(value).trim())});
   (result?.backlinks||[]).forEach(value=>{if(String(value||"").trim())backlinks.add(String(value).trim())});
   return result;
  };
@@ -1488,7 +1500,7 @@ async function renderNamuMarkup(source, target, docTitle = currentTitle || "대�
     let clientMetadata = null;
     if (data.clientRender) {
       const staging = document.createElement("article");
-      clientMetadata = await renderClientParsedDocument(data.clientRender, staging, docTitle);
+      clientMetadata = await renderClientParsedDocument(data.clientRender, staging, docTitle, source);
       if (serverRenderVersions.get(target) !== version) return;
       target.replaceChildren(...staging.childNodes);
       // renderClientParsedDocument prepares the temporary article. Mirror the
@@ -2434,7 +2446,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   const staging=document.createElement("article");
   let renderMetadata = data.metadata || { categories: [], backlinks: [] };
   if(data.clientRender){
-   renderMetadata = await renderClientParsedDocument(data.clientRender,staging,data.page.title||title);
+   renderMetadata = await renderClientParsedDocument(data.clientRender,staging,data.page.title||title,data.page.content||"");
   }else{
    appendSanitizedServerHtml(staging,data.html);
    rewriteClientNamuImageUrls(staging,data.imageMap);
