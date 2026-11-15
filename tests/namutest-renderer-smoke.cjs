@@ -44,7 +44,7 @@ assert.match(worker, /property="og:description"/, "document responses must publi
 assert.match(worker, /id="aonwiki-page-jsonld"/, "document responses must publish per-page structured data");
 assert.match(worker, /max-image-preview:large/, "indexable document responses must allow rich search snippets");
 assert.match(worker, /SELECT title, updated_at FROM pages ORDER BY title COLLATE NOCASE ASC LIMIT 5000/, "dynamic sitemap must continue enumerating all public wiki documents");
-assert.match(robots, /Sitemap: https:\/\/aon\.hiakdhs323\.workers\.dev\/sitemap\.xml/, "robots.txt must reference the canonical dynamic sitemap");
+assert.match(read("robots.txt"), /Sitemap: https:\/\/aon\.hiakdhs323\.workers\.dev\/sitemap\.xml/, "robots.txt must reference the canonical dynamic sitemap");
 
 
 const ssrBundleScriptPattern = /<script\b(?=[^>]*\bsrc=["'](?:\/aon)?\/?(?:app\.bundle\.js|app\.js)(?:\?[^"']*)?["'])[^>]*>\s*<\/script>/i;
