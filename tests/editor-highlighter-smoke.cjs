@@ -29,7 +29,7 @@ const cases = [
   ["external links", h.highlightNamuInline("[https://example.com 표시]"), ["mk-external-url"]],
   ["inline formatting", h.highlightNamuInline("'''굵게''' ''기울임'' __밑줄__ ~~취소선~~ ^^위첨자^^ ,,아래첨자,,"), ["mk-bold-text", "mk-italic-text", "mk-underline-text", "mk-strike-text", "mk-script-text"]],
   ["directives", h.highlightNamuInline("[br] [youtube(id)] [ruby(漢字,かんじ)] [math(x^2)]"), ["mk-magic", "mk-directive"]],
-  ["table options and colours", h.highlightNamuLine("||<tablewidth=100%><bgcolor=#aabfdd>셀||", false), ["mk-table-line", "mk-table-delimiter", "mk-attribute-name", "mk-color-picker-inline"]],
+  ["table options and colours", h.highlightNamuLine("||<tablewidth=100%><bgcolor=#aabfdd>셀||", false), ["mk-table-line", "mk-table-delimiter", "mk-attribute-name", "mk-color-value-has-picker"]],
   ["wiki style custom properties", h.highlightNamuInline('{{{#!wiki style="--accent-color: #aabfdd; -webkit-text-fill-color: #ffffff;"'), ["mk-macro-name", "mk-css-variable", "mk-css-property-color", "mk-color-picker-inline"]],
   ["colour macros", h.highlightNamuInline("{{{#aabfdd,#ffffff 색상}}}"), ["mk-color-picker-inline"]],
   ["headings", h.highlightNamuLine("== 이름 ==", false), ["mk-heading-line", "mk-heading-text"]],
