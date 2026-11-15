@@ -3114,7 +3114,7 @@ function highlightNamuPlainText(value,cssMode=false) {
   '(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\\(\\s*[\\d.%\\s,+/-]+\\)',
   '(?:color|background|background-color|border|border-color|border-top-color|border-bottom-color|outline-color|text-decoration-color|fill|stroke|opacity|font-size|line-height|margin|padding|width|height|display|position|text-align|vertical-align|border-radius|box-shadow|transform|transition)(?=\\s*:)',
   '-?\\d+(?:\\.\\d+)?(?:px|rem|em|vh|vw|vmin|vmax|%|deg|ms|s)\\b',
-  '!important'
+  '!important',
   '(?:linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient|var|calc|min|max|clamp|url)\\([^)]*\\)'
  ];
  if(cssMode){
