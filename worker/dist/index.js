@@ -1957,6 +1957,12 @@ var index_default = {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "\uC694\uCCAD \uBCF8\uBB38\uC740 2MB \uC774\uD558\uB9CC \uD5C8\uC6A9\uB429\uB2C8\uB2E4." }, 413, cors);
     }
     try {
+      if (request.method === "GET" && url.pathname === "/favicon.ico") {
+        const headers = new Headers(getSecurityHeaders());
+        headers.set("Location", new URL("/aonwiki-mark.svg", url.origin).toString());
+        headers.set("Cache-Control", "public, max-age=86400");
+        return new Response(null, { status: 302, headers });
+      }
       if (request.method === "GET" && url.pathname === "/robots.txt") {
         const origin = publicSiteOrigin(request, env);
         return new Response("User-agent: *\nAllow: /\nSitemap: " + origin + "/sitemap.xml\n", { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=300" } });
@@ -2020,7 +2026,33 @@ var index_default = {
         }
         title = cleanTitle(title);
         if (!title) return new Response("\uC798\uBABB\uB41C \uBB38\uC11C \uC8FC\uC18C\uC785\uB2C8\uB2E4.", { status: 400 });
-        return await renderFullWikiDocument(request, env, title);
+        try {
+          return await renderFullWikiDocument(request, env, title);
+        } catch (error) {
+          console.error("AonWiki document SSR failed; serving client-side route fallback", {
+            title,
+            message: String(error?.message || error || "unknown")
+          });
+          try {
+            const { shell } = await loadFrontendShell(env);
+            const headers = new Headers(getSecurityHeaders());
+            headers.set("Content-Type", "text/html; charset=utf-8");
+            headers.set("Cache-Control", "no-store");
+            headers.set("X-AonWiki-Render", "client-fallback");
+            headers.set("X-AonWiki-SSR-Fallback", "1");
+            return new Response(shell, { status: 200, headers });
+          } catch (fallbackError) {
+            console.error("AonWiki client-side document fallback failed", {
+              title,
+              message: String(fallbackError?.message || fallbackError || "unknown")
+            });
+            const headers = new Headers(getSecurityHeaders());
+            headers.set("Content-Type", "text/plain; charset=utf-8");
+            headers.set("Cache-Control", "no-store");
+            headers.set("Retry-After", "2");
+            return new Response("\uBB38\uC11C\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.", { status: 503, headers });
+          }
+        }
       }
       if (request.method === "GET" && url.pathname.toLowerCase() === "/search") {
         const { shell } = await loadFrontendShell(env);
