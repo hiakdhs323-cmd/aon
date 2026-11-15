@@ -3559,6 +3559,22 @@ function bindNamuInlineColorPickers(code,field) {
  }
  return state.render;
 }
+function resizeEditorSourcePane() {
+  const field = $("editor-content");
+  const wrap = $("editor-code-wrap");
+  if (!field || !wrap || !document.body.classList.contains("editor-active")) return;
+
+  // Measure the textarea's own layout so highlighted text and the caret layer
+  // retain identical wrapping and click coordinates.
+  const previousScrollTop = field.scrollTop;
+  field.style.setProperty("height", "1px", "important");
+  const contentHeight = Math.ceil(field.scrollHeight + 6);
+  field.style.removeProperty("height");
+
+  const minHeight = Number.parseFloat(getComputedStyle(wrap).minHeight) || 320;
+  wrap.style.setProperty("height", Math.max(minHeight, contentHeight) + "px", "important");
+  field.scrollTop = previousScrollTop;
+}
 let editorHighlightFrame = 0;
 let editorHighlightSource = null;
 function resetEditorHighlightState() {
@@ -3607,6 +3623,7 @@ function updateEditorHighlight({immediate=false}={}) {
     editorHighlightSource = value;
     pre.dataset.sourceText = value;
     updateLineNumbers();
+    resizeEditorSourcePane();
     const wrap = field.closest(".editor-code-wrap");
     if (wrap) wrap.classList.add("highlight-active");
     syncScroll();
@@ -3635,6 +3652,15 @@ $("editor-content").addEventListener("scroll", () => {
 });
 $("editor-content").addEventListener("input", updateEditorHighlight);
 $("editor-content").addEventListener("compositionend", updateEditorHighlight);
+let editorSourceResizeFrame = 0;
+window.addEventListener("resize", () => {
+  if (!$("editor-view") || $("editor-view").hidden) return;
+  if (editorSourceResizeFrame) cancelAnimationFrame(editorSourceResizeFrame);
+  editorSourceResizeFrame = requestAnimationFrame(() => {
+    editorSourceResizeFrame = 0;
+    resizeEditorSourcePane();
+  });
+}, { passive: true });
 
 function insertEditorMarkup(kind){
  const field=$("editor-content");

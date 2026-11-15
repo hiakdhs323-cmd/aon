@@ -95,7 +95,10 @@ assert.match(app, /const left=rect\.right-wrapRect\.left-wrap\.clientLeft\+4;/, 
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:visible!important/s, "the html viewport must own vertical editor scrolling");
 assert.match(css, /body\.editor-active\{[^}]*overflow:visible!important/s, "body must not create a nested scroll container while editing");
 
-assert.doesNotMatch(app, /resizeEditorSourcePane|editorSourceResizeFrame/, "source height must not depend on a stale JavaScript measurement");
-assert.match(css, /body\.editor-active #editor-highlight\s*\{[^}]*position:relative!important;[\s\S]*?height:auto!important;[\s\S]*?overflow:visible!important/s, "highlighted source must participate in normal flow and determine the full editor height");
-assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*position:absolute!important;[\s\S]*?height:100%!important;[\s\S]*?overflow:hidden!important/s, "the textarea must overlay the complete intrinsic-height source without an inner scroll area");
+assert.match(app, /function resizeEditorSourcePane\(\)[\s\S]*?field\.scrollHeight[\s\S]*?wrap\.style\.setProperty\("height"/, "source height must grow using the textarea's exact text layout");
+assert.match(app, /updateLineNumbers\(\);\s*resizeEditorSourcePane\(\);/, "source height must refresh as the text changes");
+assert.match(css, /body\.editor-active #editor-highlight\s*\{[^}]*position:absolute!important;[\s\S]*?inset:0!important/s, "the highlighted text must remain precisely overlaid on the textarea");
+assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*position:absolute!important;[\s\S]*?inset:0!important;[\s\S]*?height:100%!important/s, "the textarea must occupy the same exact overlay box as the highlighted text");
+assert.match(css, /body\.editor-active #editor-highlight code \.mk-bold-text[\s\S]*?font-weight:400!important/, "bold syntax colouring must not alter visible glyph width");
+assert.match(css, /body\.editor-active #editor-highlight code \.mk-italic-text[\s\S]*?font-style:normal!important/, "italic syntax colouring must not alter visible glyph width");
 assert.match(css, /body\.editor-active \.editor-code-wrap,[\s\S]*?height:auto!important;[\s\S]*?max-height:none!important/, "the source editor must not have a viewport-height cap");

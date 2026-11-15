@@ -6213,7 +6213,7 @@ body.editor-active .editor-card{
 }
 
 
-/* The highlighted source is the intrinsic-height layer; the textarea only overlays it. */
+/* Keep highlight and input as identical overlay layers; measure the textarea for total height. */
 body.editor-active .editor-code-wrap,
 body.editor-active .editor-code-wrap.monaco-active {
   position:relative!important;
@@ -6226,33 +6226,38 @@ body.editor-active .editor-code-wrap.monaco-active {
   overflow:hidden!important;
 }
 body.editor-active #editor-highlight {
-  position:relative!important;
-  inset:auto!important;
-  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
   box-sizing:border-box!important;
+  display:block!important;
   width:100%!important;
-  min-height:clamp(320px,53dvh,520px)!important;
-  height:auto!important;
+  height:100%!important;
+  min-height:0!important;
   margin:0!important;
   padding:10px 13px 10px 61px!important;
-  overflow:visible!important;
+  overflow:hidden!important;
   white-space:pre-wrap!important;
   overflow-wrap:anywhere!important;
 }
 body.editor-active #editor-highlight code {
   display:block!important;
-  min-height:0!important;
+  min-height:100%!important;
   white-space:inherit!important;
   overflow-wrap:inherit!important;
 }
 body.editor-active #editor-content {
   position:absolute!important;
   inset:0!important;
+  z-index:2!important;
   box-sizing:border-box!important;
+  display:block!important;
   width:100%!important;
   height:100%!important;
   min-height:0!important;
   max-height:none!important;
+  margin:0!important;
+  padding:10px 13px 10px 61px!important;
   overflow:hidden!important;
   white-space:pre-wrap!important;
   overflow-wrap:anywhere!important;
@@ -6264,4 +6269,17 @@ body.editor-active #editor-line-numbers {
   bottom:0!important;
   overflow:hidden!important;
 }
-body.editor-active #editor-line-numbers{height:100%!important}
+
+/* The visible highlight must never change glyph advance relative to the textarea. */
+body.editor-active #editor-highlight code .mk-bold-text,
+body.editor-active #editor-highlight code .mk-bold-text .mk-content {
+  font-weight:400!important;
+}
+body.editor-active #editor-highlight code .mk-italic-text,
+body.editor-active #editor-highlight code .mk-italic-text .mk-content {
+  font-style:normal!important;
+}
+body.editor-active #editor-highlight code sup.mk-script-text,
+body.editor-active #editor-highlight code sub.mk-script-text {
+  transform:translateY(0) scaleY(.82)!important;
+}
