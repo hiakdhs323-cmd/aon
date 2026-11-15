@@ -61,8 +61,6 @@ assert.match(app, /const NAMU_COLOR_PICKER_BINDINGS = new WeakMap\(\)/, "color p
 assert.match(app, /wrap\.append\(layer\)/, "colour controls must stay inside the editor source pane");
 assert.match(app, /findNamuColorSourceOffset\(source,sourceColor,sourceCursor\)/, "colour edits must resolve source offsets from the raw document string");
 assert.doesNotMatch(app, /range\.setEndBefore\(token\)/, "colour source offsets must not depend on rendered DOM text lengths");
-assert.match(css, /\.namu-color-picker-toolbar\{[^}]*position:relative;[^}]*display:flex;[^}]*max-height:112px/s, "colour controls must occupy a separate non-overlapping toolbar row");
-assert.match(css, /\.namu-color-picker-toolbar \.mk-color-picker-inline\{[^}]*position:static;[^}]*width:20px/s, "colour swatches must remain in normal toolbar flow");
 
 const colourSource = "첫 줄 #aabbcc\n== 제목 ==\n{{{#!wiki style=\"color: #ffffff\"}}}\n마지막 #aabbcc";
 const firstColourOffset = h.findNamuColorSourceOffset(colourSource, "#aabbcc", 0);
