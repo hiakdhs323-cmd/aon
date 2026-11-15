@@ -3107,7 +3107,7 @@ function highlightNamuPlainText(value,cssMode=false) {
    output+=highlightNamuColorValue(token);
   }else if(token==="!important"){
    output+='<span class="mk-css-important">'+escapeHighlightText(token)+'</span>';
-  }else if(/^-?\\d/.test(token)){
+  }else if(/^-?\d/.test(token)){
    output+='<span class="mk-number">'+escapeHighlightText(token)+'</span>';
   }else{
    output+='<span class="mk-css-property">'+escapeHighlightText(token)+'</span>';
@@ -3119,7 +3119,7 @@ function highlightNamuPlainText(value,cssMode=false) {
 }
 
 function highlightNamuCssFragment(value) {
- const text=String(value||""),propertyPattern=/([a-z-]+)(\\s*:\\s*)/gi;
+ const text=String(value||""),propertyPattern=/([a-z-]+)(\s*:\s*)/gi;
  let output="",last=0,match;
  while((match=propertyPattern.exec(text))){
   output+=highlightNamuPlainText(text.slice(last,match.index),true);
@@ -3132,7 +3132,7 @@ function highlightNamuCssFragment(value) {
 function syntaxQuote(value){return '<span class="mk-string-quote">'+escapeHighlightText(value)+'</span>';}
 
 function highlightNamuAttributeText(value) {
- const text=String(value||""),pattern=/([a-z][a-z0-9_-]*)(\\s*=\\s*)("(?:[^"]*)"|'(?:[^']*)'|[^\\s>]+)|([^\\s]+)/gi;
+ const text=String(value||""),pattern=/([a-z][a-z0-9_-]*)(\s*=\s*)("(?:[^"]*)"|'(?:[^']*)'|[^\s>]+)|([^\s]+)/gi;
  let output="",last=0,match;
  while((match=pattern.exec(text))){
   output+=highlightNamuPlainText(text.slice(last,match.index));
@@ -3158,7 +3158,7 @@ function highlightNamuTagToken(token,syntax) {
   const isColor=/(?:bgcolor|color|bordercolor)$/i.test(option[1]);
   return syntax("<")+'<span class="mk-attribute-name">'+escapeHighlightText(option[1])+'</span>'+syntax("=")+highlightNamuPlainText(option[2],isColor)+syntax(">");
  }
- const match=String(token).match(/^<([a-z][a-z0-9_-]*)([\\s\\S]*)>$/i);
+ const match=String(token).match(/^<([a-z][a-z0-9_-]*)([\s\S]*)>$/i);
  if(!match)return '<span class="mk-table-option">'+syntax(token)+'</span>';
  return syntax("<")+'<span class="mk-tag-name">'+escapeHighlightText(match[1])+'</span>'+
    highlightNamuAttributeText(match[2])+syntax(">");
@@ -3186,10 +3186,10 @@ function highlightNamuInline(line) {
    output+=syntax("^^")+'<sup class="mk-script-text">'+content(token.slice(2,-2))+'</sup>'+syntax("^^");
   }else if(token.startsWith(",,")){
    output+=syntax(",,")+'<sub class="mk-script-text">'+content(token.slice(2,-2))+'</sub>'+syntax(",,");
-  }else if(token.startsWith("[[")&&/^\\[\\[(?:분류|category):/i.test(token)){
+  }else if(token.startsWith("[[")&&/^\[\[(?:분류|category):/i.test(token)){
    const inner=token.slice(2,-2),colon=inner.indexOf(":");
    output+=syntax("[[")+'<span class="mk-category-label">'+escapeHighlightText(inner.slice(0,colon+1))+'</span>'+highlightNamuPlainText(inner.slice(colon+1))+syntax("]]");
-  }else if(token.startsWith("[[")&&/^\\[\\[(?:파일|file):/i.test(token)){
+  }else if(token.startsWith("[[")&&/^\[\[(?:파일|file):/i.test(token)){
    const inner=token.slice(2,-2),colon=inner.indexOf(":"),pipe=inner.indexOf("|",colon+1);
    output+=syntax("[[")+'<span class="mk-file-label">'+escapeHighlightText(inner.slice(0,colon+1))+'</span>'+
     highlightNamuPlainText(pipe>=0?inner.slice(colon+1,pipe):inner.slice(colon+1))+
@@ -3205,50 +3205,50 @@ function highlightNamuInline(line) {
      (separator>=0?syntax("|")+highlightNamuPlainText(inner.slice(separator+1)):"")+syntax("]]");
    }
   }else if(token.startsWith("[*")||token.startsWith("[^")){
-   const marker=token.startsWith("[*")?"[*":"[^",inner=token.slice(2,-1),split=inner.search(/\\s/);
+   const marker=token.startsWith("[*")?"[*":"[^",inner=token.slice(2,-1),split=inner.search(/\s/);
    output+=syntax(marker)+'<span class="mk-footnote">'+highlightNamuPlainText(split>=0?inner.slice(0,split):inner)+'</span>'+
     (split>=0?highlightNamuPlainText(inner.slice(split)):"")+syntax("]");
-  }else if(/^\\[https?:\\/\\//i.test(token)){
-   const inner=token.slice(1,-1),pipe=inner.indexOf("|"),separator=pipe>=0?pipe:inner.search(/\\s/);
+  }else if(/^\[https?:\/\//i.test(token)){
+   const inner=token.slice(1,-1),pipe=inner.indexOf("|"),separator=pipe>=0?pipe:inner.search(/\s/);
    const url=separator>=0?inner.slice(0,separator):inner,label=separator>=0?inner.slice(separator+(pipe>=0?1:0)).trim():"";
    output+=syntax("[")+'<span class="mk-external-url">'+escapeHighlightText(url)+'</span>'+
     (label?syntax(pipe>=0?"|":" ")+content(label):"")+syntax("]");
-  }else if(/^https?:\\/\\//i.test(token)){
+  }else if(/^https?:\/\//i.test(token)){
    output+='<span class="mk-external-url">'+escapeHighlightText(token)+'</span>';
-  }else if(/^\\[include\\(/i.test(token)){
+  }else if(/^\[include\(/i.test(token)){
    const inner=token.slice(9,-2),comma=inner.indexOf(",");
    output+=syntax("[include(")+'<span class="mk-include-target">'+escapeHighlightText(comma>=0?inner.slice(0,comma):inner)+'</span>'+
     (comma>=0?syntax(",")+highlightNamuAttributeText(inner.slice(comma+1)):"")+syntax(")]");
-  }else if(/^\\[anchor\\(/i.test(token)){
+  }else if(/^\[anchor\(/i.test(token)){
    output+=syntax("[anchor(")+'<span class="mk-anchor-target">'+highlightNamuPlainText(token.slice(8,-2))+'</span>'+syntax(")]");
-  }else if(/^\\[(?:목차|각주|br|date|clearfix|pagecount|toc)/i.test(token)){
+  }else if(/^\[(?:목차|각주|br|date|clearfix|pagecount|toc)/i.test(token)){
    const inner=token.slice(1,-1),open=inner.indexOf("(");
    output+=syntax("[")+'<span class="mk-magic">'+escapeHighlightText(open>=0?inner.slice(0,open):inner)+'</span>'+
     (open>=0?syntax("(")+highlightNamuPlainText(inner.slice(open+1,-1))+syntax(")"):"")+syntax("]");
-  }else if(/^\\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\\(/i.test(token)){
+  }else if(/^\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\(/i.test(token)){
    const open=token.indexOf("(");
    output+=syntax("[")+'<span class="mk-directive">'+escapeHighlightText(token.slice(1,open))+'</span>'+syntax("(")+
     highlightNamuAttributeText(token.slice(open+1,-2))+syntax(")]");
   }else if(token.startsWith("<")){
    output+=highlightNamuTagToken(token,syntax);
-  }else if(/^\\{\\{\\{#!/i.test(token)){
-   const macro=token.match(/^(\\{\\{\\{#!)([a-z0-9_-]+)([\\s\\S]*)$/i);
+  }else if(/^\{\{\{#!/i.test(token)){
+   const macro=token.match(/^(\{\{\{#!)([a-z0-9_-]+)([\s\S]*)$/i);
    output+=syntax(macro[1])+'<span class="mk-macro-name">'+escapeHighlightText(macro[2])+'</span>'+highlightNamuAttributeText(macro[3]);
-  }else if(/^\\{\\{\\{[+-][1-6]/.test(token)){
-   const macro=token.match(/^(\\{\\{\\{)([+-][1-6])(\\s*)([\\s\\S]*?)(\\}\\}\\})$/);
+  }else if(/^\{\{\{[+-][1-6]/.test(token)){
+   const macro=token.match(/^(\{\{\{)([+-][1-6])(\s*)([\s\S]*?)(\}\}\})$/);
    if(macro)output+=syntax(macro[1])+'<span class="mk-size-value">'+escapeHighlightText(macro[2])+'</span>'+escapeHighlightText(macro[3])+content(macro[4])+syntax(macro[5]);
    else output+=syntax(token);
-  }else if(/^\\{\\{\\{#/.test(token)){
-   const macro=token.match(/^(\\{\\{\\{)(#[^,\\s}]+)(?:,([^,\\s}]+))?(\\s+)([\\s\\S]*?)(\\}\\}\\})$/);
+  }else if(/^\{\{\{#/.test(token)){
+   const macro=token.match(/^(\{\{\{)(#[^,\s}]+)(?:,([^,\s}]+))?(\s+)([\s\S]*?)(\}\}\})$/);
    if(macro)output+=syntax(macro[1])+highlightNamuColorValue(macro[2])+(macro[3]?syntax(",")+highlightNamuColorValue(macro[3]):"")+syntax(macro[4])+content(macro[5])+syntax(macro[6]);
    else output+=syntax("{{{")+highlightNamuPlainText(token.slice(3,-3),true)+syntax("}}}");
   }else if(token.startsWith("{{{")){
    output+=syntax("{{{")+'<span class="mk-inline-code">'+highlightNamuPlainText(token.slice(3,-3),true)+'</span>'+syntax("}}}");
   }else if(token==="||"){
    output+='<span class="mk-table-delimiter">'+syntax(token)+'</span>';
-  }else if(token.startsWith("[/")||/^\\[(?:table|tr|th|td)/i.test(token)){
+  }else if(token.startsWith("[/")||/^\[(?:table|tr|th|td)/i.test(token)){
    output+='<span class="mk-table-option">'+syntax(token)+'</span>';
-  }else if(token.startsWith("#")||/^(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\\(/i.test(token)){
+  }else if(token.startsWith("#")||/^(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(/i.test(token)){
    output+=highlightNamuColorValue(token);
   }else{
    output+=highlightNamuPlainText(token);
@@ -3264,23 +3264,23 @@ function highlightNamuLine(line,insideCode) {
  const syntax=value=>'<span class="mk-syntax">'+escapeHighlightText(value)+'</span>';
  if(text.trim()==="}}}")return syntax(text.trim());
  if(insideCode)return '<span class="mk-code-line">'+highlightNamuPlainText(text,true)+'</span>';
- if(/^\\s*={2,6}.*?={2,6}\\s*$/.test(text)){
-  const match=text.match(/^(\\s*)(={2,6})(.*?)(={2,6})(\\s*)$/);
+ if(/^\s*={2,6}.*?={2,6}\s*$/.test(text)){
+  const match=text.match(/^(\s*)(={2,6})(.*?)(={2,6})(\s*)$/);
   if(match)return escapeHighlightText(match[1])+syntax(match[2])+'<span class="mk-heading-text">'+highlightNamuInline(match[3])+'</span>'+syntax(match[4])+escapeHighlightText(match[5]);
  }
- if(/^\\s*\\|\\|/.test(text))return '<span class="mk-table-line">'+highlightNamuInline(text)+'</span>';
- if(/^\\s*(?:\\*+|\\d+\\.)\\s/.test(text)){
-  const match=text.match(/^(\\s*)(\\*+|\\d+\\.)(\\s+)(.*)$/);
+ if(/^\s*\|\|/.test(text))return '<span class="mk-table-line">'+highlightNamuInline(text)+'</span>';
+ if(/^\s*(?:\*+|\d+\.)\s/.test(text)){
+  const match=text.match(/^(\s*)(\*+|\d+\.)(\s+)(.*)$/);
   if(match)return escapeHighlightText(match[1])+'<span class="mk-list-marker">'+escapeHighlightText(match[2])+'</span>'+escapeHighlightText(match[3])+highlightNamuInline(match[4]);
  }
- if(/^\\s*>\\s?/.test(text)){
-  const match=text.match(/^(\\s*)(>+)(\\s?)(.*)$/);
+ if(/^\s*>\s?/.test(text)){
+  const match=text.match(/^(\s*)(>+)(\s?)(.*)$/);
   if(match)return escapeHighlightText(match[1])+'<span class="mk-quote-marker">'+escapeHighlightText(match[2])+'</span>'+escapeHighlightText(match[3])+highlightNamuInline(match[4]);
  }
- const redirect=text.match(/^(\\s*)(#redirect)(\\s+)([\\s\\S]*)$/i);
+ const redirect=text.match(/^(\s*)(#redirect)(\s+)([\s\S]*)$/i);
  if(redirect)return escapeHighlightText(redirect[1])+'<span class="mk-redirect">'+escapeHighlightText(redirect[2])+'</span>'+escapeHighlightText(redirect[3])+highlightNamuInline(redirect[4]);
- if(/^\\s*(?:-{4,}|={4,})\\s*$/.test(text))return '<span class="mk-horizontal-rule">'+syntax(text)+'</span>';
- if(/^\\s*##[\\s\\S]*##\\s*$/.test(text))return '<span class="mk-comment">'+escapeHighlightText(text)+'</span>';
+ if(/^\s*(?:-{4,}|={4,})\s*$/.test(text))return '<span class="mk-horizontal-rule">'+syntax(text)+'</span>';
+ if(/^\s*##[\s\S]*##\s*$/.test(text))return '<span class="mk-comment">'+escapeHighlightText(text)+'</span>';
  return highlightNamuInline(text);
 }
 
