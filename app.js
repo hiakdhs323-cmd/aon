@@ -408,7 +408,7 @@ function renderBreadcrumbTrail(){
 }
 function showHome(push=true){
  currentDiscussionView=false;
- document.title="AonWiki";
+ document.title="AonWiki - 아온 위키";
  breadcrumbTrail=[];
  pageNavigationSequence++;
  if(push)history.pushState(null,"","/");

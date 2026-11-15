@@ -1500,14 +1500,14 @@ function buildWikiPageStructuredData({ title, description, url, siteUrl, created
     "inLanguage": "ko-KR",
     "isPartOf": {
       "@type": "WebSite",
-      "name": "아온 위키",
-      "alternateName": "AonWiki",
+      "name": "AonWiki",
+      "alternateName": "아온 위키",
       "url": siteUrl
     },
     "breadcrumb": {
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "아온 위키", "item": siteUrl },
+        { "@type": "ListItem", "position": 1, "name": "AonWiki", "item": siteUrl },
         { "@type": "ListItem", "position": 2, "name": title, "item": url }
       ]
     }
@@ -1581,7 +1581,7 @@ async function renderFullWikiDocument(request, env, title) {
     '<meta name="description" content="' + escapeHtml(description) + '">',
     '<meta name="robots" content="' + (found ? "index,follow,max-snippet:-1,max-image-preview:large" : "noindex,follow") + '">',
     '<meta property="og:type" content="article">',
-    '<meta property="og:site_name" content="아온 위키 (AonWiki)">',
+    '<meta property="og:site_name" content="AonWiki">',
     '<meta property="og:locale" content="ko_KR">',
     '<meta property="og:title" content="' + escapeHtml(titleText + " - AonWiki") + '">',
     '<meta property="og:description" content="' + escapeHtml(description) + '">',
@@ -1657,7 +1657,7 @@ export default {
     try {
       if (request.method === "GET" && url.pathname === "/favicon.ico") {
         const headers = new Headers(getSecurityHeaders());
-        headers.set("Location", new URL("/aonwiki-mark.svg", url.origin).toString());
+        headers.set("Location", new URL("/favicon.png", url.origin).toString());
         headers.set("Cache-Control", "public, max-age=86400");
         return new Response(null, { status: 302, headers });
       }
@@ -1669,7 +1669,7 @@ export default {
         const xml = await renderSitemapXml(request, env);
         return new Response(xml, { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
       }
-      const staticFiles = new Set(["style.css", "app.bundle.js", "theme.js", "namumark-aon.css", "namumark-interactions-aon.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "aonwiki-mark.svg"]);
+      const staticFiles = new Set(["style.css", "app.bundle.js", "theme.js", "namumark-aon.css", "namumark-interactions-aon.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "aonwiki-mark.svg", "favicon.png"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
