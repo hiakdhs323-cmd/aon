@@ -1671,15 +1671,10 @@ function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
   const basePath = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : baseUrl.pathname + "/";
   const staticAssets = /* @__PURE__ */ new Set([
     "style.css",
-    "app.js",
+    "app.bundle.js",
     "theme.js",
-    "namumark-wasm.js",
     "namumark-aon.css",
     "namumark-interactions-aon.css",
-    "Namu_test-main/namumark.js",
-    "Namu_test-main/namumark_bg.wasm",
-    "Namu_test-main/interactions.js",
-    "Namu_test-main/interactions.css",
     "aonwiki-mark.svg"
   ]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
@@ -1928,7 +1923,7 @@ var index_default = {
         const xml = await renderSitemapXml(request, env);
         return new Response(xml, { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
       }
-      const staticFiles = /* @__PURE__ */ new Set(["style.css", "app.js", "theme.js", "namumark-wasm.js", "namumark-aon.css", "namumark-interactions-aon.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "Namu_test-main/namumark.js", "Namu_test-main/namumark_bg.wasm", "Namu_test-main/interactions.js", "aonwiki-mark.svg"]);
+      const staticFiles = /* @__PURE__ */ new Set(["style.css", "app.bundle.js", "theme.js", "namumark-aon.css", "namumark-interactions-aon.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "aonwiki-mark.svg"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
