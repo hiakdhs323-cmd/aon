@@ -6213,21 +6213,55 @@ body.editor-active .editor-card{
 }
 
 
-/* Show the entire wiki source while editing; the page, not the textarea, scrolls. */
+/* The highlighted source is the intrinsic-height layer; the textarea only overlays it. */
 body.editor-active .editor-code-wrap,
 body.editor-active .editor-code-wrap.monaco-active {
+  position:relative!important;
+  display:block!important;
   box-sizing:border-box!important;
+  width:100%!important;
   height:auto!important;
   min-height:clamp(320px,53dvh,520px)!important;
   max-height:none!important;
   overflow:hidden!important;
 }
+body.editor-active #editor-highlight {
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-height:clamp(320px,53dvh,520px)!important;
+  height:auto!important;
+  margin:0!important;
+  padding:10px 13px 10px 61px!important;
+  overflow:visible!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:anywhere!important;
+}
+body.editor-active #editor-highlight code {
+  display:block!important;
+  min-height:0!important;
+  white-space:inherit!important;
+  overflow-wrap:inherit!important;
+}
 body.editor-active #editor-content {
+  position:absolute!important;
+  inset:0!important;
+  box-sizing:border-box!important;
+  width:100%!important;
   height:100%!important;
-  overflow-x:hidden!important;
-  overflow-y:hidden!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:anywhere!important;
   scrollbar-width:none!important;
 }
 body.editor-active #editor-content::-webkit-scrollbar{display:none!important}
-body.editor-active #editor-highlight{overflow:hidden!important}
+body.editor-active #editor-line-numbers {
+  height:100%!important;
+  bottom:0!important;
+  overflow:hidden!important;
+}
 body.editor-active #editor-line-numbers{height:100%!important}

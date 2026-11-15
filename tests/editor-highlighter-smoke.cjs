@@ -95,7 +95,7 @@ assert.match(app, /const left=rect\.right-wrapRect\.left-wrap\.clientLeft\+4;/, 
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:visible!important/s, "the html viewport must own vertical editor scrolling");
 assert.match(css, /body\.editor-active\{[^}]*overflow:visible!important/s, "body must not create a nested scroll container while editing");
 
-assert.match(app, /function resizeEditorSourcePane\(\)[\s\S]*?field\.scrollHeight[\s\S]*?wrap\.style\.setProperty\("height"/, "the source editor must grow to the full document height");
-assert.match(app, /updateLineNumbers\(\);\s*resizeEditorSourcePane\(\);/, "source height must be recalculated whenever syntax highlighting is painted");
+assert.doesNotMatch(app, /resizeEditorSourcePane|editorSourceResizeFrame/, "source height must not depend on a stale JavaScript measurement");
+assert.match(css, /body\.editor-active #editor-highlight\s*\{[^}]*position:relative!important;[\s\S]*?height:auto!important;[\s\S]*?overflow:visible!important/s, "highlighted source must participate in normal flow and determine the full editor height");
+assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*position:absolute!important;[\s\S]*?height:100%!important;[\s\S]*?overflow:hidden!important/s, "the textarea must overlay the complete intrinsic-height source without an inner scroll area");
 assert.match(css, /body\.editor-active \.editor-code-wrap,[\s\S]*?height:auto!important;[\s\S]*?max-height:none!important/, "the source editor must not have a viewport-height cap");
-assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*overflow-y:hidden!important/s, "the source textarea must not trap the document's lower lines in an inner scrollbar");
