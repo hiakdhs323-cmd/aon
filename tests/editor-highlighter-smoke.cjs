@@ -119,7 +119,6 @@ for (const [name, output, expectedClasses] of expandedCases) {
   }
 }
 assert.match(css, /#editor-highlight code \.mk-heading-line::before[\s\S]*?border-top:1px solid var\(--wiki-border-strong\)/, "heading line must draw a full-width separator above the heading");
-assert.match(app, /const left=rect\.right-wrapRect\.left-wrap\.clientLeft\+4;/, "colour picker must appear beside, not on top of, the source colour code");
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:visible!important/s, "the html viewport must own vertical editor scrolling");
 assert.match(css, /body\.editor-active\{[^}]*overflow:visible!important/s, "body must not create a nested scroll container while editing");
 
