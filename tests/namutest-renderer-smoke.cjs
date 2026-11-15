@@ -28,6 +28,9 @@ assert.match(worker, /Namu_test-main\/namumark_bg\.wasm/, "Worker static proxy m
 assert.match(worker, /local frontend shell unavailable; falling back to FRONTEND_ORIGIN/, "SSR must fall back to the configured frontend origin when Worker Assets cannot supply index.html");
 assert.match(worker, /rewriteFrontendAssets\(shell, frontendOrigin, false\)/, "the fallback shell must rewrite static assets to the frontend proxy path");
 assert.match(worker, /Worker Assets index\.html returned/, "a missing local shell must be recorded and trigger the fallback path");
+const ssrBundleScriptPattern = /<script\\b(?=[^>]*\\bsrc=["'](?:\\/aon)?\\/?(?:app\\.bundle\\.js|app\\.js)(?:\\?[^"']*)?["'])[^>]*>\\s*<\\/script>/i;
+assert.match(html, ssrBundleScriptPattern, "document SSR must recognize the bundled module script in index.html");
+assert.match(worker, /app\\.bundle\\.js\\|app\\.js/, "document SSR must inject its state before either bundled or legacy app entrypoint");
 
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
 assert.match(read("index.html"), /id="home-login-action"/, "homepage must expose the login quick action");
