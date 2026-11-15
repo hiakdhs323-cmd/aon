@@ -1522,6 +1522,12 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
+      if (request.method === "GET" && url.pathname === "/favicon.ico") {
+        const headers = new Headers(getSecurityHeaders());
+        headers.set("Location", new URL("/aonwiki-mark.svg", url.origin).toString());
+        headers.set("Cache-Control", "public, max-age=86400");
+        return new Response(null, { status: 302, headers });
+      }
       if (request.method === "GET" && url.pathname === "/robots.txt") {
         const origin = publicSiteOrigin(request, env);
         return new Response("User-agent: *\nAllow: /\nSitemap: " + origin + "/sitemap.xml\n", { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=300" } });
@@ -1584,7 +1590,36 @@ export default {
         catch { return new Response("잘못된 문서 주소입니다.", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
         title = cleanTitle(title);
         if (!title) return new Response("잘못된 문서 주소입니다.", { status: 400 });
-        return await renderFullWikiDocument(request, env, title);
+        try {
+          return await renderFullWikiDocument(request, env, title);
+        } catch (error) {
+          // A page must remain navigable even if the optional server-side HTML
+          // assembly fails. The regular client route loads the same document
+          // through /api/render and keeps the wiki usable instead of returning 500.
+          console.error("AonWiki document SSR failed; serving client-side route fallback", {
+            title,
+            message: String(error?.message || error || "unknown")
+          });
+          try {
+            const { shell } = await loadFrontendShell(env);
+            const headers = new Headers(getSecurityHeaders());
+            headers.set("Content-Type", "text/html; charset=utf-8");
+            headers.set("Cache-Control", "no-store");
+            headers.set("X-AonWiki-Render", "client-fallback");
+            headers.set("X-AonWiki-SSR-Fallback", "1");
+            return new Response(shell, { status: 200, headers });
+          } catch (fallbackError) {
+            console.error("AonWiki client-side document fallback failed", {
+              title,
+              message: String(fallbackError?.message || fallbackError || "unknown")
+            });
+            const headers = new Headers(getSecurityHeaders());
+            headers.set("Content-Type", "text/plain; charset=utf-8");
+            headers.set("Cache-Control", "no-store");
+            headers.set("Retry-After", "2");
+            return new Response("문서를 불러오지 못했습니다. 잠시 후 다시 시도하세요.", { status: 503, headers });
+          }
+        }
       }
       if (request.method === "GET" && url.pathname.toLowerCase() === "/search") {
         const { shell } = await loadFrontendShell(env);

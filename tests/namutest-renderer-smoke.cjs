@@ -28,6 +28,11 @@ assert.match(worker, /Namu_test-main\/namumark_bg\.wasm/, "Worker static proxy m
 assert.match(worker, /local frontend shell unavailable; falling back to FRONTEND_ORIGIN/, "SSR must fall back to the configured frontend origin when Worker Assets cannot supply index.html");
 assert.match(worker, /rewriteFrontendAssets\(shell, frontendOrigin, false\)/, "the fallback shell must rewrite static assets to the frontend proxy path");
 assert.match(worker, /Worker Assets index\.html returned/, "a missing local shell must be recorded and trigger the fallback path");
+assert.match(worker, /AonWiki document SSR failed; serving client-side route fallback/, "a failed full-document SSR must fall back to the normal client-side document route");
+assert.match(worker, /X-AonWiki-SSR-Fallback/, "client-side fallback responses must be identifiable in the response headers");
+assert.match(worker, /url\.pathname === "\/favicon\.ico"/, "the default browser favicon request must redirect to the AonWiki SVG mark");
+assert.match(read("wrangler.toml"), /\[observability\][\s\S]*enabled = true/, "Worker observability must be enabled for server-side exception diagnostics");
+
 const ssrBundleScriptPattern = /<script\b(?=[^>]*\bsrc=["'](?:\/aon)?\/?(?:app\.bundle\.js|app\.js)(?:\?[^"']*)?["'])[^>]*>\s*<\/script>/i;
 assert.match(html, ssrBundleScriptPattern, "document SSR must recognize the bundled module script in index.html");
 const sourceSlash = String.fromCharCode(92); assert.ok(worker.includes("app" + sourceSlash + ".bundle" + sourceSlash + ".js|app" + sourceSlash + ".js"), "document SSR must inject its state before either bundled or legacy app entrypoint");

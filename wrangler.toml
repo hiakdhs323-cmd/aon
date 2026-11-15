@@ -17,3 +17,10 @@ binding = "DB"
 database_name = "aonwiki"
 database_id = "db0fb2f9-141d-428e-8d61-0252075a1dc6"
 migrations_dir = "worker"
+
+[observability]
+enabled = true
+
+[observability.logs]
+invocation_logs = true
+head_sampling_rate = 1
