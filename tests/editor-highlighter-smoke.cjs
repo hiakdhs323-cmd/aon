@@ -54,7 +54,7 @@ assert.doesNotMatch(h.highlightNamuColorValue("#aabbccdd"), /mk-color-picker-inl
 assert.doesNotMatch(h.highlightNamuLine("color: #aabfdd", true), /mk-color-picker-inline/, "literal code blocks must not become interactive");
 assert.doesNotMatch(h.highlightNamuInline("<script>alert(1)</script>"), /<script>/, "unrecognized HTML must stay escaped");
 
-assert.match(css, /\.mk-heading-line[^}]*box-shadow:inset 0 1px 0 var\(--wiki-border-strong\)/s, "heading separator must use the existing theme border");
+assert.match(css, /\.mk-heading-line[\s\S]*?display:block;[\s\S]*?border-top:1px solid var\(--wiki-border-strong\)/, "heading separator must use a full-width theme border");
 assert.match(css, /#editor-highlight\{position:absolute;inset:0;z-index:0;/, "highlight plane must stay below the textarea so scrollbars remain accessible");
 assert.match(css, /\.namu-color-picker-layer\{[^}]*z-index:2;[^}]*pointer-events:none/s, "only the sparse picker layer may sit above the editor");
 assert.match(css, /\.namu-color-picker-layer \.mk-color-picker-inline\{[^}]*pointer-events:auto/s, "colour swatches must remain clickable without blocking editor scrolling");
