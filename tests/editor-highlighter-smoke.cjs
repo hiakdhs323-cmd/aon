@@ -68,4 +68,4 @@ console.log("Editor highlighter smoke test passed: " + cases.length + " syntax f
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:auto!important/s, "the document must scroll vertically while the editor is active");
 assert.match(css, /body\.editor-active \.editor-card\{[^}]*overflow:visible!important/s, "the editor card must not clip the form bottom");
 assert.match(css, /body\.editor-active \.editor-fields,[\s\S]*?overflow:visible!important/s, "editor form ancestors must retain their full content height");
-assert.match(app, /requestAnimationFrame\(\(\)=>\{\s*window\.scrollTo\(\{top:0,left:0,behavior:"auto"\}\)/, "opening the editor must start at the top of its complete page");
+assert.match(app, /requestAnimationFrame\(\(\)\s*=>\s*\{\s*window\.scrollTo\(\{top:0,left:0,behavior:"auto"\}\)/, "opening the editor must start at the top of its complete page");
