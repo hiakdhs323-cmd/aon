@@ -12,7 +12,7 @@ assert.ok(start >= 0 && end > start, "production highlighter source must be extr
 const context = {};
 vm.runInNewContext(
   app.slice(start, end) +
-    "\nglobalThis.__aonHighlighter = { highlightNamuInline, highlightNamuLine, highlightNamuColorValue, renderEditorHighlightLines };",
+    "\nglobalThis.__aonHighlighter = { highlightNamuInline, highlightNamuLine, highlightNamuColorValue, renderEditorHighlightLines, findNamuColorSourceOffset };",
   context,
   { filename: "app.js#namumark-highlighter" }
 );
@@ -55,11 +55,24 @@ assert.doesNotMatch(h.highlightNamuInline("<script>alert(1)</script>"), /<script
 
 assert.match(css, /#editor-highlight code \.mk-heading-line::before[\s\S]*?border-top:1px solid var\(--wiki-border-strong\)/, "heading separator must use a full-width theme border");
 assert.match(css, /#editor-highlight\{position:absolute;inset:0;z-index:0;/, "highlight plane must stay below the textarea so scrollbars remain accessible");
-assert.match(css, /\.namu-color-picker-layer\{[^}]*z-index:2;[^}]*pointer-events:none/s, "only the sparse picker layer may sit above the editor");
-assert.match(css, /\.namu-color-picker-layer \.mk-color-picker-inline\{[^}]*pointer-events:auto/s, "colour swatches must remain clickable without blocking editor scrolling");
 assert.match(app, /function bindNamuInlineColorPickers\(/, "colour changes must be mapped back into the source textarea");
-assert.match(app, /range\.setEndBefore\(token\)/, "colour changes must locate the exact source token instead of searching duplicate values");
 assert.match(app, /const NAMU_COLOR_PICKER_BINDINGS = new WeakMap\(\)/, "color picker controls must be maintained outside the syntax overlay");
+
+assert.match(app, /wrap\.parentElement\.insertBefore\(layer,wrap\)/, "colour controls must be placed above the source editor, not over text");
+assert.match(app, /findNamuColorSourceOffset\(source,sourceColor,sourceCursor\)/, "colour edits must resolve source offsets from the raw document string");
+assert.doesNotMatch(app, /range\.setEndBefore\(token\)/, "colour source offsets must not depend on rendered DOM text lengths");
+assert.match(css, /\.namu-color-picker-toolbar\{[^}]*position:relative;[^}]*display:flex;[^}]*max-height:112px/s, "colour controls must occupy a separate non-overlapping toolbar row");
+assert.match(css, /\.namu-color-picker-toolbar \.mk-color-picker-inline\{[^}]*position:static;[^}]*width:20px/s, "colour swatches must remain in normal toolbar flow");
+
+const colourSource = "첫 줄 #aabbcc\n== 제목 ==\n{{{#!wiki style=\"color: #ffffff\"}}}\n마지막 #aabbcc";
+const firstColourOffset = h.findNamuColorSourceOffset(colourSource, "#aabbcc", 0);
+const secondColourOffset = h.findNamuColorSourceOffset(colourSource, "#ffffff", firstColourOffset + 7);
+const repeatedColourOffset = h.findNamuColorSourceOffset(colourSource, "#aabbcc", secondColourOffset + 7);
+assert.equal(colourSource.slice(firstColourOffset, firstColourOffset + 7), "#aabbcc", "first repeated colour must map to the first raw-source occurrence");
+assert.equal(colourSource.slice(secondColourOffset, secondColourOffset + 7), "#ffffff", "colour after a block heading must map to its raw-source position");
+assert.equal(colourSource.slice(repeatedColourOffset, repeatedColourOffset + 7), "#aabbcc", "duplicate colour values must map in source order");
+assert.equal(h.findNamuColorSourceOffset(colourSource, "not-a-colour", 0), -1, "invalid colour values must not create an editable source range");
+
 assert.match(app, /field\.addEventListener\("scroll",\(\)=>requestAnimationFrame\(state\.render\)/, "color picker positions must follow the textarea while scrolling");
 
 console.log("Editor highlighter smoke test passed: " + cases.length + " syntax families.");

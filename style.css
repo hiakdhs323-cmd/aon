@@ -6164,31 +6164,71 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
 }
 
 
-/* Interactive swatches live in a separate, sparse layer; the textarea keeps its own scrollbars. */
-.editor-code-wrap,.discussion-code-wrap{position:relative}
-.namu-color-picker-layer{
-  position:absolute;
-  inset:0;
-  z-index:2;
-  overflow:hidden;
-  pointer-events:none;
-}
-.namu-color-picker-layer .mk-color-picker-inline{
-  position:absolute;
-  display:block;
+/* Colour controls live in normal flow above the source and never cover text. */
+.namu-color-picker-toolbar{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
   box-sizing:border-box;
-  width:14px;
-  height:14px;
+  width:100%;
+  max-height:112px;
+  margin:0 0 8px;
+  padding:6px 9px;
+  overflow:auto;
+  border:1px solid var(--wiki-border);
+  border-radius:4px;
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-muted);
+}
+.namu-color-picker-toolbar[hidden],
+.namu-color-picker-toolbar:empty{display:none!important}
+.namu-color-picker-caption{
+  flex:0 0 auto;
+  margin-right:2px;
+  color:var(--wiki-muted);
+  font-size:11px;
+  font-weight:700;
+}
+.namu-color-picker-control{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:5px;
+  min-height:26px;
+  padding:2px 6px 2px 3px;
+  border:1px solid var(--wiki-border);
+  border-radius:4px;
+  background:var(--wiki-panel);
+  color:var(--wiki-text);
+  cursor:pointer;
+}
+.namu-color-picker-toolbar .mk-color-picker-inline{
+  position:static;
+  display:block;
+  flex:0 0 20px;
+  box-sizing:border-box;
+  width:20px;
+  height:20px;
   margin:0;
   padding:0;
   border:1px solid var(--wiki-border-strong);
-  border-radius:2px;
+  border-radius:3px;
   background:transparent;
   cursor:pointer;
-  pointer-events:auto;
 }
-.namu-color-picker-layer .mk-color-picker-inline::-webkit-color-swatch-wrapper{padding:1px}
-.namu-color-picker-layer .mk-color-picker-inline::-webkit-color-swatch{border:0;border-radius:1px}
+.namu-color-picker-toolbar .mk-color-picker-inline::-webkit-color-swatch-wrapper{padding:1px}
+.namu-color-picker-toolbar .mk-color-picker-inline::-webkit-color-swatch{border:0;border-radius:2px}
+.namu-color-picker-value{
+  font:11px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;
+  white-space:nowrap;
+}
+.namu-color-picker-control:focus-within{
+  outline:2px solid var(--wiki-primary);
+  outline-offset:1px;
+}
 
 
 /* Keep the complete edit form in the document flow; only the source pane scrolls internally. */

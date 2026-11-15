@@ -3341,6 +3341,14 @@ function highlightNamuLine(line,insideCode) {
  if(/^\s*##[\s\S]*##\s*$/.test(text))return '<span class="mk-comment">'+escapeHighlightText(text)+'</span>';
  return highlightNamuInline(text);
 }
+function findNamuColorSourceOffset(source,color,fromIndex=0) {
+ const sourceText=String(source??"");
+ const sourceColor=String(color??"");
+ if(!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return -1;
+ const offset=Math.max(0,Math.floor(Number(fromIndex)||0));
+ return sourceText.indexOf(sourceColor,offset);
+}
+
 function renderEditorHighlightLines(value) {
   const source = String(value ?? "");
   const lines = source.split("\n");
@@ -3528,20 +3536,19 @@ function bindNamuInlineColorPickers(code,field) {
  let state=NAMU_COLOR_PICKER_BINDINGS.get(code);
  if(!state){
   const wrap=code.closest(".editor-code-wrap,.discussion-code-wrap");
-  if(!wrap)return ()=>{};
-  let layer=wrap.querySelector(":scope > .namu-color-picker-layer");
-  if(!layer){
-   layer=document.createElement("div");
-   layer.className="namu-color-picker-layer";
-   layer.setAttribute("aria-hidden","true");
-   wrap.append(layer);
-  }
+  if(!wrap||!wrap.parentElement)return ()=>{};
+  const layer=document.createElement("div");
+  layer.className="namu-color-picker-toolbar";
+  layer.setAttribute("role","group");
+  layer.setAttribute("aria-label","원문 색상 수정");
+  wrap.parentElement.insertBefore(layer,wrap);
   state={wrap,layer,field,render:null};
+
   const updateSource=(picker)=>{
    const sourceColor=String(picker.dataset.sourceColor||"").trim();
    const start=Number(picker.dataset.sourceStart);
    if(!Number.isInteger(start)||!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return;
-   if(field.value.slice(start,start+sourceColor.length).toLowerCase()!==sourceColor.toLowerCase())return;
+   if(field.value.slice(start,start+sourceColor.length)!==sourceColor)return;
    const nextColor=String(picker.value||"").toLowerCase();
    if(!/^#[0-9a-f]{6}$/i.test(nextColor))return;
    field.setRangeText(nextColor,start,start+sourceColor.length,"end");
@@ -3550,33 +3557,49 @@ function bindNamuInlineColorPickers(code,field) {
    field.focus({preventScroll:true});
    field.setSelectionRange(caret,caret);
   };
+
   layer.addEventListener("input",event=>{
    const picker=event.target?.closest?.("input.mk-color-picker-inline");
    if(!picker||!layer.contains(picker))return;
    const token=code.querySelectorAll(".mk-color-value-has-picker")[Number(picker.dataset.tokenIndex)];
    if(token)token.style.setProperty("--mk-color-preview",picker.value);
+   const valueLabel=picker.closest(".namu-color-picker-control")?.querySelector(".namu-color-picker-value");
+   if(valueLabel)valueLabel.textContent=picker.value.toLowerCase();
   });
   layer.addEventListener("change",event=>{
    const picker=event.target?.closest?.("input.mk-color-picker-inline");
    if(picker&&layer.contains(picker))updateSource(picker);
   });
+
   state.render=()=>{
    if(!wrap.isConnected||!code.isConnected)return;
    layer.replaceChildren();
-   const wrapRect=wrap.getBoundingClientRect();
    const colors=code.querySelectorAll(".mk-color-value-has-picker[data-source-color]");
+   if(!colors.length){
+    layer.hidden=true;
+    return;
+   }
+
+   const caption=document.createElement("span");
+   caption.className="namu-color-picker-caption";
+   caption.textContent="색상";
+   layer.append(caption);
+
+   // Map each rendered colour token back to the exact raw-source occurrence.
+   // This deliberately avoids DOM Range text lengths, which drift when block
+   // headings collapse a visual newline in the highlighted layer.
+   const source=field.value;
+   let sourceCursor=0;
    colors.forEach((token,index)=>{
     const sourceColor=String(token.dataset.sourceColor||"").trim();
     const match=sourceColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
     if(!match)return;
-    const rect=token.getBoundingClientRect();
-    const left=rect.right-wrapRect.left-wrap.clientLeft+4;
-    const top=rect.top-wrapRect.top-wrap.clientTop+(rect.height-14)/2;
-    if(left<0||top<-14||left+14>wrap.clientWidth||top>wrap.clientHeight)return;
-    const range=document.createRange();
-    range.selectNodeContents(code);
-    range.setEndBefore(token);
-    const sourceStart=range.toString().length;
+    const sourceStart=findNamuColorSourceOffset(source,sourceColor,sourceCursor);
+    if(sourceStart<0)return;
+    sourceCursor=sourceStart+sourceColor.length;
+
+    const control=document.createElement("label");
+    control.className="namu-color-picker-control";
     const input=document.createElement("input");
     input.type="color";
     input.className="mk-color-picker-inline";
@@ -3586,15 +3609,18 @@ function bindNamuInlineColorPickers(code,field) {
     input.dataset.sourceColor=sourceColor;
     input.dataset.sourceStart=String(sourceStart);
     input.dataset.tokenIndex=String(index);
-    input.setAttribute("aria-label","색상 선택");
-    input.title="색상 선택";
-    input.style.left=left+"px";
-    input.style.top=top+"px";
-    layer.append(input);
+    input.setAttribute("aria-label",sourceColor+" 색상 코드 수정");
+    input.title=sourceColor+" 색상 코드 수정";
+    const valueLabel=document.createElement("span");
+    valueLabel.className="namu-color-picker-value";
+    valueLabel.textContent=sourceColor;
+    control.append(input,valueLabel);
+    layer.append(control);
    });
+
+   layer.hidden=layer.querySelectorAll(".namu-color-picker-control").length===0;
+   if(layer.hidden)layer.replaceChildren();
   };
-  field.addEventListener("scroll",()=>requestAnimationFrame(state.render),{passive:true});
-  window.addEventListener("resize",state.render,{passive:true});
   NAMU_COLOR_PICKER_BINDINGS.set(code,state);
  }
  return state.render;
