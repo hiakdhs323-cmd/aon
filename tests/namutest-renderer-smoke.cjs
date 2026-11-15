@@ -179,7 +179,7 @@ assert.match(app, /kind="link"/, "existing link delimiters must have a distinct 
 assert.match(app, /mk-css-property-color/, "existing CSS properties must have semantic highlight classes");
 assert.match(app, /mk-css-function/, "CSS function values must be highlighted within existing style syntax");
 assert.match(app, /mk-attribute-color/, "existing table color attributes must have semantic highlight classes");
-assert.match(read("style.css"), /#editor-highlight \\.mk-syntax-macro/, "semantic tokens must have light-theme colors");
+assert.match(read("style.css"), /#editor-highlight \.mk-syntax-macro/, "semantic tokens must have light-theme colors");
 assert.match(read("style.css"), /html\[data-theme="dark"\] #editor-highlight \.mk-syntax-macro/, "semantic tokens must have dark-theme colors");
 assert.match(read("style.css"), /\.mk-color-value\s*\{[^}]*box-shadow/s, "color literals must show a compact inline color chip");
 
