@@ -3085,6 +3085,28 @@ function highlightNamuColorValue(value) {
  return '<span class="mk-color-value" style="--mk-color-preview:'+escapeHighlightText(lower)+'" title="색상 미리보기: '+escapeHighlightText(raw)+'">'+escapeHighlightText(raw)+'</span>';
 }
 
+function highlightNamuCssPropertyClass(property) {
+ const name=String(property||"").toLowerCase();
+ if(/^(?:color|fill|stroke|outline-color|text-decoration-color)$/.test(name))return "mk-css-property-color";
+ if(/^(?:background|background-color|background-image)$/.test(name))return "mk-css-property-background";
+ if(/^(?:border|border-.+|outline|outline-.+|box-shadow)$/.test(name))return "mk-css-property-border";
+ if(/^(?:font-.+|text-.+|line-height|letter-spacing|word-spacing|white-space)$/.test(name))return "mk-css-property-text";
+ if(/^(?:width|height|min-.+|max-.+|margin.*|padding.*|display|position|top|right|bottom|left|flex.*|grid.*|gap|overflow.*|vertical-align)$/.test(name))return "mk-css-property-layout";
+ if(name.startsWith("--"))return "mk-css-variable";
+ return "mk-css-property";
+}
+function highlightNamuSyntaxToken(value) {
+ const token=String(value);
+ let kind="punctuation";
+ if(token.startsWith("{{{")||token.startsWith("}}}"))kind="macro";
+ else if(token==="[["||token==="]]"||token.startsWith("[include(")||token.startsWith("[anchor("))kind="link";
+ else if(token==="||"||token==="|")kind="table";
+ else if(token==="''"||token==="'''"||token==="__"||token==="~~"||token==="--"||token==="^^"||token===",," )kind="format";
+ else if(token.startsWith("<")||token===">"||token==="=")kind="attribute";
+ else if(token.startsWith("[")||token==="]"||token===")")kind="directive";
+ return '<span class="mk-syntax mk-syntax-'+kind+'">'+escapeHighlightText(token)+'</span>';
+}
+
 function highlightNamuPlainText(value,cssMode=false) {
  const text=String(value??"");
  const alternatives=[
@@ -3093,10 +3115,12 @@ function highlightNamuPlainText(value,cssMode=false) {
   '(?:color|background|background-color|border|border-color|border-top-color|border-bottom-color|outline-color|text-decoration-color|fill|stroke|opacity|font-size|line-height|margin|padding|width|height|display|position|text-align|vertical-align|border-radius|box-shadow|transform|transition)(?=\\s*:)',
   '-?\\d+(?:\\.\\d+)?(?:px|rem|em|vh|vw|vmin|vmax|%|deg|ms|s)\\b',
   '!important'
+  '(?:linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient|var|calc|min|max|clamp|url)\\([^)]*\\)'
  ];
  if(cssMode){
   const names=[...NAMU_HIGHLIGHT_COLOR_NAMES].sort((a,b)=>b.length-a.length);
   alternatives.push('\\b(?:'+names.join("|") + ')\\b');
+  alternatives.push('\\b(?:solid|dashed|dotted|double|groove|ridge|inset|outset|none|auto|inherit|initial|unset|revert|center|left|right|top|bottom|cover|contain|repeat|no-repeat|bold|bolder|lighter|normal|italic|pointer|flex|grid|block|inline|inline-block|absolute|relative|fixed|sticky|hidden|visible|nowrap|wrap|start|end|space-between|space-around|space-evenly)\\b');
  }
  const pattern=new RegExp("("+alternatives.join("|")+")","gi");
  let output="",last=0,match;
@@ -3110,7 +3134,14 @@ function highlightNamuPlainText(value,cssMode=false) {
   }else if(/^-?\d/.test(token)){
    output+='<span class="mk-number">'+escapeHighlightText(token)+'</span>';
   }else{
-   output+='<span class="mk-css-property">'+escapeHighlightText(token)+'</span>';
+   }else if(/^(?:linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient|var|calc|min|max|clamp|url)\\(/i.test(token)){
+    output+='<span class="mk-css-function">'+escapeHighlightText(token)+'</span>';
+   }else if(/^-?\\d/.test(token)){
+    output+='<span class="mk-number">'+escapeHighlightText(token)+'</span>';
+   }else if(/^(?:solid|dashed|dotted|double|groove|ridge|inset|outset|none|auto|inherit|initial|unset|revert|center|left|right|top|bottom|cover|contain|repeat|no-repeat|bold|bolder|lighter|normal|italic|pointer|flex|grid|block|inline|inline-block|absolute|relative|fixed|sticky|hidden|visible|nowrap|wrap|start|end|space-between|space-around|space-evenly)$/i.test(token)){
+    output+='<span class="mk-css-keyword">'+escapeHighlightText(token)+'</span>';
+   }else{
+    output+='<span class="'+highlightNamuCssPropertyClass(token)+'">'+escapeHighlightText(token)+'</span>';
   }
   last=pattern.lastIndex;
  }
@@ -3123,7 +3154,7 @@ function highlightNamuCssFragment(value) {
  let output="",last=0,match;
  while((match=propertyPattern.exec(text))){
   output+=highlightNamuPlainText(text.slice(last,match.index),true);
-  output+='<span class="mk-css-property">'+escapeHighlightText(match[1])+'</span>'+escapeHighlightText(match[2]);
+  output+='<span class="'+highlightNamuCssPropertyClass(match[1])+'">'+escapeHighlightText(match[1])+'</span>'+escapeHighlightText(match[2]);
   last=propertyPattern.lastIndex;
  }
  output+=highlightNamuPlainText(text.slice(last),true);
@@ -3139,7 +3170,8 @@ function highlightNamuAttributeText(value) {
   if(match[1]){
    const name=match[1],rawValue=match[3],quote=(rawValue[0]==='"'||rawValue[0]==="'")?rawValue[0]:"";
    const inner=quote?rawValue.slice(1,-1):rawValue;
-   output+='<span class="mk-attribute-name">'+escapeHighlightText(name)+'</span>'+escapeHighlightText(match[2]);
+   const attributeKind=/^(?:bgcolor|color|bordercolor)$/i.test(name)?"mk-attribute-color":/^(?:width|height|align|textalign|tablewidth|tableheight|tablealign|rowheight)$/i.test(name)?"mk-attribute-layout":name.toLowerCase()==="style"?"mk-attribute-style":/^(?:class|id)$/i.test(name)?"mk-attribute-identity":"mk-attribute-name";
+   output+='<span class="mk-attribute-name '+attributeKind+'">'+escapeHighlightText(name)+'</span>'+escapeHighlightText(match[2]);
    if(quote)output+=syntaxQuote(quote);
    output+=name.toLowerCase()==="style"?highlightNamuCssFragment(inner):highlightNamuPlainText(inner,/^(?:color|bgcolor|background|bordercolor)$/i.test(name));
    if(quote)output+=syntaxQuote(quote);
@@ -3165,7 +3197,7 @@ function highlightNamuTagToken(token,syntax) {
 }
 
 function highlightNamuInline(line) {
- const syntax=value=>'<span class="mk-syntax">'+escapeHighlightText(value)+'</span>';
+ const syntax=highlightNamuSyntaxToken;
  const content=value=>'<span class="mk-content">'+highlightNamuPlainText(value)+'</span>';
  const tokenPattern=/(\[include\([^\]\n]+\)\]|\[\[(?:분류|category):[^\]]+\]\]|\[\[(?:파일|file):[^\]]+\]\]|\[\[[^\]]+\]\]|\[\*[^\]\n]*\]|\[\^[^\]\n]*\]|\[https?:\/\/[^\]]+\]|\[(?:youtube|nicovideo|navertv|kakaotv|vimeo|instagram|twitter|tiktok|facebook|ruby|age|dday|math)\([^\]\n]+\)\]|\[anchor\([^\]]+\)\]|\[(?:목차|각주|br|date|clearfix|pagecount|toc)(?:\([^\]\n]*\))?\]|\{\{\{#![^\n]*|\{\{\{(?:\+|-)[1-6][^}]*\}\}\}|\{\{\{#[^}]*\}\}\}|\{\{\{[@#][^}]*\}\}\}|\{\{\{[^}]*\}\}\}|<(?:\/?(?:table|row|col|tablewidth|tableheight|tablealign|tabletextalign|tablebgcolor|tablecolor|tablebordercolor|rowbgcolor|rowcolor|colbgcolor|colcolor|width|height|align|textalign|bgcolor|color|bordercolor|class|style|id)(?:=[^>\n]*)?|[():]|(?:\^|v)?\|[0-9]+|-?[0-9]+)>|'''[^']*'''|''[^']*''|__.*?__|~~.*?~~|--.*?--|\^\^.*?\^\^|,,.*?,,|\x60[^\x60\n]*\x60|\[\/?(?:table|tr|th|td)(?:\([^\]\n]*\)|=\d+)?\]|\|\||https?:\/\/[^\s<>\]]+|#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\b|(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(\s*[\d.%\s,+\/-]+\))/gi;
  const text=String(line);
@@ -3261,7 +3293,7 @@ function highlightNamuInline(line) {
 
 function highlightNamuLine(line,insideCode) {
  const text=String(line||"");
- const syntax=value=>'<span class="mk-syntax">'+escapeHighlightText(value)+'</span>';
+ const syntax=highlightNamuSyntaxToken;
  if(text.trim()==="}}}")return syntax(text.trim());
  if(insideCode)return '<span class="mk-code-line">'+highlightNamuPlainText(text,true)+'</span>';
  if(/^\s*={2,6}.*?={2,6}\s*$/.test(text)){

@@ -174,6 +174,16 @@ assert.doesNotMatch(read("index.html"), /editor-monaco\/monaco\.(?:js|css)|edito
 assert.match(app, /function highlightNamuLine\(/, "editor must keep the original NamuMark token highlighter");
 assert.match(app, /function updateEditorHighlight\(/, "editor must repaint the original syntax overlay as the source changes");
 
+assert.match(app, /function highlightNamuSyntaxToken\\(/, "existing syntax delimiters must receive semantic colors");
+assert.match(app, /mk-syntax-link/, "existing link delimiters must have a distinct highlight class");
+assert.match(app, /mk-css-property-color/, "existing CSS properties must have semantic highlight classes");
+assert.match(app, /mk-css-function/, "CSS function values must be highlighted within existing style syntax");
+assert.match(app, /mk-attribute-color/, "existing table color attributes must have semantic highlight classes");
+assert.match(read("style.css"), /#editor-highlight \\.mk-syntax-macro/, "semantic tokens must have light-theme colors");
+assert.match(read("style.css"), /html\\[data-theme="dark"\\] #editor-highlight \\.mk-syntax-macro/, "semantic tokens must have dark-theme colors");
+assert.match(read("style.css"), /\\.mk-color-value\\s*\\{[^}]*box-shadow/s, "color literals must show a compact inline color chip");
+
+
 assert.match(app, /function highlightNamuColorValue\(/, "editor highlighter must render validated CSS color previews");
 assert.match(app, /mk-color-value/, "hex and CSS colors must receive a visible inline swatch token");
 assert.match(app, /mk-css-property/, "CSS properties inside wiki style declarations must be highlighted");
