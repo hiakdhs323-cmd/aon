@@ -6128,3 +6128,13 @@ html[data-theme="dark"] #editor-highlight .mk-css-function{color:#79c0ff!importa
 }
 #editor-highlight code .mk-syntax-footnote{color:#b42372!important}
 html[data-theme="dark"] #editor-highlight code .mk-syntax-footnote{color:#ff7eb6!important}
+
+/* A footnote is one visual token: marker, body and closing bracket share one colour. */
+#editor-highlight code .mk-footnote-token,
+.discussion-code-highlight code .mk-footnote-token{
+  color:#b42372!important;
+}
+html[data-theme="dark"] #editor-highlight code .mk-footnote-token,
+html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
+  color:#ff7eb6!important;
+}

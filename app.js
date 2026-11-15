@@ -3236,11 +3236,9 @@ function highlightNamuInline(line) {
      (separator>=0?syntax("|")+highlightNamuPlainText(inner.slice(separator+1)):"")+syntax("]]");
    }
   }else if(token.startsWith("[*")||token.startsWith("[^")){
-   const complete=token.endsWith("]");
-   const marker=token.startsWith("[*")?"[*":"[^";
-   const inner=complete?token.slice(2,-1):token.slice(2),split=inner.search(/\s/);
-   output+=syntax(marker)+'<span class="mk-footnote">'+highlightNamuPlainText(split>=0?inner.slice(0,split):inner)+'</span>'+
-    (split>=0?highlightNamuPlainText(inner.slice(split)):"")+(complete?syntax("]"):"");
+   // Keep marker, leading/trailing spaces, body text and closing bracket in one
+   // token so the full footnote expression always has a consistent colour.
+   output+='<span class="mk-footnote-token">'+escapeHighlightText(token)+'</span>';
   }else if(/^\[https?:\/\//i.test(token)){
    const inner=token.slice(1,-1),pipe=inner.indexOf("|"),separator=pipe>=0?pipe:inner.search(/\s/);
    const url=separator>=0?inner.slice(0,separator):inner,label=separator>=0?inner.slice(separator+(pipe>=0?1:0)).trim():"";
