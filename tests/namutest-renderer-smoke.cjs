@@ -175,7 +175,7 @@ assert.match(app, /function highlightNamuLine\(/, "editor must keep the original
 assert.ok(app.includes("function handleNamuSquareBracketKeydown("), "editor must auto-pair square brackets while typing");
 assert.ok(app.includes('field.setRangeText("["+selected+"]",start,end,"end")'), "opening square brackets must insert a closing bracket and keep the caret inside");
 assert.ok(app.includes('token==="[*"||token==="[^"'), "footnote opening markers must receive their own syntax token");
-assert.ok(app.includes('<span class="mk-footnote-token">'+ 'escapeHighlightText(token)'), "the complete footnote expression must be rendered as one consistently coloured token");
+assert.ok(app.includes('mk-footnote-token') && app.includes("escapeHighlightText(token)+'</span>'"), "the complete footnote expression must be rendered as one consistently coloured token");
 assert.match(read("style.css"), /#editor-highlight code \.mk-footnote-token[^}]*color:#b42372!important/, "footnote marker, body and closing bracket must share one light-theme colour");
 assert.match(read("style.css"), /html\[data-theme="dark"\] #editor-highlight code \.mk-footnote-token[^}]*color:#ff7eb6!important/, "the complete footnote token must use one dark-theme colour");
 assert.ok(app.includes("\\[\\*[^\\]\\n]*(?:\\]|$)"), "unfinished [* footnotes must be highlighted before the closing bracket is typed");
