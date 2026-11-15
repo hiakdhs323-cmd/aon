@@ -1591,17 +1591,22 @@ async function renderFullWikiDocument(request, env, title) {
     '<meta name="twitter:description" content="' + escapeHtml(description) + '">',
     '<link rel="canonical" href="' + escapeHtml(canonicalUrl) + '">',
     '<script type="application/ld+json" id="aonwiki-page-jsonld">' + safeJsonForHtml(pageStructuredData) + '</script>'
-  ].join("\\n");
+  ].join("\n");
   let html = shell
-    .replace(/<title>[\\s\\S]*?<\\/title>/i, "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
-    .replace(/<meta name="description"[^>]*>\\s*/gi, "")
-    .replace(/<meta name="robots"[^>]*>\\s*/gi, "")
-    .replace(/<meta property="og:[^"]+"[^>]*>\\s*/gi, "")
-    .replace(/<meta name="twitter:[^"]+"[^>]*>\\s*/gi, "")
-    .replace(/<link rel="canonical"[^>]*>\\s*/gi, "")
-    .replace(/<script[^>]*id="aonwiki-(?:website|page)-jsonld"[^>]*>[\\s\\S]*?<\\/script>\\s*/gi, "")
-    .replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\\n' + pageSeoTags)
-    .replace(/<\\/head>/i, pageSeoTags + "\\n</head>");
+    .replace(/<title>[\s\S]*?<\/title>/i, "<title>" + escapeHtml(titleText) + " - AonWiki</title>")
+    .replace(/<meta name="description"[^>]*>\s*/gi, "")
+    .replace(/<meta name="robots"[^>]*>\s*/gi, "")
+    .replace(/<meta property="og:[^"]+"[^>]*>\s*/gi, "")
+    .replace(/<meta name="twitter:[^"]+"[^>]*>\s*/gi, "")
+    .replace(/<link rel="canonical"[^>]*>\s*/gi, "")
+    .replace(/<script[^>]*id="aonwiki-(?:website|page)-jsonld"[^>]*>[\s\S]*?<\/script>\s*/gi, "");
+  const themeColorPattern = /<meta name="theme-color"[^>]*>/i;
+  if (themeColorPattern.test(html)) {
+    html = html.replace(themeColorPattern, match => match + "\n" + pageSeoTags);
+  } else {
+    html = html.replace(/<\/head>/i, pageSeoTags + "\n</head>");
+  }
+  html = html
     .replace("<body>", '<body data-ssr-page="true">')
     .replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>')
     .replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">')
@@ -1617,7 +1622,10 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : ' hidden'));
-  if (!found) { html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden'); html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>'); }
+  if (!found) {
+    html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
+    html = html.replace('<button id="edit" class="nav-item" type="button">문서 편집</button>', '<button id="edit" class="nav-item" type="button">문서 만들기</button>');
+  }
   const appScriptPattern = /<script\b(?=[^>]*\bsrc=["'](?:\/aon)?\/?(?:app\.bundle\.js|app\.js)(?:\?[^"']*)?["'])[^>]*>\s*<\/script>/i;
   const appScriptMatch = html.match(appScriptPattern);
   if (!appScriptMatch) throw new Error("프런트엔드 app.bundle.js/app.js 스크립트 위치를 찾을 수 없습니다.");
