@@ -1929,9 +1929,9 @@ async function renderFullWikiDocument(request, env, title) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
   }
-  const appScriptPattern = /<script defer src=["'](?:\/aon)?\/app\.js[^"']*["']><\/script>/i;
+  const appScriptPattern = /<script\b(?=[^>]*\bsrc=["'](?:\/aon)?\/?(?:app\.bundle\.js|app\.js)(?:\?[^"']*)?["'])[^>]*>\s*<\/script>/i;
   const appScriptMatch = html.match(appScriptPattern);
-  if (!appScriptMatch) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC app.js \uC2A4\uD06C\uB9BD\uD2B8 \uC704\uCE58\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+  if (!appScriptMatch) throw new Error("\uD504\uB7F0\uD2B8\uC5D4\uB4DC app.bundle.js/app.js \uC2A4\uD06C\uB9BD\uD2B8 \uC704\uCE58\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
   const ssrStateScript = '<script id="aonwiki-ssr-state" type="application/json">' + safeJsonForHtml(state) + "<\/script>";
   html = html.replace(appScriptPattern, ssrStateScript + "\n" + appScriptMatch[0]);
   return new Response(html, {
