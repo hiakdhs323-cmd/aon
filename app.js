@@ -1,5 +1,6 @@
 import hljs from "highlight.js";
 window.hljs = hljs;
+// This bundle URL now invalidates the former preview-footnote-root-scope-v2 module cache key.
 
 const $=id=>document.getElementById(id);
 
