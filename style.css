@@ -6147,8 +6147,8 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
   position:relative;
   box-sizing:border-box;
   width:100%;
-  height:1.6em;
-  min-height:0;
+  height:auto;
+  min-height:1.6em;
   line-height:inherit;
   border:0;
 }
