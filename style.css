@@ -6211,3 +6211,23 @@ body.editor-active .editor-main-field{
 body.editor-active .editor-card{
   overflow:visible!important;
 }
+
+
+/* Show the entire wiki source while editing; the page, not the textarea, scrolls. */
+body.editor-active .editor-code-wrap,
+body.editor-active .editor-code-wrap.monaco-active {
+  box-sizing:border-box!important;
+  height:auto!important;
+  min-height:clamp(320px,53dvh,520px)!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+body.editor-active #editor-content {
+  height:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:hidden!important;
+  scrollbar-width:none!important;
+}
+body.editor-active #editor-content::-webkit-scrollbar{display:none!important}
+body.editor-active #editor-highlight{overflow:hidden!important}
+body.editor-active #editor-line-numbers{height:100%!important}

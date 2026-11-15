@@ -94,3 +94,8 @@ assert.match(css, /\.mk-heading-line[\s\S]*?display:block;[\s\S]*?border-top:1px
 assert.match(app, /const left=rect\.right-wrapRect\.left-wrap\.clientLeft\+4;/, "colour picker must appear beside, not on top of, the source colour code");
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:visible!important/s, "the html viewport must own vertical editor scrolling");
 assert.match(css, /body\.editor-active\{[^}]*overflow:visible!important/s, "body must not create a nested scroll container while editing");
+
+assert.match(app, /function resizeEditorSourcePane\(\)[\s\S]*?field\.scrollHeight[\s\S]*?wrap\.style\.setProperty\("height"/, "the source editor must grow to the full document height");
+assert.match(app, /updateLineNumbers\(\);\s*resizeEditorSourcePane\(\);/, "source height must be recalculated whenever syntax highlighting is painted");
+assert.match(css, /body\.editor-active \.editor-code-wrap,[\s\S]*?height:auto!important;[\s\S]*?max-height:none!important/, "the source editor must not have a viewport-height cap");
+assert.match(css, /body\.editor-active #editor-content\{[^}]*overflow-y:hidden!important/s, "the source textarea must not trap the document's lower lines in an inner scrollbar");
