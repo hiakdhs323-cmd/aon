@@ -182,7 +182,7 @@ assert.match(html, /id="editor-preview" class="namumark-content-host editor-prev
 assert.match(html, /id="editor-preview-title"/, "editor preview must show the document title");
 assert.match(app, /target\.classList\.add\("namumark-wasm-content", "namumark-rendered"\)/, "both preview renderer paths must use the normal rendered-document classes");
 assert.match(app, /ensureClientDocumentToc\(target, source, true\)/, "server-rendered previews must receive the same TOC fallback as normal documents");
-assert.match(app, /renderDocumentMetadata\(preview, metadata, title\)/, "preview must display document categories like the normal page");
+assert.match(app, /renderDocumentMetadata\(preview, metadata, title, \$\("editor-content"\)\.value\)/, "preview must display categories from the editor's original source");
 assert.match(app, /categories: Array\.isArray\(serverMetadata\.categories\) && serverMetadata\.categories\.length/, "long-document browser fallback metadata must preserve parsed categories");
 assert.match(app, /backlinks: Array\.isArray\(serverMetadata\.backlinks\) && serverMetadata\.backlinks\.length/, "long-document browser fallback metadata must preserve parsed backlinks");
 assert.match(editorStyles, /body\.editor-active \.site-header\s*\{\s*display:block!important/, "editor mode must preserve the site header");
