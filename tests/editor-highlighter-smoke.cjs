@@ -1,4 +1,3 @@
-assert.match(css, /body\.editor-active #editor-highlight code,\s*body\.editor-active #editor-highlight code \*\s*\{[^}]*font:inherit!important;[^}]*font-weight:400!important;[^}]*font-style:normal!important;/s, "all syntax tokens must inherit the editor font metrics so click and selection coordinates stay aligned");"use strict";
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -102,5 +101,4 @@ assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*position:absolut
 assert.match(css, /body\.editor-active #editor-highlight code \.mk-bold-text[\s\S]*?font-weight:400!important/, "bold syntax colouring must not alter visible glyph width");
 assert.match(css, /body\.editor-active #editor-highlight code \.mk-italic-text[\s\S]*?font-style:normal!important/, "italic syntax colouring must not alter visible glyph width");
 assert.match(css, /body\.editor-active \.editor-code-wrap,[\s\S]*?height:auto!important;[\s\S]*?max-height:none!important/, "the source editor must not have a viewport-height cap");
-
-assert.match(css, /body\\.editor-active #editor-highlight code,\\s*body\\.editor-active #editor-highlight code \\*\\s*\\{[^}]*font:inherit!important;[^}]*font-weight:400!important;[^}]*font-style:normal!important;/s, "all syntax tokens must inherit the editor font metrics so click and selection coordinates stay aligned");
+assert.match(css, /body\.editor-active #editor-highlight code,\s*body\.editor-active #editor-highlight code \*\s*\{[^}]*font:inherit!important;[^}]*font-weight:400!important;[^}]*font-style:normal!important;/s, "all syntax tokens must inherit the editor font metrics so click and selection coordinates stay aligned");
