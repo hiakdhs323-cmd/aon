@@ -175,7 +175,7 @@ assert.match(app, /function highlightNamuLine\(/, "editor must keep the original
 assert.match(app, /function updateEditorHighlight\(/, "editor must repaint the original syntax overlay as the source changes");
 
 assert.match(app, /function highlightNamuSyntaxToken\(/, "existing syntax delimiters must receive semantic colors");
-assert.match(app, /mk-syntax-link/, "existing link delimiters must have a distinct highlight class");
+assert.match(app, /kind="link"/, "existing link delimiters must have a distinct highlight class");
 assert.match(app, /mk-css-property-color/, "existing CSS properties must have semantic highlight classes");
 assert.match(app, /mk-css-function/, "CSS function values must be highlighted within existing style syntax");
 assert.match(app, /mk-attribute-color/, "existing table color attributes must have semantic highlight classes");
