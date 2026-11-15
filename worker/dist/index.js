@@ -1950,7 +1950,7 @@ var index_default = {
           }
         }
         const origin = String(env.FRONTEND_ORIGIN || "https://hiakdhs323-cmd.github.io/aon").replace(/\/$/, "");
-        const assetCacheVersion = assetName === "style.css" ? "20261115-editor-workbench-v3" : assetName.startsWith("editor-monaco/") ? "20261114-monaco-0570" : "20261115-editor-workbench-v3";
+        const assetCacheVersion = assetName === "style.css" ? "20261115-editor-workbench-v4" : assetName.startsWith("editor-monaco/") ? "20261114-monaco-0570" : "20261115-editor-workbench-v4";
         const assetQuery = url.search ? url.search + "&" : "?";
         const assetUrl = origin + "/" + assetName + assetQuery + "aonwiki_asset=" + assetCacheVersion;
         try {
