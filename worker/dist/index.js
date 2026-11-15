@@ -1883,6 +1883,49 @@ async function renderSitemapXml(request, env) {
   }
   return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + urls.join("") + "</urlset>";
 }
+function decodePreviewEntities(value) {
+  return String(value || "").replace(/&#x([0-9a-f]{1,8});?/gi, (_match, hex) => {
+    const point = Number.parseInt(hex, 16);
+    return point > 0 && point <= 1114111 && !(point >= 55296 && point <= 57343) ? String.fromCodePoint(point) : " ";
+  }).replace(/&#([0-9]{1,8});?/g, (_match, decimal) => {
+    const point = Number.parseInt(decimal, 10);
+    return point > 0 && point <= 1114111 && !(point >= 55296 && point <= 57343) ? String.fromCodePoint(point) : " ";
+  }).replace(/&nbsp;|&ensp;|&emsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&apos;|&#39;/gi, "'").replace(/&hellip;/gi, "\u2026").replace(/&ndash;/gi, "\u2013").replace(/&mdash;/gi, "\u2014").replace(/&lsquo;|&rsquo;/gi, "'").replace(/&ldquo;|&rdquo;/gi, '"');
+}
+function renderedHtmlToPreviewText(markup) {
+  return decodePreviewEntities(String(markup || "").replace(/<!--[\s\S]*?-->/g, " ").replace(/<(script|style|noscript|svg|iframe)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ").replace(/<img\b[^>]*\balt=(["'])(.*?)\1[^>]*>/gi, " $2 ").replace(/<br\b[^>]*>|<\/(?:p|div|li|h[1-6]|tr|td|th|section|article|blockquote|pre|ul|ol|table|figure|figcaption)\s*>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/[\u00a0\s]+/g, " ").trim();
+}
+function namuSourceToPreviewText(source) {
+  let value = String(source || "").replace(/<!--[\s\S]*?-->/g, " ").replace(/\[include\([\s\S]*?\)\]/gi, " ").replace(/^\s*\[\[(?:분류|category):[^\]]+\]\]\s*$/gim, " ").replace(/\[\[(?:분류|category):[^\]]+\]\]/gi, " ").replace(/\[\[(?:파일|file):([^\]|]+)(?:\|([^\]]*))?\]\]/gi, (_match, _filename, caption) => caption ? " " + caption + " " : " ").replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1").replace(/^\s*={1,6}\s*(.*?)\s*={1,6}\s*$/gm, "$1").replace(/^\s*\[\s*(?:목차|clearfix|tableofcontents)\s*\]\s*$/gim, " ").replace(/\[\*([^\]]*)\]/g, "$1").replace(/\{\{\{#!(?:wiki|folding|fold|if|linkcolor)\b[^\r\n]*(?:\r?\n)?/gi, " ").replace(/\{\{\{(?:#[\w-]+|\+\d+|-\d+)?\s*/g, " ").replace(/\}\}\}/g, " ").replace(/'''|''|~~|\^\^|,,/g, " ").replace(/<[^>]*>/g, " ").replace(/\|\|/g, " ").replace(/^\s*\|[-:| ]+\|\s*$/gm, " ");
+  return decodePreviewEntities(value).replace(/[\u00a0\s]+/g, " ").trim();
+}
+function buildWikiPageStructuredData({ title, description, url, siteUrl, createdAt, updatedAt }) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": title,
+    "headline": title,
+    "description": description,
+    "url": url,
+    "inLanguage": "ko-KR",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "\uC544\uC628 \uC704\uD0A4",
+      "alternateName": "AonWiki",
+      "url": siteUrl
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "\uC544\uC628 \uC704\uD0A4", "item": siteUrl },
+        { "@type": "ListItem", "position": 2, "name": title, "item": url }
+      ]
+    }
+  };
+  if (createdAt) data.datePublished = String(createdAt);
+  if (updatedAt) data.dateModified = String(updatedAt);
+  return data;
+}
 async function renderFullWikiDocument(request, env, title) {
   const { shell, origin } = await loadFrontendShell(env);
   const page = await findWikiPage(env, title);
@@ -1908,7 +1951,19 @@ async function renderFullWikiDocument(request, env, title) {
   await ensureOfficialDocumentSchema(env);
   const official = found ? await env.DB.prepare("SELECT marked_by, updated_at FROM official_documents WHERE title = ?").bind(actualTitle).first() : null;
   const titleText = found ? actualTitle : actualTitle + " (\uBB38\uC11C \uC5C6\uC74C)";
-  const description = found ? String(page.content || "").replace(/\s+/g, " ").slice(0, 180) : "\uC544\uC9C1 \uC791\uC131\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
+  const renderedPreviewText = found && rendered.html ? renderedHtmlToPreviewText(rendered.html) : "";
+  const sourcePreviewText = found ? namuSourceToPreviewText(sourceText) : "";
+  const description = found ? (renderedPreviewText || sourcePreviewText || actualTitle + " \uBB38\uC11C").slice(0, 240) : "\uC544\uC9C1 \uC791\uC131\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
+  const siteUrl = new URL(request.url).origin + "/";
+  const canonicalUrl = new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle);
+  const pageStructuredData = buildWikiPageStructuredData({
+    title: titleText + " - AonWiki",
+    description,
+    url: canonicalUrl,
+    siteUrl,
+    createdAt: found ? page.created_at : "",
+    updatedAt: found ? page.updated_at : ""
+  });
   const ssrUser = await currentUser(request, env);
   const ssrEditUser = ssrUser || anonymousEditorIdentity(request);
   const ssrEditDenied = found ? await checkPageEditPermission(env, ssrEditUser, actualTitle) : null;
@@ -1924,7 +1979,29 @@ async function renderFullWikiDocument(request, env, title) {
   };
   const protectionLabel = protection?.level === "admin" ? "\uAD00\uB9AC\uC790 \uD3B8\uC9D1 \uBCF4\uD638" : protection?.level === "registered" ? "\uD68C\uC6D0 \uD3B8\uC9D1 \uBCF4\uD638" : "";
   const protectionMessage = protectionLabel ? protection?.reason || (protection.level === "admin" ? "\uC774 \uBB38\uC11C\uB294 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uB3C4\uB85D \uBCF4\uD638\uB418\uC5B4 \uC788\uC2B5\uB2C8\uB2E4." : "\uC774 \uBB38\uC11C\uB294 \uB85C\uADF8\uC778\uD55C \uD68C\uC6D0\uB9CC \uD3B8\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : "";
-  let html = shell.replace("<title>AonWiki</title>", "<title>" + escapeHtml(titleText) + " - AonWiki</title>").replace(/<meta name="theme-color"[^>]*>/i, '<meta name="theme-color" content="#00a69c">\n<meta name="description" content="' + escapeHtml(description) + '">\n<meta property="og:title" content="' + escapeHtml(titleText) + ' - AonWiki">\n<meta property="og:description" content="' + escapeHtml(description) + '">\n<link rel="canonical" href="' + escapeHtml(new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle)) + '">').replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  const pageSeoTags = [
+    '<meta name="description" content="' + escapeHtml(description) + '">',
+    '<meta name="robots" content="' + (found ? "index,follow,max-snippet:-1,max-image-preview:large" : "noindex,follow") + '">',
+    '<meta property="og:type" content="article">',
+    '<meta property="og:site_name" content="\uC544\uC628 \uC704\uD0A4 (AonWiki)">',
+    '<meta property="og:locale" content="ko_KR">',
+    '<meta property="og:title" content="' + escapeHtml(titleText + " - AonWiki") + '">',
+    '<meta property="og:description" content="' + escapeHtml(description) + '">',
+    '<meta property="og:url" content="' + escapeHtml(canonicalUrl) + '">',
+    '<meta name="twitter:card" content="summary">',
+    '<meta name="twitter:title" content="' + escapeHtml(titleText + " - AonWiki") + '">',
+    '<meta name="twitter:description" content="' + escapeHtml(description) + '">',
+    '<link rel="canonical" href="' + escapeHtml(canonicalUrl) + '">',
+    '<script type="application/ld+json" id="aonwiki-page-jsonld">' + safeJsonForHtml(pageStructuredData) + "<\/script>"
+  ].join("\n");
+  let html = shell.replace(/<title>[\s\S]*?<\/title>/i, "<title>" + escapeHtml(titleText) + " - AonWiki</title>").replace(/<meta name="description"[^>]*>\s*/gi, "").replace(/<meta name="robots"[^>]*>\s*/gi, "").replace(/<meta property="og:[^"]+"[^>]*>\s*/gi, "").replace(/<meta name="twitter:[^"]+"[^>]*>\s*/gi, "").replace(/<link rel="canonical"[^>]*>\s*/gi, "").replace(/<script[^>]*id="aonwiki-(?:website|page)-jsonld"[^>]*>[\s\S]*?<\/script>\s*/gi, "");
+  const themeColorPattern = /<meta name="theme-color"[^>]*>/i;
+  if (themeColorPattern.test(html)) {
+    html = html.replace(themeColorPattern, (match) => match + "\n" + pageSeoTags);
+  } else {
+    html = html.replace(/<\/head>/i, pageSeoTags + "\n</head>");
+  }
+  html = html.replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
   if (!found) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
