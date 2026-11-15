@@ -453,7 +453,7 @@ html[data-theme="dark"] .official-status{border-color:#356f68;background:#203b38
 .editor-markup-toolbar button:hover{border-color:var(--wiki-border-strong);background:var(--wiki-panel)}
 .editor-counter{padding:6px 9px;border:1px solid var(--wiki-border);border-top:0;background:var(--wiki-panel-soft);color:var(--wiki-muted);font-size:11px;text-align:right}
 .editor-code-wrap{position:relative;width:100%;height:min(62vh,680px);min-height:320px;overflow:hidden;border:1px solid var(--wiki-border-strong);border-radius:0 0 2px 2px;background:var(--wiki-panel)}
-#editor-highlight{position:absolute;inset:0;z-index:2;box-sizing:border-box;margin:0;padding:10px 11px;overflow:hidden;color:var(--wiki-text);font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word;pointer-events:none}
+#editor-highlight{position:absolute;inset:0;z-index:0;box-sizing:border-box;margin:0;padding:10px 11px;overflow:hidden;color:var(--wiki-text);font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word;pointer-events:none}
 #editor-highlight code{font:inherit}
 #editor-content{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;min-height:0;margin:0;padding:10px 11px;resize:none;border:0;border-radius:0;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--wiki-primary);background:transparent;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word;tab-size:4;overflow:auto}
 #editor-content::selection{background:rgba(0,166,156,.28)}
@@ -3819,7 +3819,7 @@ html[data-theme="dark"] :is(#article.legacy-wiki-content,.editor-preview.legacy-
 .discussion-code-highlight{
   position:absolute;
   inset:0;
-  z-index:2;
+  z-index:0;
   box-sizing:border-box;
   margin:0;
   padding:9px 10px;
@@ -6150,24 +6150,22 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
   box-shadow:inset 0 1px 0 var(--wiki-border-strong);
 }
 
-/* A native colour input sits over the leading hash cell, preserving source/caret alignment. */
-#editor-highlight code .mk-color-value-has-picker,
-.discussion-code-highlight code .mk-color-value-has-picker{
-  position:relative;
-  cursor:pointer;
-}
-#editor-highlight code .mk-color-picker-inline,
-.discussion-code-highlight code .mk-color-picker-inline{
+
+/* Interactive swatches live in a separate, sparse layer; the textarea keeps its own scrollbars. */
+.editor-code-wrap,.discussion-code-wrap{position:relative}
+.namu-color-picker-layer{
   position:absolute;
-  left:0;
-  top:50%;
-  z-index:4;
+  inset:0;
+  z-index:2;
+  overflow:hidden;
+  pointer-events:none;
+}
+.namu-color-picker-layer .mk-color-picker-inline{
+  position:absolute;
   display:block;
   box-sizing:border-box;
-  width:1ch;
-  min-width:1ch;
-  height:.95em;
-  min-height:.95em;
+  width:14px;
+  height:14px;
   margin:0;
   padding:0;
   border:1px solid var(--wiki-border-strong);
@@ -6175,34 +6173,6 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
   background:transparent;
   cursor:pointer;
   pointer-events:auto;
-  transform:translateY(-50%);
 }
-#editor-highlight code .mk-color-picker-inline::-webkit-color-swatch-wrapper,
-.discussion-code-highlight code .mk-color-picker-inline::-webkit-color-swatch-wrapper{
-  padding:1px;
-}
-#editor-highlight code .mk-color-picker-inline::-webkit-color-swatch,
-.discussion-code-highlight code .mk-color-picker-inline::-webkit-color-swatch{
-  border:0;
-  border-radius:1px;
-}
-#editor-highlight code .mk-color-value-has-picker::before,
-.discussion-code-highlight code .mk-color-value-has-picker::before{
-  content:"#";
-  position:absolute;
-  left:0;
-  top:50%;
-  z-index:5;
-  display:flex;
-  width:1ch;
-  height:.95em;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:8px;
-  font-weight:800;
-  line-height:1;
-  text-shadow:0 1px 2px rgba(0,0,0,.9);
-  pointer-events:none;
-  transform:translateY(-50%);
-}
+.namu-color-picker-layer .mk-color-picker-inline::-webkit-color-swatch-wrapper{padding:1px}
+.namu-color-picker-layer .mk-color-picker-inline::-webkit-color-swatch{border:0;border-radius:1px}

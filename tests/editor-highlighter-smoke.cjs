@@ -47,16 +47,20 @@ for (const [name, output, expectedClasses] of cases) {
   }
 }
 assert.match(h.highlightNamuLine("== 이름 ==", false), /mk-heading-line/);
-assert.match(h.highlightNamuColorValue("#aabfdd"), /type="color" value="#aabfdd"/);
-assert.match(h.highlightNamuColorValue("#abc"), /type="color" value="#aabbcc"/);
+assert.match(h.highlightNamuColorValue("#aabfdd"), /mk-color-value-has-picker/);
+assert.match(h.highlightNamuColorValue("#aabfdd"), /data-source-color="#aabfdd"/);
+assert.match(h.highlightNamuColorValue("#abc"), /data-source-color="#abc"/);
 assert.doesNotMatch(h.highlightNamuColorValue("#aabbccdd"), /mk-color-picker-inline/, "alpha hex values must not lose alpha when edited");
 assert.doesNotMatch(h.highlightNamuLine("color: #aabfdd", true), /mk-color-picker-inline/, "literal code blocks must not become interactive");
 assert.doesNotMatch(h.highlightNamuInline("<script>alert(1)</script>"), /<script>/, "unrecognized HTML must stay escaped");
 
 assert.match(css, /\.mk-heading-line[^}]*box-shadow:inset 0 1px 0 var\(--wiki-border-strong\)/s, "heading separator must use the existing theme border");
-assert.match(css, /#editor-highlight code \.mk-color-picker-inline[^}]*pointer-events:auto/s, "main editor colour inputs must be clickable over the textarea");
-assert.match(css, /\.discussion-code-highlight code \.mk-color-picker-inline[^}]*pointer-events:auto/s, "discussion editor colour inputs must also be clickable");
+assert.match(css, /#editor-highlight\{position:absolute;inset:0;z-index:0;/, "highlight plane must stay below the textarea so scrollbars remain accessible");
+assert.match(css, /\.namu-color-picker-layer\{[^}]*z-index:2;[^}]*pointer-events:none/s, "only the sparse picker layer may sit above the editor");
+assert.match(css, /\.namu-color-picker-layer \.mk-color-picker-inline\{[^}]*pointer-events:auto/s, "colour swatches must remain clickable without blocking editor scrolling");
 assert.match(app, /function bindNamuInlineColorPickers\(/, "colour changes must be mapped back into the source textarea");
 assert.match(app, /range\.setEndBefore\(token\)/, "colour changes must locate the exact source token instead of searching duplicate values");
+assert.match(app, /const NAMU_COLOR_PICKER_BINDINGS = new WeakMap\(\)/, "color picker controls must be maintained outside the syntax overlay");
+assert.match(app, /field\.addEventListener\("scroll",\(\)=>requestAnimationFrame\(state\.render\)/, "color picker positions must follow the textarea while scrolling");
 
 console.log("Editor highlighter smoke test passed: " + cases.length + " syntax families.");

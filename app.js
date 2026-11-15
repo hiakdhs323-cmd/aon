@@ -3087,10 +3087,7 @@ function highlightNamuColorValue(value,interactivePicker=true) {
  const pickerValue=pickerMatch&&pickerMatch[1].length===3
   ?"#"+pickerMatch[1].split("").map(char=>char+char).join("").toLowerCase()
   :pickerMatch?raw.toLowerCase():"";
- const picker=pickerMatch
-  ?'<input class="mk-color-picker-inline" type="color" value="'+pickerValue+'" aria-label="색상 선택" title="색상 선택">'
-  :"";
- return '<span class="mk-color-value'+(pickerMatch?' mk-color-value-has-picker':'')+'" data-source-color="'+escapeHighlightText(raw)+'" style="--mk-color-preview:'+escapeHighlightText(lower)+'" title="색상 미리보기: '+escapeHighlightText(raw)+'">'+picker+escapeHighlightText(raw)+'</span>';
+ return '<span class="mk-color-value'+(pickerMatch?' mk-color-value-has-picker':'')+'"'+(pickerMatch?' data-source-color="'+escapeHighlightText(raw)+'"':'')+' style="--mk-color-preview:'+escapeHighlightText(lower)+'" title="색상 미리보기: '+escapeHighlightText(raw)+'">'+escapeHighlightText(raw)+'</span>';
 }
 
 function highlightNamuCssPropertyClass(property) {
@@ -3371,6 +3368,7 @@ function createDiscussionSyntaxEditor(options={}){
  if(options.required)textarea.required=true;
  textarea.placeholder=String(options.placeholder||"");
  textarea.spellcheck=false;
+ const renderColorPickers=bindNamuInlineColorPickers(code,textarea);
  const update=()=>{
   let insideCode=false;
   code.innerHTML=textarea.value.split("\n").map(line=>{
@@ -3392,6 +3390,7 @@ function createDiscussionSyntaxEditor(options={}){
   }).join("\n")+(textarea.value.endsWith("\n")?"\n":"");
   pre.scrollTop=textarea.scrollTop;
   pre.scrollLeft=textarea.scrollLeft;
+  renderColorPickers();
  };
  bindNamuInlineColorPickers(code,textarea);
  textarea.addEventListener("keydown",event=>handleNamuSquareBracketKeydown(textarea,event));
@@ -3461,37 +3460,83 @@ function buildDiscussionBodyEditForm(options={}){
 }
 
 
+const NAMU_COLOR_PICKER_BINDINGS = new WeakMap();
 function bindNamuInlineColorPickers(code,field) {
- if(!code||!field||code.dataset.colorPickerBound==="true")return;
- code.dataset.colorPickerBound="true";
- code.addEventListener("input",event=>{
-  const picker=event.target?.closest?.("input.mk-color-picker-inline");
-  if(!picker||!code.contains(picker))return;
-  const token=picker.closest(".mk-color-value");
-  if(token)token.style.setProperty("--mk-color-preview",picker.value);
- });
- code.addEventListener("change",event=>{
-  const picker=event.target?.closest?.("input.mk-color-picker-inline");
-  if(!picker||!code.contains(picker))return;
-  const token=picker.closest(".mk-color-value");
-  if(!token)return;
-  const sourceColor=String(token.dataset.sourceColor||token.textContent||"").trim();
-  if(!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return;
-  const range=document.createRange();
-  range.selectNodeContents(code);
-  range.setEndBefore(token);
-  const start=range.toString().length;
-  if(field.value.slice(start,start+sourceColor.length).toLowerCase()!==sourceColor.toLowerCase())return;
-  const nextColor=String(picker.value||"").toLowerCase();
-  if(!/^#[0-9a-f]{6}$/i.test(nextColor))return;
-  field.setRangeText(nextColor,start,start+sourceColor.length,"end");
-  field.dispatchEvent(new Event("input",{bubbles:true}));
-  const caret=start+nextColor.length;
-  field.focus({preventScroll:true});
-  field.setSelectionRange(caret,caret);
- });
+ if(!code||!field)return ()=>{};
+ let state=NAMU_COLOR_PICKER_BINDINGS.get(code);
+ if(!state){
+  const wrap=code.closest(".editor-code-wrap,.discussion-code-wrap");
+  if(!wrap)return ()=>{};
+  let layer=wrap.querySelector(":scope > .namu-color-picker-layer");
+  if(!layer){
+   layer=document.createElement("div");
+   layer.className="namu-color-picker-layer";
+   layer.setAttribute("aria-hidden","true");
+   wrap.append(layer);
+  }
+  state={wrap,layer,field,render:null};
+  const updateSource=(picker)=>{
+   const sourceColor=String(picker.dataset.sourceColor||"").trim();
+   const start=Number(picker.dataset.sourceStart);
+   if(!Number.isInteger(start)||!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return;
+   if(field.value.slice(start,start+sourceColor.length).toLowerCase()!==sourceColor.toLowerCase())return;
+   const nextColor=String(picker.value||"").toLowerCase();
+   if(!/^#[0-9a-f]{6}$/i.test(nextColor))return;
+   field.setRangeText(nextColor,start,start+sourceColor.length,"end");
+   field.dispatchEvent(new Event("input",{bubbles:true}));
+   const caret=start+nextColor.length;
+   field.focus({preventScroll:true});
+   field.setSelectionRange(caret,caret);
+  };
+  layer.addEventListener("input",event=>{
+   const picker=event.target?.closest?.("input.mk-color-picker-inline");
+   if(!picker||!layer.contains(picker))return;
+   const token=code.querySelectorAll(".mk-color-value-has-picker")[Number(picker.dataset.tokenIndex)];
+   if(token)token.style.setProperty("--mk-color-preview",picker.value);
+  });
+  layer.addEventListener("change",event=>{
+   const picker=event.target?.closest?.("input.mk-color-picker-inline");
+   if(picker&&layer.contains(picker))updateSource(picker);
+  });
+  state.render=()=>{
+   if(!wrap.isConnected||!code.isConnected)return;
+   layer.replaceChildren();
+   const wrapRect=wrap.getBoundingClientRect();
+   const colors=code.querySelectorAll(".mk-color-value-has-picker[data-source-color]");
+   colors.forEach((token,index)=>{
+    const sourceColor=String(token.dataset.sourceColor||"").trim();
+    const match=sourceColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if(!match)return;
+    const rect=token.getBoundingClientRect();
+    const left=rect.left-wrapRect.left-wrap.clientLeft;
+    const top=rect.top-wrapRect.top-wrap.clientTop+(rect.height-14)/2;
+    if(left<-14||top<-14||left>wrap.clientWidth||top>wrap.clientHeight)return;
+    const range=document.createRange();
+    range.selectNodeContents(code);
+    range.setEndBefore(token);
+    const sourceStart=range.toString().length;
+    const input=document.createElement("input");
+    input.type="color";
+    input.className="mk-color-picker-inline";
+    input.value=match[1].length===3
+     ?"#"+match[1].split("").map(char=>char+char).join("").toLowerCase()
+     :sourceColor.toLowerCase();
+    input.dataset.sourceColor=sourceColor;
+    input.dataset.sourceStart=String(sourceStart);
+    input.dataset.tokenIndex=String(index);
+    input.setAttribute("aria-label","색상 선택");
+    input.title="색상 선택";
+    input.style.left=left+"px";
+    input.style.top=top+"px";
+    layer.append(input);
+   });
+  };
+  field.addEventListener("scroll",()=>requestAnimationFrame(state.render),{passive:true});
+  window.addEventListener("resize",state.render,{passive:true});
+  NAMU_COLOR_PICKER_BINDINGS.set(code,state);
+ }
+ return state.render;
 }
-
 let editorHighlightFrame = 0;
 let editorHighlightSource = null;
 function resetEditorHighlightState() {
@@ -3543,6 +3588,7 @@ function updateEditorHighlight({immediate=false}={}) {
     const wrap = field.closest(".editor-code-wrap");
     if (wrap) wrap.classList.add("highlight-active");
     syncScroll();
+    bindNamuInlineColorPickers(code,field)();
   };
   if (!immediate) {
     if (editorHighlightSource === field.value) {
