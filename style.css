@@ -5981,3 +5981,7 @@ body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
     min-height:280px!important;
   }
 }
+
+/* Document category bar lives directly below the document/discussion/history tools. */
+.wiki-categories-host{margin:8px 0 12px}
+.wiki-categories-host[hidden]{display:none!important}

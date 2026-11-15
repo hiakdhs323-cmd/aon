@@ -2305,9 +2305,11 @@ function renderDocumentMetadata(article, metadata, docTitle) {
   return name;
  };
  const categories=[...new Set((metadata?.categories||[]).map(normalizeCategoryName).filter(Boolean))];
- const shell=article.closest(".article")||article;
- shell.querySelector(":scope > .wiki-categories")?.remove();
- if(!categories.length)return;
+ const host=document.getElementById("wiki-categories");
+ if(!host)return;
+ host.replaceChildren();
+ if(!categories.length){host.hidden=true;return;}
+ host.hidden=false;
  const footer=document.createElement("div");
  footer.className="wiki-categories";
  categories.forEach((name,index)=>{
@@ -2350,7 +2352,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   targets.article.classList.add("namumark-content-host");
  const templateStatus=$("template-status");
  if(templateStatus)templateStatus.hidden=true;
- setArticleTitleLink(targets.title,title,displayTitle);targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();
+ setArticleTitleLink(targets.title,title,displayTitle);targets.crumb.textContent=displayTitle;targets.message.textContent="문서를 불러오는 중입니다…";targets.article.replaceChildren();const categoryHost=$("wiki-categories");if(categoryHost){categoryHost.replaceChildren();categoryHost.hidden=true;}
  if(targets.protection)targets.protection.hidden=true;
  if(targets.headingEdit)targets.headingEdit.hidden=false;
  window.scrollTo({top:0,behavior:"auto"});

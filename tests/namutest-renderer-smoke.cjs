@@ -252,3 +252,9 @@ assert.match(editorStyles, /\.editor-preview-document \.editor-preview\s*\{[^}]*
   process.exitCode = 1;
 });
 
+
+assert.match(read("index.html"), /id="wiki-categories" class="wiki-categories-host"/, "document category host must sit below the article tools");
+assert.match(app, /const host=document\.getElementById\("wiki-categories"\)/, "document categories must render into the dedicated host");
+assert.match(app, /host\.replaceChildren\(\)/, "document categories must be cleared before rerendering");
+assert.doesNotMatch(app, /shell\.prepend\(footer\)/, "document categories must not be prepended above the title");
+assert.match(styles, /\.wiki-categories-host\{margin:8px 0 12px\}/, "document category host spacing must remain stable");
