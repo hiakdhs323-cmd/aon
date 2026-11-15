@@ -6176,3 +6176,36 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
 }
 .namu-color-picker-layer .mk-color-picker-inline::-webkit-color-swatch-wrapper{padding:1px}
 .namu-color-picker-layer .mk-color-picker-inline::-webkit-color-swatch{border:0;border-radius:1px}
+
+
+/* Keep the complete edit form in the document flow; only the source pane scrolls internally. */
+html:has(body.editor-active){
+  height:auto!important;
+  min-height:100%!important;
+  overflow-x:clip!important;
+  overflow-y:auto!important;
+}
+body.editor-active{
+  height:auto!important;
+  min-height:100vh!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+}
+body.editor-active .layout,
+body.editor-active .main,
+body.editor-active #editor-view,
+body.editor-active .editor-view,
+body.editor-active .editor-card,
+body.editor-active #editor-form,
+body.editor-active .editor-fields,
+body.editor-active .editor-main-field{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+body.editor-active .editor-card{
+  overflow:visible!important;
+}

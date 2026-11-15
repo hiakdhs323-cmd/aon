@@ -2798,6 +2798,9 @@ async function editPage(title = currentTitle, content = currentContent, options 
   $("editor-save").disabled = false;
   $("editor-help").hidden = true;
   syncEditorConsentLock();
+  requestAnimationFrame(() => {
+    window.scrollTo({top:0,left:0,behavior:"auto"});
+  });
 }
 
 function cancelEditor(event) {
