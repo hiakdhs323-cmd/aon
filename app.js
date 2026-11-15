@@ -2326,7 +2326,7 @@ function renderDocumentMetadata(article, metadata, docTitle) {
   link.addEventListener("click",event=>{event.preventDefault();openPage("분류:"+name)});
   footer.append(link);
  });
- shell.prepend(footer);
+ host.append(footer);
 }
 
 async function loadPage(title,pushRoute=true,anchor=""){
