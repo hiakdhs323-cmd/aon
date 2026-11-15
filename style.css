@@ -341,12 +341,22 @@ html[data-theme="dark"] .official-status{border-color:#356f68;background:#203b38
 .wiki-footnote-tooltip.mobile-fixed{position:fixed;left:12px;right:auto;bottom:auto;z-index:100;max-width:calc(100vw - 24px);transform:none}
 .wiki-categories{
   display:flex;align-items:center;flex-wrap:wrap;gap:0;
-  margin:20px 0 0;padding:8px 0 0;border-top:1px solid var(--wiki-border);
-  color:var(--wiki-muted);font-size:12px
+  min-height:108px;box-sizing:border-box;
+  margin:0;padding:24px 30px;
+  border:2px solid var(--wiki-border-strong);
+  border-radius:14px;
+  background:var(--wiki-panel-soft);
+  color:var(--wiki-text);
+  font-size:30px;font-weight:500;line-height:1.35;
 }
-.wiki-categories-label{margin-right:6px;color:var(--wiki-text);font-weight:700}
-.wiki-categories a{padding:0;border:0;background:transparent;color:var(--wiki-link);font-size:12px}
-.wiki-categories a+a::before{content:"·";margin:0 6px;color:var(--wiki-muted)}
+.wiki-categories-label{margin-right:5px;color:var(--wiki-text);font-weight:500}
+.wiki-categories-separator{margin:0 18px;color:var(--wiki-muted);font-weight:400}
+.wiki-categories a{
+  padding:0;border:0;background:transparent;
+  color:#e6a11b;font-size:inherit;font-weight:500;
+  text-decoration:none;
+}
+.wiki-categories a:hover{color:#f0b333;text-decoration:underline;text-underline-offset:3px}
 .wiki-content .namumark_legacy_category{margin:20px 0 10px;padding:9px 0;border-top:1px solid var(--wiki-border);font-size:12px}
 .wiki-content .namumark_legacy_category a{margin:0 4px}
 .wiki-spoiler{border-radius:2px;background:var(--wiki-text);color:var(--wiki-text);cursor:pointer}
