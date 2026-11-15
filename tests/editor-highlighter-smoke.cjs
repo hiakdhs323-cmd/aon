@@ -58,7 +58,7 @@ assert.match(css, /#editor-highlight\{position:absolute;inset:0;z-index:0;/, "hi
 assert.match(app, /function bindNamuInlineColorPickers\(/, "colour changes must be mapped back into the source textarea");
 assert.match(app, /const NAMU_COLOR_PICKER_BINDINGS = new WeakMap\(\)/, "color picker controls must be maintained outside the syntax overlay");
 
-assert.match(app, /wrap\.parentElement\.insertBefore\(layer,wrap\)/, "colour controls must be placed above the source editor, not over text");
+assert.match(app, /wrap\.append\(layer\)/, "colour controls must stay inside the editor source pane");
 assert.match(app, /findNamuColorSourceOffset\(source,sourceColor,sourceCursor\)/, "colour edits must resolve source offsets from the raw document string");
 assert.doesNotMatch(app, /range\.setEndBefore\(token\)/, "colour source offsets must not depend on rendered DOM text lengths");
 assert.match(css, /\.namu-color-picker-toolbar\{[^}]*position:relative;[^}]*display:flex;[^}]*max-height:112px/s, "colour controls must occupy a separate non-overlapping toolbar row");
