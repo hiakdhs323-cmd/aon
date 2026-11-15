@@ -174,7 +174,7 @@ assert.doesNotMatch(read("index.html"), /editor-monaco\/monaco\.(?:js|css)|edito
 assert.match(app, /function highlightNamuLine\(/, "editor must keep the original NamuMark token highlighter");
 assert.match(app, /function updateEditorHighlight\(/, "editor must repaint the original syntax overlay as the source changes");
 
-assert.match(app, /function highlightNamuColorValue\\(/, "editor highlighter must render validated CSS color previews");
+assert.match(app, /function highlightNamuColorValue\(/, "editor highlighter must render validated CSS color previews");
 assert.match(app, /mk-color-value/, "hex and CSS colors must receive a visible inline swatch token");
 assert.match(app, /mk-css-property/, "CSS properties inside wiki style declarations must be highlighted");
 assert.match(app, /mk-macro-name/, "NamuMark block macro names must have a dedicated token");
@@ -183,8 +183,8 @@ assert.match(app, /mk-table-delimiter/, "table cell separators must be highlight
 assert.match(app, /mk-footnote/, "footnote syntax must have a dedicated token");
 assert.match(app, /mk-redirect/, "redirect directives must be highlighted");
 assert.match(app, /mk-quote-marker/, "quote markers must be highlighted");
-assert.match(read("style.css"), /\\.mk-color-value\\s*\\{[^}]*--mk-color-preview/s, "color previews must be painted without changing text width");
-assert.match(read("style.css"), /html\\[data-theme="dark"\\] #editor-highlight \\.mk-macro-name/, "expanded tokens must have dark-theme colors");
+assert.match(read("style.css"), /\.mk-color-value\s*\{[^}]*--mk-color-preview/s, "color previews must be painted without changing text width");
+assert.match(read("style.css"), /html\[data-theme="dark"\] #editor-highlight \.mk-macro-name/, "expanded tokens must have dark-theme colors");
 
 assert.match(app, /function focusAonWikiEditor\(\)\s*\{\s*\$\("editor-content"\)\?\.focus\(\)/, "toolbar and file inserts must focus the original source textarea");
 assert.match(read("style.css"), /\.editor-code-wrap\.highlight-active #editor-content/, "editor must use the synchronized highlight overlay for source editing");
