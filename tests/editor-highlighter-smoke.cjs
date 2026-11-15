@@ -1,4 +1,4 @@
-"use strict";
+assert.match(css, /body\.editor-active #editor-highlight code,\s*body\.editor-active #editor-highlight code \*\s*\{[^}]*font:inherit!important;[^}]*font-weight:400!important;[^}]*font-style:normal!important;/s, "all syntax tokens must inherit the editor font metrics so click and selection coordinates stay aligned");"use strict";
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
