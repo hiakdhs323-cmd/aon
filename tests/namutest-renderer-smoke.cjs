@@ -30,7 +30,7 @@ assert.match(worker, /rewriteFrontendAssets\(shell, frontendOrigin, false\)/, "t
 assert.match(worker, /Worker Assets index\.html returned/, "a missing local shell must be recorded and trigger the fallback path");
 const ssrBundleScriptPattern = /<script\b(?=[^>]*\bsrc=["'](?:\/aon)?\/?(?:app\.bundle\.js|app\.js)(?:\?[^"']*)?["'])[^>]*>\s*<\/script>/i;
 assert.match(html, ssrBundleScriptPattern, "document SSR must recognize the bundled module script in index.html");
-assert.ok(worker.includes("app" + String.fromCharCode(92) + ".bundle.js|app" + String.fromCharCode(92) + ".js"), "document SSR must inject its state before either bundled or legacy app entrypoint");
+const sourceSlash = String.fromCharCode(92); assert.ok(worker.includes("app" + sourceSlash + ".bundle" + sourceSlash + ".js|app" + sourceSlash + ".js"), "document SSR must inject its state before either bundled or legacy app entrypoint");
 
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
 assert.match(read("index.html"), /id="home-login-action"/, "homepage must expose the login quick action");
