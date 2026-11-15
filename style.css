@@ -6144,11 +6144,23 @@ html[data-theme="dark"] .discussion-code-highlight code .mk-footnote-token{
 #editor-highlight code .mk-heading-line,
 .discussion-code-highlight code .mk-heading-line{
   display:block;
+  position:relative;
   box-sizing:border-box;
   width:100%;
-  min-height:1.6em;
+  height:1.6em;
+  min-height:0;
   line-height:inherit;
+  border:0;
+}
+#editor-highlight code .mk-heading-line::before,
+.discussion-code-highlight code .mk-heading-line::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
   border-top:1px solid var(--wiki-border-strong);
+  pointer-events:none;
 }
 
 
@@ -6213,7 +6225,7 @@ body.editor-active .editor-card{
 }
 
 
-/* Keep highlight and input as identical overlay layers; measure the textarea for total height. */
+/* The highlight is the measured content layer. The textarea covers it exactly. */
 body.editor-active .editor-code-wrap,
 body.editor-active .editor-code-wrap.monaco-active {
   position:relative!important;
@@ -6223,26 +6235,28 @@ body.editor-active .editor-code-wrap.monaco-active {
   height:auto!important;
   min-height:clamp(320px,53dvh,520px)!important;
   max-height:none!important;
-  overflow:hidden!important;
+  overflow:visible!important;
 }
 body.editor-active #editor-highlight {
-  position:absolute!important;
-  inset:0!important;
+  position:relative!important;
+  inset:auto!important;
   z-index:1!important;
   box-sizing:border-box!important;
   display:block!important;
   width:100%!important;
-  height:100%!important;
-  min-height:0!important;
+  height:auto!important;
+  min-height:clamp(320px,53dvh,520px)!important;
   margin:0!important;
   padding:10px 13px 10px 61px!important;
-  overflow:hidden!important;
+  overflow:visible!important;
   white-space:pre-wrap!important;
   overflow-wrap:anywhere!important;
 }
 body.editor-active #editor-highlight code {
   display:block!important;
-  min-height:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
   white-space:inherit!important;
   overflow-wrap:inherit!important;
 }
@@ -6261,36 +6275,25 @@ body.editor-active #editor-content {
   overflow:hidden!important;
   white-space:pre-wrap!important;
   overflow-wrap:anywhere!important;
-  scrollbar-width:none!important;
 }
-body.editor-active #editor-content::-webkit-scrollbar{display:none!important}
 body.editor-active #editor-line-numbers {
   height:100%!important;
   bottom:0!important;
   overflow:hidden!important;
 }
 
-/* The visible highlight must never change glyph advance relative to the textarea. */
-body.editor-active #editor-highlight code .mk-bold-text,
-body.editor-active #editor-highlight code .mk-bold-text .mk-content {
-  font-weight:400!important;
-}
-body.editor-active #editor-highlight code .mk-italic-text,
-body.editor-active #editor-highlight code .mk-italic-text .mk-content {
-  font-style:normal!important;
-}
-body.editor-active #editor-highlight code sup.mk-script-text,
-body.editor-active #editor-highlight code sub.mk-script-text {
-  transform:translateY(0) scaleY(.82)!important;
-}
-
-
-/* Source highlighting must never change the textarea's character or line metrics. */
+/* Every syntax token keeps the exact input font metrics and caret advance. */
 body.editor-active #editor-highlight code,
 body.editor-active #editor-highlight code * {
   font:inherit!important;
   font-weight:400!important;
   font-style:normal!important;
+  line-height:inherit!important;
   letter-spacing:normal!important;
   word-spacing:normal!important;
+  vertical-align:baseline!important;
+}
+body.editor-active #editor-highlight code sup.mk-script-text,
+body.editor-active #editor-highlight code sub.mk-script-text {
+  transform:translateY(0) scaleY(.82)!important;
 }

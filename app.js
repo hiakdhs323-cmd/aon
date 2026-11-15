@@ -3559,21 +3559,44 @@ function bindNamuInlineColorPickers(code,field) {
  }
  return state.render;
 }
-function resizeEditorSourcePane() {
-  const field = $("editor-content");
-  const wrap = $("editor-code-wrap");
-  if (!field || !wrap || !document.body.classList.contains("editor-active")) return;
+function renderEditorHighlightLines(value) {
+  const source = String(value ?? "");
+  const lines = source.split("\n");
+  let insideCode = false;
+  let previousWasBlockHeading = false;
+  let trailingEmptyAfterHeading = false;
+  let output = "";
 
-  // Measure the textarea's own layout so highlighted text and the caret layer
-  // retain identical wrapping and click coordinates.
-  const previousScrollTop = field.scrollTop;
-  field.style.setProperty("height", "1px", "important");
-  const contentHeight = Math.ceil(field.scrollHeight + 6);
-  field.style.removeProperty("height");
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
+    let rendered;
 
-  const minHeight = Number.parseFloat(getComputedStyle(wrap).minHeight) || 320;
-  wrap.style.setProperty("height", Math.max(minHeight, contentHeight) + "px", "important");
-  field.scrollTop = previousScrollTop;
+    if (opening) {
+      rendered = highlightNamuLine(line, false);
+      insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
+    } else if (/^\s*\{\{\{\s*$/.test(line)) {
+      insideCode = true;
+      rendered = '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
+    } else if (/^\s*\}\}\}\s*$/.test(line)) {
+      insideCode = false;
+      rendered = highlightNamuLine(line, false);
+    } else {
+      rendered = highlightNamuLine(line, insideCode);
+    }
+
+    if (index > 0 && !previousWasBlockHeading) output += "\n";
+    output += rendered;
+
+    const isBlockHeading = rendered.startsWith('<span class="mk-heading-line">');
+    trailingEmptyAfterHeading = index === lines.length - 1 && line === "" && previousWasBlockHeading;
+    previousWasBlockHeading = isBlockHeading;
+  }
+
+  // A block heading already creates a line boundary. Preserve a final editable
+  // blank line only when the source ends immediately after that block.
+  if (source.endsWith("\n") && trailingEmptyAfterHeading) output += "\n";
+  return output;
 }
 let editorHighlightFrame = 0;
 let editorHighlightSource = null;
@@ -3601,29 +3624,11 @@ function updateEditorHighlight({immediate=false}={}) {
     }
   };
   const paint = () => {
-    let insideCode = false;
     const value = field.value;
-    code.innerHTML = value.split("\n").map(line => {
-      const opening = line.match(/^\s*\{\{\{#!([a-z0-9_-]+)/i);
-      if (opening) {
-        const output = highlightNamuLine(line, false);
-        insideCode = ["syntax", "html", "style", "latex"].includes(opening[1].toLowerCase());
-        return output;
-      }
-      if (/^\s*\{\{\{\s*$/.test(line)) {
-        insideCode = true;
-        return '<span class="mk-code-fence">' + escapeHighlightText(line) + '</span>';
-      }
-      if (/^\s*\}\}\}\s*$/.test(line)) {
-        insideCode = false;
-        return highlightNamuLine(line, false);
-      }
-      return highlightNamuLine(line, insideCode);
-    }).join("\n") + (value.endsWith("\n") ? "\n" : "");
+    code.innerHTML = renderEditorHighlightLines(value);
     editorHighlightSource = value;
     pre.dataset.sourceText = value;
     updateLineNumbers();
-    resizeEditorSourcePane();
     const wrap = field.closest(".editor-code-wrap");
     if (wrap) wrap.classList.add("highlight-active");
     syncScroll();
@@ -3652,15 +3657,6 @@ $("editor-content").addEventListener("scroll", () => {
 });
 $("editor-content").addEventListener("input", updateEditorHighlight);
 $("editor-content").addEventListener("compositionend", updateEditorHighlight);
-let editorSourceResizeFrame = 0;
-window.addEventListener("resize", () => {
-  if (!$("editor-view") || $("editor-view").hidden) return;
-  if (editorSourceResizeFrame) cancelAnimationFrame(editorSourceResizeFrame);
-  editorSourceResizeFrame = requestAnimationFrame(() => {
-    editorSourceResizeFrame = 0;
-    resizeEditorSourcePane();
-  });
-}, { passive: true });
 
 function insertEditorMarkup(kind){
  const field=$("editor-content");

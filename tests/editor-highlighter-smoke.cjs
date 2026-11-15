@@ -12,7 +12,7 @@ assert.ok(start >= 0 && end > start, "production highlighter source must be extr
 const context = {};
 vm.runInNewContext(
   app.slice(start, end) +
-    "\nglobalThis.__aonHighlighter = { highlightNamuInline, highlightNamuLine, highlightNamuColorValue };",
+    "\nglobalThis.__aonHighlighter = { highlightNamuInline, highlightNamuLine, highlightNamuColorValue, renderEditorHighlightLines };",
   context,
   { filename: "app.js#namumark-highlighter" }
 );
@@ -64,6 +64,24 @@ assert.match(app, /field\.addEventListener\("scroll",\(\)=>requestAnimationFrame
 
 console.log("Editor highlighter smoke test passed: " + cases.length + " syntax families.");
 
+assert.match(app, /function renderEditorHighlightLines\\(/, "the overlay renderer must account for block heading lines");
+assert.match(app, /code\\.innerHTML = renderEditorHighlightLines\\(value\\)/, "the input and syntax overlay must share one line-layout algorithm");
+assert.doesNotMatch(app, /resizeEditorSourcePane|editorSourceResizeFrame|field\\.scrollHeight/, "source height must be determined by natural text flow, not a stale JavaScript measurement");
+assert.match(css, /body\\.editor-active #editor-highlight\\s*\\{[^}]*position:relative!important;[\\s\\S]*?height:auto!important;[\\s\\S]*?overflow:visible!important/s, "highlighted text must determine the complete editor height in normal flow");
+assert.match(css, /body\\.editor-active #editor-content\\s*\\{[^}]*position:absolute!important;[\\s\\S]*?inset:0!important;[\\s\\S]*?height:100%!important/s, "the textarea must overlay the complete intrinsic-height source");
+assert.match(css, /body\\.editor-active #editor-highlight code,\\s*body\\.editor-active #editor-highlight code \\*\\s*\\{[^}]*font:inherit!important;[^}]*font-weight:400!important;[^}]*font-style:normal!important;[^}]*line-height:inherit!important;/s, "all syntax tokens must inherit the input's exact font and line metrics");
+assert.match(css, /#editor-highlight code \\.mk-heading-line,[\\s\\S]*?height:1\\.6em;[\\s\\S]*?border:0;/s, "heading separators must not add height to the source line");
+assert.match(css, /#editor-highlight code \\.mk-heading-line::before[\\s\\S]*?position:absolute;[\\s\\S]*?border-top:1px solid/s, "the heading separator must be painted without affecting text layout");
+
+const headingRendered = h.renderEditorHighlightLines("위 문장\\n== 이름 ==\\n아래 문장");
+assert.ok(headingRendered.includes("위 문장\\n<span class=\\"mk-heading-line\\">"), "a heading must keep the source line break before it");
+assert.ok(headingRendered.includes("</span>아래 문장"), "a block heading must not receive a second newline after its block boundary");
+assert.doesNotMatch(headingRendered, /<\\/span>\\n아래 문장/, "a heading must not create a phantom blank line");
+assert.equal((headingRendered.match(/mk-heading-line/g) || []).length, 1, "one heading source line must create exactly one heading block");
+assert.equal(h.renderEditorHighlightLines("첫 줄\\n둘째 줄"), "첫 줄\\n둘째 줄", "ordinary source lines must keep their original line breaks");
+assert.ok(h.renderEditorHighlightLines("== 이름 ==\\n").endsWith("</span>\\n"), "a trailing newline after a heading must preserve the final editable line");
+
+
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:visible!important/s, "the viewport must own vertical scrolling while the editor is active");
 assert.match(css, /body\.editor-active \.editor-card\{[^}]*overflow:visible!important/s, "the editor card must not clip the form bottom");
 assert.match(css, /body\.editor-active \.editor-fields,[\s\S]*?overflow:visible!important/s, "editor form ancestors must retain their full content height");
@@ -94,8 +112,6 @@ assert.match(app, /const left=rect\.right-wrapRect\.left-wrap\.clientLeft\+4;/, 
 assert.match(css, /html:has\(body\.editor-active\)\{[^}]*overflow-y:visible!important/s, "the html viewport must own vertical editor scrolling");
 assert.match(css, /body\.editor-active\{[^}]*overflow:visible!important/s, "body must not create a nested scroll container while editing");
 
-assert.match(app, /function resizeEditorSourcePane\(\)[\s\S]*?field\.scrollHeight[\s\S]*?wrap\.style\.setProperty\("height"/, "source height must grow using the textarea's exact text layout");
-assert.match(app, /updateLineNumbers\(\);\s*resizeEditorSourcePane\(\);/, "source height must refresh as the text changes");
 assert.match(css, /body\.editor-active #editor-highlight\s*\{[^}]*position:absolute!important;[\s\S]*?inset:0!important/s, "the highlighted text must remain precisely overlaid on the textarea");
 assert.match(css, /body\.editor-active #editor-content\s*\{[^}]*position:absolute!important;[\s\S]*?inset:0!important;[\s\S]*?height:100%!important/s, "the textarea must occupy the same exact overlay box as the highlighted text");
 assert.match(css, /body\.editor-active #editor-highlight code \.mk-bold-text[\s\S]*?font-weight:400!important/, "bold syntax colouring must not alter visible glyph width");
