@@ -6283,3 +6283,14 @@ body.editor-active #editor-highlight code sup.mk-script-text,
 body.editor-active #editor-highlight code sub.mk-script-text {
   transform:translateY(0) scaleY(.82)!important;
 }
+
+
+/* Source highlighting must never change the textarea's character or line metrics. */
+body.editor-active #editor-highlight code,
+body.editor-active #editor-highlight code * {
+  font:inherit!important;
+  font-weight:400!important;
+  font-style:normal!important;
+  letter-spacing:normal!important;
+  word-spacing:normal!important;
+}
