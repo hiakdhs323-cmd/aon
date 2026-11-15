@@ -17,3 +17,8 @@ PARSER-LICENSES.md
 UPSTREAM-NOTICE.md
 CNAME
 *.map
+
+# Browser runtime is delivered as one bundle; source inputs and parser modules are not public assets.
+app.js
+namumark-wasm.js
+Namu_test-main/

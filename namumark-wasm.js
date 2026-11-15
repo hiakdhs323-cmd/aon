@@ -1,10 +1,11 @@
 import init, { RendererOptions, parse_with_metadata, parse_with_options, parse_with_callbacks, parse_with_callbacks_and_options } from "./Namu_test-main/namumark.js";
+import wasmDataUrl from "./Namu_test-main/namumark_bg.wasm";
 
 export { RendererOptions };
 
 let initialized = false;
 
-export async function initWasm(path = new URL("./Namu_test-main/namumark_bg.wasm", import.meta.url)) {
+export async function initWasm(path = wasmDataUrl) {
   const wasm = await init({ module_or_path: path });
   initialized = true;
   return wasm;

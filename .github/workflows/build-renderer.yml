@@ -7,6 +7,7 @@ on:
       - "Namu_test-main/**"
       - "editor/**"
       - "scripts/build-monaco.mjs"
+      - "scripts/build-browser.mjs"
       - "package.json"
       - "namumark-wasm.js"
       - "app.js"
@@ -41,17 +42,22 @@ jobs:
           node-version: 22
       - name: Install pinned Monaco build dependency
         run: npm install --no-audit --no-fund
+      - name: Build single browser runtime bundle
+        run: node scripts/build-browser.mjs
       - name: Build local Monaco editor and worker
         run: node scripts/build-monaco.mjs
       - name: Verify frontend JavaScript syntax
         run: |
-          node --check app.js
+          node --input-type=module --check < app.js
+          node --input-type=module --check < app.bundle.js
           node --check editor/monaco-entry.js
           node --check editor/monaco-worker.js
       - name: Verify Monaco build outputs
         run: node tests/monaco-editor-smoke.cjs
       - name: Verify single renderer integration
         run: node tests/namutest-renderer-smoke.cjs
+      - name: Verify browser source bundling
+        run: node tests/frontend-bundle-smoke.cjs
       - name: Verify NamuMark editor syntax highlighting
         run: node tests/editor-highlighter-smoke.cjs
       - name: Bundle Cloudflare Worker
@@ -62,7 +68,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add worker/dist/index.js editor-monaco/monaco.js editor-monaco/monaco.worker.js editor-monaco/monaco.css editor-monaco/LICENSE.monaco.txt
+          git add app.bundle.js worker/dist/index.js editor-monaco/monaco.js editor-monaco/monaco.worker.js editor-monaco/monaco.css editor-monaco/LICENSE.monaco.txt
           if git diff --cached --quiet; then
             echo "Worker bundle is up to date."
           else

@@ -5,6 +5,7 @@
   "description": "Pinned build dependencies for AonWiki's Cloudflare Worker and Monaco editor assets",
   "devDependencies": {
     "esbuild": "0.25.0",
+    "highlight.js": "11.8.0",
     "monaco-editor": "0.57.0"
   }
 }

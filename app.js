@@ -1,3 +1,6 @@
+import hljs from "highlight.js";
+window.hljs = hljs;
+
 const $=id=>document.getElementById(id);
 
 const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
@@ -1163,7 +1166,7 @@ function prepareServerRenderedMarkup(root,docTitle){
   });
   refreshWikiTableContrast(root);
   root.classList.add("namumark-rendered");
-   // Footnote previews are owned by Namu_test-main/interactions.js.
+   // Footnote previews are part of the bundled wiki interaction runtime.
   applyFinalWikiTypographyAndLinkColors(root);
   if(window.katex){
     root.querySelectorAll('span[id*="opennamu_math_"]').forEach(element=>{
@@ -1203,7 +1206,7 @@ const aonNamuInteractionInstances = new WeakMap();
 async function activateAonWikiInteractions(root) {
  if(!root || !(root instanceof Element)) return;
  if(!aonNamuInteractionModulePromise) {
-  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js?v=20261114-preview-footnote-root-scope-v2")
+  aonNamuInteractionModulePromise = import("./Namu_test-main/interactions.js")
    .catch(error => { aonNamuInteractionModulePromise = null; throw error; });
  }
  try {
