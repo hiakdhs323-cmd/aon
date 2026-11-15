@@ -5995,3 +5995,39 @@ body.editor-active #editor-save:disabled{opacity:.62;cursor:not-allowed}
 /* Document category bar lives directly below the document/discussion/history tools. */
 .wiki-categories-host{margin:8px 0 12px}
 .wiki-categories-host[hidden]{display:none!important}
+
+
+/* Rich NamuMark source tokens and inline colour previews.
+   Every decoration is paint-only and must not change glyph width or editor alignment. */
+#editor-highlight .mk-macro-name,#editor-highlight .mk-tag-name{color:#0550ae}
+#editor-highlight .mk-attribute-name,#editor-highlight .mk-css-property{color:#8250df}
+#editor-highlight .mk-attribute-value,#editor-highlight .mk-number,#editor-highlight .mk-size-value{color:#0b7285}
+#editor-highlight .mk-css-important,#editor-highlight .mk-footnote{color:#b42372}
+#editor-highlight .mk-magic,#editor-highlight .mk-table-option,#editor-highlight .mk-table-delimiter{color:#8250df}
+#editor-highlight .mk-list-marker,#editor-highlight .mk-quote-marker{color:#9a6700}
+#editor-highlight .mk-redirect{color:#cf222e}
+#editor-highlight .mk-horizontal-rule,#editor-highlight .mk-comment{color:var(--wiki-muted)}
+#editor-highlight .mk-inline-code{color:#0b7285}
+#editor-highlight .mk-color-value{
+  color:var(--wiki-text)!important;
+  background-color:color-mix(in srgb,var(--mk-color-preview) 17%,transparent);
+  box-shadow:inset 0 -2px 0 var(--mk-color-preview);
+  border-radius:2px;
+}
+#editor-highlight .mk-color-value[title]{cursor:help}
+html[data-theme="dark"] #editor-highlight .mk-macro-name,
+html[data-theme="dark"] #editor-highlight .mk-tag-name{color:#79c0ff}
+html[data-theme="dark"] #editor-highlight .mk-attribute-name,
+html[data-theme="dark"] #editor-highlight .mk-css-property,
+html[data-theme="dark"] #editor-highlight .mk-magic,
+html[data-theme="dark"] #editor-highlight .mk-table-option,
+html[data-theme="dark"] #editor-highlight .mk-table-delimiter{color:#d2a8ff}
+html[data-theme="dark"] #editor-highlight .mk-attribute-value,
+html[data-theme="dark"] #editor-highlight .mk-number,
+html[data-theme="dark"] #editor-highlight .mk-size-value,
+html[data-theme="dark"] #editor-highlight .mk-inline-code{color:#7ee787}
+html[data-theme="dark"] #editor-highlight .mk-css-important,
+html[data-theme="dark"] #editor-highlight .mk-footnote{color:#ff7eb6}
+html[data-theme="dark"] #editor-highlight .mk-list-marker,
+html[data-theme="dark"] #editor-highlight .mk-quote-marker{color:#e3b341}
+html[data-theme="dark"] #editor-highlight .mk-redirect{color:#ff7b72}
