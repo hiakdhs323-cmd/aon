@@ -3279,7 +3279,7 @@ function highlightNamuInline(line) {
    output+=highlightNamuTagToken(token,syntax);
   }else if(/^https?:\/\//i.test(token)){
    output+='<span class="mk-external-url">'+escapeHighlightText(token)+'</span>';
-  }else if(/^\\{\\{\\{#!/i.test(token)){
+  }else if(/^\{\{\{#!/i.test(token)){
    const macro=token.match(/^(\{\{\{#!)([a-z0-9_-]+)([\s\S]*)$/i);
    if(macro)output+=syntax(macro[1])+'<span class="mk-macro-name">'+escapeHighlightText(macro[2])+'</span>'+highlightNamuAttributeText(macro[3]);
    else output+=syntax(token);
