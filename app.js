@@ -3535,25 +3535,32 @@ function bindNamuInlineColorPickers(code,field) {
  if(!code||!field)return ()=>{};
  let state=NAMU_COLOR_PICKER_BINDINGS.get(code);
  if(!state){
-  const wrap=code.closest(".editor-code-wrap,.discussion-code-wrap");
-  if(!wrap||!wrap.parentElement)return ()=>{};
+  const wrap=code.closest(".editor-code-wrap");
+  const lineNumbers=wrap?.querySelector("#editor-line-numbers");
+  const pre=wrap?.querySelector("#editor-highlight");
+  if(!wrap||!lineNumbers||!pre)return ()=>{};
+
   const layer=document.createElement("div");
-  layer.className="namu-color-picker-toolbar";
+  layer.className="namu-color-picker-layer";
   layer.setAttribute("role","group");
-  layer.setAttribute("aria-label","원문 색상 수정");
-  wrap.parentElement.insertBefore(layer,wrap);
-  state={wrap,layer,field,render:null};
+  layer.setAttribute("aria-label","문서 안 색상 편집");
+  wrap.append(layer);
+  state={
+   wrap,layer,field,pre,lineNumbers,render:null,
+   basePaddingLeft:parseFloat(getComputedStyle(field).paddingLeft)||61,
+   baseHighlightPaddingLeft:parseFloat(getComputedStyle(pre).paddingLeft)||61
+  };
 
   const updateSource=(picker)=>{
    const sourceColor=String(picker.dataset.sourceColor||"").trim();
-   const start=Number(picker.dataset.sourceStart);
-   if(!Number.isInteger(start)||!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return;
-   if(field.value.slice(start,start+sourceColor.length)!==sourceColor)return;
+   const sourceStart=Number(picker.dataset.sourceStart);
+   if(!Number.isInteger(sourceStart)||!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))return;
+   if(field.value.slice(sourceStart,sourceStart+sourceColor.length)!==sourceColor)return;
    const nextColor=String(picker.value||"").toLowerCase();
    if(!/^#[0-9a-f]{6}$/i.test(nextColor))return;
-   field.setRangeText(nextColor,start,start+sourceColor.length,"end");
+   field.setRangeText(nextColor,sourceStart,sourceStart+sourceColor.length,"end");
    field.dispatchEvent(new Event("input",{bubbles:true}));
-   const caret=start+nextColor.length;
+   const caret=sourceStart+nextColor.length;
    field.focus({preventScroll:true});
    field.setSelectionRange(caret,caret);
   };
@@ -3563,8 +3570,6 @@ function bindNamuInlineColorPickers(code,field) {
    if(!picker||!layer.contains(picker))return;
    const token=code.querySelectorAll(".mk-color-value-has-picker")[Number(picker.dataset.tokenIndex)];
    if(token)token.style.setProperty("--mk-color-preview",picker.value);
-   const valueLabel=picker.closest(".namu-color-picker-control")?.querySelector(".namu-color-picker-value");
-   if(valueLabel)valueLabel.textContent=picker.value.toLowerCase();
   });
   layer.addEventListener("change",event=>{
    const picker=event.target?.closest?.("input.mk-color-picker-inline");
@@ -3573,54 +3578,77 @@ function bindNamuInlineColorPickers(code,field) {
 
   state.render=()=>{
    if(!wrap.isConnected||!code.isConnected)return;
+
+   // Let responsive CSS restore its native padding before calculating the
+   // reserved swatch gutter. The same offset is then applied to both text
+   // layers, so the caret and highlighted source remain aligned.
+   field.style.removeProperty("padding-left");
+   pre.style.removeProperty("padding-left");
+   state.basePaddingLeft=parseFloat(getComputedStyle(field).paddingLeft)||61;
+   state.baseHighlightPaddingLeft=parseFloat(getComputedStyle(pre).paddingLeft)||state.basePaddingLeft;
+
    layer.replaceChildren();
-   const colors=code.querySelectorAll(".mk-color-value-has-picker[data-source-color]");
-   if(!colors.length){
+   const source=field.value;
+   const tokens=[...code.querySelectorAll(".mk-color-value-has-picker[data-source-color]")];
+   if(!tokens.length){
     layer.hidden=true;
     return;
    }
 
-   const caption=document.createElement("span");
-   caption.className="namu-color-picker-caption";
-   caption.textContent="색상";
-   layer.append(caption);
-
-   // Map each rendered colour token back to the exact raw-source occurrence.
-   // This deliberately avoids DOM Range text lengths, which drift when block
-   // headings collapse a visual newline in the highlighted layer.
-   const source=field.value;
    let sourceCursor=0;
-   colors.forEach((token,index)=>{
+   const perLine=new Map();
+   const entries=[];
+   for(let index=0;index<tokens.length;index++){
+    const token=tokens[index];
     const sourceColor=String(token.dataset.sourceColor||"").trim();
-    const match=sourceColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if(!match)return;
+    if(!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(sourceColor))continue;
     const sourceStart=findNamuColorSourceOffset(source,sourceColor,sourceCursor);
-    if(sourceStart<0)return;
+    if(sourceStart<0)continue;
     sourceCursor=sourceStart+sourceColor.length;
+    const lineStart=source.lastIndexOf("\n",sourceStart-1)+1;
+    const lineIndex=source.slice(0,lineStart).split("\n").length-1;
+    const ordinal=perLine.get(lineIndex)||0;
+    perLine.set(lineIndex,ordinal+1);
+    entries.push({token,sourceColor,sourceStart,lineIndex,ordinal,index});
+   }
 
-    const control=document.createElement("label");
-    control.className="namu-color-picker-control";
-    const input=document.createElement("input");
-    input.type="color";
-    input.className="mk-color-picker-inline";
-    input.value=match[1].length===3
-     ?"#"+match[1].split("").map(char=>char+char).join("").toLowerCase()
-     :sourceColor.toLowerCase();
-    input.dataset.sourceColor=sourceColor;
-    input.dataset.sourceStart=String(sourceStart);
-    input.dataset.tokenIndex=String(index);
-    input.setAttribute("aria-label",sourceColor+" 색상 코드 수정");
-    input.title=sourceColor+" 색상 코드 수정";
-    const valueLabel=document.createElement("span");
-    valueLabel.className="namu-color-picker-value";
-    valueLabel.textContent=sourceColor;
-    control.append(input,valueLabel);
-    layer.append(control);
-   });
+   if(!entries.length){
+    layer.hidden=true;
+    return;
+   }
 
-   layer.hidden=layer.querySelectorAll(".namu-color-picker-control").length===0;
-   if(layer.hidden)layer.replaceChildren();
+   const maxPerLine=Math.max(...perLine.values());
+   const extraGutter=maxPerLine*16;
+   const inputPadding=state.basePaddingLeft+extraGutter;
+   const highlightPadding=state.baseHighlightPaddingLeft+extraGutter;
+   field.style.setProperty("padding-left",inputPadding+"px","important");
+   pre.style.setProperty("padding-left",highlightPadding+"px","important");
+
+   // Measure after reserving the gutter: token rectangles now reflect the
+   // exact wrapped line in the same layout used by the transparent textarea.
+   const wrapRect=wrap.getBoundingClientRect();
+   const gutterWidth=lineNumbers.getBoundingClientRect().width;
+   for(const entry of entries){
+    const rect=entry.token.getBoundingClientRect();
+    const picker=document.createElement("input");
+    picker.type="color";
+    picker.className="mk-color-picker-inline";
+    const hex=entry.sourceColor.slice(1);
+    picker.value=hex.length===3
+     ?"#"+hex.split("").map(char=>char+char).join("").toLowerCase()
+     :entry.sourceColor.toLowerCase();
+    picker.dataset.sourceColor=entry.sourceColor;
+    picker.dataset.sourceStart=String(entry.sourceStart);
+    picker.dataset.tokenIndex=String(entry.index);
+    picker.setAttribute("aria-label",entry.sourceColor+" 색상 수정");
+    picker.title=entry.sourceColor+" 색상 코드 수정";
+    picker.style.left=(gutterWidth+3+entry.ordinal*16)+"px";
+    picker.style.top=(rect.top-wrapRect.top+(rect.height-13)/2)+"px";
+    layer.append(picker);
+   }
+   layer.hidden=false;
   };
+  window.addEventListener("resize",state.render,{passive:true});
   NAMU_COLOR_PICKER_BINDINGS.set(code,state);
  }
  return state.render;

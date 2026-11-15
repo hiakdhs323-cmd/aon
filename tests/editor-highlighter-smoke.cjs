@@ -73,6 +73,15 @@ assert.equal(colourSource.slice(secondColourOffset, secondColourOffset + 7), "#f
 assert.equal(colourSource.slice(repeatedColourOffset, repeatedColourOffset + 7), "#aabbcc", "duplicate colour values must map in source order");
 assert.equal(h.findNamuColorSourceOffset(colourSource, "not-a-colour", 0), -1, "invalid colour values must not create an editable source range");
 
+assert.match(app, /wrap\.append\(layer\)/, "colour controls must stay inside the editor source pane");
+assert.match(app, /const extraGutter=maxPerLine\*16/, "source text must reserve gutter space for every colour swatch on a line");
+assert.match(app, /field\.style\.setProperty\("padding-left",inputPadding\+"px","important"\)/, "textarea must reserve the same non-text gutter as its highlight layer");
+assert.match(app, /pre\.style\.setProperty\("padding-left",highlightPadding\+"px","important"\)/, "highlight and textarea must keep identical left text positions");
+assert.match(css, /\.namu-color-picker-layer\{[^}]*position:absolute;[^}]*pointer-events:none/s, "colour picker layer must stay inside the editor without blocking normal typing");
+assert.match(css, /\.namu-color-picker-layer \.mk-color-picker-inline\{[^}]*position:absolute;[^}]*pointer-events:auto/s, "only the small in-gutter color controls must be clickable");
+assert.doesNotMatch(css, /\.namu-color-picker-toolbar/, "the colour toolbar above the editor must not return");
+
+
 
 console.log("Editor highlighter smoke test passed: " + cases.length + " syntax families.");
 
