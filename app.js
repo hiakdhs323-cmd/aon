@@ -2310,13 +2310,14 @@ async function renderCategoryPage(name, offset = 0, articleHost = $("article"), 
     article.append(pagination);
   }
 }
-function renderDocumentMetadata(article, metadata, docTitle) {
+function renderDocumentMetadata(article, metadata, docTitle, categorySource = null) {
  const normalizeCategoryName=value=>{
   let name=String(value||"").trim();
   while(/^(?:분류|category):/i.test(name))name=name.replace(/^(?:분류|category):/i,"").trim();
   return name;
  };
- const categories=[...new Set((metadata?.categories||[]).map(normalizeCategoryName).filter(Boolean))];
+ const categoryValues=categorySource == null ? (metadata?.categories||[]) : extractClientNamuCategoryNames(categorySource);
+ const categories=[...new Set(categoryValues.map(normalizeCategoryName).filter(Boolean))];
  const host=document.getElementById("wiki-categories");
  if(!host)return;
  host.replaceChildren();
@@ -2462,7 +2463,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   article.classList.add("namumark-rendered");
   await activateAonWikiInteractions(article);
   if(requestId!==pageNavigationSequence)return;
-  renderDocumentMetadata(article, renderMetadata, data.page.title||title);
+  renderDocumentMetadata(article, renderMetadata, data.page.title||title, data.page.content||"");
   article.dataset.renderEngine=data.engine||staging.dataset.renderEngine||"worker-ssr";
   requestAnimationFrame(()=>{
    if(requestId!==pageNavigationSequence)return;
@@ -2872,7 +2873,7 @@ async function renderEditorPreview() {
   if (status) status.textContent = "실제 문서와 같은 렌더러로 미리보기를 생성하고 있습니다…";
   try {
     const metadata = await renderNamuMarkup($("editor-content").value, preview, title);
-    renderDocumentMetadata(preview, metadata, title);
+    renderDocumentMetadata(preview, metadata, title, $("editor-content").value);
     if (status) status.textContent = "미리보기 갱신 · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   } catch (error) {
     if (status) status.textContent = "미리보기를 불러오지 못했습니다: " + String(error?.message || error);
@@ -4126,7 +4127,7 @@ if(document.body.dataset.ssrPage==="true"){
    else requestAnimationFrame(()=>loadPage(currentTitle,false,location.hash?location.hash.slice(1):""));
   }else{
     prepareServerRenderedMarkup($("article"),currentTitle);
-    renderDocumentMetadata($("article"),initialSsrState?.metadata,currentTitle);
+    renderDocumentMetadata($("article"),initialSsrState?.metadata,currentTitle,initialSsrState?.content||"");
    activateAonWikiInteractions($("article")).catch(error => console.warn("초기 문서 상호작용 초기화 실패",error));
    if(location.hash.startsWith("#/"))requestAnimationFrame(readRoute);
    else if(location.hash)requestAnimationFrame(()=>scrollToAnchor(location.hash.slice(1)));

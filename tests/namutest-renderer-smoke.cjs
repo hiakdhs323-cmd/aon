@@ -262,6 +262,11 @@ assert.doesNotMatch(clientRenderer, /result\?\.categories/, "browser parser meta
 assert.match(app, /renderClientParsedDocument\(data\.clientRender, staging, docTitle, source\)/, "editor preview must pass its unexpanded source for category metadata");
 assert.match(app, /renderClientParsedDocument\(data\.clientRender,staging,data\.page\.title\|\|title,data\.page\.content\|\|""\)/, "document rendering must pass its unexpanded source for category metadata");
 
+assert.match(app, /categoryValues=categorySource == null \? \(metadata\?\.categories\|\|\[\]\) : extractClientNamuCategoryNames\(categorySource\)/, "document category bar must prefer its original source over parser metadata");
+assert.match(app, /renderDocumentMetadata\(article, renderMetadata, data\.page\.title\|\|title, data\.page\.content\|\|""\)/, "normal SSR/API pages must filter categories using their original source");
+assert.match(app, /renderDocumentMetadata\(preview, metadata, title, \$\("editor-content"\)\.value\)/, "editor previews must filter included categories using the editor source");
+assert.match(app, /renderDocumentMetadata\(\$\("article"\),initialSsrState\?\.metadata,currentTitle,initialSsrState\?\.content\|\|""\)/, "initial SSR pages must filter categories using the original page source");
+
 assert.match(read("index.html"), /id="wiki-categories" class="wiki-categories-host"/, "document category host must sit below the article tools");
 assert.match(app, /const host=document\.getElementById\("wiki-categories"\)/, "document categories must render into the dedicated host");
 assert.match(app, /host\.replaceChildren\(\)/, "document categories must be cleared before rerendering");
