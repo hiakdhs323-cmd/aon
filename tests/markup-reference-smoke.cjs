@@ -31,6 +31,8 @@ const fs = require("node:fs");
     ["quote", "> 인용문"],
     ["table", "|| 이름 || 설명 ||\n|| AonWiki || 위키 ||"],
     ["tableOptions", "||<tablewidth=100%><tablealign=center><tablebordercolor=#888888> 표 ||\n||<bgcolor=#eeeeee><color=#222222> 셀 ||"],
+    ["tableThemeOptions", "||<tablewidth=100%><tablebgcolor=#eaf3ff,#263648><tablebordercolor=#8db7e5,#526a82> 제목 || 내용 ||\n||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 강조 셀 || 일반 셀 ||"],
+    ["wikiThemeVariables", ["{{{#!wiki style=\\"background:var(--wiki-panel-soft); color:var(--wiki-text); border:1px solid var(--wiki-border-strong); padding:12px;\\"","다크모드와 라이트모드에서 테마 색상에 맞춰 표시됩니다.","}}}"].join("\\n")],
     ["file", "[[파일:logo.png]]"],
     ["include", "[include(틀:안내)]"],
     ["footnote", "각주[* 각주 내용]"],
