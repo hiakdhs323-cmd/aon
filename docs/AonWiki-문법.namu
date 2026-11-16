@@ -45,11 +45,6 @@ AonWiki의 문법은 나무위키에서 익숙한 나무마크 표기를 바탕�
 || 4 || {{{==== 4단계 제목 ====}}} || 4단계 제목 ||
 || 5 || {{{===== 5단계 제목 =====}}} || 5단계 제목 ||
 || 6 || {{{====== 6단계 제목 ======}}} || 6단계 제목 ||
-|| 2 || {{{== 2단계 제목 ==}}} || 2단계 제목 ||
-|| 3 || {{{=== 3단계 제목 ===}}} || 3단계 제목 ||
-|| 4 || {{{==== 4단계 제목 ====}}} || 4단계 제목 ||
-|| 5 || {{{===== 5단계 제목 =====}}} || 5단계 제목 ||
-|| 6 || {{{====== 6단계 제목 ======}}} || 6단계 제목 ||
 
 문서 제목과 본문 제목은 구분해서 사용하세요.[* 제목 단계는 일반적으로 {{{== 제목 ==}}}부터 작성합니다.]
 
@@ -105,7 +100,7 @@ AonWiki의 문법은 나무위키에서 익숙한 나무마크 표기를 바탕�
 
 배경이나 테두리가 필요한 영역은 스타일 블록으로 꾸밉니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 테마 상자 || {{{#!wiki style="background:var(--wiki-panel-soft); color:var(--wiki-text); border:1px solid var(--wiki-border-strong); padding:12px;" 안내 내용 }}} || 안내 내용이 테마 상자 안에 표시됨 ||
 
 작성할 때는 블록 시작 부분에 스타일 지시문과 CSS 선언을 넣고, 내용을 작성한 다음 마지막 줄에서 중괄호 세 개로 닫습니다.
@@ -238,7 +233,7 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 먼저 파일을 업로드한 다음, 실제 업로드된 파일 이름으로 표시합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 파일 || {{{[[파일:logo.png]]}}} || 업로드된 logo.png 이미지가 표시됨 ||
 
 파일 이름과 확장자는 실제 업로드된 이름과 정확히 일치해야 합니다.[* 파일이 없거나 이름이 다르면 이미지 대신 파일 링크가 표시될 수 있습니다.]
@@ -247,7 +242,7 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 다른 문서의 내용을 삽입할 때 include 매크로를 사용합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 문서 삽입 || {{{[include(틀:안내)]}}} || 틀:안내의 내용이 현재 문서에 삽입됨 ||
 
 포함할 문서가 실제로 존재해야 합니다.[* 중첩 include는 처리되지 않으며, 코드 예제 안의 include는 실행되지 않고 문자로 표시됩니다.]
@@ -256,7 +251,7 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 각주를 표시할 위치에 각주 문법을 작성합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 각주 || {{{이 문장에는 각주가 있습니다.[* 이 부분이 각주 내용입니다.]}}} || 문장에 각주 번호가 붙고 각주 영역에 내용 표시 ||
 
 각주 번호를 누르면 본문 아래의 각주 내용으로 이동합니다.[* 각주 번호를 누르거나 터치하면 각주 내용을 미리 확인할 수 있습니다.]
@@ -290,7 +285,7 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 글자 위에 읽는 방법을 표시할 때 사용합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 기본 루비 || {{{[ruby(漢字,ruby=かんじ)]}}} || 漢字 위에 かんじ 표시 ||
 || 색상 루비 || {{{[ruby(漢字,ruby=かんじ,color=#3366cc)]}}} || 지정 색상의 루비 표시 ||
 
@@ -300,12 +295,12 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 언어를 지정하지 않은 코드 블록은 일반 코드 영역으로 표시됩니다. 첫 줄과 마지막 줄에 각각 여는 중괄호 세 개와 닫는 중괄호 세 개를 입력합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 일반 코드 || 여는 중괄호 3개 → 내용 → 닫는 중괄호 3개 || 언어 지정 없는 코드 영역이 표시됨 ||
 
 구문 강조가 필요하면 지원되는 언어명을 지정합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || Python 코드 || {{{#!syntax python}}} {{{def hello():}}} {{{print("Hello, AonWiki")}}} || Python 구문 강조가 적용된 코드 영역 ||
 
 지원되는 언어명을 사용하세요.[* 알 수 없는 언어명을 지정하면 문법 지시문이 코드 안에 그대로 표시될 수 있습니다.]
@@ -316,7 +311,7 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 실제 접기 예시:
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 접기 || {{{#!folding 접기 예시}}} || 접기 예시 제목 표시 ||
 || 내용 || {{{이 영역은 처음에 접혀 있습니다.}}} || 처음에는 숨겨진 내용 ||
 
@@ -333,7 +328,7 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 문서의 분류를 지정하려면 문서 하단 등에 다음 문법을 작성합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 분류 1 || {{{[[분류:공식 문서]]}}} || 공식 문서 분류에 등록 ||
 || 분류 2 || {{{[[분류:편집]]}}} || 편집 분류에 등록 ||
 
@@ -347,19 +342,19 @@ AonWiki의 테마 변수는 밝은 모드와 어두운 모드에 대응합니다
 
 문서를 다른 문서로 연결하려면 문서 첫 부분에 리다이렉트 문법을 작성합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 문서 이동 || {{{#redirect 문서 제목}}} || 지정 문서로 이동 ||
 
 특정 문단으로 이동하려면 대상 문서 뒤에 문단 이름을 지정합니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 결과 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 기능 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 결과 ||
 || 문단 이동 리다이렉트 || {{{#redirect 문서 제목#문단 이름}}} || 지정 문단으로 이동 ||
 
 == 문서 작성 예제 ==
 
 아래 예시는 기본 문법을 조합한 간단한 문서입니다.
 
-||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 단계 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 설명 ||
+||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 단계 ||<bgcolor=#eaf3ff,#263648><color=#24466b,#dbeafe> 입력 문법 ||<bgcolor=#eaf3ff,#263648><color=#dbeafe> 설명 ||
 || 목차 || {{{[목차]}}} || 문서 목차 생성 ||
 || 개요 || {{{== 개요 ==}}} || 개요 문단 ||
 || 본문 || {{{'''AonWiki'''}}} || 굵은 글씨 적용 ||
