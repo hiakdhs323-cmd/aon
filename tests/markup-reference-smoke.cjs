@@ -115,7 +115,7 @@ const fs = require("node:fs");
   assert.match(footnote, /wiki-fn-content/, "footnote marker must be rendered");
   assert.match(footnote, /footnote-list/, "footnote body must be rendered");
 
-  const referenceSource = read("docs/AonWiki-문법.namu");
+  const referenceSource = fs.readFileSync("docs/AonWiki-문법.namu", "utf8");
   const referenceResult = parser.parse_with_callbacks(referenceSource, callbacks);
   try {
     const referenceHtml = String(referenceResult.html || "");
