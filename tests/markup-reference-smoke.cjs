@@ -68,6 +68,10 @@ const fs = require("node:fs");
     ["outerFence4Nested", ["{{{{#!syntax plaintext","{{{#!folding 제목","내용","}}}","}}}}"].join("\n")],
     ["outerFence5Nested", ["{{{{{#!syntax plaintext","{{{#!folding 제목","내용","}}}","}}}}}"].join("\n")],
     ["literalTripleBraces", "{{{{{{}}}"],
+    ["literalBraceEntities", "{{{&#123;&#123;&#123;#!folding 제목&#125;&#125;&#125;}}}"],
+    ["literalBraceHexEntities", "{{{&#x7B;&#x7B;&#x7B;#!folding 제목&#x7D;&#x7D;&#x7D;}}}"],
+    ["literalBraceNamedEntities", "{{{&lbrace;&lbrace;&lbrace;#!folding 제목&rbrace;&rbrace;&rbrace;}}}"],
+    ["htmlCodeTag", "<code>{{{#!folding 제목}}}</code>"],
     ["strikeAlias", "--취소선--"],
     ["sizeNegative", "{{{-2 작게}}}"],
     ["redirectAnchor", "#redirect 문서 제목#문단"]
