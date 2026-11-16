@@ -132,6 +132,7 @@ const fs = require("node:fs");
     assert.ok(tableCount >= 5, "the reference must render its designed comparison and option tables");
     assert.ok(codeBlockCount >= 8, "the reference must render the syntax examples as separate code blocks");
     assert.match(referenceHtml, /<blockquote class="wiki-quote"/, "the guide's quote example must render as a quote");
+    assert.ok(referenceSource.includes("> 첫 번째 인용문입니다."), "the guide must include an actual rendered quote example");
     assert.match(referenceHtml, /details class="wiki-folding"/, "the guide's interactive folding example must render as a folding block");
     assert.match(referenceHtml, /class="wiki-fn-content"/, "the guide's footnote example must render as a footnote");
     assert.match(referenceHtml, /class="wiki-macro-toc"/, "the guide's table of contents must render");
