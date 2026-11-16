@@ -119,7 +119,7 @@ const fs = require("node:fs");
   const referenceResult = parser.parse_with_callbacks(referenceSource, callbacks);
   try {
     const referenceHtml = String(referenceResult.html || "");
-    const headingCount = (referenceHtml.match(/<h[1-6]\\b/g) || []).length;
+    const headingCount = (referenceHtml.match(/<h[1-6]\b/g) || []).length;
     const tableCount = (referenceHtml.match(/class="wiki-table"/g) || []).length;
     const codeBlockCount = (referenceHtml.match(/<pre><code/g) || []).length;
     assert.ok(headingCount >= 25, "the reference must render all section and subsection headings");
@@ -131,7 +131,7 @@ const fs = require("node:fs");
     assert.match(referenceHtml, /details class="wiki-folding"/, "the guide's interactive folding example must render as a folding block");
     assert.match(referenceHtml, /class="wiki-fn-content"/, "the guide's footnote example must render as a footnote");
     assert.match(referenceHtml, /class="wiki-macro-toc"/, "the guide's table of contents must render");
-    assert.match(referenceHtml, /href="https:\\/\\/example\\.com"/, "the external-link example must render as an external link");
+    assert.ok(referenceHtml.includes('href="https://example.com"'), "the external-link example must render as an external link");
     assert.match(referenceHtml, /style="background:/, "the styled explanation blocks must render with their background styles");
     assert.doesNotMatch(referenceSource, /Namu_test-main|WASM|Worker SSR/, "the public guide must not mention internal implementation details");
     console.log("AON_MARKUP_REFERENCE_SUMMARY " + JSON.stringify({sourceChars:referenceSource.length,headingCount,tableCount,codeBlockCount,htmlChars:referenceHtml.length}));
