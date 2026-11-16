@@ -131,13 +131,15 @@ const fs = require("node:fs");
     console.log("AON_MARKUP_REFERENCE_SUMMARY " + JSON.stringify({sourceChars:referenceSource.length,headingCount,tableCount,codeBlockCount,htmlChars:referenceHtml.length}));
     assert.ok(tableCount >= 5, "the reference must render its designed comparison and option tables");
     assert.ok(codeBlockCount >= 8, "the reference must render the syntax examples as separate code blocks");
-    assert.match(referenceHtml, /<ul class="wiki-list"/, "the guide's bullet-list example must render as a list");
-    assert.match(referenceHtml, /<ol class="wiki-list/, "the guide's ordered-list example must render as a list");
     assert.match(referenceHtml, /<blockquote class="wiki-quote"/, "the guide's quote example must render as a quote");
     assert.match(referenceHtml, /details class="wiki-folding"/, "the guide's interactive folding example must render as a folding block");
     assert.match(referenceHtml, /class="wiki-fn-content"/, "the guide's footnote example must render as a footnote");
     assert.match(referenceHtml, /class="wiki-macro-toc"/, "the guide's table of contents must render");
     assert.ok(referenceHtml.includes('href="https://example.com"'), "the external-link example must render as an external link");
+    assert.match(referenceHtml, /<ul class="wiki-list"/, "the guide's bullet-list example must render as a list");
+    assert.match(referenceHtml, /<ol class="wiki-list/, "the guide's ordered-list example must render as a list");
+    assert.doesNotMatch(referenceSource, /plaintext|tabletextalign|tablebgcolor/, "the guide must not use unsupported language names or table options");
+    assert.doesNotMatch(referenceHtml, /<span id="1\. 빠른 시작">/, "automatic heading numbering must not be duplicated in section titles");
     assert.match(referenceHtml, /style="background:/, "the styled explanation blocks must render with their background styles");
     assert.doesNotMatch(referenceSource, /Namu_test-main|WASM|Worker SSR/, "the public guide must not mention internal implementation details");
   } finally {
