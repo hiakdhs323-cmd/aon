@@ -36,6 +36,21 @@ const fs = require("node:fs");
     ["footnote", "각주[* 각주 내용]"],
     ["folding", "{{{#!folding 제목\n접힌 내용\n}}}"],
     ["syntax", "{{{#!syntax python\nprint('hello')\n}}}"],
+    ["syntaxText", "{{{#!syntax text
+alpha
+}}}"],
+    ["syntaxTxt", "{{{#!syntax txt
+alpha
+}}}"],
+    ["syntaxPlain", "{{{#!syntax plain
+alpha
+}}}"],
+    ["syntaxNone", "{{{#!syntax none
+alpha
+}}}"],
+    ["syntaxUnannotated", "{{{
+alpha
+}}}"],
     ["wikiStyle", "{{{#!wiki style=\"border:1px solid #888; padding:10px;\"\n내용\n}}}"],
     ["dateMacro", "[date]"],
     ["dateTimeMacro", "[datetime]"],
