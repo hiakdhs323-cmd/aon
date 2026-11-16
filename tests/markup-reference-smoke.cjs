@@ -19,7 +19,7 @@ const fs = require("node:fs");
     ["size", "{{{+2 크게}}}"],
     ["textColor", "{{{#3366cc 파란 글자}}}"],
     ["backgroundColor", "{{{@#eeeeee 배경}}}"],
-    ["backgroundStyle", "{{{#!wiki style=\\"background-color:#eeeeee; padding:8px;\\"\\n배경\\n}}}"],
+    ["backgroundStyle", '{{{#!wiki style="background-color:#eeeeee; padding:8px;"\\n배경\\n}}}'],
     ["internalLink", "[[문서 제목|표시 이름]]"],
     ["externalLink", "[https://example.com|공식 사이트]"],
     ["externalLinkSpace", "[https://example.com 공식 사이트]"],
