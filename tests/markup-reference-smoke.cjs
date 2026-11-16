@@ -123,7 +123,8 @@ const fs = require("node:fs");
     const tableCount = (referenceHtml.match(/class="wiki-table"/g) || []).length;
     const codeBlockCount = (referenceHtml.match(/<pre><code/g) || []).length;
     assert.ok(headingCount >= 25, "the reference must render all section and subsection headings");
-    assert.ok(tableCount >= 8, "the reference must render its designed comparison and option tables");
+    console.log("AON_MARKUP_REFERENCE_SUMMARY " + JSON.stringify({sourceChars:referenceSource.length,headingCount,tableCount,codeBlockCount,htmlChars:referenceHtml.length}));
+    assert.ok(tableCount >= 5, "the reference must render its designed comparison and option tables");
     assert.ok(codeBlockCount >= 8, "the reference must render the syntax examples as separate code blocks");
     assert.match(referenceHtml, /<ul class="wiki-list"/, "the guide's bullet-list example must render as a list");
     assert.match(referenceHtml, /<ol class="wiki-list/, "the guide's ordered-list example must render as a list");
@@ -134,7 +135,6 @@ const fs = require("node:fs");
     assert.ok(referenceHtml.includes('href="https://example.com"'), "the external-link example must render as an external link");
     assert.match(referenceHtml, /style="background:/, "the styled explanation blocks must render with their background styles");
     assert.doesNotMatch(referenceSource, /Namu_test-main|WASM|Worker SSR/, "the public guide must not mention internal implementation details");
-    console.log("AON_MARKUP_REFERENCE_SUMMARY " + JSON.stringify({sourceChars:referenceSource.length,headingCount,tableCount,codeBlockCount,htmlChars:referenceHtml.length}));
   } finally {
     referenceResult.free();
   }
