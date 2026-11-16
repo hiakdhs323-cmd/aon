@@ -65,7 +65,7 @@ const fs = require("node:fs");
     ["listOrderedHash", "#1 첫 번째\\n#2 두 번째"],
     ["wikiBackgroundStyle", `{{{#!wiki style="background-color:#eeeeee; padding:8px;"\\n배경\\n}}}`],
     ["strikeAlias", "--취소선--"],
-    ["sizeNegative", "{{{-2 작게}}}"],,
+    ["sizeNegative", "{{{-2 작게}}}"],
     ["redirectAnchor", "#redirect 문서 제목#문단"]
   ];
 
