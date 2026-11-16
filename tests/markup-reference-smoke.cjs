@@ -144,6 +144,10 @@ const fs = require("node:fs");
     assert.doesNotMatch(referenceSource, /plaintext|tabletextalign|tablebgcolor/, "the guide must not use unsupported language names or table options");
     assert.doesNotMatch(referenceHtml, /<span id="1\. 빠른 시작">/, "automatic heading numbering must not be duplicated in section titles");
     assert.match(referenceHtml, /style="background:/, "the styled explanation blocks must render with their background styles");
+    assert.ok(referenceHtml.includes("background: var(--wiki-panel-soft)"), "guide panels must use AonWiki theme-aware surfaces");
+    assert.ok(referenceHtml.includes("color: var(--wiki-text)"), "guide panel text must use AonWiki theme-aware text color");
+    assert.ok(referenceHtml.includes("background-color: light-dark("), "guide tables must switch paired light/dark cell backgrounds");
+    assert.ok(referenceHtml.includes("border: 2px solid light-dark("), "guide tables must use paired light/dark border colors");
     assert.doesNotMatch(referenceSource, /Namu_test-main|WASM|Worker SSR/, "the public guide must not mention internal implementation details");
   } finally {
     referenceResult.free();
