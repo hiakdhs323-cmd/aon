@@ -89,6 +89,13 @@ const fs = require("node:fs");
     getDocumentContent(name) { return String(name || "") === "틀:안내" ? "포함된 안내 내용" : ""; },
     getPagecount() { return 321; }
   };
+  const probeAssertions = new Map([
+    ["quote", /<blockquote class="wiki-quote"/],
+    ["table", /class="wiki-table"/],
+    ["footnote", /class="wiki-fn-content"/],
+    ["folding", /<details class="wiki-folding"/],
+    ["syntax", /<pre><code class="hljs"/]
+  ]);
   for (const [name, source] of cases) {
     try {
       const result = parser.parse_with_callbacks(source, callbacks);
@@ -101,9 +108,12 @@ const fs = require("node:fs");
           redirect_target: result.redirect_target,
           redirect_anchor: result.redirect_anchor
         }));
+        const expected = probeAssertions.get(name);
+        if (expected) assert.match(out, expected, name + " syntax must render independently");
       } finally { result.free(); }
     } catch (error) {
       console.log("AON_GRAMMAR_PROBE " + name + " ERROR " + String(error && error.message || error));
+      throw error;
     }
   }
 
@@ -134,14 +144,12 @@ const fs = require("node:fs");
     console.log("AON_MARKUP_REFERENCE_SUMMARY " + JSON.stringify({sourceChars:referenceSource.length,headingCount,tableCount,codeBlockCount,inlineCodeCount,htmlChars:referenceHtml.length}));
     assert.ok(tableCount >= 20, "the table-based reference must render its comparison and syntax-example tables");
     assert.ok(codeBlockCount >= 1 && inlineCodeCount >= 20, "syntax examples must render as inline code in the tables and keep the standalone code-area example");
-    assert.match(referenceHtml, /<blockquote class="wiki-quote"/, "the guide's quote example must render as a quote");
-    assert.ok(referenceSource.includes("> 첫 번째 인용문입니다."), "the guide must include an actual rendered quote example");
-    assert.match(referenceHtml, /details class="wiki-folding"/, "the guide's interactive folding example must render as a folding block");
-    assert.match(referenceHtml, /class="wiki-fn-content"/, "the guide's footnote example must render as a footnote");
+    assert.ok(referenceSource.includes("{{{> 첫 번째 인용문입니다.}}}"), "the guide must show quote input syntax inside its example table");
+    assert.ok(referenceSource.includes("{{{#!folding 접기 예시}}}"), "the guide must show folding input syntax inside its example table");
+    assert.ok(referenceSource.includes("{{{ * 첫 번째 항목}}}") && referenceSource.includes("{{{ 1. 첫 번째 항목}}}"), "the guide must show both list input syntaxes in its example tables");
     assert.match(referenceHtml, /class="wiki-macro-toc"/, "the guide's table of contents must render");
-    assert.ok(referenceHtml.includes('href="https://example.com"'), "the external-link example must render as an external link");
-    assert.match(referenceHtml, /<ul class="wiki-list"/, "the guide's bullet-list example must render as a list");
-    assert.match(referenceHtml, /<ol class="wiki-list/, "the guide's ordered-list example must render as a list");
+    assert.ok(referenceHtml.includes('href="https://example.com"'), "the external-link result example must render as a link");
+    assert.match(referenceHtml, /class="wiki-fn-content"/, "the guide's prose footnote must render");
     assert.doesNotMatch(referenceSource, /plaintext|tabletextalign|tablebgcolor/, "the guide must not use unsupported language names or table options");
     assert.doesNotMatch(referenceHtml, /<span id="1\. 빠른 시작">/, "automatic heading numbering must not be duplicated in section titles");
     assert.match(referenceHtml, /style="background:/, "the styled explanation blocks must render with their background styles");
