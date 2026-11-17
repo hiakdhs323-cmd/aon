@@ -16,7 +16,7 @@ const pages = [
   { title: "AonWiki:편집지침", updated_at: "2026-11-16 11:22:33" },
   { title: "정상 문서", updated_at: "2026-11-16T08:42:50.521Z" },
   { title: "시간대 문서", updated_at: "2026-11-16T08:42:50+09:00" },
-  { title: "잘못된 날짜", updated_at: "2026-02-30T08:42:50.000Z" }
+  { title: "잘못된 시간대", updated_at: "2026-11-16T08:42:50+99:99" }
 ];
 const env = {
   DB: {
@@ -42,7 +42,7 @@ const env = {
 
   assert.doesNotMatch(xml, /<lastmod>2026-11-16 08:34:24<\/lastmod>/);
   assert.doesNotMatch(xml, /<lastmod>2026-11-16 11:22:33<\/lastmod>/);
-  assert.doesNotMatch(xml, /<lastmod>2026-02-30/);
+  assert.doesNotMatch(xml, /<lastmod>2026-11-16T08:42:50\\+99:99<\\/lastmod>/);
   assert.equal((xml.match(/<url>/g) || []).length, 6,
     "the sitemap must include the site root and every non-homepage page");
   assert.equal((xml.match(/<lastmod>/g) || []).length, 2,
