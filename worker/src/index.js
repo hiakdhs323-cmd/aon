@@ -1508,7 +1508,7 @@ function sitemapLastmod(value) {
   const raw = String(value ?? "").trim();
   // Sitemap lastmod must be a W3C dateTime. Ignore legacy SQLite-style timestamps
   // such as "2026-11-16 08:34:24" rather than emitting invalid sitemap XML dates.
-  if (!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/.test(raw)) return "";
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw)) return "";
   const timestamp = Date.parse(raw);
   return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : "";
 }
