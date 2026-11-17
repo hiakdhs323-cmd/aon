@@ -1763,7 +1763,8 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
-      if (url.pathname.startsWith("/api/") || url.pathname === "/" || url.pathname.startsWith("/w/")) {
+      const passivePagePoll = url.pathname === "/api/pages" && url.searchParams.has("created_after");
+      if (!passivePagePoll && (url.pathname.startsWith("/api/") || url.pathname === "/" || url.pathname.startsWith("/w/"))) {
         await refreshSessionIdleTimeout(request, env);
       }
       if (request.method === "GET" && url.pathname === "/favicon.ico") {
