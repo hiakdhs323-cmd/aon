@@ -16,7 +16,7 @@ const pages = [
   { title: "AonWiki:편집지침", updated_at: "2026-11-16 11:22:33" },
   { title: "정상 문서", updated_at: "2026-11-16T08:42:50.521Z" },
   { title: "시간대 문서", updated_at: "2026-11-16T08:42:50+09:00" },
-  { title: "잘못된 시간대", updated_at: "2026-11-16T08:42:50+99:99" }
+  assert.ok(!xml.includes("<lastmod>2026-11-16T08:42:50+99:99</lastmod>"));
 ];
 const env = {
   DB: {
