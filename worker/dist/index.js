@@ -1930,6 +1930,12 @@ function publicSiteOrigin(request, env) {
 function escapeXml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&apos;", '"': "&quot;" })[char]);
 }
+function sitemapLastmod(value) {
+  const raw = String(value ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw)) return "";
+  const timestamp = Date.parse(raw);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : "";
+}
 async function renderSitemapXml(request, env) {
   const origin = publicSiteOrigin(request, env);
   const result = await env.DB.prepare("SELECT title, updated_at FROM pages ORDER BY title COLLATE NOCASE ASC LIMIT 5000").all();
@@ -1937,7 +1943,7 @@ async function renderSitemapXml(request, env) {
   for (const page of result.results || []) {
     const title = String(page.title || "").trim();
     if (!title || title === "\uB300\uBB38") continue;
-    const lastmod = String(page.updated_at || "").trim();
+    const lastmod = sitemapLastmod(page.updated_at);
     urls.push("<url><loc>" + escapeXml(origin + "/w/" + encodeURIComponent(title)) + "</loc>" + (lastmod ? "<lastmod>" + escapeXml(lastmod) + "</lastmod>" : "") + "</url>");
   }
   return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + urls.join("") + "</urlset>";
