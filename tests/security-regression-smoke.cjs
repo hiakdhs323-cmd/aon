@@ -2,6 +2,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const worker = fs.readFileSync("worker/src/index.js", "utf8");
+const app = fs.readFileSync("app.js", "utf8");
+const html = fs.readFileSync("index.html", "utf8");
 
 assert.ok(worker.includes('if ((title === "대문" || protectionTitle === "대문")'),
   "renames must protect both the old and new title if either is the main page");
@@ -35,3 +37,28 @@ assert.ok(worker.includes('authRateLimited(request, env, "document-ssr", 180, 60
   "full-document SSR requests must be rate limited");
 
 console.log("AonWiki security regression checks passed.");
+
+assert.ok(worker.includes('const SESSION_IDLE_TIMEOUT_MS = 5 * 60 * 1000'),
+  "account sessions must expire after five minutes of inactivity");
+assert.ok(worker.includes('const SESSION_ABSOLUTE_TIMEOUT_MS = 12 * 60 * 60 * 1000'),
+  "account sessions must have a twelve-hour absolute lifetime");
+assert.ok(worker.includes('"__Host-aon_session"'),
+  "account sessions must use a host-only cookie name");
+assert.ok(worker.includes('HttpOnly; SameSite='),
+  "account session cookies must be inaccessible to JavaScript");
+assert.ok(worker.includes('"Set-Cookie": makeSessionCookie(session.token, request)'),
+  "login and password change must set an HttpOnly session cookie");
+assert.ok(worker.includes('"Set-Cookie": clearSessionCookie()'),
+  "logout must clear the session cookie");
+assert.ok(worker.includes("absolute_expires_at"),
+  "session absolute expiration must be enforced in D1");
+assert.ok(worker.includes('request.headers.get("X-AonWiki-Admin-Token")'),
+  "the separate admin master token must not share the user session channel");
+assert.ok(app.includes('credentials:"include"'),
+  "the frontend must send allowed session cookies with API requests");
+assert.ok(app.includes('ADMIN_TOKEN_SETTING="aonwiki-admin-token"'),
+  "the admin key must have separate browser storage from account sessions");
+assert.ok(!app.includes('sessionStorage.setItem(TOKEN_SETTING'),
+  "the frontend must never store an account session credential in JavaScript storage");
+assert.ok(html.includes('app.bundle.js?v=20261117-cookie-session-v1'),
+  "the updated cookie-auth client must have a new cache key");
