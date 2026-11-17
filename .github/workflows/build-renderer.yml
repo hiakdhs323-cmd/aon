@@ -65,6 +65,8 @@ jobs:
         run: node tests/namutest-renderer-smoke.cjs
       - name: Verify Google crawler server rendering
         run: node tests/search-engine-ssr-smoke.cjs
+      - name: Verify sitemap XML and lastmod formatting
+        run: node tests/sitemap-smoke.cjs
       - name: Verify browser source bundling
         run: node tests/frontend-bundle-smoke.cjs
       - name: Verify NamuMark editor syntax highlighting
