@@ -35,7 +35,7 @@ const env = {
 
   assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);
   assert.match(xml, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
-  assert.match(xml, /<loc>https:\/\/aon\.hiakdhs323\.workers\.dev<\/><\/loc>/);
+  assert.ok(xml.includes("<loc>https://aon.hiakdhs323.workers.dev/</loc>"));
   assert.match(xml, /\/w\/AonWiki%3A%EB%AC%B8%EB%B2%95/);
   assert.match(xml, /<lastmod>2026-11-16T08:42:50\.521Z<\/lastmod>/);
   assert.match(xml, /<lastmod>2026-11-15T23:42:50\.000Z<\/lastmod>/);
