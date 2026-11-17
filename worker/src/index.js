@@ -36,8 +36,9 @@ function getCors(request, env) {
   return {
     ...getSecurityHeaders(),
     ...(trustedOrigin ? { "Access-Control-Allow-Origin": trustedOrigin } : {}),
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret,X-AonWiki-Request",
+    "Access-Control-Allow-Headers": "Content-Type,X-AonWiki-Admin-Token,X-Admin-Bootstrap-Secret,X-AonWiki-Request",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
   };
@@ -152,8 +153,8 @@ function constantTimeEqual(left, right) {
   return difference === 0;
 }
 async function isAdminRequest(request, env) {
-  const authorization = request.headers.get("Authorization") || "";
-  if (!authorization.startsWith("Bearer ")) return false;
+  const authorization = request.headers.get("X-AonWiki-Admin-Token") || "";
+  if (!authorization) return false;
   await ensureAdminTokenTable(env);
   const ip = String(request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
   const now = new Date().toISOString();
@@ -161,7 +162,7 @@ async function isAdminRequest(request, env) {
   const windowAge = rate ? Date.now() - Date.parse(rate.window_started_at) : Infinity;
   if (rate && windowAge >= 0 && windowAge < 15 * 60 * 1000 && Number(rate.attempts) >= 10) return false;
 
-  const presented = authorization.slice(7);
+  const presented = authorization;
   const saved = await env.DB.prepare("SELECT token_hash FROM admin_tokens WHERE id = 'primary'").first();
   let valid = false;
   if (saved) {
@@ -189,12 +190,81 @@ async function isAdminRequest(request, env) {
   }
   return false;
 }
-async function currentUser(request, env) {
-  const auth = request.headers.get("Authorization") || "";
-  if (!auth.startsWith("Bearer ")) return null;
-  const tokenHash = await sha256(auth.slice(7));
+const SESSION_COOKIE_NAME = "__Host-aon_session";
+const SESSION_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const SESSION_ABSOLUTE_TIMEOUT_MS = 12 * 60 * 60 * 1000;
+
+function readCookie(request, name) {
+  const header = request.headers.get("Cookie") || "";
+  for (const part of header.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0) continue;
+    if (part.slice(0, separator).trim() === name) return part.slice(separator + 1).trim();
+  }
+  return "";
+}
+function makeSessionCookie(token, request) {
+  let sameSite = "Lax";
+  const origin = request.headers.get("Origin") || "";
+  if (origin) {
+    try {
+      if (origin !== new URL(request.url).origin) sameSite = "None";
+    } catch {}
+  }
+  return SESSION_COOKIE_NAME + "=" + token + "; Path=/; Secure; HttpOnly; SameSite=" + sameSite;
+}
+function clearSessionCookie() {
+  return SESSION_COOKIE_NAME + "=; Path=/; Secure; HttpOnly; SameSite=None; Max-Age=0";
+}
+async function createUserSession(env, userId) {
+  await ensureUserSchema(env);
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const idleExpiresAt = new Date(nowMs + SESSION_IDLE_TIMEOUT_MS).toISOString();
+  const absoluteExpiresAt = new Date(nowMs + SESSION_ABSOLUTE_TIMEOUT_MS).toISOString();
+  const token = [...crypto.getRandomValues(new Uint8Array(32))]
+    .map(byte => byte.toString(16).padStart(2, "0")).join("");
+  await env.DB.prepare("DELETE FROM sessions WHERE expires_at <= ? OR absolute_expires_at <= ?").bind(now, now).run();
+  await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at, absolute_expires_at) VALUES (?, ?, ?, ?)")
+    .bind(await sha256(token), userId, idleExpiresAt, absoluteExpiresAt).run();
+  return { token, expiresAt: idleExpiresAt, absoluteExpiresAt };
+}
+async function refreshSessionIdleTimeout(request, env) {
+  const token = readCookie(request, SESSION_COOKIE_NAME);
+  if (!/^[a-f0-9]{64}$/i.test(token)) return;
+  await ensureUserSchema(env);
+  const tokenHash = await sha256(token);
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const session = await env.DB.prepare("SELECT expires_at, absolute_expires_at FROM sessions WHERE token_hash = ?")
+    .bind(tokenHash).first();
+  if (!session) return;
+  const expiresAt = Date.parse(session.expires_at);
+  const absoluteExpiresAt = Date.parse(session.absolute_expires_at);
+  if (!Number.isFinite(expiresAt) || !Number.isFinite(absoluteExpiresAt) || expiresAt <= nowMs || absoluteExpiresAt <= nowMs) return;
+  const nextExpiresAt = new Date(Math.min(nowMs + SESSION_IDLE_TIMEOUT_MS, absoluteExpiresAt)).toISOString();
+  await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE token_hash = ? AND expires_at > ? AND absolute_expires_at > ?")
+    .bind(nextExpiresAt, tokenHash, now, now).run();
+}
+async function getSessionUser(request, env, includePasswordFields = false) {
+  const token = readCookie(request, SESSION_COOKIE_NAME);
+  if (!/^[a-f0-9]{64}$/i.test(token)) return null;
+  await ensureUserSchema(env);
+  const tokenHash = await sha256(token);
   const now = new Date().toISOString();
-  const user = await env.DB.prepare("SELECT users.id, users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
+  const userFields = includePasswordFields
+    ? "users.id, users.username, users.salt, users.password_hash, users.password_iterations"
+    : "users.id, users.username";
+  const user = await env.DB.prepare(
+    "SELECT " + userFields + ", sessions.expires_at, sessions.absolute_expires_at " +
+    "FROM sessions JOIN users ON users.id = sessions.user_id " +
+    "WHERE sessions.token_hash = ? AND sessions.expires_at > ? AND sessions.absolute_expires_at > ?"
+  ).bind(tokenHash, now, now).first();
+  if (!user) return null;
+  return { ...user, tokenHash };
+}
+async function currentUser(request, env) {
+  const user = await getSessionUser(request, env);
   if (user) {
     await ensureWikiAdminSchema(env);
     const admin = await env.DB.prepare("SELECT user_id FROM wiki_admins WHERE user_id = ?").bind(user.id).first();
@@ -1664,7 +1734,12 @@ async function ensureUserSchema(env) {
       if (!(columns.results || []).some(column => column.name === "password_iterations")) {
         await env.DB.prepare("ALTER TABLE users ADD COLUMN password_iterations INTEGER NOT NULL DEFAULT 100000").run();
       }
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL, absolute_expires_at TEXT NOT NULL DEFAULT '')").run();
+      const sessionColumns = await env.DB.prepare("PRAGMA table_info(sessions)").all();
+      if (!(sessionColumns.results || []).some(column => column.name === "absolute_expires_at")) {
+        await env.DB.prepare("ALTER TABLE sessions ADD COLUMN absolute_expires_at TEXT NOT NULL DEFAULT ''").run();
+      }
+      await env.DB.prepare("UPDATE sessions SET absolute_expires_at = expires_at WHERE absolute_expires_at IS NULL OR absolute_expires_at = ''").run();
     })().catch(error => { userSchemaPromise = null; throw error; });
   }
   await userSchemaPromise;
@@ -1688,6 +1763,9 @@ export default {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "요청 본문은 2MB 이하만 허용됩니다." }, 413, cors);
     }
     try {
+      if (url.pathname.startsWith("/api/") || url.pathname === "/" || url.pathname.startsWith("/w/")) {
+        await refreshSessionIdleTimeout(request, env);
+      }
       if (request.method === "GET" && url.pathname === "/favicon.ico") {
         const headers = new Headers(getSecurityHeaders());
         headers.set("Location", new URL("/favicon.png", url.origin).toString());
@@ -1820,11 +1898,11 @@ export default {
         });
       }
       if (url.pathname === "/api/logout" && request.method === "POST") {
-        const authorization = request.headers.get("Authorization") || "";
-        if (authorization.startsWith("Bearer ")) {
-          await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(authorization.slice(7))).run();
+        const token = readCookie(request, SESSION_COOKIE_NAME);
+        if (/^[a-f0-9]{64}$/i.test(token)) {
+          await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(token)).run();
         }
-        return response({ ok: true }, 200, cors);
+        return response({ ok: true }, 200, { ...cors, "Set-Cookie": clearSessionCookie() });
       }
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
@@ -1961,13 +2039,7 @@ export default {
       }
       if (url.pathname === "/api/account/password" && request.method === "POST") {
         if (await authRateLimited(request, env, "password-change", 5, 15 * 60 * 1000)) return response({ error: "비밀번호 변경 요청이 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
-        const authorization = request.headers.get("Authorization") || "";
-        if (!authorization.startsWith("Bearer ")) return response({ error: "로그인이 필요합니다." }, 401, cors);
-        const sessionTokenHash = await sha256(authorization.slice(7));
-        const now = new Date().toISOString();
-        const user = await env.DB.prepare(
-          "SELECT users.id, users.username, users.salt, users.password_hash, users.password_iterations FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
-        ).bind(sessionTokenHash, now).first();
+        const user = await getSessionUser(request, env, true);
         if (!user) return response({ error: "일반 계정으로 로그인한 뒤 비밀번호를 변경하세요." }, 401, cors);
 
         const body = await readJsonBody(request);
@@ -1990,15 +2062,12 @@ export default {
           .bind(newSalt, newHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
 
-        const token = [...crypto.getRandomValues(new Uint8Array(32))]
-          .map(byte => byte.toString(16).padStart(2, "0")).join("");
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
-          .bind(await sha256(token), user.id, expires).run();
+        const session = await createUserSession(env, user.id);
         return response({
-          ok: true, token, username: user.username, expires_at: expires,
+          ok: true, username: user.username, idle_timeout_seconds: SESSION_IDLE_TIMEOUT_MS / 1000,
+          absolute_timeout_seconds: SESSION_ABSOLUTE_TIMEOUT_MS / 1000,
           message: "비밀번호가 변경되었습니다. 다른 기기의 로그인은 모두 해제되었습니다."
-        }, 200, cors);
+        }, 200, { ...cors, "Set-Cookie": makeSessionCookie(session.token, request) });
       }
       if (url.pathname === "/api/register" && request.method === "POST") {
         if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1000)) return response({ error: "가입 요청이 너무 많습니다. 한 시간 뒤 다시 시도하세요." }, 429, cors);
@@ -2037,10 +2106,11 @@ export default {
           await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?")
             .bind(upgradedSalt, upgradedHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         }
-        const token = [...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,"0")).join("");
-        const expires = new Date(Date.now()+7*24*60*60*1000).toISOString();
-        await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
-        return response({ok:true,token,username:user.username,expires_at:expires},200,cors);
+        const session = await createUserSession(env, user.id);
+        return response({
+          ok: true, username: user.username, idle_timeout_seconds: SESSION_IDLE_TIMEOUT_MS / 1000,
+          absolute_timeout_seconds: SESSION_ABSOLUTE_TIMEOUT_MS / 1000
+        }, 200, { ...cors, "Set-Cookie": makeSessionCookie(session.token, request) });
       }
       
       if (url.pathname === "/api/discussions" && request.method === "GET") {
