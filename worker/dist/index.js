@@ -774,7 +774,7 @@ async function ensureOfficialDocumentSchema(env) {
 }
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "\uBB38\uC11C\uB97C \uD3B8\uC9D1\uD558\uB824\uBA74 \uB85C\uADF8\uC778\uD558\uC138\uC694." };
-  if (title === "\uB300\uBB38" && !user.isAdmin) return { status: 403, error: "\uB300\uBB38\uC740 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD558\uAC70\uB098 \uBCF5\uC6D0\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." };
+  if ((title === "\uB300\uBB38" || protectionTitle === "\uB300\uBB38") && !user.isAdmin) return { status: 403, error: "\uB300\uBB38\uC740 \uC704\uD0A4 \uAD00\uB9AC\uC790\uB9CC \uD3B8\uC9D1\uD558\uAC70\uB098 \uBCF5\uC6D0\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." };
   await ensurePageProtectionSchema(env);
   const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
   if (protection?.level === "admin" && !user.isAdmin) {
@@ -866,6 +866,21 @@ function validateSvgUpload(text) {
   }
   if (!/<\/svg\s*>\s*$/i.test(svg)) throw new Error("SVG \uBB38\uC11C\uAC00 \uC62C\uBC14\uB974\uAC8C \uB2EB\uD600 \uC788\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
   return svg;
+}
+function hasValidRasterImageSignature(bytes, contentType) {
+  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+  if (contentType === "image/png") {
+    return data.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => data[index] === value);
+  }
+  if (contentType === "image/jpeg") return data.length >= 3 && data[0] === 255 && data[1] === 216 && data[2] === 255;
+  if (contentType === "image/gif") {
+    const header = new TextDecoder().decode(data.subarray(0, 6));
+    return header === "GIF87a" || header === "GIF89a";
+  }
+  if (contentType === "image/webp") {
+    return data.length >= 12 && new TextDecoder().decode(data.subarray(0, 4)) === "RIFF" && new TextDecoder().decode(data.subarray(8, 12)) === "WEBP";
+  }
+  return false;
 }
 function makeAdminToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -1280,7 +1295,7 @@ function rewriteNamuImageUrls(markup, imageMap) {
 }
 async function sanitizeServerWikiHtml(markup) {
   const source = String(markup || "");
-  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\b|\bon[a-z]+\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=\s*/i.test(source)) {
+  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe|svg|math|base|applet)\b|\bon[a-z]+\s*=|style\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=|xlink:href\s*=/i.test(source)) {
     return source;
   }
   const input = new Response(source, { headers: { "Content-Type": "text/html; charset=utf-8" } });
@@ -2016,9 +2031,28 @@ async function renderFullWikiDocument(request, env, title) {
     headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
   });
 }
-async function passwordHash(password, salt) {
+var PASSWORD_HASH_ITERATIONS = 6e5;
+var userSchemaPromise = null;
+async function ensureUserSchema(env) {
+  if (!userSchemaPromise) {
+    userSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL, password_iterations INTEGER NOT NULL DEFAULT 100000)").run();
+      const columns = await env.DB.prepare("PRAGMA table_info(users)").all();
+      if (!(columns.results || []).some((column) => column.name === "password_iterations")) {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN password_iterations INTEGER NOT NULL DEFAULT 100000").run();
+      }
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+    })().catch((error) => {
+      userSchemaPromise = null;
+      throw error;
+    });
+  }
+  await userSchemaPromise;
+}
+async function passwordHash(password, salt, iterations = PASSWORD_HASH_ITERATIONS) {
+  const rounds = Math.max(1e5, Math.min(1e6, Number(iterations) || PASSWORD_HASH_ITERATIONS));
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: 1e5, hash: "SHA-256" }, material, 256);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: rounds, hash: "SHA-256" }, material, 256);
   return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 var index_default = {
@@ -2103,6 +2137,12 @@ var index_default = {
         }
         title = cleanTitle(title);
         if (!title) return new Response("\uC798\uBABB\uB41C \uBB38\uC11C \uC8FC\uC18C\uC785\uB2C8\uB2E4.", { status: 400 });
+        if (await authRateLimited(request, env, "document-ssr", 180, 60 * 1e3)) {
+          return new Response("\uBB38\uC11C \uC694\uCCAD\uC774 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.", {
+            status: 429,
+            headers: { ...getSecurityHeaders(), "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" }
+          });
+        }
         try {
           return await renderFullWikiDocument(request, env, title);
         } catch (error) {
@@ -2297,7 +2337,7 @@ var index_default = {
         const sessionTokenHash = await sha256(authorization.slice(7));
         const now = (/* @__PURE__ */ new Date()).toISOString();
         const user = await env.DB.prepare(
-          "SELECT users.id, users.username, users.salt, users.password_hash FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
+          "SELECT users.id, users.username, users.salt, users.password_hash, users.password_iterations FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
         ).bind(sessionTokenHash, now).first();
         if (!user) return response({ error: "\uC77C\uBC18 \uACC4\uC815\uC73C\uB85C \uB85C\uADF8\uC778\uD55C \uB4A4 \uBE44\uBC00\uBC88\uD638\uB97C \uBCC0\uACBD\uD558\uC138\uC694." }, 401, cors);
         const body = await readJsonBody(request);
@@ -2306,7 +2346,7 @@ var index_default = {
         if (newPassword.length < 8 || newPassword.length > 200) {
           return response({ error: "\uC0C8 \uBE44\uBC00\uBC88\uD638\uB294 8~200\uC790\uB85C \uC124\uC815\uD558\uC138\uC694." }, 400, cors);
         }
-        const currentHash = await passwordHash(currentPassword, user.salt);
+        const currentHash = await passwordHash(currentPassword, user.salt, user.password_iterations || 1e5);
         if (!constantTimeEqual(currentHash, user.password_hash)) {
           return response({ error: "\uD604\uC7AC \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 403, cors);
         }
@@ -2315,7 +2355,7 @@ var index_default = {
         }
         const newSalt = crypto.randomUUID();
         const newHash = await passwordHash(newPassword, newSalt);
-        await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ? WHERE id = ?").bind(newSalt, newHash, user.id).run();
+        await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?").bind(newSalt, newHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
         const token = [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
         const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
@@ -2330,8 +2370,7 @@ var index_default = {
       }
       if (url.pathname === "/api/register" && request.method === "POST") {
         if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1e3)) return response({ error: "\uAC00\uC785 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uD55C \uC2DC\uAC04 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+        await ensureUserSchema(env);
         const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
@@ -2341,39 +2380,28 @@ var index_default = {
         if (exists) return response({ error: "\uC774\uBBF8 \uC0AC\uC6A9 \uC911\uC778 \uC544\uC774\uB514\uC785\uB2C8\uB2E4." }, 409, cors);
         const id = crypto.randomUUID(), salt = crypto.randomUUID(), now = (/* @__PURE__ */ new Date()).toISOString();
         const hash = await passwordHash(password, salt);
-        await env.DB.prepare("INSERT INTO users (id,username,salt,password_hash,created_at) VALUES (?,?,?,?,?)").bind(id, username, salt, hash, now).run();
+        await env.DB.prepare("INSERT INTO users (id,username,salt,password_hash,created_at,password_iterations) VALUES (?,?,?,?,?,?)").bind(id, username, salt, hash, now, PASSWORD_HASH_ITERATIONS).run();
         return response({ ok: true, message: "\uAC00\uC785 \uC644\uB8CC! \uB85C\uADF8\uC778\uD574 \uC8FC\uC138\uC694." }, 201, cors);
       }
       if (url.pathname === "/api/login" && request.method === "POST") {
         if (await authRateLimited(request, env, "login", 20, 15 * 60 * 1e3)) return response({ error: "\uB85C\uADF8\uC778 \uC2DC\uB3C4\uAC00 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 15\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS login_account_attempts (username TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
+        await ensureUserSchema(env);
         const body = await readJsonBody(request);
         const username = String(body.username || "").trim().slice(0, 40);
         const password = String(body.password || "");
         const key = username.toLocaleLowerCase("ko-KR");
-        const user = await env.DB.prepare("SELECT id,username,salt,password_hash FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
-        let accountRate = null;
-        let accountAge = Infinity;
-        if (user) {
-          accountRate = await env.DB.prepare("SELECT attempts, window_started_at FROM login_account_attempts WHERE username = ?").bind(key).first();
-          accountAge = accountRate ? Date.now() - Date.parse(accountRate.window_started_at) : Infinity;
-          if (accountRate && accountAge >= 0 && accountAge < 15 * 60 * 1e3 && Number(accountRate.attempts) >= 10) return response({ error: "\uB85C\uADF8\uC778 \uC2DC\uB3C4\uAC00 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 15\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
+        const user = await env.DB.prepare("SELECT id,username,salt,password_hash,password_iterations FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        const storedIterations = user ? Math.max(1e5, Math.min(1e6, Number(user.password_iterations) || 1e5)) : 1e5;
+        const passwordValid = Boolean(user && constantTimeEqual(
+          await passwordHash(password, user.salt, storedIterations),
+          user.password_hash
+        ));
+        if (!passwordValid) return response({ error: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 401, cors);
+        if (storedIterations < PASSWORD_HASH_ITERATIONS) {
+          const upgradedSalt = crypto.randomUUID();
+          const upgradedHash = await passwordHash(password, upgradedSalt, PASSWORD_HASH_ITERATIONS);
+          await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?").bind(upgradedSalt, upgradedHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         }
-        const passwordValid = Boolean(user && await passwordHash(password, user.salt) === user.password_hash);
-        if (!passwordValid) {
-          if (user) {
-            const now = (/* @__PURE__ */ new Date()).toISOString();
-            if (!accountRate || accountAge < 0 || accountAge >= 15 * 60 * 1e3) {
-              await env.DB.prepare("INSERT INTO login_account_attempts (username, attempts, window_started_at) VALUES (?, 1, ?) ON CONFLICT(username) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at").bind(key, now).run();
-            } else {
-              await env.DB.prepare("UPDATE login_account_attempts SET attempts = attempts + 1 WHERE username = ?").bind(key).run();
-            }
-          }
-          return response({ error: "\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC62C\uBC14\uB974\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 401, cors);
-        }
-        await env.DB.prepare("DELETE FROM login_account_attempts WHERE username = ?").bind(key).run();
         const token = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, "0")).join("");
         const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token), user.id, expires).run();
@@ -2462,7 +2490,8 @@ var index_default = {
       }
       if (url.pathname === "/api/discussion" && request.method === "PATCH") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860\uC740 \uC218\uC815\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-edit", 10, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860 \uBCC0\uACBD \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -2488,7 +2517,8 @@ var index_default = {
       }
       if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00\uC740 \uC218\uC815\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-edit", 10, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00 \uC218\uC815 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -2507,7 +2537,8 @@ var index_default = {
       }
       if (url.pathname === "/api/discussion/post" && request.method === "DELETE") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00\uC740 \uC0AD\uC81C\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-delete", 10, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uB2F5\uAE00 \uC0AD\uC81C \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
@@ -2522,7 +2553,8 @@ var index_default = {
       }
       if (url.pathname === "/api/discussions" && request.method === "DELETE") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860\uC740 \uC0AD\uC81C\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-delete", 5, 10 * 60 * 1e3)) return response({ error: "\uBE44\uB85C\uADF8\uC778 \uD1A0\uB860 \uC0AD\uC81C \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
@@ -2815,6 +2847,9 @@ var index_default = {
         if (namuPageResponsePending.has(title)) {
           const value2 = await namuPageResponsePending.get(title);
           return response(value2, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "COALESCED" });
+        }
+        if (await authRateLimited(request, env, "document-render", 180, 60 * 1e3)) {
+          return response({ error: "\uBB38\uC11C \uB80C\uB354\uB9C1 \uC694\uCCAD\uC774 \uB9CE\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         }
         const pending = (async () => {
           await ensurePageProtectionSchema(env);
@@ -3142,8 +3177,9 @@ var index_default = {
       if (url.pathname === "/api/upload" && request.method === "POST") {
         const authenticatedUser = await currentUser(request, env);
         const user = authenticatedUser || anonymousEditorIdentity(request);
-        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-image-upload", 5, 10 * 60 * 1e3)) {
-          return response({ error: "\uBE44\uB85C\uADF8\uC778 \uC774\uBBF8\uC9C0 \uC5C5\uB85C\uB4DC\uB294 10\uBD84\uC5D0 5\uD68C\uAE4C\uC9C0 \uAC00\uB2A5\uD569\uB2C8\uB2E4." }, 429, cors);
+        const uploadLimit = user.isAnonymous ? 5 : 20;
+        if (await authRateLimited(request, env, "image-upload", uploadLimit, 10 * 60 * 1e3)) {
+          return response({ error: user.isAnonymous ? "\uBE44\uB85C\uADF8\uC778 \uC774\uBBF8\uC9C0 \uC5C5\uB85C\uB4DC\uB294 10\uBD84\uC5D0 5\uD68C\uAE4C\uC9C0 \uAC00\uB2A5\uD569\uB2C8\uB2E4." : "\uC774\uBBF8\uC9C0 \uC5C5\uB85C\uB4DC \uC694\uCCAD\uC774 \uB9CE\uC2B5\uB2C8\uB2E4. 10\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
         }
         const form = await request.formData();
         const file = form.get("file");
@@ -3162,10 +3198,20 @@ var index_default = {
           }
         } else {
           bytes = new Uint8Array(await file.arrayBuffer());
+          if (bytes.byteLength !== file.size || !hasValidRasterImageSignature(bytes, file.type)) {
+            return response({ error: "\uD30C\uC77C \uB0B4\uC6A9\uACFC \uC774\uBBF8\uC9C0 \uD615\uC2DD\uC774 \uC77C\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4." }, 415, cors);
+          }
         }
         let binary = "";
         for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
         const encoded = btoa(binary);
+        const usage = await env.DB.prepare(
+          "SELECT COALESCE(SUM(length(data_base64)), 0) AS bytes FROM images WHERE owner = ?"
+        ).bind(user.username).first();
+        const ownerLimit = user.isAnonymous ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+        if (Number(usage?.bytes || 0) + encoded.length > ownerLimit) {
+          return response({ error: user.isAnonymous ? "\uBE44\uB85C\uADF8\uC778 \uC5C5\uB85C\uB4DC \uB204\uC801 \uC6A9\uB7C9\uC740 5MB\uAE4C\uC9C0 \uAC00\uB2A5\uD569\uB2C8\uB2E4." : "\uACC4\uC815\uBCC4 \uC774\uBBF8\uC9C0 \uC800\uC7A5 \uC6A9\uB7C9\uC740 50MB\uAE4C\uC9C0 \uAC00\uB2A5\uD569\uB2C8\uB2E4." }, 413, cors);
+        }
         const key = crypto.randomUUID();
         const requestedName = cleanImageName(form.get("filename") || file.name || "image", file.type);
         const dot = requestedName.lastIndexOf(".");
