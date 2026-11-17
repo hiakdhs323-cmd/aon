@@ -8,7 +8,7 @@ const worker = fs.readFileSync("worker/src/index.js", "utf8");
 const ignored = fs.readFileSync(".assetsignore", "utf8");
 const bundle = fs.readFileSync("app.bundle.js", "utf8");
 
-assert.match(html, /<script type="module" src="app\.bundle\.js\?v=20261115-source-bundle-v1"><\/script>/);
+assert.match(html, /<script type="module" src="app\.bundle\.js\?v=20261117-cookie-session-v1"><\/script>/);
 assert.doesNotMatch(html, /highlight\.min\.js|highlightjs-line-numbers\.min\.js/);
 assert.doesNotMatch(html, /src="app\.js(?:\?|")/);
 
