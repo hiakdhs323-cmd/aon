@@ -1604,6 +1604,13 @@ function buildWikiPageStructuredData({ title, description, url, siteUrl, created
   return data;
 }
 
+function isVerifiedGoogleCrawler(request) {
+  const userAgent = String(request.headers.get("user-agent") || "");
+  const cf = request.cf || {};
+  const verifiedBot = cf.botManagement?.verifiedBot === true || Boolean(cf.verifiedBotCategory);
+  return verifiedBot && /Googlebot|Google-InspectionTool/i.test(userAgent);
+}
+
 async function renderFullWikiDocument(request, env, title) {
   const { shell, origin } = await loadFrontendShell(env);
   const page = await findWikiPage(env, title);
@@ -1611,7 +1618,8 @@ async function renderFullWikiDocument(request, env, title) {
   const actualTitle = found ? page.title : title;
   const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
   const sourceText = found ? String(page.content || "") : "";
-  let clientRenderPending = found && (actualTitle === "아온" || sourceText.length > 6000);
+  const googleCrawler = isVerifiedGoogleCrawler(request);
+  let clientRenderPending = found && !googleCrawler && (actualTitle === "아온" || sourceText.length > 6000);
   let rendered = { html: "", metadata: {} };
   if (found && !clientRenderPending) {
     try {

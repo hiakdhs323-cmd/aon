@@ -43,7 +43,9 @@ jobs:
           node-version: 22
 
       - name: Run security regression checks
-        run: node tests/security-regression-smoke.cjs
+        run: |
+          node tests/security-regression-smoke.cjs
+          node tests/search-engine-ssr-smoke.cjs
 
       - name: Check Cloudflare deployment token
         id: cloudflare-auth
