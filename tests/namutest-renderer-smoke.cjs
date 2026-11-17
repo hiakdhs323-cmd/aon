@@ -148,7 +148,7 @@ assert.match(read("worker/src/index.js"), /anonymous-discussion-create/, "anonym
 assert.match(read("worker/src/index.js"), /anonymous-discussion-reply/, "anonymous discussion replies must be rate limited");
 assert.match(read("app.js"), /\$\("upload"\)\.hidden=false/, "anonymous users must see the image upload action");
 assert.match(read("app.js"), /\$\("editor-image"\)\.onclick=\(\)=>\{\$\("file"\)\.click\(\)\}/, "anonymous users must be able to upload images from the editor");
-assert.match(read("worker/src/index.js"), /anonymous-image-upload/, "anonymous image uploads must be rate limited");
+assert.match(read("worker/src/index.js"), /image-upload/, "all image uploads must be rate limited");
 assert.match(read("worker/src/index.js"), /const user = authenticatedUser \|\| anonymousEditorIdentity\(request\)/, "anonymous upload ownership must use the visitor IP identity");
 assert.match(read("app.js"), /else if\(currentTitle==="대문"\)canEdit=Boolean\(isWikiAdmin\)/, "the main page must remain administrator-only for editing");
 

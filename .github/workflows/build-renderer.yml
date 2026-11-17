@@ -59,6 +59,8 @@ jobs:
           node --check editor/monaco-worker.js
       - name: Verify Monaco build outputs
         run: node tests/monaco-editor-smoke.cjs
+      - name: Verify security regression guards
+        run: node tests/security-regression-smoke.cjs
       - name: Verify single renderer integration
         run: node tests/namutest-renderer-smoke.cjs
       - name: Verify browser source bundling
