@@ -129,7 +129,7 @@ const fs = require("node:fs");
     const headingCount = (referenceHtml.match(/<h[1-6]\b/g) || []).length;
     const tableCount = (referenceHtml.match(/class="wiki-table"/g) || []).length;
     const codeBlockCount = (referenceHtml.match(/<pre><code/g) || []).length;
-    const inlineCodeCount = (referenceHtml.match(/<code\\b/g) || []).length;
+    const inlineCodeCount = (referenceHtml.match(/<code\b/g) || []).length;
     assert.ok(headingCount >= 25, "the reference must render all section and subsection headings");
     console.log("AON_MARKUP_REFERENCE_SUMMARY " + JSON.stringify({sourceChars:referenceSource.length,headingCount,tableCount,codeBlockCount,inlineCodeCount,htmlChars:referenceHtml.length}));
     assert.ok(tableCount >= 20, "the table-based reference must render its comparison and syntax-example tables");
