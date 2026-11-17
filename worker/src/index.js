@@ -238,7 +238,7 @@ async function ensureOfficialDocumentSchema(env) {
 }
 async function checkPageEditPermission(env, user, title, protectionTitle = title) {
   if (!user) return { status: 401, error: "문서를 편집하려면 로그인하세요." };
-  if (title === "대문" && !user.isAdmin) return { status: 403, error: "대문은 위키 관리자만 편집하거나 복원할 수 있습니다." };
+  if ((title === "대문" || protectionTitle === "대문") && !user.isAdmin) return { status: 403, error: "대문은 위키 관리자만 편집하거나 복원할 수 있습니다." };
   await ensurePageProtectionSchema(env);
   const protection = await env.DB.prepare("SELECT level FROM page_protections WHERE title = ?").bind(protectionTitle).first();
   if (protection?.level === "admin" && !user.isAdmin) {
@@ -319,6 +319,23 @@ function validateSvgUpload(text) {
   }
   if (!/<\/svg\s*>\s*$/i.test(svg)) throw new Error("SVG 문서가 올바르게 닫혀 있지 않습니다.");
   return svg;
+}
+function hasValidRasterImageSignature(bytes, contentType) {
+  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+  if (contentType === "image/png") {
+    return data.length >= 8 && [137,80,78,71,13,10,26,10].every((value,index) => data[index] === value);
+  }
+  if (contentType === "image/jpeg") return data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+  if (contentType === "image/gif") {
+    const header = new TextDecoder().decode(data.subarray(0,6));
+    return header === "GIF87a" || header === "GIF89a";
+  }
+  if (contentType === "image/webp") {
+    return data.length >= 12
+      && new TextDecoder().decode(data.subarray(0,4)) === "RIFF"
+      && new TextDecoder().decode(data.subarray(8,12)) === "WEBP";
+  }
+  return false;
 }
 function makeAdminToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -808,7 +825,7 @@ async function sanitizeServerWikiHtml(markup) {
   // NamuMark already escapes source text before generating its trusted HTML.
   // Skip the expensive HTMLRewriter pass when there is no construct that
   // requires sanitization; this is important on the 10 ms Free-plan CPU cap.
-  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe)\b|\bon[a-z]+\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=\s*/i.test(source)) {
+  if (!/<(?:script|style|object|embed|form|input|button|link|meta|iframe|svg|math|base|applet)\b|\bon[a-z]+\s*=|style\s*=|(?:href|src|poster)\s*=\s*["']\s*(?:javascript|data|vbscript):|srcdoc\s*=|formaction\s*=|xlink:href\s*=/i.test(source)) {
     return source;
   }
   const input=new Response(source,{headers:{"Content-Type":"text/html; charset=utf-8"}});
@@ -1637,9 +1654,25 @@ async function renderFullWikiDocument(request, env, title) {
   });
 }
 
-async function passwordHash(password, salt) {
+const PASSWORD_HASH_ITERATIONS = 600000;
+let userSchemaPromise = null;
+async function ensureUserSchema(env) {
+  if (!userSchemaPromise) {
+    userSchemaPromise = (async () => {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL, password_iterations INTEGER NOT NULL DEFAULT 100000)").run();
+      const columns = await env.DB.prepare("PRAGMA table_info(users)").all();
+      if (!(columns.results || []).some(column => column.name === "password_iterations")) {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN password_iterations INTEGER NOT NULL DEFAULT 100000").run();
+      }
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+    })().catch(error => { userSchemaPromise = null; throw error; });
+  }
+  await userSchemaPromise;
+}
+async function passwordHash(password, salt, iterations = PASSWORD_HASH_ITERATIONS) {
+  const rounds = Math.max(100000, Math.min(1000000, Number(iterations) || PASSWORD_HASH_ITERATIONS));
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: 100000, hash: "SHA-256" }, material, 256);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: rounds, hash: "SHA-256" }, material, 256);
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 export default {
@@ -1723,6 +1756,12 @@ export default {
         catch { return new Response("잘못된 문서 주소입니다.", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
         title = cleanTitle(title);
         if (!title) return new Response("잘못된 문서 주소입니다.", { status: 400 });
+        if (await authRateLimited(request, env, "document-ssr", 180, 60 * 1000)) {
+          return new Response("문서 요청이 많습니다. 잠시 후 다시 시도하세요.", {
+            status: 429,
+            headers: { ...getSecurityHeaders(), "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" }
+          });
+        }
         try {
           return await renderFullWikiDocument(request, env, title);
         } catch (error) {
@@ -1927,7 +1966,7 @@ export default {
         const sessionTokenHash = await sha256(authorization.slice(7));
         const now = new Date().toISOString();
         const user = await env.DB.prepare(
-          "SELECT users.id, users.username, users.salt, users.password_hash FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
+          "SELECT users.id, users.username, users.salt, users.password_hash, users.password_iterations FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
         ).bind(sessionTokenHash, now).first();
         if (!user) return response({ error: "일반 계정으로 로그인한 뒤 비밀번호를 변경하세요." }, 401, cors);
 
@@ -1937,7 +1976,7 @@ export default {
         if (newPassword.length < 8 || newPassword.length > 200) {
           return response({ error: "새 비밀번호는 8~200자로 설정하세요." }, 400, cors);
         }
-        const currentHash = await passwordHash(currentPassword, user.salt);
+        const currentHash = await passwordHash(currentPassword, user.salt, user.password_iterations || 100000);
         if (!constantTimeEqual(currentHash, user.password_hash)) {
           return response({ error: "현재 비밀번호가 올바르지 않습니다." }, 403, cors);
         }
@@ -1947,8 +1986,8 @@ export default {
 
         const newSalt = crypto.randomUUID();
         const newHash = await passwordHash(newPassword, newSalt);
-        await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ? WHERE id = ?")
-          .bind(newSalt, newHash, user.id).run();
+        await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?")
+          .bind(newSalt, newHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
 
         const token = [...crypto.getRandomValues(new Uint8Array(32))]
@@ -1963,8 +2002,7 @@ export default {
       }
       if (url.pathname === "/api/register" && request.method === "POST") {
         if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1000)) return response({ error: "가입 요청이 너무 많습니다. 한 시간 뒤 다시 시도하세요." }, 429, cors);
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+        await ensureUserSchema(env);
         const body = await readJsonBody(request);
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
@@ -1974,39 +2012,31 @@ export default {
         if (exists) return response({error:"이미 사용 중인 아이디입니다."},409,cors);
         const id = crypto.randomUUID(), salt = crypto.randomUUID(), now = new Date().toISOString();
         const hash = await passwordHash(password, salt);
-        await env.DB.prepare("INSERT INTO users (id,username,salt,password_hash,created_at) VALUES (?,?,?,?,?)").bind(id,username,salt,hash,now).run();
+        await env.DB.prepare("INSERT INTO users (id,username,salt,password_hash,created_at,password_iterations) VALUES (?,?,?,?,?,?)").bind(id,username,salt,hash,now,PASSWORD_HASH_ITERATIONS).run();
         return response({ok:true,message:"가입 완료! 로그인해 주세요."},201,cors);
       }
       if (url.pathname === "/api/login" && request.method === "POST") {
         if (await authRateLimited(request, env, "login", 20, 15 * 60 * 1000)) return response({ error: "로그인 시도가 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS login_account_attempts (username TEXT PRIMARY KEY NOT NULL, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL)").run();
+        await ensureUserSchema(env);
         const body = await readJsonBody(request);
         const username = String(body.username || "").trim().slice(0, 40);
         const password = String(body.password || "");
         const key = username.toLocaleLowerCase("ko-KR");
-        const user = await env.DB.prepare("SELECT id,username,salt,password_hash FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
-        let accountRate = null;
-        let accountAge = Infinity;
-        if (user) {
-          accountRate = await env.DB.prepare("SELECT attempts, window_started_at FROM login_account_attempts WHERE username = ?").bind(key).first();
-          accountAge = accountRate ? Date.now() - Date.parse(accountRate.window_started_at) : Infinity;
-          if (accountRate && accountAge >= 0 && accountAge < 15 * 60 * 1000 && Number(accountRate.attempts) >= 10) return response({ error: "로그인 시도가 너무 많습니다. 15분 뒤 다시 시도하세요." }, 429, cors);
+        const user = await env.DB.prepare("SELECT id,username,salt,password_hash,password_iterations FROM users WHERE username = ? COLLATE NOCASE").bind(username).first();
+        const storedIterations = user
+          ? Math.max(100000, Math.min(1000000, Number(user.password_iterations) || 100000))
+          : 100000;
+        const passwordValid = Boolean(user && constantTimeEqual(
+          await passwordHash(password, user.salt, storedIterations),
+          user.password_hash
+        ));
+        if (!passwordValid) return response({error:"아이디 또는 비밀번호가 올바르지 않습니다."},401,cors);
+        if (storedIterations < PASSWORD_HASH_ITERATIONS) {
+          const upgradedSalt = crypto.randomUUID();
+          const upgradedHash = await passwordHash(password, upgradedSalt, PASSWORD_HASH_ITERATIONS);
+          await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?")
+            .bind(upgradedSalt, upgradedHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         }
-        const passwordValid = Boolean(user && await passwordHash(password,user.salt) === user.password_hash);
-        if (!passwordValid) {
-          if (user) {
-            const now = new Date().toISOString();
-            if (!accountRate || accountAge < 0 || accountAge >= 15 * 60 * 1000) {
-              await env.DB.prepare("INSERT INTO login_account_attempts (username, attempts, window_started_at) VALUES (?, 1, ?) ON CONFLICT(username) DO UPDATE SET attempts = 1, window_started_at = excluded.window_started_at").bind(key, now).run();
-            } else {
-              await env.DB.prepare("UPDATE login_account_attempts SET attempts = attempts + 1 WHERE username = ?").bind(key).run();
-            }
-          }
-          return response({error:"아이디 또는 비밀번호가 올바르지 않습니다."},401,cors);
-        }
-        await env.DB.prepare("DELETE FROM login_account_attempts WHERE username = ?").bind(key).run();
         const token = [...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,"0")).join("");
         const expires = new Date(Date.now()+7*24*60*60*1000).toISOString();
         await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token),user.id,expires).run();
@@ -2090,7 +2120,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       }
       if (url.pathname === "/api/discussion" && request.method === "PATCH") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "비로그인 토론은 수정할 수 없습니다. 로그인 후 다시 시도하세요." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-edit", 10, 10 * 60 * 1000)) return response({ error: "비로그인 토론 변경 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -2116,7 +2147,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       }
       if (url.pathname === "/api/discussion/post" && request.method === "PATCH") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "비로그인 답글은 수정할 수 없습니다. 로그인 후 다시 시도하세요." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-edit", 10, 10 * 60 * 1000)) return response({ error: "비로그인 답글 수정 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const body = await readJsonBody(request);
@@ -2135,7 +2167,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       }
       if (url.pathname === "/api/discussion/post" && request.method === "DELETE") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "비로그인 답글은 삭제할 수 없습니다. 로그인 후 다시 시도하세요." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-post-delete", 10, 10 * 60 * 1000)) return response({ error: "비로그인 답글 삭제 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
@@ -2150,7 +2183,8 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       }
       if (url.pathname === "/api/discussions" && request.method === "DELETE") {
         const authenticatedUser = await currentUser(request, env);
-        const user = authenticatedUser || anonymousEditorIdentity(request);
+        if (!authenticatedUser) return response({ error: "비로그인 토론은 삭제할 수 없습니다. 로그인 후 다시 시도하세요." }, 401, cors);
+        const user = authenticatedUser;
         if (user.isAnonymous && await authRateLimited(request, env, "anonymous-discussion-delete", 5, 10 * 60 * 1000)) return response({ error: "비로그인 토론 삭제 요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         await ensureDiscussionSchema(env);
         const id = Number(url.searchParams.get("id"));
@@ -2454,6 +2488,9 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
         if (namuPageResponsePending.has(title)) {
           const value = await namuPageResponsePending.get(title);
           return response(value, 200, { ...cors, "X-AonWiki-Render": "namumark-worker", "X-AonWiki-Cache": "COALESCED" });
+        }
+        if (await authRateLimited(request, env, "document-render", 180, 60 * 1000)) {
+          return response({ error: "문서 렌더링 요청이 많습니다. 잠시 후 다시 시도하세요." }, 429, cors);
         }
         const pending = (async () => {
           await ensurePageProtectionSchema(env);
@@ -2802,8 +2839,11 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
       if (url.pathname === "/api/upload" && request.method === "POST") {
         const authenticatedUser = await currentUser(request, env);
         const user = authenticatedUser || anonymousEditorIdentity(request);
-        if (user.isAnonymous && await authRateLimited(request, env, "anonymous-image-upload", 5, 10 * 60 * 1000)) {
-          return response({ error: "비로그인 이미지 업로드는 10분에 5회까지 가능합니다." }, 429, cors);
+        const uploadLimit = user.isAnonymous ? 5 : 20;
+        if (await authRateLimited(request, env, "image-upload", uploadLimit, 10 * 60 * 1000)) {
+          return response({ error: user.isAnonymous
+            ? "비로그인 이미지 업로드는 10분에 5회까지 가능합니다."
+            : "이미지 업로드 요청이 많습니다. 10분 뒤 다시 시도하세요." }, 429, cors);
         }
         const form = await request.formData();
         const file = form.get("file");
@@ -2822,10 +2862,22 @@ if (url.pathname === "/api/discussion" && request.method === "GET") {
           }
         } else {
           bytes = new Uint8Array(await file.arrayBuffer());
+          if (bytes.byteLength !== file.size || !hasValidRasterImageSignature(bytes, file.type)) {
+            return response({ error: "파일 내용과 이미지 형식이 일치하지 않습니다." }, 415, cors);
+          }
         }
         let binary = "";
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
         const encoded = btoa(binary);
+        const usage = await env.DB.prepare(
+          "SELECT COALESCE(SUM(length(data_base64)), 0) AS bytes FROM images WHERE owner = ?"
+        ).bind(user.username).first();
+        const ownerLimit = user.isAnonymous ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+        if (Number(usage?.bytes || 0) + encoded.length > ownerLimit) {
+          return response({ error: user.isAnonymous
+            ? "비로그인 업로드 누적 용량은 5MB까지 가능합니다."
+            : "계정별 이미지 저장 용량은 50MB까지 가능합니다." }, 413, cors);
+        }
         const key = crypto.randomUUID();
         const requestedName = cleanImageName(form.get("filename") || file.name || "image", file.type);
         const dot = requestedName.lastIndexOf(".");

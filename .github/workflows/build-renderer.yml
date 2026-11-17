@@ -9,6 +9,7 @@ on:
       - "scripts/build-monaco.mjs"
       - "scripts/build-browser.mjs"
       - "package.json"
+      - "package-lock.json"
       - "namumark-wasm.js"
       - "app.js"
       - "index.html"
@@ -34,14 +35,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
       - name: Install pinned Monaco build dependency
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
+          npm ci --no-audit --no-fund
       - name: Build single browser runtime bundle
         run: node scripts/build-browser.mjs
       - name: Build local Monaco editor and worker
@@ -70,7 +75,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.bundle.js worker/dist/index.js editor-monaco/monaco.js editor-monaco/monaco.worker.js editor-monaco/monaco.css editor-monaco/LICENSE.monaco.txt
+          git add package-lock.json app.bundle.js worker/dist/index.js editor-monaco/monaco.js editor-monaco/monaco.worker.js editor-monaco/monaco.css editor-monaco/LICENSE.monaco.txt
           if git diff --cached --quiet; then
             echo "Worker bundle is up to date."
           else
