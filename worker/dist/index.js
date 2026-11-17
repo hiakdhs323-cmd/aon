@@ -562,8 +562,9 @@ function getCors(request, env) {
   return {
     ...getSecurityHeaders(),
     ...trustedOrigin ? { "Access-Control-Allow-Origin": trustedOrigin } : {},
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Bootstrap-Secret,X-AonWiki-Request",
+    "Access-Control-Allow-Headers": "Content-Type,X-AonWiki-Admin-Token,X-Admin-Bootstrap-Secret,X-AonWiki-Request",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
   };
@@ -687,15 +688,15 @@ function constantTimeEqual(left, right) {
   return difference === 0;
 }
 async function isAdminRequest(request, env) {
-  const authorization = request.headers.get("Authorization") || "";
-  if (!authorization.startsWith("Bearer ")) return false;
+  const authorization = request.headers.get("X-AonWiki-Admin-Token") || "";
+  if (!authorization) return false;
   await ensureAdminTokenTable(env);
   const ip = String(request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const rate = await env.DB.prepare("SELECT attempts, window_started_at FROM admin_auth_attempts WHERE ip = ?").bind(ip).first();
   const windowAge = rate ? Date.now() - Date.parse(rate.window_started_at) : Infinity;
   if (rate && windowAge >= 0 && windowAge < 15 * 60 * 1e3 && Number(rate.attempts) >= 10) return false;
-  const presented = authorization.slice(7);
+  const presented = authorization;
   const saved = await env.DB.prepare("SELECT token_hash FROM admin_tokens WHERE id = 'primary'").first();
   let valid = false;
   if (saved) {
@@ -721,12 +722,73 @@ async function isAdminRequest(request, env) {
   }
   return false;
 }
-async function currentUser(request, env) {
-  const auth = request.headers.get("Authorization") || "";
-  if (!auth.startsWith("Bearer ")) return null;
-  const tokenHash = await sha256(auth.slice(7));
+var SESSION_COOKIE_NAME = "__Host-aon_session";
+var SESSION_IDLE_TIMEOUT_MS = 5 * 60 * 1e3;
+var SESSION_ABSOLUTE_TIMEOUT_MS = 12 * 60 * 60 * 1e3;
+function readCookie(request, name) {
+  const header = request.headers.get("Cookie") || "";
+  for (const part of header.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0) continue;
+    if (part.slice(0, separator).trim() === name) return part.slice(separator + 1).trim();
+  }
+  return "";
+}
+function makeSessionCookie(token, request) {
+  let sameSite = "Lax";
+  const origin = request.headers.get("Origin") || "";
+  if (origin) {
+    try {
+      if (origin !== new URL(request.url).origin) sameSite = "None";
+    } catch {
+    }
+  }
+  return SESSION_COOKIE_NAME + "=" + token + "; Path=/; Secure; HttpOnly; SameSite=" + sameSite;
+}
+function clearSessionCookie() {
+  return SESSION_COOKIE_NAME + "=; Path=/; Secure; HttpOnly; SameSite=None; Max-Age=0";
+}
+async function createUserSession(env, userId) {
+  await ensureUserSchema(env);
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const idleExpiresAt = new Date(nowMs + SESSION_IDLE_TIMEOUT_MS).toISOString();
+  const absoluteExpiresAt = new Date(nowMs + SESSION_ABSOLUTE_TIMEOUT_MS).toISOString();
+  const token = [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  await env.DB.prepare("DELETE FROM sessions WHERE expires_at <= ? OR absolute_expires_at <= ?").bind(now, now).run();
+  await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at, absolute_expires_at) VALUES (?, ?, ?, ?)").bind(await sha256(token), userId, idleExpiresAt, absoluteExpiresAt).run();
+  return { token, expiresAt: idleExpiresAt, absoluteExpiresAt };
+}
+async function refreshSessionIdleTimeout(request, env) {
+  const token = readCookie(request, SESSION_COOKIE_NAME);
+  if (!/^[a-f0-9]{64}$/i.test(token)) return;
+  await ensureUserSchema(env);
+  const tokenHash = await sha256(token);
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const session = await env.DB.prepare("SELECT expires_at, absolute_expires_at FROM sessions WHERE token_hash = ?").bind(tokenHash).first();
+  if (!session) return;
+  const expiresAt = Date.parse(session.expires_at);
+  const absoluteExpiresAt = Date.parse(session.absolute_expires_at);
+  if (!Number.isFinite(expiresAt) || !Number.isFinite(absoluteExpiresAt) || expiresAt <= nowMs || absoluteExpiresAt <= nowMs) return;
+  const nextExpiresAt = new Date(Math.min(nowMs + SESSION_IDLE_TIMEOUT_MS, absoluteExpiresAt)).toISOString();
+  await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE token_hash = ? AND expires_at > ? AND absolute_expires_at > ?").bind(nextExpiresAt, tokenHash, now, now).run();
+}
+async function getSessionUser(request, env, includePasswordFields = false) {
+  const token = readCookie(request, SESSION_COOKIE_NAME);
+  if (!/^[a-f0-9]{64}$/i.test(token)) return null;
+  await ensureUserSchema(env);
+  const tokenHash = await sha256(token);
   const now = (/* @__PURE__ */ new Date()).toISOString();
-  const user = await env.DB.prepare("SELECT users.id, users.username FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?").bind(tokenHash, now).first();
+  const userFields = includePasswordFields ? "users.id, users.username, users.salt, users.password_hash, users.password_iterations" : "users.id, users.username";
+  const user = await env.DB.prepare(
+    "SELECT " + userFields + ", sessions.expires_at, sessions.absolute_expires_at FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ? AND sessions.absolute_expires_at > ?"
+  ).bind(tokenHash, now, now).first();
+  if (!user) return null;
+  return { ...user, tokenHash };
+}
+async function currentUser(request, env) {
+  const user = await getSessionUser(request, env);
   if (user) {
     await ensureWikiAdminSchema(env);
     const admin = await env.DB.prepare("SELECT user_id FROM wiki_admins WHERE user_id = ?").bind(user.id).first();
@@ -2041,7 +2103,12 @@ async function ensureUserSchema(env) {
       if (!(columns.results || []).some((column) => column.name === "password_iterations")) {
         await env.DB.prepare("ALTER TABLE users ADD COLUMN password_iterations INTEGER NOT NULL DEFAULT 100000").run();
       }
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL, absolute_expires_at TEXT NOT NULL DEFAULT '')").run();
+      const sessionColumns = await env.DB.prepare("PRAGMA table_info(sessions)").all();
+      if (!(sessionColumns.results || []).some((column) => column.name === "absolute_expires_at")) {
+        await env.DB.prepare("ALTER TABLE sessions ADD COLUMN absolute_expires_at TEXT NOT NULL DEFAULT ''").run();
+      }
+      await env.DB.prepare("UPDATE sessions SET absolute_expires_at = expires_at WHERE absolute_expires_at IS NULL OR absolute_expires_at = ''").run();
     })().catch((error) => {
       userSchemaPromise = null;
       throw error;
@@ -2068,6 +2135,9 @@ var index_default = {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "\uC694\uCCAD \uBCF8\uBB38\uC740 2MB \uC774\uD558\uB9CC \uD5C8\uC6A9\uB429\uB2C8\uB2E4." }, 413, cors);
     }
     try {
+      if (url.pathname.startsWith("/api/") || url.pathname === "/" || url.pathname.startsWith("/w/")) {
+        await refreshSessionIdleTimeout(request, env);
+      }
       if (request.method === "GET" && url.pathname === "/favicon.ico") {
         const headers = new Headers(getSecurityHeaders());
         headers.set("Location", new URL("/favicon.png", url.origin).toString());
@@ -2198,11 +2268,11 @@ var index_default = {
         });
       }
       if (url.pathname === "/api/logout" && request.method === "POST") {
-        const authorization = request.headers.get("Authorization") || "";
-        if (authorization.startsWith("Bearer ")) {
-          await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(authorization.slice(7))).run();
+        const token = readCookie(request, SESSION_COOKIE_NAME);
+        if (/^[a-f0-9]{64}$/i.test(token)) {
+          await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(token)).run();
         }
-        return response({ ok: true }, 200, cors);
+        return response({ ok: true }, 200, { ...cors, "Set-Cookie": clearSessionCookie() });
       }
       if (url.pathname === "/api/me" && request.method === "GET") {
         const user = await currentUser(request, env);
@@ -2332,13 +2402,7 @@ var index_default = {
       }
       if (url.pathname === "/api/account/password" && request.method === "POST") {
         if (await authRateLimited(request, env, "password-change", 5, 15 * 60 * 1e3)) return response({ error: "\uBE44\uBC00\uBC88\uD638 \uBCC0\uACBD \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. 15\uBD84 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
-        const authorization = request.headers.get("Authorization") || "";
-        if (!authorization.startsWith("Bearer ")) return response({ error: "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }, 401, cors);
-        const sessionTokenHash = await sha256(authorization.slice(7));
-        const now = (/* @__PURE__ */ new Date()).toISOString();
-        const user = await env.DB.prepare(
-          "SELECT users.id, users.username, users.salt, users.password_hash, users.password_iterations FROM sessions JOIN users ON users.id = sessions.user_id WHERE sessions.token_hash = ? AND sessions.expires_at > ?"
-        ).bind(sessionTokenHash, now).first();
+        const user = await getSessionUser(request, env, true);
         if (!user) return response({ error: "\uC77C\uBC18 \uACC4\uC815\uC73C\uB85C \uB85C\uADF8\uC778\uD55C \uB4A4 \uBE44\uBC00\uBC88\uD638\uB97C \uBCC0\uACBD\uD558\uC138\uC694." }, 401, cors);
         const body = await readJsonBody(request);
         const currentPassword = String(body.currentPassword || "");
@@ -2357,16 +2421,14 @@ var index_default = {
         const newHash = await passwordHash(newPassword, newSalt);
         await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?").bind(newSalt, newHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
-        const token = [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
-        await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(token), user.id, expires).run();
+        const session = await createUserSession(env, user.id);
         return response({
           ok: true,
-          token,
           username: user.username,
-          expires_at: expires,
+          idle_timeout_seconds: SESSION_IDLE_TIMEOUT_MS / 1e3,
+          absolute_timeout_seconds: SESSION_ABSOLUTE_TIMEOUT_MS / 1e3,
           message: "\uBE44\uBC00\uBC88\uD638\uAC00 \uBCC0\uACBD\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uAE30\uAE30\uC758 \uB85C\uADF8\uC778\uC740 \uBAA8\uB450 \uD574\uC81C\uB418\uC5C8\uC2B5\uB2C8\uB2E4."
-        }, 200, cors);
+        }, 200, { ...cors, "Set-Cookie": makeSessionCookie(session.token, request) });
       }
       if (url.pathname === "/api/register" && request.method === "POST") {
         if (await authRateLimited(request, env, "register", 5, 60 * 60 * 1e3)) return response({ error: "\uAC00\uC785 \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC2B5\uB2C8\uB2E4. \uD55C \uC2DC\uAC04 \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694." }, 429, cors);
@@ -2402,10 +2464,13 @@ var index_default = {
           const upgradedHash = await passwordHash(password, upgradedSalt, PASSWORD_HASH_ITERATIONS);
           await env.DB.prepare("UPDATE users SET salt = ?, password_hash = ?, password_iterations = ? WHERE id = ?").bind(upgradedSalt, upgradedHash, PASSWORD_HASH_ITERATIONS, user.id).run();
         }
-        const token = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, "0")).join("");
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
-        await env.DB.prepare("INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)").bind(await sha256(token), user.id, expires).run();
-        return response({ ok: true, token, username: user.username, expires_at: expires }, 200, cors);
+        const session = await createUserSession(env, user.id);
+        return response({
+          ok: true,
+          username: user.username,
+          idle_timeout_seconds: SESSION_IDLE_TIMEOUT_MS / 1e3,
+          absolute_timeout_seconds: SESSION_ABSOLUTE_TIMEOUT_MS / 1e3
+        }, 200, { ...cors, "Set-Cookie": makeSessionCookie(session.token, request) });
       }
       if (url.pathname === "/api/discussions" && request.method === "GET") {
         await ensureDiscussionSchema(env);
