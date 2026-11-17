@@ -2135,7 +2135,8 @@ var index_default = {
       if (probe.byteLength > 2 * 1024 * 1024) return response({ error: "\uC694\uCCAD \uBCF8\uBB38\uC740 2MB \uC774\uD558\uB9CC \uD5C8\uC6A9\uB429\uB2C8\uB2E4." }, 413, cors);
     }
     try {
-      if (url.pathname.startsWith("/api/") || url.pathname === "/" || url.pathname.startsWith("/w/")) {
+      const passivePagePoll = url.pathname === "/api/pages" && url.searchParams.has("created_after");
+      if (!passivePagePoll && (url.pathname.startsWith("/api/") || url.pathname === "/" || url.pathname.startsWith("/w/"))) {
         await refreshSessionIdleTimeout(request, env);
       }
       if (request.method === "GET" && url.pathname === "/favicon.ico") {
