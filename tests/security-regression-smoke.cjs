@@ -19,6 +19,16 @@ assert.ok(worker.includes('if (!authenticatedUser) return response({ error: "비
   "anonymous reply deletion must require a session");
 assert.ok(worker.includes('if (!authenticatedUser) return response({ error: "비로그인 토론은 삭제할 수 없습니다.'),
   "anonymous discussion deletion must require a session");
+assert.ok(worker.includes("const MAX_PBKDF2_ITERATIONS_PER_CALL = 100000"),
+  "no Cloudflare Web Crypto PBKDF2 call may exceed 100,000 iterations");
+assert.ok(worker.includes("if (rounds <= MAX_PBKDF2_ITERATIONS_PER_CALL)"),
+  "legacy 100,000-round password hashes must retain their original derivation");
+assert.ok(worker.includes('AonWiki-PBKDF2-SHA256-chain-v1:'),
+  "stronger password hashes must use a domain-separated sequential PBKDF2 chain");
+assert.ok(worker.includes("Math.min(MAX_PBKDF2_ITERATIONS_PER_CALL, remaining)"),
+  "each PBKDF2 stage must be capped at 100,000 rounds");
+assert.ok(worker.includes("while (remaining > 0)"),
+  "all configured PBKDF2 work must be completed across chained stages");
 assert.ok(worker.includes("PASSWORD_HASH_ITERATIONS = 600000"),
   "new password hashes must use 600,000 PBKDF2-SHA256 iterations");
 assert.ok(worker.includes("password_iterations INTEGER NOT NULL DEFAULT 100000"),
