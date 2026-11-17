@@ -50,6 +50,10 @@ assert.ok(worker.includes('"Set-Cookie": makeSessionCookie(session.token, reques
   "login and password change must set an HttpOnly session cookie");
 assert.ok(worker.includes('"Set-Cookie": clearSessionCookie()'),
   "logout must clear the session cookie");
+assert.ok(worker.includes('const passivePagePoll = url.pathname === "/api/pages" && url.searchParams.has("created_after")'),
+  "the one-minute background new-page poll must not extend idle sessions");
+assert.ok(worker.includes("!passivePagePoll &&"),
+  "background polling must be excluded from idle-session refresh");
 assert.ok(worker.includes("absolute_expires_at"),
   "session absolute expiration must be enforced in D1");
 assert.ok(worker.includes('request.headers.get("X-AonWiki-Admin-Token")'),
