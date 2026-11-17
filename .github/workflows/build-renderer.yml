@@ -71,8 +71,9 @@ jobs:
         run: node tests/markup-reference-smoke.cjs
       - name: Bundle Cloudflare Worker
         run: |
-          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --loader:.wasm=binary --outfile=worker/dist/index.js
+          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --external:*.wasm --outfile=worker/dist/index.js
           node --check worker/dist/index.js
+          node tests/compiled-wasm-smoke.cjs
       - name: Commit generated Worker bundle
         run: |
           git config user.name "github-actions[bot]"

@@ -69,8 +69,9 @@ jobs:
           fi
           node tests/security-regression-smoke.cjs
           node scripts/build-monaco.mjs
-          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --loader:.wasm=binary --outfile=worker/dist/index.js
+          npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --external:*.wasm --outfile=worker/dist/index.js
           node --check worker/dist/index.js
+          node tests/compiled-wasm-smoke.cjs
 
       - name: Deploy Worker and static assets
         if: steps.cloudflare-auth.outputs.available == 'true'
