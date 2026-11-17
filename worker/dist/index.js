@@ -2116,11 +2116,38 @@ async function ensureUserSchema(env) {
   }
   await userSchemaPromise;
 }
+var MAX_PBKDF2_ITERATIONS_PER_CALL = 1e5;
 async function passwordHash(password, salt, iterations = PASSWORD_HASH_ITERATIONS) {
   const rounds = Math.max(1e5, Math.min(1e6, Number(iterations) || PASSWORD_HASH_ITERATIONS));
-  const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations: rounds, hash: "SHA-256" }, material, 256);
-  return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const encoder = new TextEncoder();
+  if (rounds <= MAX_PBKDF2_ITERATIONS_PER_CALL) {
+    const material = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({
+      name: "PBKDF2",
+      salt: encoder.encode(salt),
+      iterations: rounds,
+      hash: "SHA-256"
+    }, material, 256);
+    return [...new Uint8Array(bits)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  let value = encoder.encode(password);
+  let remaining = rounds;
+  let stage = 0;
+  while (remaining > 0) {
+    const stageRounds = Math.min(MAX_PBKDF2_ITERATIONS_PER_CALL, remaining);
+    const material = await crypto.subtle.importKey("raw", value, "PBKDF2", false, ["deriveBits"]);
+    const stageSalt = encoder.encode("AonWiki-PBKDF2-SHA256-chain-v1:" + String(salt) + ":" + stage);
+    const bits = await crypto.subtle.deriveBits({
+      name: "PBKDF2",
+      salt: stageSalt,
+      iterations: stageRounds,
+      hash: "SHA-256"
+    }, material, 256);
+    value = new Uint8Array(bits);
+    remaining -= stageRounds;
+    stage += 1;
+  }
+  return [...value].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 var index_default = {
   async fetch(request, env) {
