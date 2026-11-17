@@ -4,7 +4,8 @@ window.hljs = hljs;
 
 const $=id=>document.getElementById(id);
 
-const API_SETTING="aonwiki-api",TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
+const API_SETTING="aonwiki-api",ADMIN_TOKEN_SETTING="aonwiki-admin-token",LEGACY_TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
+try{sessionStorage.removeItem(LEGACY_TOKEN_SETTING)}catch{}
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
 const apiBase=()=> (localStorage.getItem(API_SETTING)||DEFAULT_API_URL).replace(/\/$/,"");
 function aonWikiMediaUrl(id,version=id){
@@ -41,8 +42,8 @@ function routeFor(title,anchor=""){
 }
 async function api(path,options={}){
  const headers=new Headers(options.headers||{});
- const token=sessionStorage.getItem(TOKEN_SETTING);
- if(token)headers.set("Authorization","Bearer "+token);
+ const adminToken=sessionStorage.getItem(ADMIN_TOKEN_SETTING);
+ if(adminToken)headers.set("X-AonWiki-Admin-Token",adminToken);
  const method=String(options.method||"GET").toUpperCase();
  if(method!=="GET"&&method!=="HEAD"&&method!=="OPTIONS")headers.set("X-AonWiki-Request","1");
  if(options.body&&!(options.body instanceof FormData))headers.set("Content-Type","application/json");
@@ -52,7 +53,7 @@ async function api(path,options={}){
  let lastError=null;
  for(let attempt=0;attempt<(canRetry?3:1);attempt++){
   try{
-   const requestOptions={...options,headers};
+   const requestOptions={...options,headers,credentials:"include"};
    if(canRetry&&attempt>0)requestOptions.cache="no-store";
    const res=await fetch(target.href,requestOptions);
    const raw=await res.text();
@@ -266,7 +267,7 @@ function decorateExternalLinks(root){
 }
 function syncDocumentEditControls(){
  const hasDocument=Boolean(currentTitle&&!isHomeRoute()&&!$("document-view").hidden);
- const authenticated=Boolean(loggedInName||sessionStorage.getItem(TOKEN_SETTING)||isWikiAdmin);
+ const authenticated=Boolean(loggedInName||isWikiAdmin);
  let canEdit=false;
  if(currentCanEdit===true)canEdit=true;
  else if(currentCanEdit===false)canEdit=false;
@@ -1810,7 +1811,7 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true)
 }
 async function loadDiscussionDetail(id,pushRoute=true){
  id=Number(id);if(!Number.isSafeInteger(id)||id<1){loadDiscussionList(pushRoute);return}
- if(!loggedInName&&!sessionStorage.getItem(TOKEN_SETTING)&&!currentVisitorIp){
+ if(!loggedInName&&!isWikiAdmin&&!currentVisitorIp){
   try{const identity=await api("/api/me");currentVisitorIp=String(identity.ip||"")}catch{}
  }
  const requestId=prepareDiscussionView("토론 #"+id,"#/discussion/"+id,pushRoute);
@@ -2537,7 +2538,7 @@ function openLogin(){
   const username=$("auth-username").value.trim(),password=$("auth-password").value;
   const data=await api("/api/"+mode,{method:"POST",body:JSON.stringify({username,password})});
   if(mode==="register"){$("dialog-status").textContent=data.message+" 로그인 화면으로 돌아가 로그인하세요.";return}
-  sessionStorage.setItem(TOKEN_SETTING,data.token);sessionStorage.setItem(NAME_SETTING,data.username);loggedInName=data.username;$("dialog").close();await refreshIdentity();
+  sessionStorage.setItem(NAME_SETTING,data.username);loggedInName=data.username;$("dialog").close();await refreshIdentity();
   if(document.body.classList.contains("editor-active"))return;if(currentTitle)loadPage(currentTitle,false);else loadHome()
  }, "로그인");
  const toggle=document.createElement("button");toggle.type="button";toggle.className="button";toggle.textContent="계정 만들기";toggle.style.marginTop="10px";
@@ -2547,7 +2548,7 @@ function openLogin(){
 $("login").onclick=async()=>{
  if(loggedInName){
   try{await api("/api/logout",{method:"POST"})}catch{}
-  sessionStorage.removeItem(TOKEN_SETTING);sessionStorage.removeItem(NAME_SETTING);loggedInName="";isWikiAdmin=false;currentRole="anonymous";
+  sessionStorage.removeItem(NAME_SETTING);loggedInName="";isWikiAdmin=false;currentRole="anonymous";
   await refreshIdentity();readRoute();return
  }
  openLogin()
@@ -2566,7 +2567,6 @@ $("change-password").onclick=()=>{
   if(newPassword.length<8||newPassword.length>200)throw Error("새 비밀번호는 8~200자로 설정하세요.");
   if(newPassword!==confirmPassword)throw Error("새 비밀번호가 서로 일치하지 않습니다.");
   const result=await api("/api/account/password",{method:"POST",body:JSON.stringify({currentPassword,newPassword})});
-  sessionStorage.setItem(TOKEN_SETTING,result.token);
   sessionStorage.setItem(NAME_SETTING,result.username);
   $("dialog").close();
   await refreshIdentity();
@@ -2581,10 +2581,10 @@ $("settings").onclick=()=>{
  ],async()=>{
   const base=$("api-url").value.trim().replace(/\/$/,"");
   if(base&&!base.startsWith("https://"))throw Error("https:// 주소를 입력하세요.");
-  const previousApi=apiBase(),previousToken=sessionStorage.getItem(TOKEN_SETTING)||"";
+  const previousApi=apiBase(),previousToken=sessionStorage.getItem(ADMIN_TOKEN_SETTING)||"";
   if(base)localStorage.setItem(API_SETTING,base);
   const candidate=$("admin-token").value.trim();
-  if(candidate)sessionStorage.setItem(TOKEN_SETTING,candidate);
+  if(candidate)sessionStorage.setItem(ADMIN_TOKEN_SETTING,candidate);
   try{
    const identity=await api("/api/me");
    if(candidate&&!identity.isAdmin)throw Error("관리자 토큰이 올바르지 않습니다.");
@@ -2593,7 +2593,7 @@ $("settings").onclick=()=>{
    readRoute()
   }catch(error){
    if(previousApi)localStorage.setItem(API_SETTING,previousApi);
-   if(previousToken)sessionStorage.setItem(TOKEN_SETTING,previousToken);else sessionStorage.removeItem(TOKEN_SETTING);
+   if(previousToken)sessionStorage.setItem(ADMIN_TOKEN_SETTING,previousToken);else sessionStorage.removeItem(ADMIN_TOKEN_SETTING);
    await refreshIdentity();
    throw error
   }
@@ -2648,7 +2648,7 @@ $("admin-token-rotate").onclick=async()=>{
  if(!confirm("초기 관리자 토큰을 폐기하고 새 랜덤 관리자 토큰으로 교체할까요? 이전 토큰은 즉시 사용할 수 없게 됩니다."))return;
  try{
   const data=await api("/api/admin/token/rotate",{method:"POST"});
-  if(currentRole!=="user")sessionStorage.setItem(TOKEN_SETTING,data.token);
+  if(currentRole!=="user")sessionStorage.setItem(ADMIN_TOKEN_SETTING,data.token);
   await refreshIdentity();
   showDialog("새 관리자 토큰 발급 완료",[
    {id:"generated-admin-token",label:"새 관리자 토큰 (다시 표시되지 않습니다)",value:data.token}
@@ -2741,7 +2741,7 @@ async function editPage(title = currentTitle, content = currentContent, options 
   }
   editorReturnTitle = String(currentTitle || editorOriginalTitle || "");
   editorIsNew = !editorOriginalTitle;
-  const anonymousEditing = !loggedInName && !sessionStorage.getItem(TOKEN_SETTING);
+  const anonymousEditing = !loggedInName && !isWikiAdmin;
   if(anonymousEditing&&!currentVisitorIp){try{const identity=await api("/api/me");currentVisitorIp=String(identity.ip||"")}catch{}}
   document.title = (editorIsNew ? "새 문서 작성" : editorOriginalTitle + (editorRequestMode ? " 편집 요청" : " (편집)")) + " - AonWiki";
   $("search-view").hidden = true;
