@@ -1621,7 +1621,7 @@ function buildWikiPageStructuredData({ title, description, url, siteUrl, created
 function shouldDeferHeavyWikiSSR(title, source) {
   const sourceText = String(source || "");
   // Preserve the Worker's CPU budget on include-heavy and long documents.
-  // They still receive searchable HTML and are upgraded by the browser.
+  // All request types receive the same searchable HTML fallback and browser upgrade.
   return title === "아온" || sourceText.length > 6000;
 }
 
