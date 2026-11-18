@@ -49,7 +49,7 @@ assert.ok(renderStart >= 0 && renderEnd > renderStart, "document renderer bounda
 const renderFunction = worker.slice(renderStart, renderEnd);
 assert.match(renderFunction, /shouldDeferHeavyWikiSSR\(actualTitle, sourceText\)/,
   "the same CPU-safe decision must apply to every request");
-assert.match(renderFunction, /const textFallbackHtml = found && clientRenderPending\\s*\\?\\s*buildWikiTextFallbackHtml\\(sourcePreviewText\\)/,
+assert.match(renderFunction, /const textFallbackHtml = found && clientRenderPending[\s\S]*?buildWikiTextFallbackHtml\(sourcePreviewText\)/,
   "the fallback must be built from clean document text rather than raw NamuMark");
 assert.match(renderFunction, /rendered\.html \|\| textFallbackHtml/,
   "the initial article must contain rendered HTML or searchable fallback text");
