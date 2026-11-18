@@ -1964,6 +1964,11 @@ function namuSourceToPreviewText(source) {
   let value = String(source || "").replace(/<!--[\s\S]*?-->/g, " ").replace(/\[include\([\s\S]*?\)\]/gi, " ").replace(/^\s*\[\[(?:분류|category):[^\]]+\]\]\s*$/gim, " ").replace(/\[\[(?:분류|category):[^\]]+\]\]/gi, " ").replace(/\[\[(?:파일|file):([^\]|]+)(?:\|([^\]]*))?\]\]/gi, (_match, _filename, caption) => caption ? " " + caption + " " : " ").replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1").replace(/^\s*={1,6}\s*(.*?)\s*={1,6}\s*$/gm, "$1").replace(/^\s*\[\s*(?:목차|clearfix|tableofcontents)\s*\]\s*$/gim, " ").replace(/\[\*([^\]]*)\]/g, "$1").replace(/\{\{\{#!(?:wiki|folding|fold|if|linkcolor)\b[^\r\n]*(?:\r?\n)?/gi, " ").replace(/\{\{\{(?:#[\w-]+|\+\d+|-\d+)?\s*/g, " ").replace(/\}\}\}/g, " ").replace(/'''|''|~~|\^\^|,,/g, " ").replace(/<[^>]*>/g, " ").replace(/\|\|/g, " ").replace(/^\s*\|[-:| ]+\|\s*$/gm, " ");
   return decodePreviewEntities(value).replace(/[\u00a0\s]+/g, " ").trim();
 }
+function buildWikiTextFallbackHtml(sourcePreviewText) {
+  const text = String(sourcePreviewText || "").trim();
+  if (!text) return "";
+  return '<p class="namumark-ssr-text-fallback">' + escapeHtml(text) + "</p>";
+}
 function buildWikiPageStructuredData({ title, description, url, siteUrl, createdAt, updatedAt }) {
   const data = {
     "@context": "https://schema.org",
@@ -1991,11 +1996,9 @@ function buildWikiPageStructuredData({ title, description, url, siteUrl, created
   if (updatedAt) data.dateModified = String(updatedAt);
   return data;
 }
-function isVerifiedGoogleCrawler(request) {
-  const userAgent = String(request.headers.get("user-agent") || "");
-  const cf = request.cf || {};
-  const verifiedBot = cf.botManagement?.verifiedBot === true || Boolean(cf.verifiedBotCategory);
-  return verifiedBot && /Googlebot|Google-InspectionTool/i.test(userAgent);
+function shouldDeferHeavyWikiSSR(title, source) {
+  const sourceText = String(source || "");
+  return title === "\uC544\uC628" || sourceText.length > 6e3;
 }
 async function renderFullWikiDocument(request, env, title) {
   const { shell, origin } = await loadFrontendShell(env);
@@ -2004,8 +2007,7 @@ async function renderFullWikiDocument(request, env, title) {
   const actualTitle = found ? page.title : title;
   const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
   const sourceText = found ? String(page.content || "") : "";
-  const googleCrawler = isVerifiedGoogleCrawler(request);
-  let clientRenderPending = found && !googleCrawler && (actualTitle === "\uC544\uC628" || sourceText.length > 6e3);
+  let clientRenderPending = found && shouldDeferHeavyWikiSSR(actualTitle, sourceText);
   let rendered = { html: "", metadata: {} };
   if (found && !clientRenderPending) {
     try {
@@ -2025,6 +2027,7 @@ async function renderFullWikiDocument(request, env, title) {
   const titleText = found ? actualTitle : actualTitle + " (\uBB38\uC11C \uC5C6\uC74C)";
   const renderedPreviewText = found && rendered.html ? renderedHtmlToPreviewText(rendered.html) : "";
   const sourcePreviewText = found ? namuSourceToPreviewText(sourceText) : "";
+  const textFallbackHtml = found && clientRenderPending ? buildWikiTextFallbackHtml(sourcePreviewText) : "";
   const description = found ? (renderedPreviewText || sourcePreviewText || actualTitle + " \uBB38\uC11C").slice(0, 240) : "\uC544\uC9C1 \uC791\uC131\uB418\uC9C0 \uC54A\uC740 \uBB38\uC11C\uC785\uB2C8\uB2E4.";
   const siteUrl = new URL(request.url).origin + "/";
   const canonicalUrl = new URL(request.url).origin + "/w/" + encodeURIComponent(actualTitle);
@@ -2073,7 +2076,7 @@ async function renderFullWikiDocument(request, env, title) {
   } else {
     html = html.replace(/<\/head>/i, pageSeoTags + "\n</head>");
   }
-  html = html.replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + rendered.html + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
+  html = html.replace("<body>", '<body data-ssr-page="true">').replace('<section id="home-view" class="home-view">', '<section id="home-view" class="home-view" hidden>').replace('<section id="document-view" class="document-view" hidden>', '<section id="document-view" class="document-view">').replace('<h1 id="title"></h1>', '<h1 id="title">' + escapeHtml(titleText) + "</h1>").replace('<span id="crumb"></span>', '<span id="crumb">' + escapeHtml(actualTitle) + "</span>").replace('<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>', state.official && /^(?:틀|template):/i.test(actualTitle) ? '<span id="template-status" class="template-status">\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>' : '<span id="template-status" class="template-status" hidden>\uACF5\uC2DD \uD2C0 \uBB38\uC11C</span>').replace('<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>', state.official ? '<span id="official-status" class="official-status">\uACF5\uC2DD \uBB38\uC11C</span>' : '<span id="official-status" class="official-status" hidden>\uACF5\uC2DD \uBB38\uC11C</span>').replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + "</span>" : '<span id="protection-status" class="protection-status" hidden></span>').replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + "</div>" : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>').replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "\uC774 \uBB38\uC11C\uB294 \uC544\uC9C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uD6C4 \uC0C8 \uBB38\uC11C\uB97C \uC791\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") + "</div>").replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : "") + ">" + (rendered.html || textFallbackHtml) + "</article>").replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"').replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : " hidden")).replace('id="backlinks-tab" type="button" hidden', 'id="backlinks-tab" type="button"' + (found ? "" : " hidden"));
   if (!found) {
     html = html.replace('id="heading-edit" class="title-button" type="button"', 'id="heading-edit" class="title-button" type="button" hidden');
     html = html.replace('<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uD3B8\uC9D1</button>', '<button id="edit" class="nav-item" type="button">\uBB38\uC11C \uB9CC\uB4E4\uAE30</button>');
@@ -2085,7 +2088,7 @@ async function renderFullWikiDocument(request, env, title) {
   html = html.replace(appScriptPattern, ssrStateScript + "\n" + appScriptMatch[0]);
   return new Response(html, {
     status: found ? 200 : 404,
-    headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
+    headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": clientRenderPending ? "text-fallback" : "full-document" }
   });
 }
 var PASSWORD_HASH_ITERATIONS = 6e5;
