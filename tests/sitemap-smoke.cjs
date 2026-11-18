@@ -7,7 +7,7 @@ const end = worker.indexOf("function decodePreviewEntities(value)", start);
 assert.ok(start >= 0 && end > start, "sitemap helper boundaries must exist");
 
 const renderSitemapXml = new Function(
-  worker.slice(start, end) + "\nreturn renderSitemapXml;"
+  worker.slice(start, end) + "\\nreturn renderSitemapXml;"
 )();
 
 const pages = [
@@ -16,7 +16,7 @@ const pages = [
   { title: "AonWiki:편집지침", updated_at: "2026-11-16 11:22:33" },
   { title: "정상 문서", updated_at: "2026-11-16T08:42:50.521Z" },
   { title: "시간대 문서", updated_at: "2026-11-16T08:42:50+09:00" },
-  assert.ok(!xml.includes("<lastmod>2026-11-16T08:42:50+99:99</lastmod>"));
+  { title: "잘못된 시간대", updated_at: "2026-11-16T08:42:50+99:99" }
 ];
 const env = {
   DB: {
@@ -33,15 +33,15 @@ const env = {
     env
   );
 
-  assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);
-  assert.match(xml, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+  assert.match(xml, /^<\\?xml version="1\\.0" encoding="UTF-8"\\?>/);
+  assert.match(xml, /<urlset xmlns="http:\\/\\/www\\.sitemaps\\.org\\/schemas\\/sitemap\\/0\\.9">/);
   assert.ok(xml.includes("<loc>https://aon.hiakdhs323.workers.dev/</loc>"));
-  assert.match(xml, /\/w\/AonWiki%3A%EB%AC%B8%EB%B2%95/);
-  assert.match(xml, /<lastmod>2026-11-16T08:42:50\.521Z<\/lastmod>/);
-  assert.match(xml, /<lastmod>2026-11-15T23:42:50\.000Z<\/lastmod>/);
+  assert.match(xml, /\\/w\\/AonWiki%3A%EB%AC%B8%EB%B2%95/);
+  assert.match(xml, /<lastmod>2026-11-16T08:42:50\\.521Z<\\/lastmod>/);
+  assert.match(xml, /<lastmod>2026-11-15T23:42:50\\.000Z<\\/lastmod>/);
 
-  assert.doesNotMatch(xml, /<lastmod>2026-11-16 08:34:24<\/lastmod>/);
-  assert.doesNotMatch(xml, /<lastmod>2026-11-16 11:22:33<\/lastmod>/);
+  assert.doesNotMatch(xml, /<lastmod>2026-11-16 08:34:24<\\/lastmod>/);
+  assert.doesNotMatch(xml, /<lastmod>2026-11-16 11:22:33<\\/lastmod>/);
   assert.doesNotMatch(xml, /<lastmod>2026-11-16T08:42:50\\+99:99<\\/lastmod>/);
   assert.equal((xml.match(/<url>/g) || []).length, 6,
     "the sitemap must include the site root and every non-homepage page");
