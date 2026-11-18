@@ -1584,6 +1584,12 @@ function namuSourceToPreviewText(source) {
   return decodePreviewEntities(value).replace(/[\u00a0\s]+/g, " ").trim();
 }
 
+function buildWikiTextFallbackHtml(sourcePreviewText) {
+  const text = String(sourcePreviewText || "").trim();
+  if (!text) return "";
+  return '<p class="namumark-ssr-text-fallback">' + escapeHtml(text) + '</p>';
+}
+
 function buildWikiPageStructuredData({ title, description, url, siteUrl, createdAt, updatedAt }) {
   const data = {
     "@context": "https://schema.org",
@@ -1612,11 +1618,11 @@ function buildWikiPageStructuredData({ title, description, url, siteUrl, created
   return data;
 }
 
-function isVerifiedGoogleCrawler(request) {
-  const userAgent = String(request.headers.get("user-agent") || "");
-  const cf = request.cf || {};
-  const verifiedBot = cf.botManagement?.verifiedBot === true || Boolean(cf.verifiedBotCategory);
-  return verifiedBot && /Googlebot|Google-InspectionTool/i.test(userAgent);
+function shouldDeferHeavyWikiSSR(title, source) {
+  const sourceText = String(source || "");
+  // Preserve the Worker's CPU budget on include-heavy and long documents.
+  // They still receive searchable HTML and are upgraded by the browser.
+  return title === "아온" || sourceText.length > 6000;
 }
 
 async function renderFullWikiDocument(request, env, title) {
@@ -1626,8 +1632,7 @@ async function renderFullWikiDocument(request, env, title) {
   const actualTitle = found ? page.title : title;
   const linkColors = found ? await getPageLinkColors(env, actualTitle) : {};
   const sourceText = found ? String(page.content || "") : "";
-  const googleCrawler = isVerifiedGoogleCrawler(request);
-  let clientRenderPending = found && !googleCrawler && (actualTitle === "아온" || sourceText.length > 6000);
+  let clientRenderPending = found && shouldDeferHeavyWikiSSR(actualTitle, sourceText);
   let rendered = { html: "", metadata: {} };
   if (found && !clientRenderPending) {
     try {
@@ -1650,6 +1655,9 @@ async function renderFullWikiDocument(request, env, title) {
   // Social previews and search snippets must use visible rendered text, never raw NamuMark source.
   const renderedPreviewText = found && rendered.html ? renderedHtmlToPreviewText(rendered.html) : "";
   const sourcePreviewText = found ? namuSourceToPreviewText(sourceText) : "";
+  const textFallbackHtml = found && clientRenderPending
+    ? buildWikiTextFallbackHtml(sourcePreviewText)
+    : "";
   const description = found
     ? (renderedPreviewText || sourcePreviewText || actualTitle + " 문서").slice(0, 240)
     : "아직 작성되지 않은 문서입니다.";
@@ -1720,7 +1728,7 @@ async function renderFullWikiDocument(request, env, title) {
     .replace('<span id="protection-status" class="protection-status" hidden></span>', protectionLabel ? '<span id="protection-status" class="protection-status">' + escapeHtml(protectionLabel) + '</span>' : '<span id="protection-status" class="protection-status" hidden></span>')
     .replace('<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>', protectionMessage ? '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite">' + escapeHtml(protectionMessage) + '</div>' : '<div id="protection-notice" class="protection-notice" role="status" aria-live="polite" hidden></div>')
     .replace('<div id="message" class="notice" role="status"></div>', '<div id="message" class="notice" role="status">' + (found ? "" : "이 문서는 아직 존재하지 않습니다. 로그인 후 새 문서를 작성할 수 있습니다.") + '</div>')
-    .replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + rendered.html + '</article>')
+    .replace('<article id="article" class="namumark-content-host"></article>', '<article id="article" class="namumark-wasm-content"' + (clientRenderPending ? ' data-client-render-pending="true"' : '') + '>' + (rendered.html || textFallbackHtml) + '</article>')
     .replace('id="edit" class="nav-item" type="button" hidden', protection?.level === "admin" ? 'id="edit" class="nav-item" type="button" hidden' : 'id="edit" class="nav-item" type="button"')
     .replace('id="history" class="nav-item" type="button" hidden', 'id="history" class="nav-item" type="button"' + (found ? "" : ' hidden'))
     .replace('id="upload" class="nav-item" type="button" hidden', 'id="upload" class="nav-item" type="button"' + (found ? "" : ' hidden'))
@@ -1736,7 +1744,7 @@ async function renderFullWikiDocument(request, env, title) {
   html = html.replace(appScriptPattern, ssrStateScript + "\n" + appScriptMatch[0]);
   return new Response(html, {
     status: found ? 200 : 404,
-    headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": "full-document" }
+    headers: { ...getSecurityHeaders(), "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-AonWiki-Render": clientRenderPending ? "text-fallback" : "full-document" }
   });
 }
 
