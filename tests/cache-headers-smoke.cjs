@@ -19,3 +19,6 @@ assert.ok(worker.includes('requestMethod !== "GET" && requestMethod !== "HEAD"')
   "cache policy must not apply to unsafe request methods");
 
 console.log("AonWiki cache header smoke test passed.");
+
+assert.ok(worker.includes("isCacheableStaticAsset(assetName) ? LONG_LIVED_STATIC_CACHE_CONTROL"),
+  "the existing frontend asset proxy must use the centralized cache policy");
