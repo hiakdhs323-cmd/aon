@@ -1880,7 +1880,7 @@ export default {
             const localAsset = await env.ASSETS.fetch(new Request(localAssetUrl.toString(), { method: "GET", headers: request.headers }));
             if (localAsset.ok) {
               const headers = new Headers(localAsset.headers);
-              headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              headers.set("Cache-Control", isCacheableStaticAsset(assetName) ? LONG_LIVED_STATIC_CACHE_CONTROL : (localAsset.headers.get("Cache-Control") || "public, max-age=0, must-revalidate"));
               headers.set("X-AonWiki-Asset-Proxy", "1");
               headers.set("X-AonWiki-Asset-Cache", "WORKER-ASSETS");
               return new Response(localAsset.body, { status: localAsset.status, headers });
