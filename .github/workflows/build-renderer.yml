@@ -14,6 +14,7 @@ on:
       - "app.js"
       - "index.html"
       - "style.css"
+      - "design-system.css"
       - "namumark-aon.css"
       - "namumark-interactions-aon.css"
       - "Namu_test-main/interactions.js"
@@ -69,6 +70,8 @@ jobs:
         run: node tests/sitemap-smoke.cjs
       - name: Verify browser source bundling
         run: node tests/frontend-bundle-smoke.cjs
+      - name: Verify responsive design system
+        run: node tests/design-system-smoke.cjs
       - name: Verify NamuMark editor syntax highlighting
         run: node tests/editor-highlighter-smoke.cjs
       - name: Probe supported AonWiki markup syntax
