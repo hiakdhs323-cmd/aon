@@ -2386,3 +2386,19 @@ button:disabled {
     line-height: 1.85;
   }
 }
+
+
+@media (max-width: 820px) {
+  .home-quick-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-quick-nav .home-shortcut:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--wiki-border);
+    border-right: 0;
+  }
+}
