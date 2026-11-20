@@ -5,6 +5,7 @@ const html = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("design-system.css", "utf8");
 const buildWorkflow = fs.readFileSync(".github/workflows/build-renderer.yml", "utf8");
 const deployWorkflow = fs.readFileSync(".github/workflows/deploy-worker.yml", "utf8");
+const worker = fs.readFileSync("worker/src/index.js", "utf8");
 
 assert.ok(html.includes('<a class="skip-link" href="#main-content">본문으로 바로가기</a>'),
   "the page must provide a keyboard-accessible skip link");
@@ -38,6 +39,15 @@ assert.ok(deployWorkflow.includes("design-system.css"),
   "the Worker deployment workflow must track changes to the design system");
 assert.ok(deployWorkflow.includes("node tests/design-system-smoke.cjs"),
   "the Worker deployment workflow must run the design-system regression test");
+
+const rewriteStart = worker.indexOf("function rewriteFrontendAssets(");
+const rewriteEnd = worker.indexOf("const FRONTEND_TRANSIENT_STATUSES", rewriteStart);
+assert.ok(rewriteStart >= 0 && rewriteEnd > rewriteStart,
+  "the Worker frontend asset rewrite helper must remain available");
+const rewriteFrontendAssets = new Function("URL", worker.slice(rewriteStart, rewriteEnd) + "\\nreturn rewriteFrontendAssets;")(URL);
+const rewrittenShell = rewriteFrontendAssets('<link rel="stylesheet" href="design-system.css?v=20261120-editorial-shell-v1">', "https://hiakdhs323-cmd.github.io/aon", false);
+assert.ok(rewrittenShell.includes('href="/aon/design-system.css?'),
+  "frontend fallback must route the editorial design system through the Worker static asset proxy");
 
 let braceDepth = 0;
 for (const character of css) {
