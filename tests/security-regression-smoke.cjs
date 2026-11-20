@@ -74,5 +74,5 @@ assert.ok(app.includes('ADMIN_TOKEN_SETTING="aonwiki-admin-token"'),
   "the admin key must have separate browser storage from account sessions");
 assert.ok(!app.includes('sessionStorage.setItem(TOKEN_SETTING'),
   "the frontend must never store an account session credential in JavaScript storage");
-assert.ok(html.includes('app.bundle.js?v=20261117-cookie-session-v1'),
+assert.ok(html.includes('app.bundle.js?v=20261121-home-search-ux-v2'),
   "the updated cookie-auth client must have a new cache key");
