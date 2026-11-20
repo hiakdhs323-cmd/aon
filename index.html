@@ -69,7 +69,7 @@
         </div>
       </div>
     </nav>
-    <form id="search" class="searchbar" role="search"><input id="query" placeholder="문서 검색" aria-label="문서 검색" autocomplete="off"><button type="submit" aria-label="검색">⌕</button></form>
+    <form id="search" class="searchbar" role="search"><input id="query" type="search" placeholder="문서 검색" aria-label="문서 검색" autocomplete="off" enterkeyhint="search"><button type="submit" aria-label="검색">⌕</button></form>
     <nav class="header-actions" aria-label="계정 및 설정">
       <span id="role-label" class="role-label" hidden></span>
       <button id="change-password" class="button button-plain" type="button" hidden>비밀번호</button>
@@ -97,7 +97,7 @@
           <form id="home-search-form" class="home-search-form" role="search">
             <label for="home-search-query">무엇을 찾으시나요?</label>
             <div class="home-search-control">
-              <input id="home-search-query" type="search" maxlength="100" placeholder="문서 제목이나 궁금한 내용을 입력하세요." autocomplete="off">
+              <input id="home-search-query" type="search" maxlength="100" placeholder="문서 제목이나 궁금한 내용을 입력하세요." autocomplete="off" enterkeyhint="search">
               <button type="submit"><span aria-hidden="true">⌕</span> 검색</button>
             </div>
             <p>문서 제목과 본문, 업로드된 파일을 한 번에 검색합니다.</p>
@@ -256,7 +256,7 @@
           <form id="search-page-form" class="search-page-form" role="search">
             <label class="search-query-wrap" for="search-page-query">
               <span class="search-scope-label">검색어</span>
-              <input id="search-page-query" type="search" maxlength="100" placeholder="찾으려는 문서나 내용을 입력하세요." autocomplete="off">
+              <input id="search-page-query" type="search" maxlength="100" placeholder="찾으려는 문서나 내용을 입력하세요." autocomplete="off" enterkeyhint="search">
             </label>
             <label class="search-scope-wrap" for="search-page-scope">
               <span class="search-scope-label">검색 범위</span>
