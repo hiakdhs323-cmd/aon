@@ -24,7 +24,7 @@
 <!-- AonWiki styles are served from the GitHub Pages origin; do not request the blocked p-e.kr host. -->
 <link rel="stylesheet" href="namumark-aon.css?v=20261115-editor-preview-scope-v1">
 <link rel="stylesheet" href="namumark-interactions-aon.css?v=20261115-single-footnote-preview-v1">
-<link rel="stylesheet" href="design-system.css?v=20261120-editorial-shell-v1">
+<link rel="stylesheet" href="design-system.css?v=20261121-home-search-ux-v2">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" crossorigin="anonymous">
@@ -41,7 +41,6 @@
 </script>
 </head>
 <body>
-<a class="skip-link" href="#main-content">본문으로 바로가기</a>
 <header class="site-header">
   <div class="topbar-inner">
     <a class="brand" href="#/" aria-label="AonWiki 대문"><img class="brand-symbol" src="aonwiki-mark.svg?v=20261115-private-assets-v1" alt=""><span class="brand-name">AonWiki</span></a>
@@ -70,7 +69,7 @@
         </div>
       </div>
     </nav>
-    <form id="search" class="searchbar" role="search"><input id="query" placeholder="AonWiki에서 검색..." aria-label="문서 검색" autocomplete="off"><button type="submit" aria-label="검색">⌕</button></form>
+    <form id="search" class="searchbar" role="search"><input id="query" placeholder="문서 검색" aria-label="문서 검색" autocomplete="off"><button type="submit" aria-label="검색">⌕</button></form>
     <nav class="header-actions" aria-label="계정 및 설정">
       <span id="role-label" class="role-label" hidden></span>
       <button id="change-password" class="button button-plain" type="button" hidden>비밀번호</button>
@@ -87,14 +86,22 @@
 </header>
 <div class="layout">
 
-  <main class="main" id="main-content" tabindex="-1">
+  <main class="main">
     <section id="home-view" class="home-view">
       <header class="home-hero">
         <div class="home-hero-copy">
-          <p class="home-kicker">AONWIKI · KNOWLEDGE ARCHIVE</p>
+          <p class="home-kicker">아온위키</p>
           <h1 id="home-title">AonWiki</h1>
           <p id="home-tagline">함께 만드는 지식 백과사전</p>
-          <p class="home-hero-description">AonWiki(아온 위키)는 다양한 주제의 문서를 검색하고, 나무마크 문법으로 직접 작성·편집하며 지식을 함께 정리하는 한국어 위키입니다.</p>
+          <p class="home-hero-description">다양한 주제의 문서를 찾고, 직접 기록하고, 함께 다듬는 한국어 위키입니다.</p>
+          <form id="home-search-form" class="home-search-form" role="search">
+            <label for="home-search-query">무엇을 찾으시나요?</label>
+            <div class="home-search-control">
+              <input id="home-search-query" type="search" maxlength="100" placeholder="문서 제목이나 궁금한 내용을 입력하세요." autocomplete="off">
+              <button type="submit"><span aria-hidden="true">⌕</span> 검색</button>
+            </div>
+            <p>문서 제목과 본문, 업로드된 파일을 한 번에 검색합니다.</p>
+          </form>
           <div class="home-hero-actions">
             <a href="#/w/AonWiki%3A%EB%AC%B8%EB%B2%95">문법 안내 보기</a>
             <a href="#/w/AonWiki%3A%ED%8E%B8%EC%A7%91%EC%A7%80%EC%B9%A8">편집지침 읽기</a>
@@ -102,7 +109,7 @@
         </div>
         <div class="home-hero-mark" aria-hidden="true">
           <img class="home-hero-logo" src="aonwiki-mark.svg?v=20261115-private-assets-v1" alt="">
-          <span class="home-hero-mark-caption">OPEN<br>KNOWLEDGE</span>
+          <span class="home-hero-mark-caption">열린 지식</span>
         </div>
       </header>
 
@@ -115,11 +122,6 @@
         <button class="home-shortcut home-shortcut-create" id="home-create-action" type="button">
           <span class="home-shortcut-icon" data-entry-icon="plus" aria-hidden="true"></span>
           <span class="home-shortcut-copy"><strong>새 문서 추가</strong><small>새로운 지식 등록하기</small></span>
-          <span class="home-shortcut-arrow" aria-hidden="true">›</span>
-        </button>
-        <button class="home-shortcut home-shortcut-search" id="home-search-action" type="button">
-          <span class="home-shortcut-icon" data-entry-icon="search" aria-hidden="true"></span>
-          <span class="home-shortcut-copy"><strong>문서 검색</strong><small>제목과 본문에서 찾기</small></span>
           <span class="home-shortcut-arrow" aria-hidden="true">›</span>
         </button>
         <button class="home-shortcut home-shortcut-categories" id="home-categories-action" type="button">
@@ -146,16 +148,12 @@
         </div>
       </section>
 
-      <div class="home-search-hint" id="home-search-hint">
-        상단 검색창에서 문서 제목이나 본문 내용을 검색할 수 있습니다.
-      </div>
-
       <div class="home-portal-grid">
-        <main class="home-primary-column">
+        <div class="home-primary-column">
           <section class="home-panel home-intro-panel">
             <div class="home-panel-heading">
               <div>
-                <span class="home-panel-eyebrow">WELCOME TO AONWIKI</span>
+                <span class="home-panel-eyebrow">위키 소개</span>
                 <h2>AonWiki에 오신 것을 환영합니다</h2>
               </div>
               <span class="home-panel-symbol" aria-hidden="true">A</span>
@@ -166,7 +164,7 @@
           <section class="home-panel home-list-panel">
             <div class="home-panel-heading">
               <div>
-                <span class="home-panel-eyebrow">LATEST PAGES</span>
+                <span class="home-panel-eyebrow">최근 활동</span>
                 <h2 id="home-list-title">최근 수정된 문서</h2>
               </div>
               <span id="page-count" class="home-panel-count"></span>
@@ -179,7 +177,7 @@
           <section class="home-panel home-activity-panel">
             <div class="home-panel-heading">
               <div>
-                <span class="home-panel-eyebrow">COMMUNITY ACTIVITY</span>
+                <span class="home-panel-eyebrow">기록</span>
                 <h2>최근 변경</h2>
               </div>
               <a class="home-panel-more" href="#/recent">전체 기록 보기 <span aria-hidden="true">›</span></a>
@@ -188,13 +186,13 @@
               <p class="loading">최근 변경을 불러오는 중입니다…</p>
             </div>
           </section>
-        </main>
+        </div>
 
         <aside class="home-sidebar">
           <section class="home-panel home-guide-panel">
             <div class="home-panel-heading">
               <div>
-                <span class="home-panel-eyebrow">GETTING STARTED</span>
+                <span class="home-panel-eyebrow">이용 안내</span>
                 <h2>처음 오셨나요?</h2>
               </div>
             </div>
@@ -219,7 +217,7 @@
           <section class="home-panel home-category-panel">
             <div class="home-panel-heading">
               <div>
-                <span class="home-panel-eyebrow">BROWSE BY TOPIC</span>
+                <span class="home-panel-eyebrow">주제 탐색</span>
                 <h2>주제별 분류</h2>
               </div>
               <a class="home-panel-more" href="#/categories">모두 보기 <span aria-hidden="true">›</span></a>
@@ -230,7 +228,7 @@
           </section>
 
           <section class="home-panel home-contribute-panel">
-            <span class="home-panel-eyebrow">JOIN THE PROJECT</span>
+            <span class="home-panel-eyebrow">참여하기</span>
             <h2 id="home-bottom-title">AonWiki에 함께 참여해 보세요</h2>
             <p id="home-bottom-text" class="home-help">새 문서를 만들거나 기존 문서를 보완해 지식을 함께 쌓을 수 있습니다.</p>
             <button id="home-new" class="button button-primary" type="button">새 문서 작성</button>
@@ -249,13 +247,17 @@
       <section class="search-page">
         <header class="search-page-heading">
           <div>
-            <p class="search-page-kicker">AONWIKI · SEARCH</p>
+            <p class="search-page-kicker">문서 찾기</p>
             <h1>검색</h1>
-            <p class="search-page-description">문서 제목·본문과 업로드된 파일 이름을 함께 찾아보세요.</p>
+            <p class="search-page-description">제목이나 내용의 일부만 입력해도 관련 문서를 찾을 수 있습니다.</p>
           </div>
         </header>
         <div class="search-page-body">
           <form id="search-page-form" class="search-page-form" role="search">
+            <label class="search-query-wrap" for="search-page-query">
+              <span class="search-scope-label">검색어</span>
+              <input id="search-page-query" type="search" maxlength="100" placeholder="찾으려는 문서나 내용을 입력하세요." autocomplete="off">
+            </label>
             <label class="search-scope-wrap" for="search-page-scope">
               <span class="search-scope-label">검색 범위</span>
               <select id="search-page-scope" aria-label="검색 범위">
@@ -264,27 +266,21 @@
                 <option value="files">파일만</option>
               </select>
             </label>
-            <label class="search-query-wrap" for="search-page-query">
-              <span class="search-scope-label">검색어</span>
-              <input id="search-page-query" type="search" maxlength="100" placeholder="검색어를 입력하세요." autocomplete="off">
-            </label>
-            <button type="submit" class="search-page-submit"><span aria-hidden="true">⌕</span> 검색</button>
+            <button type="submit" class="search-page-submit"><span aria-hidden="true">⌕</span> 검색하기</button>
           </form>
-          <div class="search-help-panel">
-            <span class="search-help-icon" aria-hidden="true">?</span>
-            <p><strong>찾는 문서가 없나요?</strong><span>전체 검색은 문서 제목·본문과 업로드된 파일 이름을 함께 찾습니다.</span></p>
-            <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 작성</button>
-          </div>
           <div class="search-result-summary" aria-live="polite">
-            <p id="search-result-count">검색어를 입력해 주세요.</p>
-            <span id="search-result-query"></span>
+            <div class="search-result-summary-copy">
+              <p id="search-result-count">검색어를 입력해 주세요.</p>
+              <span id="search-result-query"></span>
+            </div>
+            <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 만들기</button>
           </div>
           <div class="search-result-rule" aria-hidden="true"></div>
           <div id="search-result-groups" class="search-result-groups" aria-live="polite">
             <div class="search-empty-state">
               <span class="search-empty-icon" aria-hidden="true">⌕</span>
-              <strong>검색어를 입력해 주세요.</strong>
-              <p>문서 제목·본문 또는 업로드된 파일 이름을 검색할 수 있습니다.</p>
+              <strong>어떤 문서를 찾고 있나요?</strong>
+              <p>문서 제목이나 본문, 업로드된 파일 이름으로 검색할 수 있습니다.</p>
             </div>
           </div>
         </div>
@@ -471,5 +467,5 @@ hover-dark: #a5d6ff
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="app.bundle.js?v=20261117-cookie-session-v1"></script>
+<script type="module" src="app.bundle.js?v=20261121-home-search-ux-v2"></script>
 </body></html>
