@@ -3971,7 +3971,6 @@ async function loadSearchPage(query,scope="all",push=false){
   empty.append(icon,title,desc);host.append(empty);return;
  }
  $("search-result-count").textContent="검색 중입니다…";
- const started=performance.now();
  try{
   const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope+"&limit=25&page_offset=0&file_offset=0");
   if(requestId!==activeSearchState.requestId)return;
@@ -4062,7 +4061,9 @@ if(headerSearchForm&&headerSearchInput){
   const query=headerSearchInput.value.trim();
   const sequence=++headerSuggestionSequence;
   window.clearTimeout(headerSuggestionTimer);
-  if(query.length<2){closeHeaderSuggestions();headerSuggestionHost.replaceChildren();return}
+  closeHeaderSuggestions();
+  headerSuggestionHost.replaceChildren();
+  if(query.length<2)return
   headerSuggestionTimer=window.setTimeout(async()=>{
    try{
     const data=await api("/api/pages?q="+encodeURIComponent(query)+"&scope=title&limit=8&page_offset=0");
