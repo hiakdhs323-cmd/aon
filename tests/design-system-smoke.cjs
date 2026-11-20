@@ -6,35 +6,45 @@ const css = fs.readFileSync("design-system.css", "utf8");
 const buildWorkflow = fs.readFileSync(".github/workflows/build-renderer.yml", "utf8");
 const deployWorkflow = fs.readFileSync(".github/workflows/deploy-worker.yml", "utf8");
 
-assert.match(html, /<a class="skip-link" href="#main-content">본문으로 바로가기<\\/a>/,
+assert.ok(html.includes('<a class="skip-link" href="#main-content">본문으로 바로가기</a>'),
   "the page must provide a keyboard-accessible skip link");
-assert.match(html, /<main class="main" id="main-content" tabindex="-1">/,
+assert.ok(html.includes('<main class="main" id="main-content" tabindex="-1">'),
   "the skip link must target the main content landmark");
-assert.match(html, /design-system\\.css\\?v=20261120-editorial-shell-v1/,
+assert.ok(html.includes("design-system.css?v=20261120-editorial-shell-v1"),
   "the editorial design system must be loaded after the existing wiki skins");
-assert.match(css, /\\.home-quick-nav\\s+\\.home-shortcut\\s*\\{/,
+assert.ok(css.includes(".home-quick-nav .home-shortcut {"),
   "homepage quick actions must style the actual button markup");
-assert.match(css, /min-height:\\s*68px/,
+assert.ok(css.includes("min-height: 68px;"),
   "homepage quick actions must have comfortable touch targets");
-assert.match(css, /\\.global-rail\\s*\\{/,
+assert.ok(css.includes(".global-rail {"),
   "the activity rail must receive a defined layout");
-assert.match(css, /@media\\s*\\(max-width:\\s*760px\\)/,
+assert.ok(css.includes("@media (max-width: 760px)"),
   "the layout must have a dedicated small-screen breakpoint");
-assert.match(css, /@media\\s*\\(prefers-reduced-motion:\\s*reduce\\)/,
+assert.ok(css.includes("@media (prefers-reduced-motion: reduce)"),
   "motion-sensitive users must receive reduced-motion styles");
-assert.match(css, /html\\[data-theme="dark"\\]/,
+assert.ok(css.includes('html[data-theme="dark"]'),
   "the design system must define a complete dark palette");
-assert.match(css, /html\\[data-theme="light"\\]/,
+assert.ok(css.includes('html[data-theme="light"]'),
   "the design system must define a complete light palette");
-assert.doesNotMatch(css, /@import\\s+url|fonts\\.googleapis\\.com|fonts\\.gstatic\\.com/i,
+assert.ok(!css.includes("@import url") &&
+          !css.includes("fonts.googleapis.com") &&
+          !css.includes("fonts.gstatic.com"),
   "the design system must not add a remote font dependency");
-assert.match(buildWorkflow, /design-system\\.css/,
+assert.ok(buildWorkflow.includes("design-system.css"),
   "the build workflow must track changes to the design system");
-assert.match(buildWorkflow, /node tests\\/design-system-smoke\\.cjs/,
+assert.ok(buildWorkflow.includes("node tests/design-system-smoke.cjs"),
   "the build workflow must run the design-system regression test");
-assert.match(deployWorkflow, /design-system\\.css/,
+assert.ok(deployWorkflow.includes("design-system.css"),
   "the Worker deployment workflow must track changes to the design system");
-assert.match(deployWorkflow, /node tests\\/design-system-smoke\\.cjs/,
+assert.ok(deployWorkflow.includes("node tests/design-system-smoke.cjs"),
   "the Worker deployment workflow must run the design-system regression test");
+
+let braceDepth = 0;
+for (const character of css) {
+  if (character === "{") braceDepth++;
+  if (character === "}") braceDepth--;
+  assert.ok(braceDepth >= 0, "CSS must not close a block before it opens");
+}
+assert.ok(braceDepth === 0, "CSS rule blocks must be balanced");
 
 console.log("AonWiki design system smoke test passed.");
