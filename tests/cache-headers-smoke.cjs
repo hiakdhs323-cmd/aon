@@ -15,7 +15,7 @@ assert.ok(worker.includes("staticCacheHeaders.set("),
   "static asset caching must explicitly set Cache-Control");
 assert.ok(worker.includes("new Response(response.body, { status: response.status, statusText: response.statusText, headers: staticCacheHeaders })"),
   "static asset caching must return a response with the cache policy");
-assert.ok(worker.includes("request.method === \"GET\" || request.method === \"HEAD\""),
+assert.ok(worker.includes('requestMethod !== "GET" && requestMethod !== "HEAD"'),
   "cache policy must not apply to unsafe request methods");
 
 console.log("AonWiki cache header smoke test passed.");
