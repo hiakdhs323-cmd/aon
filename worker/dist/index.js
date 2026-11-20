@@ -1734,7 +1734,8 @@ function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
     "theme.js",
     "namumark-aon.css",
     "namumark-interactions-aon.css",
-    "aonwiki-mark.svg"
+    "aonwiki-mark.svg",
+    "design-system.css"
   ]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
