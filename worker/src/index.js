@@ -1319,6 +1319,37 @@ function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
     return name + "=" + quote + prefix + assetPath + parsed.search + parsed.hash + quote;
   });
 }
+const CACHEABLE_STATIC_ASSETS = new Set([
+  "app.js",
+  "app.bundle.js",
+  "style.css",
+  "design-system.css",
+  "theme.js",
+  "namumark-aon.css",
+  "namumark-interactions-aon.css",
+  "aonwiki-mark.svg"
+]);
+
+const CACHEABLE_STATIC_ASSET_PATTERN = /\.(?:js|css|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|wasm)$/i;
+const LONG_LIVED_STATIC_CACHE_CONTROL = "public, max-age=31536000, immutable";
+const HTML_CACHE_CONTROL = "public, max-age=0, must-revalidate";
+
+function isCacheableStaticAsset(pathname) {
+  const basename = pathname.split("/").pop() || "";
+  return CACHEABLE_STATIC_ASSETS.has(basename) || CACHEABLE_STATIC_ASSET_PATTERN.test(pathname);
+}
+
+function withStaticCacheHeaders(response, pathname, requestMethod) {
+  if (requestMethod !== "GET" && requestMethod !== "HEAD") return response;
+  const staticCacheHeaders = new Headers(response.headers);
+  if (isCacheableStaticAsset(pathname)) {
+    staticCacheHeaders.set("cache-control", LONG_LIVED_STATIC_CACHE_CONTROL);
+  } else if (response.headers.get("content-type")?.toLowerCase().includes("text/html")) {
+    staticCacheHeaders.set("cache-control", HTML_CACHE_CONTROL);
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: staticCacheHeaders });
+}
+
 const FRONTEND_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
 async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
   let lastResponse = null;
