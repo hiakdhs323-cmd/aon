@@ -465,8 +465,6 @@ async function loadHome(){
     $("home-title").textContent=settings.title||"AonWiki";
     $("home-tagline").textContent=settings.tagline||"함께 만드는 지식 백과사전";
 
-    const hint=$("home-search-hint");
-    if(hint)hint.textContent=settings.searchHint||"상단 검색창에서 문서 제목이나 본문 내용을 검색할 수 있습니다.";
     $("home-list-title").textContent=settings.listTitle||"최근 수정된 문서";
     $("home-bottom-title").textContent=settings.bottomTitle||"AonWiki에 함께 참여해 보세요";
     $("home-bottom-text").textContent=settings.bottomText||"새 문서를 만들거나 기존 문서를 보완해 지식을 함께 쌓을 수 있습니다.";
@@ -3775,15 +3773,6 @@ document.querySelectorAll("[data-markup]").forEach(button=>{
 $("home").onclick=()=>showHome(true);
 $("home-login-action").onclick=()=>$("login").click();
 $("home-create-action").onclick=()=>editPage("","");
-const homeSearchForm=$("home-search-form");
-const homeSearchInput=$("home-search-query");
-if(homeSearchForm&&homeSearchInput){
- homeSearchForm.addEventListener("submit",event=>{
-  event.preventDefault();
-  $("query").value=homeSearchInput.value;
-  searchFor(homeSearchInput.value,"all");
- });
-}
 $("home-categories-action").onclick=()=>loadCategoryIndex(true);
 $("discussion-tab").onclick=()=>loadDiscussionList(true,currentTitle);
 $("recent-changes").onclick=()=>loadRecentChanges(true);
