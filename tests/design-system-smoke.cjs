@@ -13,27 +13,33 @@ assert.equal((html.match(/<main(?:\s|>)/g) || []).length, 1,
   "the page must use one main landmark without nested main elements");
 assert.ok(html.includes('<main class="main">'),
   "the page must retain a single semantic main landmark");
-assert.ok(html.includes('<form id="home-search-form" class="home-search-form" role="search">'),
-  "the homepage must expose a real, prominent search form");
-assert.ok((html.match(/enterkeyhint="search"/g) || []).length >= 3,
-  "header, homepage, and dedicated search fields must request the mobile search keyboard");
-assert.ok(html.includes('id="home-search-query"') && html.includes('id="home-categories-action"'),
-  "homepage search and navigation actions must remain reachable");
-assert.ok(!html.includes('id="home-search-hint"'),
-  "the redundant search hint must be replaced by the functional search form");
+assert.ok(!html.includes('id="home-search-form"') && !html.includes('id="home-search-query"'),
+  "the homepage must not duplicate the existing header and search-page search UI");
+assert.ok(!html.includes('class="home-hero-mark"') && !html.includes('home-hero-logo'),
+  "the homepage must not repeat the AonWiki logo already shown in the header");
+assert.ok(html.includes('<form id="search" class="searchbar" role="search">') &&
+          html.includes('id="query"') && html.includes('id="search-page-form"'),
+  "the existing header search and dedicated search-page form must remain available");
+assert.ok((html.match(/enterkeyhint="search"/g) || []).length === 2,
+  "header and dedicated search fields must request the mobile search keyboard");
+assert.ok(html.includes('id="search-page-query"') && html.includes('id="search-page-scope"') &&
+          html.includes('id="search-result-groups"'),
+  "the existing search page must retain its query, scope, and results controls");
 assert.ok(html.includes('id="search-create-page"') && html.includes('class="search-result-summary"'),
   "the create-page action must live with the search result summary");
-assert.ok(html.includes("design-system.css?v=20261121-home-search-ux-v2"),
+assert.ok(html.includes("design-system.css?v=20261121-wiki-shell-search-v3"),
   "the editorial design system must be loaded after the existing wiki skins");
 assert.ok(css.includes(".home-quick-nav .home-shortcut {"),
   "homepage quick actions must style the actual button markup");
-assert.ok(css.includes("min-height: 68px;"),
-  "homepage quick actions must have comfortable touch targets");
+assert.ok(css.includes(".searchbar.has-search-suggestions .search-suggestions") &&
+          css.includes(".search-page-form") && css.includes(".search-result-row"),
+  "the existing search entry point, search form, and result rows must receive the redesign");
+assert.ok(css.includes(".article-titlebar") && css.includes(".editor-card") && css.includes(".global-rail"),
+  "the document, editor, and activity rail must share the site-wide visual system");
 assert.ok(css.includes(".global-rail {"),
   "the activity rail must receive a defined layout");
-assert.ok(css.includes(".home-quick-nav .home-shortcut:nth-child(3)") &&
-          css.includes("@media (max-width: 820px)"),
-  "the three homepage quick actions must remain balanced on tablet and phone layouts");
+assert.ok(css.includes("@media (max-width: 900px)") && css.includes("@media (max-width: 560px)"),
+  "the design must define tablet and phone layouts");
 assert.ok(css.includes("@media (max-width: 760px)"),
   "the layout must have a dedicated small-screen breakpoint");
 assert.ok(css.includes("@media (prefers-reduced-motion: reduce)"),
@@ -74,8 +80,9 @@ assert.ok(braceDepth === 0, "CSS rule blocks must be balanced");
 
 
 const app = fs.readFileSync("app.js", "utf8");
-assert.ok(app.includes('homeSearchForm.addEventListener("submit"'),
-  "homepage search must submit through the same search flow as the header");
+assert.ok(!app.includes('homeSearchForm.addEventListener("submit"') &&
+          !app.includes('home-search-action'),
+  "the old duplicated homepage search handlers must be removed");
 assert.ok(app.includes('event.key==="ArrowDown"') && app.includes('event.key==="ArrowUp"'),
   "header autocomplete must support keyboard selection");
 assert.ok(app.includes('event.key==="Enter"'),
