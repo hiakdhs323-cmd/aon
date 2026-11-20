@@ -54,9 +54,12 @@ const sourceSlash = String.fromCharCode(92); assert.ok(worker.includes("app" + s
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
 assert.match(read("index.html"), /id="home-login-action"/, "homepage must expose the login quick action");
 assert.match(read("index.html"), /id="home-create-action"/, "homepage must expose the add-document quick action");
-assert.match(read("index.html"), /id="home-search-action"/, "homepage must expose the search quick action");
+assert.match(read("index.html"), /id="home-search-form"/, "homepage must expose its primary search form");
+assert.match(read("index.html"), /id="home-search-query"/, "homepage search form must expose a query input");
+assert.doesNotMatch(read("index.html"), /id="home-search-action"/, "homepage must not duplicate search as a second quick action");
 assert.match(read("index.html"), /id="home-categories-action"/, "homepage must expose the category-grid quick action");
-assert.match(app, /home-search-action.*loadSearchPage/s, "homepage search quick action must open the search view");
+assert.match(app, /homeSearchForm\.addEventListener\("submit"/, "homepage search form must be connected to the search handler");
+assert.match(app, /searchFor\(homeSearchInput\.value,"all"\)/, "homepage search must use the shared full-search flow");
 assert.match(app, /home-categories-action.*loadCategoryIndex/s, "homepage category quick action must open the category index");
 assert.ok(read("namumark-aon.css").includes(".wiki-link-external:has(img)::before"), "external image links must suppress the automatic external-link badge");
 
