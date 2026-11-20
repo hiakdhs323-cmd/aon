@@ -1303,7 +1303,7 @@ function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
   const basePath = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : baseUrl.pathname + "/";
   const staticAssets = new Set([
     "style.css", "app.bundle.js", "theme.js", "namumark-aon.css",
-    "namumark-interactions-aon.css", "aonwiki-mark.svg"
+    "namumark-interactions-aon.css", "aonwiki-mark.svg", "design-system.css"
   ]);
   return String(html).replace(/\b(href|src)\s*=\s*(["'])(.*?)\2/gi, (attribute, name, quote, rawUrl) => {
     let parsed;
