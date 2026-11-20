@@ -7,7 +7,7 @@ assert.ok(worker.includes('const CACHEABLE_STATIC_ASSETS = new Set('),
   "cache policy must be defined centrally for static assets");
 assert.ok(worker.includes('LONG_LIVED_STATIC_CACHE_CONTROL = "public, max-age=31536000, immutable"'),
   "fingerprinted static assets must receive long-lived immutable caching");
-assert.ok(worker.includes('cache-control: "public, max-age=0, must-revalidate"'),
+assert.ok(worker.includes('HTML_CACHE_CONTROL = "public, max-age=0, must-revalidate"'),
   "HTML responses must remain revalidated instead of becoming stale");
 assert.ok(worker.includes("const staticCacheHeaders = new Headers(response.headers);"),
   "static asset caching must preserve the original response headers");
