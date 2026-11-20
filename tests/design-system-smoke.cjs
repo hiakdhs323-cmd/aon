@@ -75,6 +75,9 @@ assert.ok(app.includes('event.key==="ArrowDown"') && app.includes('event.key==="
   "header autocomplete must support keyboard selection");
 assert.ok(app.includes('event.key==="Enter"'),
   "header autocomplete must open the selected suggestion on Enter");
+assert.ok(app.includes('setAttribute("aria-expanded","true")') &&
+          app.includes('setAttribute("aria-activedescendant"'),
+  "autocomplete must expose its expanded and active option to assistive technology");
 assert.ok(app.includes('문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개'),
   "search summary must show useful document and file counts without timing noise");
 
