@@ -44,7 +44,7 @@ const rewriteStart = worker.indexOf("function rewriteFrontendAssets(");
 const rewriteEnd = worker.indexOf("const FRONTEND_TRANSIENT_STATUSES", rewriteStart);
 assert.ok(rewriteStart >= 0 && rewriteEnd > rewriteStart,
   "the Worker frontend asset rewrite helper must remain available");
-const rewriteFrontendAssets = new Function("URL", worker.slice(rewriteStart, rewriteEnd) + "\\nreturn rewriteFrontendAssets;")(URL);
+const rewriteFrontendAssets = new Function("URL", worker.slice(rewriteStart, rewriteEnd) + String.fromCharCode(10) + "return rewriteFrontendAssets;")(URL);
 const rewrittenShell = rewriteFrontendAssets('<link rel="stylesheet" href="design-system.css?v=20261120-editorial-shell-v1">', "https://hiakdhs323-cmd.github.io/aon", false);
 assert.ok(rewrittenShell.includes('href="/aon/design-system.css?'),
   "frontend fallback must route the editorial design system through the Worker static asset proxy");
