@@ -54,12 +54,12 @@ const sourceSlash = String.fromCharCode(92); assert.ok(worker.includes("app" + s
 assert.match(app, /wiki-external-image-link/, "external links containing file images must be marked for badge suppression");
 assert.match(read("index.html"), /id="home-login-action"/, "homepage must expose the login quick action");
 assert.match(read("index.html"), /id="home-create-action"/, "homepage must expose the add-document quick action");
-assert.match(read("index.html"), /id="home-search-form"/, "homepage must expose its primary search form");
-assert.match(read("index.html"), /id="home-search-query"/, "homepage search form must expose a query input");
-assert.doesNotMatch(read("index.html"), /id="home-search-action"/, "homepage must not duplicate search as a second quick action");
+assert.doesNotMatch(read("index.html"), /id="home-search-form"|id="home-search-query"|home-hero-logo/, "homepage must not repeat search UI or the header logo");
+assert.match(read("index.html"), /id="search" class="searchbar"/, "the header search field must remain the primary site-wide search entry");
+assert.match(read("index.html"), /id="search-page-form"/, "the dedicated search results page must retain its own search form");
+assert.match(read("index.html"), /id="search-page-query"/, "the search page must retain its query input");
 assert.match(read("index.html"), /id="home-categories-action"/, "homepage must expose the category-grid quick action");
-assert.match(app, /homeSearchForm\.addEventListener\("submit"/, "homepage search form must be connected to the search handler");
-assert.match(app, /searchFor\(homeSearchInput\.value,"all"\)/, "homepage search must use the shared full-search flow");
+assert.doesNotMatch(app, /homeSearchForm\.addEventListener\("submit"/, "there must not be a second homepage search handler");
 assert.match(app, /home-categories-action.*loadCategoryIndex/s, "homepage category quick action must open the category index");
 assert.ok(read("namumark-aon.css").includes(".wiki-link-external:has(img)::before"), "external image links must suppress the automatic external-link badge");
 
