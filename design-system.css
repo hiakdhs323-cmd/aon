@@ -2337,3 +2337,52 @@ button:disabled {
     white-space: nowrap;
   }
 }
+
+
+/* Reading rhythm for wiki documents. */
+.article .wiki-content,
+.article .namumark-wasm-content {
+  font-size: 14px;
+  line-height: 1.9;
+  overflow-wrap: break-word;
+}
+
+.article .wiki-content p,
+.article .namumark-wasm-content p {
+  max-width: 82ch;
+  margin-block: .7em 1em;
+  line-height: 1.9;
+}
+
+.article .wiki-content li,
+.article .namumark-wasm-content li {
+  margin-block: .22em;
+  line-height: 1.8;
+}
+
+.article .wiki-content h2,
+.article .namumark-wasm-content h2 {
+  margin-top: 32px;
+  padding-bottom: 8px;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.article .wiki-content h3,
+.article .namumark-wasm-content h3 {
+  margin-top: 25px;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .article .wiki-content,
+  .article .namumark-wasm-content {
+    font-size: 14px;
+    line-height: 1.85;
+  }
+
+  .article .wiki-content p,
+  .article .namumark-wasm-content p {
+    line-height: 1.85;
+  }
+}
