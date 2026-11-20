@@ -1757,6 +1757,22 @@ function rewriteFrontendAssets(html, frontendOrigin, localAssets = false) {
     return name + "=" + quote + prefix + assetPath + parsed.search + parsed.hash + quote;
   });
 }
+var CACHEABLE_STATIC_ASSETS = /* @__PURE__ */ new Set([
+  "app.js",
+  "app.bundle.js",
+  "style.css",
+  "design-system.css",
+  "theme.js",
+  "namumark-aon.css",
+  "namumark-interactions-aon.css",
+  "aonwiki-mark.svg"
+]);
+var CACHEABLE_STATIC_ASSET_PATTERN = /\.(?:js|css|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|wasm)$/i;
+var LONG_LIVED_STATIC_CACHE_CONTROL = "public, max-age=31536000, immutable";
+function isCacheableStaticAsset(pathname) {
+  const basename = pathname.split("/").pop() || "";
+  return CACHEABLE_STATIC_ASSETS.has(basename) || CACHEABLE_STATIC_ASSET_PATTERN.test(pathname);
+}
 var FRONTEND_TRANSIENT_STATUSES = /* @__PURE__ */ new Set([429, 500, 502, 503, 504]);
 async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
   let lastResponse = null;
@@ -2190,7 +2206,7 @@ var index_default = {
             const localAsset = await env.ASSETS.fetch(new Request(localAssetUrl.toString(), { method: "GET", headers: request.headers }));
             if (localAsset.ok) {
               const headers = new Headers(localAsset.headers);
-              headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              headers.set("Cache-Control", isCacheableStaticAsset(assetName) ? LONG_LIVED_STATIC_CACHE_CONTROL : localAsset.headers.get("Cache-Control") || "public, max-age=0, must-revalidate");
               headers.set("X-AonWiki-Asset-Proxy", "1");
               headers.set("X-AonWiki-Asset-Cache", "WORKER-ASSETS");
               return new Response(localAsset.body, { status: localAsset.status, headers });
