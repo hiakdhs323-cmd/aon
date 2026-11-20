@@ -29,6 +29,9 @@ assert.ok(css.includes("min-height: 68px;"),
   "homepage quick actions must have comfortable touch targets");
 assert.ok(css.includes(".global-rail {"),
   "the activity rail must receive a defined layout");
+assert.ok(css.includes(".home-quick-nav .home-shortcut:nth-child(3)") &&
+          css.includes("@media (max-width: 820px)"),
+  "the three homepage quick actions must remain balanced on tablet and phone layouts");
 assert.ok(css.includes("@media (max-width: 760px)"),
   "the layout must have a dedicated small-screen breakpoint");
 assert.ok(css.includes("@media (prefers-reduced-motion: reduce)"),
