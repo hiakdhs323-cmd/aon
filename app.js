@@ -3775,7 +3775,15 @@ document.querySelectorAll("[data-markup]").forEach(button=>{
 $("home").onclick=()=>showHome(true);
 $("home-login-action").onclick=()=>$("login").click();
 $("home-create-action").onclick=()=>editPage("","");
-$("home-search-action").onclick=()=>loadSearchPage("","all",true);
+const homeSearchForm=$("home-search-form");
+const homeSearchInput=$("home-search-query");
+if(homeSearchForm&&homeSearchInput){
+ homeSearchForm.addEventListener("submit",event=>{
+  event.preventDefault();
+  $("query").value=homeSearchInput.value;
+  searchFor(homeSearchInput.value,"all");
+ });
+}
 $("home-categories-action").onclick=()=>loadCategoryIndex(true);
 $("discussion-tab").onclick=()=>loadDiscussionList(true,currentTitle);
 $("recent-changes").onclick=()=>loadRecentChanges(true);
@@ -3969,9 +3977,7 @@ async function loadSearchPage(query,scope="all",push=false){
   if(requestId!==activeSearchState.requestId)return;
   const pages=data.pages||[],files=data.files||[];
   const pageTotal=Number(data.page_total??pages.length),fileTotal=Number(data.file_total??files.length);
-  const total=Number.isFinite(Number(data.total))?Number(data.total):pageTotal+fileTotal;
-  const elapsed=((performance.now()-started)/1000).toFixed(3);
-  $("search-result-count").textContent="전체 "+total.toLocaleString("ko-KR")+"건 · 문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개 · 관련도순 ("+elapsed+"초)";
+  $("search-result-count").textContent="문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개";
   host.replaceChildren();
   if(!pages.length&&!files.length){renderSearchEmpty(host,q);activeSearchState.loading=false;return}
   appendSearchPageResults(host,data,q);
@@ -4015,7 +4021,30 @@ async function searchFor(query,scope="all"){
 const headerSearchForm=$("search");
 const headerSearchInput=$("query");
 let headerSuggestionTimer=0,headerSuggestionSequence=0;
-let headerSuggestionHost=null;
+let headerSuggestionHost=null,activeHeaderSuggestionIndex=-1;
+function closeHeaderSuggestions(){
+ if(!headerSuggestionHost)return;
+ headerSuggestionHost.hidden=true;
+ headerSearchInput.setAttribute("aria-expanded","false");
+ headerSearchInput.removeAttribute("aria-activedescendant");
+ activeHeaderSuggestionIndex=-1;
+ headerSuggestionHost.querySelectorAll('[role="option"]').forEach(option=>{
+  option.setAttribute("aria-selected","false");
+  option.classList.remove("is-active");
+ });
+}
+function setActiveHeaderSuggestion(index){
+ if(!headerSuggestionHost)return;
+ const options=Array.from(headerSuggestionHost.querySelectorAll('[role="option"]'));
+ if(!options.length){activeHeaderSuggestionIndex=-1;headerSearchInput.removeAttribute("aria-activedescendant");return}
+ activeHeaderSuggestionIndex=(index+options.length)%options.length;
+ options.forEach((option,optionIndex)=>{
+  const active=optionIndex===activeHeaderSuggestionIndex;
+  option.setAttribute("aria-selected",String(active));
+  option.classList.toggle("is-active",active);
+ });
+ headerSearchInput.setAttribute("aria-activedescendant",options[activeHeaderSuggestionIndex].id);
+}
 if(headerSearchForm&&headerSearchInput){
  headerSearchForm.classList.add("has-search-suggestions");
  headerSuggestionHost=document.createElement("div");
@@ -4024,39 +4053,62 @@ if(headerSearchForm&&headerSearchInput){
  headerSuggestionHost.setAttribute("role","listbox");
  headerSuggestionHost.hidden=true;
  headerSearchForm.append(headerSuggestionHost);
+ headerSearchInput.setAttribute("role","combobox");
  headerSearchInput.setAttribute("aria-autocomplete","list");
+ headerSearchInput.setAttribute("aria-haspopup","listbox");
+ headerSearchInput.setAttribute("aria-expanded","false");
  headerSearchInput.setAttribute("aria-controls","search-suggestions");
  headerSearchInput.addEventListener("input",()=>{
   const query=headerSearchInput.value.trim();
   const sequence=++headerSuggestionSequence;
   window.clearTimeout(headerSuggestionTimer);
-  if(query.length<2){headerSuggestionHost.hidden=true;headerSuggestionHost.replaceChildren();return}
+  if(query.length<2){closeHeaderSuggestions();headerSuggestionHost.replaceChildren();return}
   headerSuggestionTimer=window.setTimeout(async()=>{
    try{
     const data=await api("/api/pages?q="+encodeURIComponent(query)+"&scope=title&limit=8&page_offset=0");
     if(sequence!==headerSuggestionSequence||headerSearchInput.value.trim()!==query)return;
     headerSuggestionHost.replaceChildren();
     const pages=(data.pages||[]).slice(0,8);
-    if(!pages.length){headerSuggestionHost.hidden=true;return}
-    pages.forEach(page=>{
-     const item=document.createElement("button");item.type="button";item.className="search-suggestion-item";item.setAttribute("role","option");
+    pages.forEach((page,index)=>{
+     const item=document.createElement("button");
+     item.type="button";item.id="aon-search-suggestion-"+index;
+     item.className="search-suggestion-item";item.setAttribute("role","option");
+     item.setAttribute("aria-selected","false");
      const title=document.createElement("span");title.className="search-suggestion-title";appendSearchHighlighted(title,page.title,query);
      const meta=document.createElement("small");meta.textContent="문서";
      item.append(title,meta);
-     item.addEventListener("click",()=>{headerSuggestionHost.hidden=true;openPage(page.title)});
+     item.addEventListener("click",()=>{closeHeaderSuggestions();openPage(page.title)});
      headerSuggestionHost.append(item);
     });
-    const more=document.createElement("button");more.type="button";more.className="search-suggestion-more";more.textContent="검색 결과 전체 보기";
-    more.addEventListener("click",()=>{headerSuggestionHost.hidden=true;searchFor(query)});
-    headerSuggestionHost.append(more);headerSuggestionHost.hidden=false;
-   }catch(error){headerSuggestionHost.hidden=true}
+    const more=document.createElement("button");
+    more.type="button";more.id="aon-search-suggestion-all";
+    more.className="search-suggestion-more";more.setAttribute("role","option");
+    more.setAttribute("aria-selected","false");
+    more.textContent=pages.length?"전체 검색 결과 보기":"‘"+query+"’ 검색 결과 보기";
+    more.addEventListener("click",()=>{closeHeaderSuggestions();searchFor(query)});
+    headerSuggestionHost.append(more);
+    activeHeaderSuggestionIndex=-1;
+    headerSearchInput.removeAttribute("aria-activedescendant");
+    headerSearchInput.setAttribute("aria-expanded","true");
+    headerSuggestionHost.hidden=false;
+   }catch(error){closeHeaderSuggestions()}
   },180);
  });
  headerSearchInput.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&!headerSuggestionHost.hidden){headerSuggestionHost.hidden=true;event.stopPropagation()}
+  if(headerSuggestionHost.hidden)return;
+  const options=headerSuggestionHost.querySelectorAll('[role="option"]');
+  if(event.key==="ArrowDown"){
+   event.preventDefault();setActiveHeaderSuggestion(activeHeaderSuggestionIndex+1);
+  }else if(event.key==="ArrowUp"){
+   event.preventDefault();setActiveHeaderSuggestion(activeHeaderSuggestionIndex<0?options.length-1:activeHeaderSuggestionIndex-1);
+  }else if(event.key==="Enter"&&activeHeaderSuggestionIndex>=0){
+   event.preventDefault();options[activeHeaderSuggestionIndex].click();
+  }else if(event.key==="Escape"){
+   closeHeaderSuggestions();event.stopPropagation();
+  }
  });
  document.addEventListener("pointerdown",event=>{
-  if(!headerSearchForm.contains(event.target))headerSuggestionHost.hidden=true;
+  if(!headerSearchForm.contains(event.target))closeHeaderSuggestions();
  });
 }
 
