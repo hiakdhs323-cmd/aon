@@ -1350,6 +1350,11 @@ function withStaticCacheHeaders(response, pathname, requestMethod) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers: staticCacheHeaders });
 }
 
+function applyResponseCachePolicy(response, request, url) {
+  if (request.method !== "GET" && request.method !== "HEAD") return response;
+  return withStaticCacheHeaders(response, url.pathname, request.method);
+}
+
 const FRONTEND_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
 async function fetchFrontendWithRetry(url, init = {}, attempts = 3) {
   let lastResponse = null;
