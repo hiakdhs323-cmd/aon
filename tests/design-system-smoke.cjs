@@ -15,6 +15,8 @@ assert.ok(html.includes('<main class="main">'),
   "the page must retain a single semantic main landmark");
 assert.ok(html.includes('<form id="home-search-form" class="home-search-form" role="search">'),
   "the homepage must expose a real, prominent search form");
+assert.ok((html.match(/enterkeyhint="search"/g) || []).length >= 3,
+  "header, homepage, and dedicated search fields must request the mobile search keyboard");
 assert.ok(html.includes('id="home-search-query"') && html.includes('id="home-categories-action"'),
   "homepage search and navigation actions must remain reachable");
 assert.ok(!html.includes('id="home-search-hint"'),
