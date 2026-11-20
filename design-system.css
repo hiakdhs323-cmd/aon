@@ -1832,8 +1832,8 @@ html[data-theme="dark"] {
   --wiki-link: #93baf4;
   --wiki-link-hover: #c0d6fa;
   --wiki-body-link: #93baf4;
-  --wiki-primary: #31988d;
-  --wiki-primary-dark: #287e75;
+  --wiki-primary: #287e75;
+  --wiki-primary-dark: #22665f;
   --wiki-danger: #ff8585;
   --wiki-warning-bg: #393323;
   --wiki-warning-border: #786536;
