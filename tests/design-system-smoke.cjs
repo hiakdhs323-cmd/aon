@@ -38,7 +38,7 @@ assert.ok(css.includes(".article-titlebar") && css.includes(".editor-card") && c
   "the document, editor, and activity rail must share the site-wide visual system");
 assert.ok(css.includes(".global-rail {"),
   "the activity rail must receive a defined layout");
-assert.ok(css.includes("@media (max-width: 820px)") && css.includes("@media (max-width: 560px)"),
+assert.ok(css.includes("@media (max-width: 900px)") && css.includes("@media (max-width: 560px)"),
   "the design must define tablet and phone layouts");
 assert.ok(css.includes("@media (max-width: 760px)"),
   "the layout must have a dedicated small-screen breakpoint");
