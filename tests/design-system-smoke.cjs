@@ -9,7 +9,7 @@ const worker = fs.readFileSync("worker/src/index.js", "utf8");
 
 assert.ok(!html.includes("skip-link") && !css.includes(".skip-link"),
   "the unnecessary skip-to-content link and its unused styles must be removed");
-assert.equal((html.match(/<main(?:\\s|>)/g) || []).length, 1,
+assert.equal((html.match(/<main(?:\s|>)/g) || []).length, 1,
   "the page must use one main landmark without nested main elements");
 assert.ok(html.includes('<main class="main">'),
   "the page must retain a single semantic main landmark");
@@ -21,7 +21,7 @@ assert.ok(!html.includes('id="home-search-hint"'),
   "the redundant search hint must be replaced by the functional search form");
 assert.ok(html.includes('id="search-create-page"') && html.includes('class="search-result-summary"'),
   "the create-page action must live with the search result summary");
-assert.ok(html.includes("design-system.css?v=20261120-editorial-shell-v1"),
+assert.ok(html.includes("design-system.css?v=20261121-home-search-ux-v2"),
   "the editorial design system must be loaded after the existing wiki skins");
 assert.ok(css.includes(".home-quick-nav .home-shortcut {"),
   "homepage quick actions must style the actual button markup");
@@ -67,7 +67,6 @@ for (const character of css) {
 }
 assert.ok(braceDepth === 0, "CSS rule blocks must be balanced");
 
-console.log("AonWiki design system smoke test passed.");
 
 const app = fs.readFileSync("app.js", "utf8");
 assert.ok(app.includes('homeSearchForm.addEventListener("submit"'),
@@ -78,3 +77,5 @@ assert.ok(app.includes('event.key==="Enter"'),
   "header autocomplete must open the selected suggestion on Enter");
 assert.ok(app.includes('문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개'),
   "search summary must show useful document and file counts without timing noise");
+
+console.log("AonWiki design system smoke test passed.");
