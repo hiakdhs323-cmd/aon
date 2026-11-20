@@ -24,7 +24,7 @@
 <!-- AonWiki styles are served from the GitHub Pages origin; do not request the blocked p-e.kr host. -->
 <link rel="stylesheet" href="namumark-aon.css?v=20261115-editor-preview-scope-v1">
 <link rel="stylesheet" href="namumark-interactions-aon.css?v=20261115-single-footnote-preview-v1">
-<link rel="stylesheet" href="design-system.css?v=20261121-home-search-ux-v2">
+<link rel="stylesheet" href="design-system.css?v=20261121-wiki-shell-search-v3">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" crossorigin="anonymous">
@@ -93,23 +93,11 @@
           <p class="home-kicker">아온위키</p>
           <h1 id="home-title">AonWiki</h1>
           <p id="home-tagline">함께 만드는 지식 백과사전</p>
-          <p class="home-hero-description">다양한 주제의 문서를 찾고, 직접 기록하고, 함께 다듬는 한국어 위키입니다.</p>
-          <form id="home-search-form" class="home-search-form" role="search">
-            <label for="home-search-query">무엇을 찾으시나요?</label>
-            <div class="home-search-control">
-              <input id="home-search-query" type="search" maxlength="100" placeholder="문서 제목이나 궁금한 내용을 입력하세요." autocomplete="off" enterkeyhint="search">
-              <button type="submit"><span aria-hidden="true">⌕</span> 검색</button>
-            </div>
-            <p>문서 제목과 본문, 업로드된 파일을 한 번에 검색합니다.</p>
-          </form>
+          <p class="home-hero-description">다양한 주제의 문서를 함께 정리하고, 누구나 지식을 기록하고 다듬을 수 있는 한국어 위키입니다.</p>
           <div class="home-hero-actions">
             <a href="#/w/AonWiki%3A%EB%AC%B8%EB%B2%95">문법 안내 보기</a>
             <a href="#/w/AonWiki%3A%ED%8E%B8%EC%A7%91%EC%A7%80%EC%B9%A8">편집지침 읽기</a>
           </div>
-        </div>
-        <div class="home-hero-mark" aria-hidden="true">
-          <img class="home-hero-logo" src="aonwiki-mark.svg?v=20261115-private-assets-v1" alt="">
-          <span class="home-hero-mark-caption">열린 지식</span>
         </div>
       </header>
 
@@ -467,5 +455,5 @@ hover-dark: #a5d6ff
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="app.bundle.js?v=20261121-home-search-ux-v2"></script>
+<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3"></script>
 </body></html>
