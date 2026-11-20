@@ -8,6 +8,7 @@ on:
       - "app.bundle.js"
       - "index.html"
       - "style.css"
+      - "design-system.css"
       - "theme.js"
       - "namumark-aon.css"
       - "namumark-interactions-aon.css"
@@ -47,6 +48,7 @@ jobs:
           node tests/security-regression-smoke.cjs
           node tests/search-engine-ssr-smoke.cjs
           node tests/sitemap-smoke.cjs
+          node tests/design-system-smoke.cjs
 
       - name: Check Cloudflare deployment token
         id: cloudflare-auth
