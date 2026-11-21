@@ -93,4 +93,22 @@ assert.ok(app.includes('setAttribute("aria-expanded","true")') &&
 assert.ok(app.includes('문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개'),
   "search summary must show useful document and file counts without timing noise");
 
-console.log("AonWiki design system smoke test passed.");
+
+assert.ok(html.includes("class=\"aon-brand-mark\"") &&
+          html.includes("aonwiki-mark.svg?v=20261121-experience-readability-v4"),
+  "secondary page entry points must reuse the existing AonWiki logo asset");
+assert.ok(html.includes("search-page-kicker-inner") &&
+          html.includes("editor-brand-context") &&
+          html.includes("editor-preview-brand-link"),
+  "search, editor, and editor preview must use the established AonWiki brand mark");
+assert.ok(app.includes("function createAonWikiBrandMark(") &&
+          app.includes("createAonWikiBrandMark(\"breadcrumb-brand-mark\")") &&
+          app.includes("createAonWikiBrandMark(\"discussion-brand-mark\")"),
+  "dynamic breadcrumbs and discussion surfaces must reuse the original brand asset");
+assert.ok(css.includes(".aon-brand-mark") &&
+          css.includes(".reading-measure") &&
+          css.includes("--wiki-body-size: 15px") &&
+          css.includes(".global-rail") &&
+          css.includes("@media (max-width: 680px)"),
+  "the full interface must share readable typography, content measures, logo treatment, and responsive behavior");
+\nconsole.log("AonWiki design system smoke test passed.");
