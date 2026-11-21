@@ -243,7 +243,7 @@ assert.match(read("style.css"), /\.editor-code-wrap\.highlight-active #editor-co
 
 const editorStyles = read("style.css");
 assert.match(editorStyles, /\.editor-preview-document\.article/, "editor preview must use the same article shell as a normal document");
-assert.match(html, /id="editor-preview" class="namumark-content-host editor-preview"/, "editor preview must not use the separate wiki-content typography class");
+assert.match(html, /id="editor-preview" class="namumark-content-host editor-preview reading-measure"/, "editor preview must keep its normal renderer classes and readable content measure");
 assert.match(html, /id="editor-preview-title"/, "editor preview must show the document title");
 assert.match(app, /target\.classList\.add\("namumark-wasm-content", "namumark-rendered"\)/, "both preview renderer paths must use the normal rendered-document classes");
 assert.match(app, /ensureClientDocumentToc\(target, source, true\)/, "server-rendered previews must receive the same TOC fallback as normal documents");
