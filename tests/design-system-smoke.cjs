@@ -70,6 +70,13 @@ const rewrittenShell = rewriteFrontendAssets('<link rel="stylesheet" href="desig
 assert.ok(rewrittenShell.includes('href="/aon/design-system.css?'),
   "frontend fallback must route the editorial design system through the Worker static asset proxy");
 
+
+const staticAssetRouteStart = worker.indexOf("const staticFiles = new Set(");
+const staticAssetRouteEnd = worker.indexOf(");", staticAssetRouteStart);
+assert.ok(staticAssetRouteStart >= 0 && staticAssetRouteEnd > staticAssetRouteStart &&
+          worker.slice(staticAssetRouteStart, staticAssetRouteEnd).includes('"design-system.css"'),
+  "the Worker static asset allowlist must serve the versioned unified design stylesheet");
+
 let braceDepth = 0;
 for (const character of css) {
   if (character === "{") braceDepth++;
