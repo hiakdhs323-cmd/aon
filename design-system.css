@@ -5950,3 +5950,12 @@ dialog::backdrop {
     transition: none !important;
   }
 }
+
+/* Keep ordinary prose readable without narrowing wide tables or media. */
+.reading-measure > p,
+.reading-measure > .wiki-content > p,
+.reading-measure > .namumark-wasm-content > p,
+.article .wiki-content > p,
+.article .namumark-wasm-content > p {
+  max-width: 88ch;
+}
