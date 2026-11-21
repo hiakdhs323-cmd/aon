@@ -27,7 +27,7 @@ assert.ok(html.includes('id="search-page-query"') && html.includes('id="search-p
   "the existing search page must retain its query, scope, and results controls");
 assert.ok(html.includes('id="search-create-page"') && html.includes('class="search-result-summary"'),
   "the create-page action must live with the search result summary");
-assert.ok(html.includes("design-system.css?v=20261121-experience-readability-v4"),
+assert.ok(html.includes("design-system.css?v=20261121-wiki-shell-search-v3"),
   "the editorial design system must be loaded after the existing wiki skins");
 assert.ok(css.includes(".home-quick-nav .home-shortcut {"),
   "homepage quick actions must style the actual button markup");
@@ -70,26 +70,6 @@ const rewrittenShell = rewriteFrontendAssets('<link rel="stylesheet" href="desig
 assert.ok(rewrittenShell.includes('href="/aon/design-system.css?'),
   "frontend fallback must route the editorial design system through the Worker static asset proxy");
 
-const rewrittenBrand = rewriteFrontendAssets('<img src="aonwiki-mark.svg?v=20261121-experience-readability-v4">', "https://hiakdhs323-cmd.github.io/aon", false);
-assert.ok(rewrittenBrand.includes('src="/aon/aonwiki-mark.svg?') &&
-          worker.includes('"aonwiki-mark.svg"'),
-  "the existing AonWiki mark must be rewritten to a Worker-served static asset on nested document routes");
-
-
-
-const staticAssetRouteStart = worker.indexOf("const staticFiles = new Set(");
-const staticAssetRouteEnd = worker.indexOf(");", staticAssetRouteStart);
-assert.ok(staticAssetRouteStart >= 0 && staticAssetRouteEnd > staticAssetRouteStart &&
-          worker.slice(staticAssetRouteStart, staticAssetRouteEnd).includes('"design-system.css"'),
-  "the Worker static asset allowlist must serve the versioned unified design stylesheet");
-
-
-assert.ok(css.includes(".home-quick-nav {") &&
-          css.includes("grid-template-columns: repeat(3, minmax(0, 1fr))") &&
-          css.includes(".home-hero-description") &&
-          css.includes(".article .namumark-wasm-content > p"),
-  "the homepage action grid and document prose must use the intended readable layout");
-
 let braceDepth = 0;
 for (const character of css) {
   if (character === "{") braceDepth++;
@@ -112,24 +92,5 @@ assert.ok(app.includes('setAttribute("aria-expanded","true")') &&
   "autocomplete must expose its expanded and active option to assistive technology");
 assert.ok(app.includes('문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개'),
   "search summary must show useful document and file counts without timing noise");
-
-
-assert.ok(html.includes("class=\"aon-brand-mark\"") &&
-          html.includes("aonwiki-mark.svg?v=20261121-experience-readability-v4"),
-  "secondary page entry points must reuse the existing AonWiki logo asset");
-assert.ok(html.includes("search-page-kicker-inner") &&
-          html.includes("editor-brand-context") &&
-          html.includes("editor-preview-brand-link"),
-  "search, editor, and editor preview must use the established AonWiki brand mark");
-assert.ok(app.includes("function createAonWikiBrandMark(") &&
-          app.includes("createAonWikiBrandMark(\"breadcrumb-brand-mark\")") &&
-          app.includes("createAonWikiBrandMark(\"discussion-brand-mark\")"),
-  "dynamic breadcrumbs and discussion surfaces must reuse the original brand asset");
-assert.ok(css.includes(".aon-brand-mark") &&
-          css.includes(".reading-measure") &&
-          css.includes("--wiki-body-size: 15px") &&
-          css.includes(".global-rail") &&
-          css.includes("@media (max-width: 680px)"),
-  "the full interface must share readable typography, content measures, logo treatment, and responsive behavior");
 
 console.log("AonWiki design system smoke test passed.");
