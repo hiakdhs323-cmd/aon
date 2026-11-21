@@ -27,7 +27,7 @@ assert.ok(html.includes('id="search-page-query"') && html.includes('id="search-p
   "the existing search page must retain its query, scope, and results controls");
 assert.ok(html.includes('id="search-create-page"') && html.includes('class="search-result-summary"'),
   "the create-page action must live with the search result summary");
-assert.ok(html.includes("design-system.css?v=20261121-wiki-shell-search-v3"),
+assert.ok(html.includes("design-system.css?v=20261121-experience-readability-v4"),
   "the editorial design system must be loaded after the existing wiki skins");
 assert.ok(css.includes(".home-quick-nav .home-shortcut {"),
   "homepage quick actions must style the actual button markup");
