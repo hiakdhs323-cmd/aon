@@ -70,12 +70,25 @@ const rewrittenShell = rewriteFrontendAssets('<link rel="stylesheet" href="desig
 assert.ok(rewrittenShell.includes('href="/aon/design-system.css?'),
   "frontend fallback must route the editorial design system through the Worker static asset proxy");
 
+const rewrittenBrand = rewriteFrontendAssets('<img src="aonwiki-mark.svg?v=20261121-experience-readability-v4">', "https://hiakdhs323-cmd.github.io/aon", false);
+assert.ok(rewrittenBrand.includes('src="/aon/aonwiki-mark.svg?') &&
+          worker.includes('"aonwiki-mark.svg"'),
+  "the existing AonWiki mark must be rewritten to a Worker-served static asset on nested document routes");
+
+
 
 const staticAssetRouteStart = worker.indexOf("const staticFiles = new Set(");
 const staticAssetRouteEnd = worker.indexOf(");", staticAssetRouteStart);
 assert.ok(staticAssetRouteStart >= 0 && staticAssetRouteEnd > staticAssetRouteStart &&
           worker.slice(staticAssetRouteStart, staticAssetRouteEnd).includes('"design-system.css"'),
   "the Worker static asset allowlist must serve the versioned unified design stylesheet");
+
+
+assert.ok(css.includes(".home-quick-nav {") &&
+          css.includes("grid-template-columns: repeat(3, minmax(0, 1fr))") &&
+          css.includes(".home-hero-description") &&
+          css.includes(".article .namumark-wasm-content > p"),
+  "the homepage action grid and document prose must use the intended readable layout");
 
 let braceDepth = 0;
 for (const character of css) {
