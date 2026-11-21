@@ -4,7 +4,7 @@ window.hljs = hljs;
 
 const $=id=>document.getElementById(id);
 
-const AONWIKI_BRAND_MARK_URL="/aonwiki-mark.svg?v=20261121-experience-readability-v4";
+const AONWIKI_BRAND_MARK_URL="/aon/aonwiki-mark.svg?v=20261121-experience-readability-v4";
 function createAonWikiBrandMark(contextClass=""){
  const image=document.createElement("img");
  image.className=["aon-brand-mark",contextClass].filter(Boolean).join(" ");
