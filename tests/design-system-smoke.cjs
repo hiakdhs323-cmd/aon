@@ -111,4 +111,5 @@ assert.ok(css.includes(".aon-brand-mark") &&
           css.includes(".global-rail") &&
           css.includes("@media (max-width: 680px)"),
   "the full interface must share readable typography, content measures, logo treatment, and responsive behavior");
-\nconsole.log("AonWiki design system smoke test passed.");
+
+console.log("AonWiki design system smoke test passed.");
