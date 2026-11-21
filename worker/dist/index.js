@@ -2195,7 +2195,7 @@ var index_default = {
         const xml = await renderSitemapXml(request, env);
         return new Response(xml, { status: 200, headers: { ...getSecurityHeaders(), "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
       }
-      const staticFiles = /* @__PURE__ */ new Set(["style.css", "app.bundle.js", "theme.js", "namumark-aon.css", "namumark-interactions-aon.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "aonwiki-mark.svg", "favicon.png"]);
+      const staticFiles = /* @__PURE__ */ new Set(["style.css", "app.bundle.js", "theme.js", "namumark-aon.css", "namumark-interactions-aon.css", "design-system.css", "editor-monaco/monaco.js", "editor-monaco/monaco.worker.js", "editor-monaco/monaco.css", "aonwiki-mark.svg", "favicon.png"]);
       const assetPath = url.pathname.startsWith("/aon/") ? url.pathname.slice("/aon/".length) : url.pathname.slice(1);
       const assetName = staticFiles.has(assetPath) ? assetPath : "";
       if (request.method === "GET" && staticFiles.has(assetName)) {
