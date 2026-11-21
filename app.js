@@ -4,6 +4,19 @@ window.hljs = hljs;
 
 const $=id=>document.getElementById(id);
 
+const AONWIKI_BRAND_MARK_URL="/aon/aonwiki-mark.svg?v=20261121-experience-readability-v4";
+function createAonWikiBrandMark(contextClass=""){
+ const image=document.createElement("img");
+ image.className=["aon-brand-mark",contextClass].filter(Boolean).join(" ");
+ image.src=AONWIKI_BRAND_MARK_URL;
+ image.alt="";
+ image.width=18;
+ image.height=18;
+ image.decoding="async";
+ image.setAttribute("aria-hidden","true");
+ return image;
+}
+
 const API_SETTING="aonwiki-api",ADMIN_TOKEN_SETTING="aonwiki-admin-token",LEGACY_TOKEN_SETTING="aonwiki-key",NAME_SETTING="aonwiki-username";
 try{sessionStorage.removeItem(LEGACY_TOKEN_SETTING)}catch{}
 const DEFAULT_API_URL="https://aon.hiakdhs323.workers.dev";
@@ -389,7 +402,7 @@ function renderBreadcrumbTrail(){
  const host=document.querySelector("#document-view .breadcrumbs");
  if(!host)return;
  host.replaceChildren();
- const home=document.createElement("a");home.href="/";home.textContent="AonWiki";
+ const home=document.createElement("a");home.href="/";home.className="brand-context-link";home.setAttribute("aria-label","AonWiki 대문");home.append(createAonWikiBrandMark("breadcrumb-brand-mark"));const homeLabel=document.createElement("span");homeLabel.textContent="AonWiki";home.append(homeLabel);
  home.addEventListener("click",event=>{event.preventDefault();breadcrumbTrail=[];showHome(true)});
  host.append(home);
  breadcrumbTrail.forEach((title,index)=>{
@@ -1707,7 +1720,7 @@ async function loadDiscussionList(pushRoute=true,pageTitle="",filters={}){
  const article=$("article");
  const head=document.createElement("div");head.className="discussion-page-heading";
  const copy=document.createElement("div");
- addText(copy,"p","AONWIKI COMMUNITY").className="discussion-eyebrow";
+ const eyebrow=addText(copy,"p","AONWIKI COMMUNITY");eyebrow.className="discussion-eyebrow";eyebrow.prepend(createAonWikiBrandMark("discussion-brand-mark"));
  addText(copy,"h2",title);
  addText(copy,"p",pageTitle?"이 문서에 연결된 토론을 확인하고 의견을 나눌 수 있습니다.":"최근 활동이 있는 토론을 검색하고 의견을 나눌 수 있습니다.").className="discussion-intro";
  head.append(copy);
@@ -1823,7 +1836,7 @@ async function loadDiscussionDetail(id,pushRoute=true){
   article.replaceChildren();
   const head=document.createElement("div");head.className="discussion-page-heading";
   const copy=document.createElement("div");
-  const eyebrow=addText(copy,"p","DISCUSSION #"+topic.id);eyebrow.className="discussion-eyebrow";
+  const eyebrow=addText(copy,"p","DISCUSSION #"+topic.id);eyebrow.className="discussion-eyebrow";eyebrow.prepend(createAonWikiBrandMark("discussion-brand-mark"));
   addText(copy,"h2",topic.title);
   const meta=addText(copy,"p",(topic.author||"알 수 없음")+" · 시작 "+discussionDate(topic.created_at)+" · 답글 "+Number(topic.reply_count||0));meta.className="discussion-intro";
   head.append(copy);
@@ -1966,7 +1979,7 @@ async function loadSpecialPage(type,pushRoute=true){
  const article=$("article");
  const heading=document.createElement("div");heading.className="special-page-heading";
  const copy=document.createElement("div");
- addText(copy,"p","AONWIKI · SPECIAL PAGES").className="discussion-eyebrow";
+ const eyebrow=addText(copy,"p","AONWIKI · SPECIAL PAGES");eyebrow.className="discussion-eyebrow";eyebrow.prepend(createAonWikiBrandMark("discussion-brand-mark"));
  addText(copy,"h2",config.title);
  addText(copy,"p",config.description).className="discussion-intro";
  heading.append(copy);article.append(heading);
@@ -2185,7 +2198,7 @@ async function loadCategoryIndex(pushRoute = true) {
     const categories = data.categories || [];
     const intro = document.createElement("div");
     intro.className = "category-index-heading";
-    addText(intro, "p", "분류 찾아보기").className = "category-eyebrow";
+    const categoryEyebrow=addText(intro,"p","분류 찾아보기");categoryEyebrow.className="category-eyebrow";categoryEyebrow.prepend(createAonWikiBrandMark("category-brand-mark"));
     addText(intro, "p", "문서의 주제와 성격에 따라 분류를 모아 놓은 목록입니다.").className = "category-index-intro";
     article.append(intro);
     const summary = document.createElement("div");
