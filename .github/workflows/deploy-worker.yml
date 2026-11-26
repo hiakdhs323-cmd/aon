@@ -14,6 +14,8 @@ on:
       - "namumark-interactions-aon.css"
       - "Namu_test-main/**"
       - "editor/**"
+      - "next-editor/**"
+      - "scripts/embed-editor.mjs"
       - "scripts/build-monaco.mjs"
       - "scripts/build-browser.mjs"
       - "package.json"
@@ -73,6 +75,8 @@ jobs:
             npm install --no-audit --no-fund
           fi
           node tests/security-regression-smoke.cjs
+          npm run build:editor
+          node scripts/build-browser.mjs
           node scripts/build-monaco.mjs
           npx --yes esbuild@0.25.0 worker/src/index.js --bundle --format=esm --target=es2020 --external:*.wasm --outfile=worker/dist/index.js
           node --check worker/dist/index.js

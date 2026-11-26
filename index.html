@@ -297,140 +297,287 @@
       </section>
       <footer class="site-footer">AonWiki · 문서 내용은 이용자가 작성합니다.</footer>
     </section>
-    <section id="editor-view" class="editor-view" hidden>
-      <section class="editor-card">
-        <form id="editor-form">
-          <div class="editor-page-heading">
-            <div class="editor-title-line">
-              <h1 id="editor-heading" class="editor-mode-label">문서이름 (편집)</h1>
-              <span id="editor-breadcrumb" class="editor-breadcrumb-state" aria-hidden="true"></span>
-            </div>
-            <div class="editor-heading-actions">
-              <div class="editor-context-actions" aria-label="문서 작업">
-                <button id="editor-backlinks-action" class="button" type="button">⚓ 역링크</button>
-                <button id="editor-move-action" class="button" type="button">● 이동</button>
-                <button id="editor-delete-action" class="button editor-delete-action" type="button">▤ 삭제</button>
-              </div>
-              <button id="editor-help-toggle" class="button" type="button" aria-expanded="false">문법 도움말</button>
-              <a class="button editor-guide-link" href="#/w/AonWiki%3A%EB%AC%B8%EB%B2%95" target="_blank" rel="noopener noreferrer">문법</a>
-              <button id="editor-cancel" class="button" type="button">취소</button>
-            </div>
-          </div>
-          <fieldset id="editor-fields" class="editor-fields" disabled>
-          <div class="editor-field editor-title-field" hidden>
-            <div id="editor-title-wrap" class="editor-title-inline">
-              <label for="editor-title">문서 제목</label>
-              <input id="editor-title" maxlength="120" placeholder="문서 제목을 입력하세요." autocomplete="off">
-            </div>
-            <p id="editor-title-help" class="editor-field-help" hidden>제목을 바꾸면 기존 제목으로 접속해도 새 문서로 연결됩니다.</p>
-          </div>
-          <div class="editor-field editor-main-field">
-            <div class="editor-toolbar-line">
-              <div class="editor-tabs" role="tablist" aria-label="편집 화면">
-                <button id="editor-tab-write" class="active" type="button" role="tab" aria-selected="true" aria-controls="editor-code-pane">편집기</button>
-                <button id="editor-tab-raw" type="button" role="tab" aria-selected="false" aria-controls="editor-code-pane">RAW 편집</button>
-                <button id="editor-tab-preview" type="button" role="tab" aria-selected="false" aria-controls="editor-preview-pane">미리보기</button>
-              </div>
-              <div class="editor-markup-toolbar" role="toolbar" aria-label="나무마크 빠른 삽입">
-                <button type="button" data-markup="bold" title="굵게"><strong>굵게</strong></button>
-                <button type="button" data-markup="italic" title="기울임"><em>기울임</em></button>
-                <button type="button" data-markup="strike" title="취소선"><s>취소선</s></button>
-                <button type="button" data-markup="link" title="문서 링크">링크</button>
-                <button id="editor-image" type="button" title="파일 업로드">파일</button>
-                <button type="button" data-markup="footnote" title="각주">각주</button>
-                <button type="button" data-markup="template" title="틀 삽입">틀</button>
-                <button id="editor-autocorrect" type="button" class="editor-autocorrect" title="오타 수정 BOT">오타</button>
-              </div>
-            </div>
-            <div id="editor-workspace" class="editor-workspace" data-mode="write">
-              <section id="editor-code-pane" class="editor-code-pane" aria-label="나무마크 편집">
-                <div id="editor-code-wrap" class="editor-code-wrap">
-                  <pre id="editor-line-numbers" class="editor-line-numbers" aria-hidden="true">1</pre>
-                  <pre id="editor-highlight" class="editor-highlight" aria-hidden="true"><code id="editor-highlight-code"></code></pre>
-                  <textarea id="editor-content" spellcheck="false" placeholder="문서 내용을 나무마크 문법으로 입력하세요." aria-label="문서 원문"></textarea>
-                </div>
-              </section>
-              <section id="editor-preview-pane" class="editor-preview-pane" aria-label="문서 미리보기" hidden>
-                <div class="editor-preview-head">
-                  <strong>미리보기</strong>
-                  <div class="editor-preview-controls">
-                    <span id="editor-preview-status" role="status" aria-live="polite">미리보기를 열면 서버에서 렌더링합니다.</span>
-                    <button id="editor-preview-refresh" type="button" title="미리보기 새로고침">새로고침</button>
-                  </div>
-                </div>
-                <div class="editor-preview-page">
-                  <div class="breadcrumbs editor-preview-breadcrumbs"><span>AonWiki</span><span>›</span><span id="editor-preview-crumb"></span></div>
-                  <section class="article editor-preview-document">
-                    <div class="article-titlebar">
-                      <h1 id="editor-preview-title"></h1>
-                      <div class="title-actions"><span class="optional-label">미리보기</span></div>
-                    </div>
-                    <div class="article-tools">
-                      <span class="current-tab"><span class="article-tab-icon" data-entry-icon="document" aria-hidden="true"></span><span>문서</span></span>
-                      <span class="tool-spacer"></span>
-                      <span class="article-language">한국어</span>
-                    </div>
-                    <article id="editor-preview" class="namumark-content-host editor-preview" hidden></article>
-                    <footer class="article-footer"><span>AonWiki</span><span>저장 전 문서 렌더링 미리보기입니다.</span></footer>
-                  </section>
-                </div>
-              </section>
-            </div>
-            <div class="editor-counterbar">
-              <span id="editor-draft-indicator" class="editor-draft-indicator" aria-live="polite">초안 자동 저장 준비</span>
-              <span id="editor-counter" class="editor-counter">0 / 200,000자</span>
-            </div>
-          </div>
-          <div class="editor-field editor-summary-field"><label for="editor-summary">요약</label><input id="editor-summary" maxlength="200" placeholder="편집 요약을 입력하세요."></div>
-          </fieldset>
-          <div class="editor-terms-block">
-            <label class="editor-public-ack"><input id="editor-public-ack" type="checkbox" required> 문서 편집을 저장하면 기여한 내용을 CC0으로 배포하고, 기여한 문서에 대한 하이퍼링크나 URL을 이용한 저작자 표시로 충분하다는 데 동의하는 것입니다. 이 동의는 철회할 수 없습니다.</label>
-            <p id="editor-ip-warning" class="editor-ip-warning" hidden></p>
-            <p id="editor-login-note" class="editor-login-note" hidden></p>
-          </div>
-          <div id="editor-help" class="editor-help" hidden>
-<h2>나무마크 문법 도움말</h2>
-<p class="syntax-intro">자주 사용하는 문법을 종류별로 정리했습니다. 입력 예시를 그대로 복사해 사용할 수 있으며, 저장 전에 미리보기로 결과를 확인하세요.</p>
-<h3>문단과 제목</h3>
-<table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>== 제목 ==</code></td><td>문단 제목</td></tr><tr><td><code>=== 제목 ===</code></td><td>하위 문단 제목</td></tr><tr><td><code>==== 제목 ====</code></td><td>세부 문단 제목</td></tr><tr><td><code>----</code></td><td>가로 구분선</td></tr><tr><td><code>[br]</code></td><td>줄바꿈</td></tr><tr><td><code>[clearfix]</code></td><td>좌우 정렬 요소 아래로 흐름 정리</td></tr>
-</tbody></table>
-<h3>글자 꾸미기</h3>
-<table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>'''굵게'''</code></td><td><strong>굵은 글씨</strong></td></tr><tr><td><code>''기울임''</code></td><td><em>기울임</em></td></tr><tr><td><code>__밑줄__</code></td><td><u>밑줄</u></td></tr><tr><td><code>~~취소선~~</code></td><td><s>취소선</s></td></tr><tr><td><code>^^위첨자^^</code></td><td>위첨자</td></tr><tr><td><code>,,아래첨자,,</code></td><td>아래첨자</td></tr><tr><td><code>{{{+1 큰 글씨}}}</code></td><td>글자 크기 조절</td></tr><tr><td><code>{{{#red 빨간 글씨}}}</code></td><td>글자 색상 지정</td></tr>
-</tbody></table>
-<h3>링크와 각주</h3>
-<table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>[[문서명]]</code></td><td>위키 문서 링크</td></tr><tr><td><code>[[문서명|표시할 글자]]</code></td><td>링크에 표시할 문구 지정</td></tr><tr><td><code>[[문서명#s-1]]</code></td><td>문서의 특정 문단으로 이동</td></tr><tr><td><code>[https://example.com 링크]</code></td><td>외부 링크</td></tr><tr><td><code>[* 각주 내용]</code></td><td>각주 추가</td></tr><tr><td><code>[anchor(이름)]</code></td><td>문서 내 이동 지점 생성</td></tr><tr><td><code>[[분류:분류명]]</code></td><td>문서를 분류에 등록</td></tr>
-</tbody></table>
-<h3>목록과 표</h3>
-<table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>* 항목</code></td><td>글머리 목록</td></tr><tr><td><code>1. 항목</code></td><td>번호 목록</td></tr><tr><td><code>|| 항목 || 항목 ||</code></td><td>표의 한 행</td></tr><tr><td><code>||&lt;tablewidth=500&gt; 내용 ||</code></td><td>표 너비 지정 예시</td></tr><tr><td><code>||&lt;:&gt; 가운데 ||</code></td><td>셀 내용 가운데 정렬</td></tr><tr><td><code>||&lt;-2&gt; 내용 ||</code></td><td>셀을 가로로 합치기</td></tr>
-</tbody></table>
-<h3>이미지와 특수 기능</h3>
-<table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>[[파일:이름.png]]</code></td><td>이미지 삽입</td></tr><tr><td><code>[[파일:이름.png|width=300]]</code></td><td>이미지 너비 지정</td></tr><tr><td><code>[[파일:이름.png|align=right]]</code></td><td>이미지 오른쪽 정렬</td></tr><tr><td><code>[목차]</code></td><td>문서 목차 표시</td></tr><tr><td><code>[목차(hide)]</code></td><td>접힌 목차 표시</td></tr><tr><td><code>[date]</code> · <code>[datetime]</code></td><td>날짜 또는 날짜와 시간</td></tr><tr><td><code>[ruby(漢字,ruby=かんじ)]</code></td><td>루비 문자 표시</td></tr>
-</tbody></table>
-<h3>고급 문법</h3>
-<table class="syntax-reference"><thead><tr><th>입력 시작</th><th>설명</th></tr></thead><tbody>
-<tr><td><code>{{{#!folding 제목</code></td><td>접을 수 있는 영역</td></tr><tr><td><code>{{{#!wiki style="..."</code></td><td>스타일 영역</td></tr><tr><td><code>{{{#!latex</code></td><td>LaTeX 수식 영역</td></tr><tr><td><code>{{{#!syntax python</code></td><td>코드 구문 강조</td></tr><tr><td><code>{{{#!if docName == "문서명"</code></td><td>문서 조건에 따른 내용 표시</td></tr>
-</tbody></table>
-<p id="editor-linkcolor-help" hidden>관리자 전용 문서별 링크 색상 설정입니다.</p>
-<pre id="editor-linkcolor-example" hidden><code>{{{#!linkcolor
+    <!-- editor:start -->
+    <section id="editor-view" class="editor-view" hidden="">
+<style id="aonwiki-editor-styles">
+/* AonWiki editing controls. Article and preview typography use the wiki theme. */
+body.editor-active #editor-view {
+  --editor-surface: #fff;
+  --editor-canvas: #fbfcfe;
+  --editor-soft: #f2f4f6;
+  --editor-border: #e5e8eb;
+  --editor-text: #191f28;
+  --editor-muted: #4e5968;
+  --editor-blue: #1b64da;
+  --editor-blue-soft: #e8f3ff;
+  --editor-danger: #b42318;
+}
+html[data-theme="dark"] body.editor-active #editor-view {
+  --editor-surface: #20242c;
+  --editor-canvas: #191d25;
+  --editor-soft: #292e38;
+  --editor-border: #3b424e;
+  --editor-text: #f2f4f6;
+  --editor-muted: #b0b8c1;
+  --editor-blue: #8fbcff;
+  --editor-blue-soft: #233b60;
+  --editor-danger: #ff9d97;
+}
+#editor-view .editor-card {
+  --editor-spacing: clamp(16px, 3vw, 32px);
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 24px !important;
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+}
+#editor-view .editor-page-heading {
+  gap: 16px !important;
+  padding: var(--editor-spacing) !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+#editor-view .editor-title-line {
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+#editor-view .editor-mode-label {
+  flex: 0 1 auto;
+  color: var(--editor-text) !important;
+  font-size: clamp(24px, 3vw, 32px) !important;
+  font-weight: 750 !important;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+#editor-view .editor-heading-actions,
+#editor-view .editor-context-actions {
+  gap: 6px !important;
+  flex-wrap: wrap;
+}
+#editor-view .editor-heading-actions .button {
+  min-height: 42px !important;
+  padding-inline: 12px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+  font-size: .875rem !important;
+  font-weight: 650 !important;
+}
+#editor-view .editor-heading-actions .editor-delete-action {
+  color: var(--editor-danger) !important;
+}
+#editor-view .editor-heading-actions .button:hover,
+#editor-view .editor-markup-toolbar button:hover {
+  background: var(--editor-blue-soft) !important;
+  color: var(--editor-blue) !important;
+}
+#editor-view .editor-main-field {
+  padding: 0 var(--editor-spacing) !important;
+}
+#editor-view .editor-title-field,
+#editor-view .editor-summary-field {
+  margin: 0 var(--editor-spacing) 16px !important;
+  padding: 0 !important;
+}
+#editor-view .editor-title-inline {
+  display: grid !important;
+  gap: 8px;
+  width: 100% !important;
+}
+#editor-view .editor-title-inline > label,
+#editor-view .editor-summary-field > label {
+  position: static !important;
+  width: auto;
+  height: auto;
+  margin: 0 0 8px;
+  clip: auto;
+  color: var(--editor-text) !important;
+  font-size: .9375rem !important;
+  font-weight: 700;
+}
+#editor-view #editor-title,
+#editor-view #editor-summary {
+  width: 100% !important;
+  min-height: 48px !important;
+  padding: 10px 14px !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  font: inherit !important;
+}
+#editor-view #editor-title::placeholder,
+#editor-view #editor-summary::placeholder {
+  color: var(--editor-muted);
+  -webkit-text-fill-color: currentColor;
+}
+#editor-view .editor-toolbar-line {
+  align-items: center;
+  gap: 10px !important;
+  padding: 8px;
+  border: 1px solid var(--editor-border) !important;
+  border-bottom: 0 !important;
+  border-radius: 16px 16px 0 0;
+  background: var(--editor-soft) !important;
+}
+#editor-view .editor-tabs,
+#editor-view .editor-markup-toolbar {
+  gap: 4px !important;
+  justify-content: flex-start !important;
+  border: 0 !important;
+}
+#editor-view .editor-tabs button,
+#editor-view .editor-markup-toolbar button,
+#editor-view .editor-preview-controls button {
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding-inline: 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--editor-muted) !important;
+  font-size: .875rem !important;
+}
+#editor-view .editor-tabs button.active,
+#editor-view .editor-preview-controls button {
+  background: var(--editor-blue-soft) !important;
+  color: var(--editor-blue) !important;
+  font-weight: 700 !important;
+}
+#editor-view .editor-workspace {
+  background: transparent !important;
+}
+#editor-view .editor-code-wrap,
+#editor-view .editor-preview-pane {
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 0 0 16px 16px !important;
+}
+#editor-view .editor-code-pane,
+#editor-view .editor-code-wrap,
+#editor-view #editor-highlight,
+#editor-view .raw-mode #editor-content {
+  border-radius: 0 0 16px 16px !important;
+  background: var(--editor-canvas) !important;
+}
+#editor-view #editor-highlight,
+#editor-view .raw-mode #editor-content {
+  color: var(--editor-text) !important;
+}
+#editor-view #editor-content {
+  caret-color: var(--editor-text) !important;
+}
+#editor-view .raw-mode #editor-content {
+  -webkit-text-fill-color: currentColor !important;
+}
+#editor-view #editor-line-numbers {
+  border-color: var(--editor-border) !important;
+  border-bottom-left-radius: 16px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+}
+#editor-view .editor-preview-head {
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+}
+#editor-view #editor-preview-status,
+#editor-view .editor-draft-indicator,
+#editor-view .editor-counter,
+#editor-view .editor-login-note {
+  color: var(--editor-muted) !important;
+  font-size: .8125rem !important;
+}
+#editor-view .editor-counterbar {
+  padding: 8px 2px 16px !important;
+  background: transparent !important;
+}
+#editor-view .editor-terms-block,
+#editor-view .editor-help {
+  margin: 0 var(--editor-spacing) !important;
+  padding: 16px !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 16px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+}
+#editor-view .editor-help { margin-top: 12px !important; }
+#editor-view .editor-help :is(h2, h3, th, td) { color: var(--editor-text); }
+#editor-view .editor-help :is(.syntax-intro, .syntax-note) { color: var(--editor-muted); }
+#editor-view .editor-public-ack {
+  gap: 10px !important;
+  color: var(--editor-muted) !important;
+  font-size: .875rem !important;
+  font-weight: 400;
+  cursor: pointer;
+}
+#editor-view .editor-public-ack strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--editor-text);
+  font-size: 1rem;
+}
+#editor-view .editor-public-ack input {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 2px 0 0 !important;
+  accent-color: #1b64da;
+}
+#editor-view .editor-ip-warning,
+#editor-view .editor-status {
+  color: var(--editor-danger) !important;
+  font-size: .875rem !important;
+}
+#editor-view .editor-status {
+  min-height: 0;
+  margin: 12px var(--editor-spacing) 0 !important;
+}
+#editor-view .editor-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--editor-spacing) var(--editor-spacing) !important;
+  background: transparent !important;
+}
+#editor-view #editor-save-note {
+  margin: 0;
+  color: var(--editor-muted);
+  font-size: .875rem;
+}
+#editor-view #editor-save {
+  min-width: 108px;
+  min-height: 48px !important;
+  border-radius: 12px !important;
+  background: #1b64da !important;
+  color: #fff !important;
+  font-size: 1rem !important;
+  font-weight: 700;
+}
+#editor-view #editor-save:hover:not(:disabled) { background: #1954b4 !important; }
+#editor-view #editor-save:disabled {
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+  opacity: 1;
+}
+#editor-view :is(button, input, a):focus-visible,
+#editor-view .editor-code-wrap:focus-within {
+  outline: 2px solid var(--editor-blue) !important;
+  outline-offset: 2px !important;
+}
+@media (max-width: 720px) {
+  #editor-view .editor-heading-actions { justify-content: flex-start !important; }
+  #editor-view .editor-toolbar-line { align-items: stretch; }
+  #editor-view .editor-actions { align-items: stretch; flex-direction: column; }
+}
+</style>
+<section class="editor-card"><form id="editor-form" noValidate=""><div class="editor-page-heading"><div class="editor-title-line"><h1 id="editor-heading" class="editor-mode-label">문서 편집</h1><span id="editor-breadcrumb" class="editor-breadcrumb-state" aria-hidden="true"></span></div><div class="editor-heading-actions"><div class="editor-context-actions" aria-label="문서 작업"><button id="editor-backlinks-action" class="button" type="button">역링크</button><button id="editor-move-action" class="button" type="button">이동</button><button id="editor-delete-action" class="button editor-delete-action" type="button">삭제</button></div><button id="editor-help-toggle" class="button" type="button" aria-expanded="false">문법 도움말</button><a class="button editor-guide-link" href="#/w/AonWiki%3A%EB%AC%B8%EB%B2%95" target="_blank" rel="noopener noreferrer">문법</a><button id="editor-cancel" class="button" type="button">취소</button></div></div><fieldset id="editor-fields" class="editor-fields"><div class="editor-field editor-title-field" hidden=""><div id="editor-title-wrap" class="editor-title-inline"><label for="editor-title">문서 제목</label><input id="editor-title" maxLength="120" placeholder="문서 제목을 입력하세요." autoComplete="off"/></div><p id="editor-title-help" class="editor-field-help" hidden="">제목을 바꾸면 기존 제목으로 접속해도 새 문서로 연결됩니다.</p></div><div class="editor-field editor-main-field"><div class="editor-toolbar-line"><div class="editor-tabs" role="tablist" aria-label="편집 화면"><button id="editor-tab-write" class="active" type="button" role="tab" aria-selected="true" aria-controls="editor-code-pane">편집기</button><button id="editor-tab-raw" type="button" role="tab" aria-selected="false" aria-controls="editor-code-pane">RAW 편집</button><button id="editor-tab-preview" type="button" role="tab" aria-selected="false" aria-controls="editor-preview-pane">미리보기</button></div><div class="editor-markup-toolbar" role="toolbar" aria-label="나무마크 빠른 삽입"><button type="button" data-markup="bold" title="굵게"><strong>굵게</strong></button><button type="button" data-markup="italic" title="기울임"><em>기울임</em></button><button type="button" data-markup="strike" title="취소선"><s>취소선</s></button><button type="button" data-markup="link" title="문서 링크">링크</button><button id="editor-image" type="button" title="파일 업로드">파일</button><button type="button" data-markup="footnote" title="각주">각주</button><button type="button" data-markup="template" title="틀 삽입">틀</button><button id="editor-autocorrect" type="button" class="editor-autocorrect" title="오타 수정 BOT">오타</button></div></div><div id="editor-workspace" class="editor-workspace" data-mode="write"><section id="editor-code-pane" class="editor-code-pane" aria-label="나무마크 편집"><div id="editor-code-wrap" class="editor-code-wrap"><pre id="editor-line-numbers" class="editor-line-numbers" aria-hidden="true">1</pre><pre id="editor-highlight" class="editor-highlight" aria-hidden="true"><code id="editor-highlight-code"></code></pre><textarea id="editor-content" spellCheck="false" placeholder="문서 내용을 나무마크 문법으로 입력하세요." aria-label="문서 원문"></textarea></div></section><section id="editor-preview-pane" class="editor-preview-pane" aria-label="문서 미리보기" hidden=""><div class="editor-preview-head"><strong>미리보기</strong><div class="editor-preview-controls"><span id="editor-preview-status" role="status" aria-live="polite">미리보기를 열면 서버에서 렌더링합니다.</span><button id="editor-preview-refresh" type="button" title="미리보기 새로고침">새로고침</button></div></div><div class="editor-preview-page"><div class="breadcrumbs editor-preview-breadcrumbs"><span>AonWiki</span><span>›</span><span id="editor-preview-crumb"></span></div><section class="article editor-preview-document"><div class="article-titlebar"><h1 id="editor-preview-title"></h1><div class="title-actions"><span class="optional-label">미리보기</span></div></div><div class="article-tools"><span class="current-tab"><span class="article-tab-icon" data-entry-icon="document" aria-hidden="true"></span><span>문서</span></span><span class="tool-spacer"></span><span class="article-language">한국어</span></div><article id="editor-preview" class="namumark-content-host editor-preview" hidden=""></article><footer class="article-footer"><span>AonWiki</span><span>저장 전 문서 렌더링 미리보기입니다.</span></footer></section></div></section></div><div class="editor-counterbar"><span id="editor-draft-indicator" class="editor-draft-indicator" aria-live="polite">브라우저 초안 자동 저장</span><span id="editor-counter" class="editor-counter">0 / 200,000자</span></div></div><div class="editor-field editor-summary-field"><label for="editor-summary">편집 요약</label><input id="editor-summary" maxLength="200" placeholder="어떤 내용을 수정했나요? (선택)"/></div></fieldset><div class="editor-terms-block"><label class="editor-public-ack"><input id="editor-public-ack" type="checkbox" required=""/><span><strong>CC0 기여 조건에 동의해요</strong>문서 편집을 저장하면 기여한 내용을 CC0으로 배포하고, 기여한 문서에 대한 하이퍼링크나 URL을 이용한 저작자 표시로 충분하다는 데 동의하는 것입니다. 이 동의는 철회할 수 없습니다.</span></label><p id="editor-ip-warning" class="editor-ip-warning" hidden=""></p><p id="editor-login-note" class="editor-login-note" hidden=""></p></div><div id="editor-help" class="editor-help" hidden=""><h2>나무마크 문법 도움말</h2><p class="syntax-intro">자주 사용하는 문법을 종류별로 정리했습니다. 입력 예시를 그대로 복사해 사용할 수 있으며, 저장 전에 미리보기로 결과를 확인하세요.</p><section><h3>문단과 제목</h3><table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody><tr><td><code>== 제목 ==</code></td><td>문단 제목</td></tr><tr><td><code>=== 제목 ===</code></td><td>하위 문단 제목</td></tr><tr><td><code>==== 제목 ====</code></td><td>세부 문단 제목</td></tr><tr><td><code>----</code></td><td>가로 구분선</td></tr><tr><td><code>[br]</code></td><td>줄바꿈</td></tr><tr><td><code>[clearfix]</code></td><td>좌우 정렬 요소 아래로 흐름 정리</td></tr></tbody></table></section><section><h3>글자 꾸미기</h3><table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody><tr><td><code>&#x27;&#x27;&#x27;굵게&#x27;&#x27;&#x27;</code></td><td><strong>굵은 글씨</strong></td></tr><tr><td><code>&#x27;&#x27;기울임&#x27;&#x27;</code></td><td><em>기울임</em></td></tr><tr><td><code>__밑줄__</code></td><td><u>밑줄</u></td></tr><tr><td><code>~~취소선~~</code></td><td><s>취소선</s></td></tr><tr><td><code>^^위첨자^^</code></td><td>위첨자</td></tr><tr><td><code>,,아래첨자,,</code></td><td>아래첨자</td></tr><tr><td><code>{{{+1 큰 글씨}}}</code></td><td>글자 크기 조절</td></tr><tr><td><code>{{{#red 빨간 글씨}}}</code></td><td>글자 색상 지정</td></tr></tbody></table></section><section><h3>링크와 각주</h3><table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody><tr><td><code>[[문서명]]</code></td><td>위키 문서 링크</td></tr><tr><td><code>[[문서명|표시할 글자]]</code></td><td>링크에 표시할 문구 지정</td></tr><tr><td><code>[[문서명#s-1]]</code></td><td>문서의 특정 문단으로 이동</td></tr><tr><td><code>[https://example.com 링크]</code></td><td>외부 링크</td></tr><tr><td><code>[* 각주 내용]</code></td><td>각주 추가</td></tr><tr><td><code>[anchor(이름)]</code></td><td>문서 내 이동 지점 생성</td></tr><tr><td><code>[[분류:분류명]]</code></td><td>문서를 분류에 등록</td></tr></tbody></table></section><section><h3>목록과 표</h3><table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody><tr><td><code>* 항목</code></td><td>글머리 목록</td></tr><tr><td><code>1. 항목</code></td><td>번호 목록</td></tr><tr><td><code>|| 항목 || 항목 ||</code></td><td>표의 한 행</td></tr><tr><td><code>||&lt;tablewidth=500&gt; 내용 ||</code></td><td>표 너비 지정 예시</td></tr><tr><td><code>||&lt;:&gt; 가운데 ||</code></td><td>셀 내용 가운데 정렬</td></tr><tr><td><code>||&lt;-2&gt; 내용 ||</code></td><td>셀을 가로로 합치기</td></tr></tbody></table></section><section><h3>이미지와 특수 기능</h3><table class="syntax-reference"><thead><tr><th>입력</th><th>설명</th></tr></thead><tbody><tr><td><code>[[파일:이름.png]]</code></td><td>이미지 삽입</td></tr><tr><td><code>[[파일:이름.png|width=300]]</code></td><td>이미지 너비 지정</td></tr><tr><td><code>[[파일:이름.png|align=right]]</code></td><td>이미지 오른쪽 정렬</td></tr><tr><td><code>[목차]</code></td><td>문서 목차 표시</td></tr><tr><td><code>[목차(hide)]</code></td><td>접힌 목차 표시</td></tr><tr><td><code>[date]&lt;/code&gt; · &lt;code&gt;[datetime]</code></td><td>날짜 또는 날짜와 시간</td></tr><tr><td><code>[ruby(漢字,ruby=かんじ)]</code></td><td>루비 문자 표시</td></tr></tbody></table></section><section><h3>고급 문법</h3><table class="syntax-reference"><thead><tr><th>입력 시작</th><th>설명</th></tr></thead><tbody><tr><td><code>{{{#!folding 제목</code></td><td>접을 수 있는 영역</td></tr><tr><td><code>{{{#!wiki style=&quot;...&quot;</code></td><td>스타일 영역</td></tr><tr><td><code>{{{#!latex</code></td><td>LaTeX 수식 영역</td></tr><tr><td><code>{{{#!syntax python</code></td><td>코드 구문 강조</td></tr><tr><td><code>{{{#!if docName == &quot;문서명&quot;</code></td><td>문서 조건에 따른 내용 표시</td></tr></tbody></table></section><p id="editor-linkcolor-help" hidden="">관리자 전용 문서별 링크 색상 설정입니다.</p><pre id="editor-linkcolor-example" hidden=""><code>{{{#!linkcolor
 light: #0969da
 dark: #79c0ff
 visited-light: #8250df
 visited-dark: #c297ff
 hover-light: #0550ae
 hover-dark: #a5d6ff
-}}}</code></pre>
-<p class="syntax-note">문법은 문서 편집기에서 미리보기로 확인할 수 있습니다. 일부 고급 문법은 위키 엔진의 지원 범위에 따라 동작이 달라질 수 있습니다.</p>
-</div>
-          <p id="editor-status" class="editor-status" role="status"></p>
-          <div class="editor-actions"><button id="editor-save" class="button button-primary" type="submit" disabled>저장</button></div>
-        </form>
-      </section>
-    </section>
+}}}</code></pre><p class="syntax-note">문법은 문서 편집기에서 미리보기로 확인할 수 있습니다. 일부 고급 문법은 위키 엔진의 지원 범위에 따라 동작이 달라질 수 있습니다.</p></div><p id="editor-status" class="editor-status" role="status"></p><div class="editor-actions"><p id="editor-save-note">CC0 기여 조건에 동의하면 저장할 수 있어요.</p><button id="editor-save" class="button button-primary" type="submit" disabled="" aria-describedby="editor-save-note">저장</button></div></form></section></section>
+    <!-- editor:end -->
   </main>
   <aside class="global-rail" aria-label="위키 활동">
     <section class="rail-panel">
@@ -454,5 +601,5 @@ hover-dark: #a5d6ff
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3"></script>
+<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3-editor-cc0"></script>
 </body></html>

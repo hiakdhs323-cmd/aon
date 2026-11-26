@@ -1,0 +1,268 @@
+/* AonWiki editing controls. Article and preview typography use the wiki theme. */
+body.editor-active #editor-view {
+  --editor-surface: #fff;
+  --editor-canvas: #fbfcfe;
+  --editor-soft: #f2f4f6;
+  --editor-border: #e5e8eb;
+  --editor-text: #191f28;
+  --editor-muted: #4e5968;
+  --editor-blue: #1b64da;
+  --editor-blue-soft: #e8f3ff;
+  --editor-danger: #b42318;
+}
+html[data-theme="dark"] body.editor-active #editor-view {
+  --editor-surface: #20242c;
+  --editor-canvas: #191d25;
+  --editor-soft: #292e38;
+  --editor-border: #3b424e;
+  --editor-text: #f2f4f6;
+  --editor-muted: #b0b8c1;
+  --editor-blue: #8fbcff;
+  --editor-blue-soft: #233b60;
+  --editor-danger: #ff9d97;
+}
+#editor-view .editor-card {
+  --editor-spacing: clamp(16px, 3vw, 32px);
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 24px !important;
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+}
+#editor-view .editor-page-heading {
+  gap: 16px !important;
+  padding: var(--editor-spacing) !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+#editor-view .editor-title-line {
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+#editor-view .editor-mode-label {
+  flex: 0 1 auto;
+  color: var(--editor-text) !important;
+  font-size: clamp(24px, 3vw, 32px) !important;
+  font-weight: 750 !important;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+#editor-view .editor-heading-actions,
+#editor-view .editor-context-actions {
+  gap: 6px !important;
+  flex-wrap: wrap;
+}
+#editor-view .editor-heading-actions .button {
+  min-height: 42px !important;
+  padding-inline: 12px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+  font-size: .875rem !important;
+  font-weight: 650 !important;
+}
+#editor-view .editor-heading-actions .editor-delete-action {
+  color: var(--editor-danger) !important;
+}
+#editor-view .editor-heading-actions .button:hover,
+#editor-view .editor-markup-toolbar button:hover {
+  background: var(--editor-blue-soft) !important;
+  color: var(--editor-blue) !important;
+}
+#editor-view .editor-main-field {
+  padding: 0 var(--editor-spacing) !important;
+}
+#editor-view .editor-title-field,
+#editor-view .editor-summary-field {
+  margin: 0 var(--editor-spacing) 16px !important;
+  padding: 0 !important;
+}
+#editor-view .editor-title-inline {
+  display: grid !important;
+  gap: 8px;
+  width: 100% !important;
+}
+#editor-view .editor-title-inline > label,
+#editor-view .editor-summary-field > label {
+  position: static !important;
+  width: auto;
+  height: auto;
+  margin: 0 0 8px;
+  clip: auto;
+  color: var(--editor-text) !important;
+  font-size: .9375rem !important;
+  font-weight: 700;
+}
+#editor-view #editor-title,
+#editor-view #editor-summary {
+  width: 100% !important;
+  min-height: 48px !important;
+  padding: 10px 14px !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  font: inherit !important;
+}
+#editor-view #editor-title::placeholder,
+#editor-view #editor-summary::placeholder {
+  color: var(--editor-muted);
+  -webkit-text-fill-color: currentColor;
+}
+#editor-view .editor-toolbar-line {
+  align-items: center;
+  gap: 10px !important;
+  padding: 8px;
+  border: 1px solid var(--editor-border) !important;
+  border-bottom: 0 !important;
+  border-radius: 16px 16px 0 0;
+  background: var(--editor-soft) !important;
+}
+#editor-view .editor-tabs,
+#editor-view .editor-markup-toolbar {
+  gap: 4px !important;
+  justify-content: flex-start !important;
+  border: 0 !important;
+}
+#editor-view .editor-tabs button,
+#editor-view .editor-markup-toolbar button,
+#editor-view .editor-preview-controls button {
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding-inline: 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--editor-muted) !important;
+  font-size: .875rem !important;
+}
+#editor-view .editor-tabs button.active,
+#editor-view .editor-preview-controls button {
+  background: var(--editor-blue-soft) !important;
+  color: var(--editor-blue) !important;
+  font-weight: 700 !important;
+}
+#editor-view .editor-workspace {
+  background: transparent !important;
+}
+#editor-view .editor-code-wrap,
+#editor-view .editor-preview-pane {
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 0 0 16px 16px !important;
+}
+#editor-view .editor-code-pane,
+#editor-view .editor-code-wrap,
+#editor-view #editor-highlight,
+#editor-view .raw-mode #editor-content {
+  border-radius: 0 0 16px 16px !important;
+  background: var(--editor-canvas) !important;
+}
+#editor-view #editor-highlight,
+#editor-view .raw-mode #editor-content {
+  color: var(--editor-text) !important;
+}
+#editor-view #editor-content {
+  caret-color: var(--editor-text) !important;
+}
+#editor-view .raw-mode #editor-content {
+  -webkit-text-fill-color: currentColor !important;
+}
+#editor-view #editor-line-numbers {
+  border-color: var(--editor-border) !important;
+  border-bottom-left-radius: 16px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+}
+#editor-view .editor-preview-head {
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+}
+#editor-view #editor-preview-status,
+#editor-view .editor-draft-indicator,
+#editor-view .editor-counter,
+#editor-view .editor-login-note {
+  color: var(--editor-muted) !important;
+  font-size: .8125rem !important;
+}
+#editor-view .editor-counterbar {
+  padding: 8px 2px 16px !important;
+  background: transparent !important;
+}
+#editor-view .editor-terms-block,
+#editor-view .editor-help {
+  margin: 0 var(--editor-spacing) !important;
+  padding: 16px !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 16px !important;
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+}
+#editor-view .editor-help { margin-top: 12px !important; }
+#editor-view .editor-help :is(h2, h3, th, td) { color: var(--editor-text); }
+#editor-view .editor-help :is(.syntax-intro, .syntax-note) { color: var(--editor-muted); }
+#editor-view .editor-public-ack {
+  gap: 10px !important;
+  color: var(--editor-muted) !important;
+  font-size: .875rem !important;
+  font-weight: 400;
+  cursor: pointer;
+}
+#editor-view .editor-public-ack strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--editor-text);
+  font-size: 1rem;
+}
+#editor-view .editor-public-ack input {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 2px 0 0 !important;
+  accent-color: #1b64da;
+}
+#editor-view .editor-ip-warning,
+#editor-view .editor-status {
+  color: var(--editor-danger) !important;
+  font-size: .875rem !important;
+}
+#editor-view .editor-status {
+  min-height: 0;
+  margin: 12px var(--editor-spacing) 0 !important;
+}
+#editor-view .editor-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--editor-spacing) var(--editor-spacing) !important;
+  background: transparent !important;
+}
+#editor-view #editor-save-note {
+  margin: 0;
+  color: var(--editor-muted);
+  font-size: .875rem;
+}
+#editor-view #editor-save {
+  min-width: 108px;
+  min-height: 48px !important;
+  border-radius: 12px !important;
+  background: #1b64da !important;
+  color: #fff !important;
+  font-size: 1rem !important;
+  font-weight: 700;
+}
+#editor-view #editor-save:hover:not(:disabled) { background: #1954b4 !important; }
+#editor-view #editor-save:disabled {
+  background: var(--editor-soft) !important;
+  color: var(--editor-muted) !important;
+  opacity: 1;
+}
+#editor-view :is(button, input, a):focus-visible,
+#editor-view .editor-code-wrap:focus-within {
+  outline: 2px solid var(--editor-blue) !important;
+  outline-offset: 2px !important;
+}
+@media (max-width: 720px) {
+  #editor-view .editor-heading-actions { justify-content: flex-start !important; }
+  #editor-view .editor-toolbar-line { align-items: stretch; }
+  #editor-view .editor-actions { align-items: stretch; flex-direction: column; }
+}

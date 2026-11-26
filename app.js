@@ -2698,27 +2698,24 @@ let editorOriginalTitle = "";
 let editorReturnTitle = "";
 let editorIsNew = false;
 let editorDraftTimer = 0;
+let editorSavePending = false;
+const EDITOR_CONSENT_REQUIRED = "저장하려면 CC0 기여 조건에 동의해 주세요.";
 
 function focusAonWikiEditor() {
   $("editor-content")?.focus();
 }
 
-function resizeEditorTitleField() {
-  const field = $("editor-title");
-  if (!field) return;
-  const value = field.value || field.placeholder || "문서 제목";
-  const measuredWidth = Array.from(value).reduce((width, char) => width + (char.charCodeAt(0) > 255 ? 17 : 9), 14);
-  field.style.setProperty("width", Math.max(110, Math.min(680, measuredWidth)) + "px", "important");
+function syncEditorSaveButton() {
+  const accepted = $("editor-public-ack").checked;
+  $("editor-save").disabled = !accepted || editorSavePending;
+  $("editor-save-note").hidden = accepted;
+  if (accepted) $("editor-save").removeAttribute("aria-describedby");
+  else $("editor-save").setAttribute("aria-describedby", "editor-save-note");
 }
-
-function syncEditorConsentLock(){
- const accepted=Boolean($("editor-public-ack")?.checked);
- const fields=$("editor-fields");
- const save=$("editor-save");
- if(fields)fields.disabled=!accepted;
- if(save)save.disabled=!accepted;
-}
-$("editor-public-ack").addEventListener("change",syncEditorConsentLock);
+$("editor-public-ack").addEventListener("change", () => {
+  syncEditorSaveButton();
+  if ($("editor-status").textContent === EDITOR_CONSENT_REQUIRED) $("editor-status").textContent = "";
+});
 async function startEditRequest(){if(!currentTitle)return;await editPage(currentTitle,currentContent,{request:true});}
 async function editPage(title = currentTitle, content = currentContent, options = {}) {
   editorRequestMode=Boolean(options.request);
@@ -2757,7 +2754,6 @@ async function editPage(title = currentTitle, content = currentContent, options 
   if(titleFieldRow)titleFieldRow.hidden=!editorIsNew;
   $("editor-title-help").hidden = true;
   $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
-  resizeEditorTitleField();
   $("editor-backlinks-action").hidden = editorIsNew;
   $("editor-move-action").hidden = editorIsNew;
   $("editor-delete-action").hidden = editorIsNew || !isWikiAdmin;
@@ -2775,7 +2771,6 @@ async function editPage(title = currentTitle, content = currentContent, options 
     : "비로그인 상태로 편집합니다. 로그인하지 않은 상태로 문서 편집을 저장하면, 편집 역사에 본인이 사용하는 IP(" + (currentVisitorIp||"확인할 수 없음") + ") 주소 전체가 영구히 기록됩니다.";
   if (anonymousEditing) $("editor-breadcrumb").textContent = editorOriginalTitle + " · IP 편집";
   else $("editor-login-note").textContent = "로그인 계정이 편집 기록에 표시됩니다.";
-  syncEditorConsentLock();
   let editorText = String(content || "");
   try {
     const draft = JSON.parse(sessionStorage.getItem("aonwiki-draft") || "null");
@@ -2795,11 +2790,11 @@ async function editPage(title = currentTitle, content = currentContent, options 
   $("editor-status").textContent = "";
   $("editor-preview").replaceChildren();
   setEditorMode("write", { render: false });
-  $("editor-draft-indicator").textContent = "초안 자동 저장 준비";
+  $("editor-draft-indicator").textContent = "브라우저 초안 자동 저장";
   $("editor-save").textContent = editorRequestMode ? "편집 요청 제출" : editorIsNew ? "문서 등록" : "저장";
-  $("editor-save").disabled = false;
   $("editor-help").hidden = true;
-  syncEditorConsentLock();
+  $("editor-help-toggle").setAttribute("aria-expanded", "false");
+  syncEditorSaveButton();
   requestAnimationFrame(() => {
     window.scrollTo({top:0,left:0,behavior:"auto"});
   });
@@ -2917,6 +2912,7 @@ $("editor-content").addEventListener("keydown", event => {
 });
 $("editor-form").onsubmit = async event => {
   event.preventDefault();
+  if (editorSavePending) return;
   const title = $("editor-title").value.trim();
   const content = $("editor-content").value;
   const summary = $("editor-summary").value.trim();
@@ -2924,18 +2920,20 @@ $("editor-form").onsubmit = async event => {
   const saveButton = $("editor-save");
   status.textContent = "";
   if (!$("editor-public-ack").checked) {
-    status.textContent = "문서가 공개 문서에 반영된다는 점을 확인해 주세요.";
+    status.textContent = EDITOR_CONSENT_REQUIRED;
     $("editor-public-ack").focus();
     return;
   }
   if (!title) { status.textContent = "문서 제목을 입력하세요."; return; }
   if (title === "대문" && !isWikiAdmin) { status.textContent = "대문은 위키 관리자만 편집할 수 있습니다."; return; }
   if (content.length > 200000) { status.textContent = "문서는 200,000자 이하로 작성해 주세요."; return; }
-  saveButton.disabled = true;
+  editorSavePending = true;
+  syncEditorSaveButton();
   saveButton.textContent = editorRequestMode ? "요청 제출 중…" : "저장 중…";
   try {
     if(editorRequestMode){
       const requestResult=await api("/api/edit-request",{method:"POST",body:JSON.stringify({title:editorOriginalTitle,content,summary,consent:true})});
+      clearTimeout(editorDraftTimer);
       sessionStorage.removeItem("aonwiki-draft");document.body.classList.remove("editor-active");
       history.replaceState(null,"",routeFor(editorOriginalTitle));
       await loadPage(editorOriginalTitle,false);
@@ -2947,13 +2945,16 @@ $("editor-form").onsubmit = async event => {
       body: JSON.stringify({ title, originalTitle: editorIsNew ? "" : editorOriginalTitle, content, summary, createOnly: editorIsNew, consent: true })
     });
     invalidateNamuDatabaseCache();
+    clearTimeout(editorDraftTimer);
     sessionStorage.removeItem("aonwiki-draft");
     document.body.classList.remove("editor-active");
     history.replaceState(null, "", routeFor(title));
     await loadPage(title, false);
   } catch (error) {
     status.textContent = error.message;
-    saveButton.disabled = false;
+  } finally {
+    editorSavePending = false;
+    syncEditorSaveButton();
     saveButton.textContent = editorRequestMode ? "편집 요청 제출" : editorIsNew ? "문서 등록" : "저장";
   }
 };
@@ -2963,7 +2964,7 @@ function saveEditorDraft() {
     title: $("editor-title").value,
     content: $("editor-content").value
   }));
-  $("editor-draft-indicator").textContent = "초안 자동 저장됨";
+  $("editor-draft-indicator").textContent = "브라우저에 초안 저장됨";
 }
 function scheduleEditorDraftSave() {
   clearTimeout(editorDraftTimer);
@@ -2974,7 +2975,6 @@ function scheduleEditorDraftSave() {
   }, 240);
 }
 $("editor-title").addEventListener("input", () => {
-  resizeEditorTitleField();
   if(!editorIsNew)$("editor-heading").textContent=$("editor-title").value.trim()+(editorRequestMode?" (편집 요청)":" (편집)");
   scheduleEditorDraftSave();
   if (!$("editor-preview-pane").hidden) scheduleServerEditorPreview();

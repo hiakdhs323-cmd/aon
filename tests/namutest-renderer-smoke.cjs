@@ -132,7 +132,7 @@ assert.match(worker, /buildNamuServerDatabase\(env, title, sourceText\)/, "Worke
 console.log("AonWiki single-renderer integration checks passed.");
 
 assert.match(read("index.html"), /class="editor-terms-block"/, "editor must show the compact contribution consent notice below the summary");
-assert.match(read("index.html"), /id="editor-fields" class="editor-fields" disabled/, "editor fields must start locked until consent is given");
+assert.match(read("index.html"), /<fieldset id="editor-fields" class="editor-fields">/, "editor fields must be enabled before consent");
 assert.match(read("index.html"), /id="editor-save" class="button button-primary" type="submit" disabled/, "save must start disabled until consent is given");
 assert.doesNotMatch(read("index.html"), /id="editor-public-ack"[^>]*checked/, "consent must not be pre-checked");
 assert.ok(read("index.html").indexOf('id="editor-summary"') < read("index.html").indexOf('class="editor-terms-block"'), "consent must appear below the edit summary");
@@ -140,7 +140,9 @@ assert.ok(read("index.html").indexOf("</fieldset>") < read("index.html").indexOf
 assert.match(read("index.html"), /id="editor-tab-write".*id="editor-tab-raw".*id="editor-tab-preview"/s, "editor, raw and preview tabs must be retained");
 assert.match(read("index.html"), /class="editor-markup-toolbar"/, "the existing markup toolbar must be retained");
 assert.match(read("index.html"), /id="edit-requests"/, "administrators must have an edit request review action");
-assert.match(read("app.js"), /function syncEditorConsentLock\(\)/, "editor controls must be locked until the consent checkbox is checked");
+assert.match(app, /\$\("editor-save"\)\.disabled = !accepted \|\| editorSavePending/, "only the save button should be disabled by missing consent");
+assert.doesNotMatch(app, /\$\("editor-fields"\)\.disabled/);
+assert.match(app, /if \(!\$\("editor-public-ack"\)\.checked\) \{[^}]*return;/, "form submission must check consent even when triggered by a keyboard shortcut");
 assert.match(read("app.js"), /api\("\/api\/edit-request"/, "users without edit permission must be able to submit an edit request");
 assert.match(read("app.js"), /function openEditRequests\(\)/, "administrators must be able to review edit requests");
 assert.match(read("app.js"), /본인이 사용하는 IP\(/, "anonymous editor disclosure must display the visitor IP");
