@@ -415,7 +415,7 @@ function showHome(push=true){
  if(push)history.pushState(null,"","/");
  currentTitle="";currentContent="";
  $("search-view").hidden=true;
- $("home-view").hidden=false;$("document-view").hidden=true;$("editor-view").hidden=true;
+ $("home-view").hidden=false;$("document-view").hidden=true;$("discussion-view").hidden=true;$("editor-view").hidden=true;
  document.body.classList.remove("editor-active");
  $("home").classList.add("active");$("edit").hidden=true;$("history").hidden=true;$("upload").hidden=false;$("delete-page").hidden=true;
  $("new").classList.remove("active");loadHome()
@@ -1550,7 +1550,7 @@ async function loadRecentChanges(pushRoute=true){
  const requestId=++pageNavigationSequence;
  if(pushRoute)history.pushState(null,"","#/recent");
  currentTitle="최근 변경";currentContent="";
- $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ $("search-view").hidden=true; $("home-view").hidden=true; $("document-view").hidden=false; $("discussion-view").hidden=true;$("editor-view").hidden=true;
  $("home").classList.remove("active");$("new").classList.remove("active");
  $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
  $("title").textContent="최근 변경";$("crumb").textContent="최근 변경";$("message").textContent="";
@@ -1567,7 +1567,7 @@ async function loadBacklinks(title,pushRoute=true){
  title=String(title||"").trim();if(!title)return;
  if(pushRoute)history.pushState(null,"","#/backlinks/"+encodeURIComponent(title));
  currentTitle=title;currentContent="";
- $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ $("search-view").hidden=true; $("home-view").hidden=true; $("document-view").hidden=false; $("discussion-view").hidden=true;$("editor-view").hidden=true;
  $("home").classList.remove("active");$("new").classList.remove("active");
  $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;$("delete-page").hidden=true;$("heading-edit").hidden=true;$("backlinks-tab").hidden=true;$("backlinks-tab").hidden=true;
  $("title").textContent=title+" — 역링크";$("crumb").textContent=title+" — 역링크";$("message").textContent="";
@@ -1611,21 +1611,18 @@ function discussionText(host,value,className="discussion-body",docTitle="토론"
  });
  return box;
 }
-function prepareDiscussionView(title,route,pushRoute){
+function prepareDiscussionView(route,pushRoute){
  currentDiscussionView=true;
  const requestId=++pageNavigationSequence;
  if(pushRoute)history.pushState(null,"",route);
  breadcrumbTrail=[];
- $("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;
+ $("home-view").hidden=true; $("document-view").hidden=true; $("editor-view").hidden=true;
+ $("search-view").hidden=true;
+ $("discussion-view").hidden=false;
  document.body.classList.remove("editor-active");
  $("home").classList.remove("active");
- $("edit").hidden=true;$("history").hidden=true;$("upload").hidden=true;
- $("file-manager").hidden=true;$("delete-page").hidden=true;
- $("heading-edit").hidden=true;$("page-protection").hidden=true;$("official-document").hidden=true;
- $("backlinks-tab").hidden=true;$("discussion-tab").hidden=true;
- $("template-status").hidden=true;$("protection-status").hidden=true;$("protection-notice").hidden=true;
- $("title").textContent=title;$("crumb").textContent=title;$("message").textContent="";
- $("article").replaceChildren();
+ $("new").classList.remove("active");
+ $("discussion-view").replaceChildren();
  window.scrollTo({top:0,behavior:"auto"});
  loadGlobalRail();
  return requestId;
@@ -1703,18 +1700,28 @@ async function loadDiscussionList(pushRoute=true,pageTitle="",filters={}){
  if(query)routeParams.set("q",query);
  if(status!=="all")routeParams.set("status",status);
  const route="#/discussions"+(routeParams.toString()?"?"+routeParams.toString():"");
- const requestId=prepareDiscussionView(title,route,pushRoute);
- const article=$("article");
+ const requestId=prepareDiscussionView(route,pushRoute);
+ const article=$("discussion-view");
  const head=document.createElement("div");head.className="discussion-page-heading";
  const copy=document.createElement("div");
- addText(copy,"p","AONWIKI COMMUNITY").className="discussion-eyebrow";
- addText(copy,"h2",title);
+ addText(copy,"h1",title);
  addText(copy,"p",pageTitle?"이 문서에 연결된 토론을 확인하고 의견을 나눌 수 있습니다.":"최근 활동이 있는 토론을 검색하고 의견을 나눌 수 있습니다.").className="discussion-intro";
  head.append(copy);
  const actions=document.createElement("div");actions.className="discussion-page-actions";
  const create=document.createElement("button");create.type="button";create.className="primary-button";create.textContent="새 토론 시작";
  const form=buildDiscussionCreateForm(pageTitle);
- create.addEventListener("click",()=>{form.hidden=!form.hidden;if(!form.hidden)form.querySelector("input")?.focus()});
+ form.id="discussion-create-form";
+ create.setAttribute("aria-controls",form.id);
+ create.setAttribute("aria-expanded","false");
+ create.addEventListener("click",()=>{
+  form.hidden=!form.hidden;
+  create.setAttribute("aria-expanded",String(!form.hidden));
+  if(!form.hidden)form.querySelector("input")?.focus();
+ });
+ form.querySelector('button[type="button"]').addEventListener("click",()=>{
+  create.setAttribute("aria-expanded","false");
+  create.focus();
+ });
  actions.append(create);head.append(actions);article.append(head,form);
  const listWrap=document.createElement("section");listWrap.className="discussion-list-section";
  const listTitle=addText(listWrap,"h3","토론 목록");listTitle.className="discussion-section-title";
@@ -1809,22 +1816,23 @@ function buildDiscussionPostCard(post,index=0,docTitle="토론",allowQuote=true)
 }
 async function loadDiscussionDetail(id,pushRoute=true){
  id=Number(id);if(!Number.isSafeInteger(id)||id<1){loadDiscussionList(pushRoute);return}
- if(!loggedInName&&!isWikiAdmin&&!currentVisitorIp){
-  try{const identity=await api("/api/me");currentVisitorIp=String(identity.ip||"")}catch{}
- }
- const requestId=prepareDiscussionView("토론 #"+id,"#/discussion/"+id,pushRoute);
+ const requestId=prepareDiscussionView("#/discussion/"+id,pushRoute);
  document.title="토론 #"+id+" - AonWiki";
- const article=$("article");
- const loading=addText(article,"p","토론 내용을 불러오는 중입니다…");loading.className="loading";
+ const article=$("discussion-view");
+ const loading=addText(article,"p","토론 내용을 불러오는 중입니다…");loading.className="discussion-loading";loading.setAttribute("role","status");
  try{
-  const data=await api("/api/discussion?id="+id);
+  const [data]=await Promise.all([
+   api("/api/discussion?id="+id),
+   !loggedInName&&!isWikiAdmin&&!currentVisitorIp
+    ? api("/api/me").then(identity=>{currentVisitorIp=String(identity.ip||"")}).catch(()=>{})
+    : null
+  ]);
   if(requestId!==pageNavigationSequence)return;
   const topic=data.discussion,posts=data.posts||[];
   article.replaceChildren();
   const head=document.createElement("div");head.className="discussion-page-heading";
   const copy=document.createElement("div");
-  const eyebrow=addText(copy,"p","DISCUSSION #"+topic.id);eyebrow.className="discussion-eyebrow";
-  addText(copy,"h2",topic.title);
+  addText(copy,"h1",topic.title);
   const meta=addText(copy,"p",(topic.author||"알 수 없음")+" · 시작 "+discussionDate(topic.created_at)+" · 답글 "+Number(topic.reply_count||0));meta.className="discussion-intro";
   head.append(copy);
   const state=addText(head,"span",topic.status==="closed"?"종료된 토론":"진행 중인 토론");
@@ -1838,11 +1846,11 @@ async function loadDiscussionDetail(id,pushRoute=true){
    if(lastDiscussionListState.q)backParams.set("q",lastDiscussionListState.q);
    if(lastDiscussionListState.status!=="all")backParams.set("status",lastDiscussionListState.status);
    back.href="#/discussions"+(backParams.toString()?"?"+backParams.toString():"");
-   back.textContent="‹ 토론 목록";
+   back.textContent="토론 목록";
    back.addEventListener("click",event=>{event.preventDefault();loadDiscussionList(true,lastDiscussionListState.pageTitle||topic.page_title||"",lastDiscussionListState)});
   nav.append(back);
-  if(topic.page_title){nav.append(document.createTextNode(" · "));nav.append(discussionLink(topic.page_title,"연결 문서: "+topic.page_title))}
-  article.append(nav);
+  if(topic.page_title){nav.append(discussionLink(topic.page_title,topic.page_title+" 문서"))}
+  article.prepend(nav);
   const original=document.createElement("section");original.className="discussion-original";
   const originalHeader=document.createElement("div");originalHeader.className="discussion-post-header";
   addText(originalHeader,"strong",topic.author||"알 수 없음");
@@ -2162,8 +2170,10 @@ async function loadCategoryIndex(pushRoute = true) {
   currentTitle = "분류 목록";
   document.title = "분류 목록 - AonWiki";
   currentContent = "";
+  $("search-view").hidden = true;
   $("home-view").hidden = true;
   $("document-view").hidden = false;
+  $("discussion-view").hidden = true;
   $("editor-view").hidden = true;
   document.body.classList.remove("editor-active");
   $("home").classList.remove("active");
@@ -2364,7 +2374,7 @@ async function loadPage(title,pushRoute=true,anchor=""){
   else breadcrumbTrail=[title];
  }
  renderBreadcrumbTrail();
- currentTitle=title;$("search-view").hidden=true;$("home-view").hidden=true;$("document-view").hidden=false;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;$("discussion-tab").hidden=true;
+ currentTitle=title;$("search-view").hidden=true;$("home-view").hidden=true;$("document-view").hidden=false;$("discussion-view").hidden=true;$("editor-view").hidden=true;document.body.classList.remove("editor-active");$("home").classList.remove("active");$("new").classList.remove("active");$("edit").hidden=false;$("history").hidden=false;$("upload").hidden=false;$("delete-page").hidden=!isWikiAdmin;$("file-manager").hidden=!loggedInName;$("backlinks-tab").hidden=false;$("discussion-tab").hidden=true;
  const displayTitle=/^(?:category|분류):/i.test(title)?"분류:"+title.replace(/^(?:category|분류):/i,""):title;
  document.title=displayTitle+" - AonWiki";
  const targets=ensureDocumentViewTargets();
@@ -2742,6 +2752,7 @@ async function editPage(title = currentTitle, content = currentContent, options 
   $("search-view").hidden = true;
   $("home-view").hidden = true;
   $("document-view").hidden = true;
+  $("discussion-view").hidden = true;
   $("editor-view").hidden = false;
   document.body.classList.add("editor-active");
   $("home").classList.remove("active");
@@ -2753,7 +2764,7 @@ async function editPage(title = currentTitle, content = currentContent, options 
   const titleFieldRow=$("editor-title-wrap").closest(".editor-title-field");
   if(titleFieldRow)titleFieldRow.hidden=!editorIsNew;
   $("editor-title-help").hidden = true;
-  $("editor-title").value = editorIsNew ? "" : editorOriginalTitle;
+  $("editor-title").value = editorIsNew ? String(options.initialTitle || "") : editorOriginalTitle;
   $("editor-backlinks-action").hidden = editorIsNew;
   $("editor-move-action").hidden = editorIsNew;
   $("editor-delete-action").hidden = editorIsNew || !isWikiAdmin;
@@ -3791,8 +3802,8 @@ function searchPageUrl(query,scope="all"){
 function showSearchView(){
  document.title="검색 - AonWiki";
  breadcrumbTrail=[];pageNavigationSequence++;
- currentTitle="";currentContent="";
- $("home-view").hidden=true;$("document-view").hidden=true;$("editor-view").hidden=true;$("search-view").hidden=false;
+ currentTitle="";currentContent="";currentDiscussionView=false;
+ $("home-view").hidden=true;$("document-view").hidden=true;$("discussion-view").hidden=true;$("editor-view").hidden=true;$("search-view").hidden=false;
  document.body.classList.remove("editor-active");
  $("home").classList.remove("active");$("new").classList.remove("active");
  $("edit").hidden=true;$("heading-edit").hidden=true;$("history").hidden=true;$("history-tab").hidden=true;
@@ -3949,7 +3960,7 @@ async function loadSearchPage(query,scope="all",push=false){
  const host=$("search-result-groups");host.replaceChildren();
  const moreButton=getSearchMoreButton(host);moreButton.hidden=true;
  $("search-result-query").textContent=q?"검색어: "+q:"";
- const createButton=$("search-create-page");createButton.hidden=!q;createButton.onclick=()=>editPage(q,"");
+ const createButton=$("search-create-page");createButton.hidden=!q;createButton.onclick=()=>editPage("","",{initialTitle:q});
  if(!q){
   activeSearchState.loading=false;
   $("search-result-count").textContent="검색어를 입력해 주세요.";

@@ -25,6 +25,292 @@
 <link rel="stylesheet" href="namumark-aon.css?v=20261115-editor-preview-scope-v1">
 <link rel="stylesheet" href="namumark-interactions-aon.css?v=20261115-single-footnote-preview-v1">
 <link rel="stylesheet" href="design-system.css?v=20261121-wiki-shell-search-v3">
+<style id="aonwiki-workspace-styles">
+/* Search and discussion share the same controls without styling article views. */
+.wiki-workspace {
+  --workspace-card: #fff;
+  --workspace-soft: #f2f4f6;
+  --workspace-border: #e5e8eb;
+  --workspace-text: #191f28;
+  --workspace-muted: #4e5968;
+  --workspace-accent: #1b64da;
+  --workspace-accent-soft: #e8f3ff;
+  --workspace-green: #08705a;
+  --workspace-green-soft: #e6f6f0;
+  --workspace-gutter: clamp(16px, 3vw, 32px);
+  width: 100%;
+  max-width: 960px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 8px 0 32px;
+  color: var(--workspace-text);
+}
+html[data-theme="dark"] .wiki-workspace {
+  --workspace-card: #20242c;
+  --workspace-soft: #2b313b;
+  --workspace-border: #39414d;
+  --workspace-text: #f2f4f6;
+  --workspace-muted: #b0b8c1;
+  --workspace-accent: #8fbcff;
+  --workspace-accent-soft: #233b60;
+  --workspace-green: #86dbc2;
+  --workspace-green-soft: #203e38;
+}
+.wiki-workspace[hidden] { display: none !important; }
+.wiki-workspace :is(.search-page, .discussion-page-heading, .discussion-list-section,
+  .discussion-original, .discussion-post-card, .discussion-create-form, .discussion-reply-form) {
+  min-width: 0;
+  border: 1px solid var(--workspace-border);
+  border-radius: 24px;
+  background: var(--workspace-card);
+  box-shadow: none;
+}
+.wiki-workspace :is(.search-page-heading, .discussion-page-heading) {
+  margin: 0;
+  padding: var(--workspace-gutter);
+}
+.wiki-workspace .search-page-heading {
+  min-height: 0;
+  padding-bottom: 0;
+  border: 0;
+  background: transparent;
+}
+.wiki-workspace .discussion-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.wiki-workspace :is(.search-page-heading, .discussion-page-heading) h1 {
+  margin: 0;
+  color: var(--workspace-text);
+  font-size: clamp(1.75rem, 4vw, 2.375rem);
+  font-weight: 760;
+  line-height: 1.28;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+}
+.wiki-workspace :is(.search-page-description, .discussion-intro) {
+  margin: 8px 0 0;
+  color: var(--workspace-muted);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+.wiki-workspace :is(.search-page-body, .discussion-list-section,
+  .discussion-original, .discussion-create-form, .discussion-reply-form) {
+  padding: var(--workspace-gutter);
+}
+.wiki-workspace :is(.search-page-form, .discussion-search-toolbar) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 145px) auto;
+  align-items: end;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.wiki-workspace .search-scope-label,
+.wiki-workspace .discussion-field {
+  color: var(--workspace-text);
+  font-size: .875rem;
+  font-weight: 650;
+}
+.wiki-workspace :is(.search-page-form, .discussion-search-toolbar, .discussion-field) :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--workspace-soft);
+  color: var(--workspace-text);
+  font: inherit;
+  font-size: 1rem;
+}
+.wiki-workspace :is(input, textarea)::placeholder { color: var(--workspace-muted); }
+.wiki-workspace :is(.search-page-form, .discussion-search-toolbar) select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--workspace-muted) 50%),
+                    linear-gradient(135deg, var(--workspace-muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+.wiki-workspace :is(.search-page-submit, .discussion-search-submit, .primary-button,
+  .search-create-link, .search-load-more, .discussion-load-more, .title-button, .text-action) {
+  min-height: 44px;
+  padding: 8px 15px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-accent);
+  font-size: .9375rem;
+  font-weight: 700;
+}
+.wiki-workspace :is(.search-page-submit, .discussion-search-submit, .primary-button) {
+  min-height: 48px;
+  background: #1b64da;
+  color: #fff;
+}
+.wiki-workspace :is(.search-page-submit, .discussion-search-submit, .primary-button):hover {
+  background: #1954b4;
+}
+.wiki-workspace button:disabled { opacity: .55; cursor: wait; }
+.wiki-workspace :is(button, input, select, textarea, a):focus-visible,
+.wiki-workspace .discussion-code-wrap:focus-within {
+  outline: 2px solid var(--workspace-accent);
+  outline-offset: 2px;
+}
+.wiki-workspace .search-result-summary {
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0 0 14px;
+  border-color: var(--workspace-border);
+}
+.wiki-workspace .search-result-summary p { color: var(--workspace-text); font-size: 1rem; }
+.wiki-workspace .search-create-link { max-width: none; margin: 0; }
+.wiki-workspace .search-result-group { margin: 22px 0 0; }
+.wiki-workspace :is(.search-result-group-heading, .discussion-section-title, .discussion-form-heading) {
+  gap: 8px;
+  padding: 0 0 10px;
+  border: 0;
+  color: var(--workspace-text);
+  font-size: 1.125rem;
+  font-weight: 730;
+}
+.wiki-workspace :is(.search-result-group-count, .search-result-summary-copy > span,
+  .search-result-meta, .discussion-total, .discussion-reply-count, .discussion-list-meta) {
+  color: var(--workspace-muted);
+  font-size: .8125rem;
+}
+.wiki-workspace :is(.search-result-row, .discussion-list-item) {
+  gap: 12px;
+  min-height: 65px;
+  padding: 13px 8px;
+  border-color: var(--workspace-border);
+  border-radius: 12px;
+}
+.wiki-workspace :is(.search-result-row, .discussion-list-item):hover {
+  background: var(--workspace-soft);
+}
+.wiki-workspace :is(.search-result-icon, .search-file-preview, .search-group-icon) {
+  border: 0;
+  border-radius: 11px;
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-accent);
+}
+.wiki-workspace :is(.search-result-icon, .search-file-preview) {
+  flex-basis: 42px;
+  width: 42px;
+  height: 42px;
+}
+.wiki-workspace :is(.search-result-title, .discussion-list-main > a) {
+  color: var(--workspace-text);
+  font-size: 1rem;
+  font-weight: 720;
+}
+.wiki-workspace :is(.search-result-title, .discussion-list-main > a):hover,
+.wiki-workspace :is(.discussion-breadcrumb, .discussion-list-meta) a {
+  color: var(--workspace-accent);
+}
+.wiki-workspace .search-result-snippet {
+  color: var(--workspace-muted);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+.wiki-workspace .search-match {
+  border-radius: 3px;
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-accent);
+}
+.wiki-workspace :is(.search-empty-state, .discussion-empty, .discussion-loading) {
+  padding: 24px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--workspace-soft);
+  color: var(--workspace-muted);
+  font-size: .9375rem;
+  text-align: center;
+}
+.wiki-workspace .search-empty-state { margin-top: 16px; }
+.wiki-workspace .search-empty-state strong { color: var(--workspace-text); font-size: 1rem; }
+.wiki-workspace .search-empty-state p { color: var(--workspace-muted); font-size: .9375rem; }
+.wiki-workspace .search-empty-icon { background: var(--workspace-accent-soft); color: var(--workspace-accent); }
+.wiki-workspace :is(.search-load-more, .discussion-load-more) { margin: 16px 0 0; }
+.wiki-workspace .discussion-list-section { margin: 0; }
+.wiki-workspace .discussion-search-toolbar { margin-bottom: 12px; }
+.wiki-workspace .discussion-filter-label { display: block; min-width: 0; }
+.wiki-workspace .discussion-breadcrumb {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0 0 12px;
+  padding: 0 3px;
+  font-size: .9375rem;
+  overflow-wrap: anywhere;
+}
+.wiki-workspace .discussion-state {
+  align-self: flex-start;
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--workspace-soft);
+  color: var(--workspace-muted);
+  font-size: .8125rem;
+}
+.wiki-workspace .discussion-state.is-open {
+  background: var(--workspace-green-soft);
+  color: var(--workspace-green);
+}
+.wiki-workspace :is(.discussion-original, .discussion-post-card) {
+  padding: clamp(16px, 2.5vw, 24px) !important;
+}
+.wiki-workspace .discussion-post-card { border-radius: 18px; }
+.wiki-workspace .discussion-post-header {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border-color: var(--workspace-border);
+  color: var(--workspace-muted);
+  font-size: .8125rem;
+}
+.wiki-workspace .discussion-post-header strong { color: var(--workspace-text); font-size: .9375rem; }
+#discussion-view .discussion-body {
+  min-height: 0;
+  padding: 10px 0 0;
+  color: var(--workspace-text) !important;
+  font-size: 1rem !important;
+}
+#discussion-view .discussion-render-pending { min-height: 2.2em; }
+#discussion-view .discussion-field input {
+  border-color: transparent !important;
+  background: var(--workspace-soft) !important;
+  color: var(--workspace-text) !important;
+}
+.wiki-workspace .discussion-inline-edit-form,
+.wiki-workspace .discussion-code-wrap {
+  border-color: var(--workspace-border);
+  border-radius: 14px;
+  background: var(--workspace-soft);
+}
+.wiki-workspace .discussion-form-status:empty { display: none; }
+@media (max-width: 600px) {
+  .wiki-workspace :is(.search-page-form, .discussion-search-toolbar) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .wiki-workspace :is(.search-query-wrap, .discussion-search-toolbar > input) { grid-column: 1 / -1; }
+  .wiki-workspace .discussion-search-toolbar .discussion-search-submit { width: 100%; }
+  .wiki-workspace .discussion-page-heading { align-items: stretch; }
+  .wiki-workspace .discussion-page-actions { width: 100%; }
+  .wiki-workspace .discussion-page-actions .primary-button { width: 100%; }
+}
+</style>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" crossorigin="anonymous">
@@ -229,12 +515,11 @@
         <button id="admin-token-rotate" class="button" type="button">초기 키 폐기 · 랜덤 토큰 발급</button>
       </div>
     </section>
-    <section id="search-view" class="search-view" hidden>
+    <section id="search-view" class="search-view wiki-workspace" hidden>
       <div class="breadcrumbs"><a href="/">AonWiki</a><span aria-hidden="true">›</span><span aria-current="page">검색</span></div>
       <section class="search-page">
         <header class="search-page-heading">
           <div>
-            <p class="search-page-kicker">문서 찾기</p>
             <h1>검색</h1>
             <p class="search-page-description">제목이나 내용의 일부만 입력해도 관련 문서를 찾을 수 있습니다.</p>
           </div>
@@ -253,7 +538,7 @@
                 <option value="files">파일만</option>
               </select>
             </label>
-            <button type="submit" class="search-page-submit"><span aria-hidden="true">⌕</span> 검색하기</button>
+            <button type="submit" class="search-page-submit">검색</button>
           </form>
           <div class="search-result-summary" aria-live="polite">
             <div class="search-result-summary-copy">
@@ -262,7 +547,6 @@
             </div>
             <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 만들기</button>
           </div>
-          <div class="search-result-rule" aria-hidden="true"></div>
           <div id="search-result-groups" class="search-result-groups" aria-live="polite">
             <div class="search-empty-state">
               <span class="search-empty-icon" aria-hidden="true">⌕</span>
@@ -272,8 +556,8 @@
           </div>
         </div>
       </section>
-      <footer class="site-footer">AonWiki · 검색 결과는 현재 등록된 문서를 기준으로 표시됩니다.</footer>
     </section>
+    <section id="discussion-view" class="wiki-workspace" aria-label="토론" hidden></section>
     <section id="document-view" class="document-view" hidden>
       <div class="breadcrumbs"><a href="#/">AonWiki</a><span>›</span><span id="crumb"></span></div>
       <section class="article">
@@ -601,5 +885,5 @@ hover-dark: #a5d6ff
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3-editor-cc0"></script>
+<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3-discovery"></script>
 </body></html>
