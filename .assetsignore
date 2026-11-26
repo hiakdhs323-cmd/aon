@@ -9,6 +9,7 @@ package.json
 package-lock.json
 scripts/
 editor/
+next-editor/
 compose.yaml
 wrangler.toml
 .dockerignore
