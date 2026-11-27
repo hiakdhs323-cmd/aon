@@ -90,7 +90,8 @@ assert.ok(app.includes('event.key==="Enter"'),
 assert.ok(app.includes('setAttribute("aria-expanded","true")') &&
           app.includes('setAttribute("aria-activedescendant"'),
   "autocomplete must expose its expanded and active option to assistive technology");
-assert.ok(app.includes('문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개'),
-  "search summary must show useful document and file counts without timing noise");
+assert.ok(app.includes('counts.push("문서 "+pageTotal.toLocaleString("ko-KR")+"건")') &&
+          app.includes('counts.push("파일 "+fileTotal.toLocaleString("ko-KR")+"개")'),
+  "search summary must show document and file counts relevant to the selected scope");
 
 console.log("AonWiki design system smoke test passed.");
