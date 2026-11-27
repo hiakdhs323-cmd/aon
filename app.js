@@ -87,6 +87,10 @@ let isWikiAdmin=false;
 let currentRole="anonymous";
 let identityResolved=false;
 const AON_UI_ICON_SHAPES = {
+  search: [
+    ["circle",{cx:"7",cy:"7",r:"4"}],
+    ["path",{d:"m10 10 3.5 3.5"}]
+  ],
   lock: [
     ["rect",{x:"3.2",y:"7",width:"9.6",height:"7.1",rx:"1.3"}],
     ["path",{d:"M5.4 7V5.1a2.6 2.6 0 0 1 5.2 0V7"}],
@@ -3825,11 +3829,15 @@ function appendSearchHighlighted(target,text,query){
 function makeSearchResultRow(page,query,kind){
  const row=document.createElement("article");row.className="search-result-row";
  const icon=document.createElement("span");icon.className="search-result-icon"+(kind==="category"?" is-category":"");
- icon.setAttribute("aria-hidden","true");icon.textContent=kind==="category"?"▣":"▤";
+ icon.setAttribute("aria-hidden","true");
+ icon.append(createAonUiIcon(kind==="category"?"folder":"file"));
  const body=document.createElement("div");body.className="search-result-main";
  const link=document.createElement("a");link.className="search-result-title";link.href=routeFor(page.title);
  appendSearchHighlighted(link,page.title,query);
- link.addEventListener("click",event=>{event.preventDefault();openPage(page.title)});
+ link.addEventListener("click",event=>{
+  if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();openPage(page.title);
+ });
  body.append(link);
  if(page.snippet){
   const snippet=document.createElement("p");snippet.className="search-result-snippet";
@@ -3839,42 +3847,38 @@ function makeSearchResultRow(page,query,kind){
  const updated=page.updated_at?new Date(page.updated_at):null;
  const dateText=updated&&!Number.isNaN(updated.getTime())
   ?updated.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
-  :"수정 날짜 정보 없음";
+  :"";
  const reason=page.match_type==="title"?"제목 일치":page.match_type==="content"?"본문 일치":kind==="category"?"분류":"문서";
- meta.textContent=reason+" · 최근 수정 "+dateText;
+ meta.textContent=dateText?reason+" · "+dateText:reason;
  body.append(meta);row.append(icon,body);return row;
 }
-function renderSearchGroup(host,title,pages,query,kind){
- if(!pages.length)return;
+function renderSearchGroup(host,title,items,kind,makeRow){
+ if(!items.length)return;
  let group=host.querySelector('.search-result-group[data-search-kind="'+kind+'"]');
  if(!group){
-  group=document.createElement("section");group.className="search-result-group";group.dataset.searchKind=kind;
-  const heading=document.createElement("h2");heading.className="search-result-group-heading";
-  const badge=document.createElement("span");badge.className="search-group-icon"+(kind==="category"?" is-category":"");
-  badge.setAttribute("aria-hidden","true");badge.textContent=kind==="category"?"▣":"▤";
-  const label=document.createElement("span");label.textContent=title;
-  const number=document.createElement("small");number.textContent="0건";number.className="search-result-group-count";
-  heading.append(badge,label,number);
+  group=document.createElement("section");
+  group.className="search-result-group";group.dataset.searchKind=kind;
+  group.setAttribute("aria-labelledby","search-group-"+kind);
+  const heading=addText(group,"h3",title);
+  heading.id="search-group-"+kind;heading.className="search-result-group-heading";
   const list=document.createElement("div");list.className="search-result-list";
-  group.append(heading,list);host.append(group);
+  group.append(list);host.append(group);
  }
  const list=group.querySelector(".search-result-list");
- pages.forEach(page=>list.append(makeSearchResultRow(page,query,kind)));
- const count=Number(group.dataset.resultCount||0)+pages.length;
- group.dataset.resultCount=String(count);
- const number=group.querySelector(".search-result-group-count");
- if(number)number.textContent=count.toLocaleString("ko-KR")+"건";
+ items.forEach(item=>list.append(makeRow(item)));
 }
 function makeSearchFileRow(file,query){
  const row=document.createElement("article");row.className="search-result-row search-file-row";
  const preview=document.createElement("span");preview.className="search-file-preview";
  preview.setAttribute("aria-hidden","true");
+ preview.append(createAonUiIcon("file"));
  if(String(file.content_type||"").startsWith("image/")){
   const image=document.createElement("img");
   image.src=new URL("/media/"+encodeURIComponent(file.id),apiBase()).href;
   image.alt="";image.loading="lazy";image.decoding="async";
+  image.addEventListener("error",()=>image.remove(),{once:true});
   preview.append(image);
- }else preview.textContent="▧";
+ }
  const body=document.createElement("div");body.className="search-result-main";
  const link=document.createElement("a");link.className="search-result-title";
  link.href=new URL("/media/"+encodeURIComponent(file.id),apiBase()).href;
@@ -3885,9 +3889,9 @@ function makeSearchFileRow(file,query){
  const created=file.created_at?new Date(file.created_at):null;
  const dateText=created&&!Number.isNaN(created.getTime())
   ?created.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
-  :"등록 날짜 정보 없음";
+  :"";
  const type=String(file.content_type||"application/octet-stream").replace(/^image\//,"").toUpperCase();
- meta.textContent=type+" 파일 · 등록 "+dateText;
+ meta.textContent=dateText?type+" 파일 · "+dateText:type+" 파일";
  body.append(meta);
  if(file.aliases){
   const alias=addText(body,"span","이전 이름: "+file.aliases);
@@ -3895,122 +3899,110 @@ function makeSearchFileRow(file,query){
  }
  row.append(preview,body);return row;
 }
-function renderSearchFileGroup(host,files,query){
- if(!files.length)return;
- let group=host.querySelector('.search-result-group[data-search-kind="files"]');
- if(!group){
-  group=document.createElement("section");group.className="search-result-group search-file-group";group.dataset.searchKind="files";
-  const heading=document.createElement("h2");heading.className="search-result-group-heading";
-  const badge=document.createElement("span");badge.className="search-group-icon is-file";
-  badge.setAttribute("aria-hidden","true");badge.textContent="▧";
-  const label=document.createElement("span");label.textContent="파일";
-  const number=document.createElement("small");number.textContent="0개";number.className="search-result-group-count";
-  heading.append(badge,label,number);
-  const list=document.createElement("div");list.className="search-result-list";
-  group.append(heading,list);host.append(group);
+function renderSearchState(host,title,description,action){
+ const state=$("search-state-template").content.cloneNode(true);
+ state.querySelector(".search-empty-icon").append(createAonUiIcon("search"));
+ state.querySelector("h3").textContent=title;
+ state.querySelector("p").textContent=description;
+ if(action){
+  const button=addText(state.querySelector(".search-state-actions"),"button","다시 시도");
+  button.type="button";button.className="search-retry";button.onclick=action;
  }
- const list=group.querySelector(".search-result-list");
- files.forEach(file=>list.append(makeSearchFileRow(file,query)));
- const count=Number(group.dataset.resultCount||0)+files.length;
- group.dataset.resultCount=String(count);
- const number=group.querySelector(".search-result-group-count");
- if(number)number.textContent=count.toLocaleString("ko-KR")+"개";
+ host.replaceChildren(state);
 }
-function renderSearchEmpty(host,query){
- const empty=document.createElement("div");empty.className="search-empty-state";
- const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
- const title=document.createElement("strong");title.textContent="검색 결과가 없습니다.";
- const desc=document.createElement("p");desc.textContent="‘"+query+"’와 일치하는 문서를 찾지 못했습니다. 다른 검색어나 검색 범위를 사용해 보세요.";
- empty.append(icon,title,desc);host.append(empty);
+let activeSearchState={query:"",scope:"all",pageOffset:0,fileOffset:0,hasMore:false,loading:false};
+const searchPageForm=$("search-page-form");
+const searchPageInput=$("search-page-query");
+const searchMoreButton=$("search-more-results");
+function updateSearchMoreButton(){
+ searchMoreButton.hidden=!activeSearchState.hasMore;
+ searchMoreButton.disabled=activeSearchState.loading;
+ searchMoreButton.textContent=activeSearchState.loading?"불러오는 중…":"결과 더 보기";
 }
-let activeSearchState={query:"",scope:"all",pageOffset:0,fileOffset:0,hasMore:false,loading:false,requestId:0};
-function getSearchMoreButton(host){
- let button=$("search-more-results");
- if(!button){
-  button=document.createElement("button");button.id="search-more-results";button.type="button";
-  button.className="search-load-more";button.textContent="더 많은 검색 결과";
-  button.addEventListener("click",loadMoreSearchResults);
-  host.after(button);
- }
- return button;
-}
-function updateSearchMoreButton(host){
- const button=getSearchMoreButton(host);
- button.hidden=!activeSearchState.hasMore;
- button.disabled=activeSearchState.loading;
- button.textContent=activeSearchState.loading?"검색 결과를 불러오는 중…":"더 많은 검색 결과";
-}
-function appendSearchPageResults(host,data,query){
+function appendSearchPageResults(host,data,state){
  const pages=data.pages||[],files=data.files||[];
  const categories=pages.filter(page=>/^분류\s*[:：]/.test(String(page.title||"")));
  const documents=pages.filter(page=>!/^분류\s*[:：]/.test(String(page.title||"")));
- renderSearchGroup(host,"분류",categories,query,"category");
- renderSearchGroup(host,"문서",documents,query,"document");
- renderSearchFileGroup(host,files,query);
- activeSearchState.pageOffset+=pages.length;
- activeSearchState.fileOffset+=files.length;
- activeSearchState.hasMore=Boolean(data.pages_has_more||data.files_has_more||data.has_more);
+ renderSearchGroup(host,"문서",documents,"document",page=>makeSearchResultRow(page,state.query,"document"));
+ renderSearchGroup(host,"분류",categories,"category",page=>makeSearchResultRow(page,state.query,"category"));
+ renderSearchGroup(host,"파일",files,"files",file=>makeSearchFileRow(file,state.query));
+ state.pageOffset+=pages.length;
+ state.fileOffset+=files.length;
+ state.hasMore=Boolean((pages.length||files.length)&&(data.pages_has_more||data.files_has_more||data.has_more));
+}
+function requestSearchResults(state){
+ const params=new URLSearchParams({
+  q:state.query,scope:state.scope,limit:"25",
+  page_offset:String(state.pageOffset),file_offset:String(state.fileOffset)
+ });
+ return api("/api/pages?"+params);
 }
 async function loadSearchPage(query,scope="all",push=false){
  const q=String(query||"").trim().slice(0,100),selectedScope=scope==="title"?"title":scope==="files"?"files":"all";
- if(push)history.pushState(null,"",searchPageUrl(q,selectedScope));
- const requestId=activeSearchState.requestId+1;
- activeSearchState={query:q,scope:selectedScope,pageOffset:0,fileOffset:0,hasMore:false,loading:Boolean(q),requestId};
- showSearchView();$("query").value=q;$("search-page-query").value=q;$("search-page-scope").value=selectedScope;
- const host=$("search-result-groups");host.replaceChildren();
- const moreButton=getSearchMoreButton(host);moreButton.hidden=true;
- $("search-result-query").textContent=q?"검색어: "+q:"";
- const createButton=$("search-create-page");createButton.hidden=!q;createButton.onclick=()=>editPage("","",{initialTitle:q});
- if(!q){
-  activeSearchState.loading=false;
-  $("search-result-count").textContent="검색어를 입력해 주세요.";
-  const empty=document.createElement("div");empty.className="search-empty-state";
-  const icon=document.createElement("span");icon.className="search-empty-icon";icon.textContent="⌕";icon.setAttribute("aria-hidden","true");
-  const title=document.createElement("strong");title.textContent="무엇을 찾고 있나요?";
-  const desc=document.createElement("p");desc.textContent="문서 제목·본문 또는 업로드된 파일 이름을 검색할 수 있습니다.";
-  empty.append(icon,title,desc);host.append(empty);return;
- }
- $("search-result-count").textContent="검색 중입니다…";
+ const url=searchPageUrl(q,selectedScope);
+ if(push&&location.pathname+location.search!==url)history.pushState(null,"",url);
+ const state={query:q,scope:selectedScope,pageOffset:0,fileOffset:0,hasMore:false,loading:Boolean(q)};
+ activeSearchState=state;
+ showSearchView();
+ $("query").value=q;searchPageInput.value=q;searchPageForm.elements.scope.value=selectedScope;
+ $("search-clear").hidden=!q;
+ const results=$("search-results"),host=$("search-result-groups"),count=$("search-result-count"),createButton=$("search-create-page");
+ results.hidden=!q;
+ host.replaceChildren();
+ host.setAttribute("aria-busy",String(Boolean(q)));
+ count.textContent=q?"검색 중…":"";
+ createButton.hidden=true;
+ $("search-more-status").hidden=true;
+ updateSearchMoreButton();
+ if(!q)return;
  try{
-  const data=await api("/api/pages?q="+encodeURIComponent(q)+"&scope="+selectedScope+"&limit=25&page_offset=0&file_offset=0");
-  if(requestId!==activeSearchState.requestId)return;
-  const pages=data.pages||[],files=data.files||[];
-  const pageTotal=Number(data.page_total??pages.length),fileTotal=Number(data.file_total??files.length);
-  $("search-result-count").textContent="문서 "+pageTotal.toLocaleString("ko-KR")+"건 · 파일 "+fileTotal.toLocaleString("ko-KR")+"개";
-  host.replaceChildren();
-  if(!pages.length&&!files.length){renderSearchEmpty(host,q);activeSearchState.loading=false;return}
-  appendSearchPageResults(host,data,q);
-  activeSearchState.loading=false;
-  updateSearchMoreButton(host);
- }catch(error){
-  if(requestId!==activeSearchState.requestId)return;
-  activeSearchState.loading=false;
-  $("search-result-count").textContent="검색을 완료하지 못했습니다.";
-  const message=document.createElement("div");message.className="search-empty-state is-error";
-  const title=document.createElement("strong");title.textContent="검색 중 오류가 발생했습니다.";
-  const desc=document.createElement("p");desc.textContent=error.message||"잠시 후 다시 시도해 주세요.";
-  message.append(title,desc);host.append(message);
+  const data=await requestSearchResults(state);
+  if(state!==activeSearchState)return;
+  const pageTotal=Number(data.page_total??data.pages?.length??0);
+  const fileTotal=Number(data.file_total??data.files?.length??0);
+  const counts=[];
+  if(selectedScope!=="files")counts.push("문서 "+pageTotal.toLocaleString("ko-KR")+"건");
+  if(selectedScope!=="title")counts.push("파일 "+fileTotal.toLocaleString("ko-KR")+"개");
+  count.textContent=counts.join(" · ");
+  if(!data.pages?.length&&!data.files?.length){
+   renderSearchState(host,"검색 결과가 없어요","다른 검색어를 입력하거나 검색 범위를 바꿔 보세요.");
+   createButton.hidden=selectedScope==="files";
+   createButton.onclick=()=>editPage("","",{initialTitle:q});
+   return;
+  }
+  appendSearchPageResults(host,data,state);
+ }catch{
+  if(state!==activeSearchState)return;
+  count.textContent="검색 실패";
+  renderSearchState(host,"검색 결과를 불러오지 못했어요","잠시 후 다시 시도해 주세요.",()=>loadSearchPage(q,selectedScope));
+ }finally{
+  if(state===activeSearchState){
+   state.loading=false;
+   host.setAttribute("aria-busy","false");
+   updateSearchMoreButton();
+  }
  }
 }
 async function loadMoreSearchResults(){
  const state=activeSearchState;
- if(!state.query||state.loading||!state.hasMore)return;
+ if(state.loading||!state.hasMore)return;
  state.loading=true;
- const host=$("search-result-groups");
- updateSearchMoreButton(host);
+ const host=$("search-result-groups"),status=$("search-more-status");
+ status.hidden=true;
+ updateSearchMoreButton();
  try{
-  const data=await api("/api/pages?q="+encodeURIComponent(state.query)+"&scope="+state.scope+"&limit=25&page_offset="+state.pageOffset+"&file_offset="+state.fileOffset);
+  const data=await requestSearchResults(state);
   if(state!==activeSearchState)return;
-  appendSearchPageResults(host,data,state.query);
-  state.loading=false;
-  if(!data.pages?.length&&!data.files?.length)state.hasMore=false;
-  updateSearchMoreButton(host);
- }catch(error){
-  state.loading=false;
-  updateSearchMoreButton(host);
-  const note=document.createElement("p");note.className="search-result-note is-error";
-  note.textContent="추가 검색 결과를 불러오지 못했습니다: "+String(error.message||error);
-  host.append(note);
+  appendSearchPageResults(host,data,state);
+ }catch{
+  if(state!==activeSearchState)return;
+  status.textContent="추가 결과를 불러오지 못했어요. 다시 시도해 주세요.";
+  status.hidden=false;
+ }finally{
+  if(state===activeSearchState){
+   state.loading=false;
+   updateSearchMoreButton();
+  }
  }
 }
 async function searchFor(query,scope="all"){
@@ -4114,9 +4106,20 @@ if(headerSearchForm&&headerSearchInput){
 }
 
 $("search").onsubmit=e=>{e.preventDefault();searchFor($("query").value)};
-$("search-page-form").onsubmit=e=>{
- e.preventDefault();searchFor($("search-page-query").value,$("search-page-scope").value);
+function submitSearchPage(){
+ if(!searchPageInput.value.trim())return searchPageInput.focus();
+ loadSearchPage(searchPageInput.value,searchPageForm.elements.scope.value,true);
+}
+searchPageForm.onsubmit=event=>{event.preventDefault();submitSearchPage()};
+searchPageForm.addEventListener("change",event=>{
+ if(event.target.name==="scope"&&searchPageInput.value.trim())submitSearchPage();
+});
+searchPageInput.addEventListener("input",()=>{$("search-clear").hidden=!searchPageInput.value});
+$("search-clear").onclick=()=>{
+ loadSearchPage("",searchPageForm.elements.scope.value,true);
+ searchPageInput.focus();
 };
+searchMoreButton.onclick=loadMoreSearchResults;
 function diffRevisionLines(beforeText, afterText) {
   const before = String(beforeText || "").split("\n"), after = String(afterText || "").split("\n");
   const n = before.length, m = after.length;

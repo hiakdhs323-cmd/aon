@@ -325,6 +325,313 @@ html[data-theme="dark"] .wiki-workspace {
   "url": "https://aon.hiakdhs323.workers.dev/"
 }
 </script>
+<style id="aonwiki-search-styles">
+body:has(#search-view:not([hidden])) .layout {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100% - 32px, 820px);
+  margin-inline: auto;
+}
+body:has(#search-view:not([hidden])) .layout > .global-rail,
+body:has(#search-view:not([hidden])) #search { display: none; }
+body:has(#search-view:not([hidden])) .site-header .header-actions { margin-left: auto; }
+#search-view {
+  --search-surface: #fff;
+  --search-input: #f2f4f7;
+  --search-border: #e4e9f2;
+  --search-hero: #eaf3ff;
+  --search-text: #191f28;
+  --search-muted: #526276;
+  --search-blue: #155cd2;
+  --search-soft: #e9f2ff;
+  --search-focus: #226ee2;
+  --search-shadow: 0 2px 8px #173c6d08;
+  width: 100%;
+  max-width: none;
+  padding: clamp(2px, 1vw, 10px) 0 40px;
+}
+html[data-theme="dark"] #search-view {
+  --search-surface: #202631;
+  --search-input: #2d3747;
+  --search-border: #3a4658;
+  --search-hero: #1b2b43;
+  --search-text: #f5f7fb;
+  --search-muted: #b2bfd1;
+  --search-blue: #97c2ff;
+  --search-soft: #263e62;
+  --search-focus: #8dbdff;
+  --search-shadow: none;
+}
+#search-view [hidden] { display: none !important; }
+#search-view .search-page {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#search-view .search-page-heading {
+  display: block;
+  padding: clamp(20px, 4vw, 40px);
+  min-height: 0;
+  border: 1px solid var(--search-border);
+  border-radius: 26px;
+  background: var(--search-hero);
+}
+#search-heading {
+  margin: 0 0 clamp(16px, 3vw, 26px);
+  color: var(--search-text);
+  font-size: clamp(1.85rem, 5vw, 2.7rem);
+  font-weight: 780;
+  line-height: 1.18;
+  letter-spacing: -.055em;
+}
+#search-view .search-page-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#search-view .search-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+#search-view .search-input-box {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-left: clamp(10px, 2.5vw, 18px);
+  border: 1px solid var(--search-border);
+  border-radius: 15px;
+  background: var(--search-surface);
+  box-shadow: var(--search-shadow);
+}
+#search-view .search-input-box:focus-within {
+  outline: 2px solid var(--search-focus);
+  outline-offset: 2px;
+}
+#search-view .search-input-icon {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  color: var(--search-blue);
+}
+#search-page-query {
+  width: 100%;
+  min-width: 0;
+  height: 54px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--search-text);
+  font: inherit;
+  font-size: 1rem;
+}
+#search-view #search-page-query:focus { outline: 0; box-shadow: none; }
+#search-page-query::placeholder { color: var(--search-muted); }
+#search-page-query::-webkit-search-cancel-button { display: none; }
+#search-view #search-clear {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--search-muted);
+}
+#search-clear svg { width: 20px; height: 20px; }
+#search-view #search-clear:hover { background: var(--search-input); }
+#search-view :is(.search-page-submit, .search-create-link, .search-load-more, .search-retry) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--search-soft);
+  color: var(--search-blue);
+  font-size: .9375rem;
+  font-weight: 720;
+}
+#search-view .search-page-submit {
+  width: auto;
+  min-width: 72px;
+  padding-inline: clamp(14px, 3vw, 23px);
+  border-radius: 15px;
+  background: #1b64da;
+  color: #fff;
+}
+#search-view .search-page-submit:hover { background: #1954b4; }
+#search-view #search-page-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#search-view :is(.search-scope-legend, #search-page-scope input) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+#search-page-scope label { display: inline-flex; width: auto; cursor: pointer; }
+#search-page-scope span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 4px 15px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--search-muted);
+  font-size: .9375rem;
+  font-weight: 660;
+}
+#search-page-scope label:hover span { color: var(--search-blue); }
+#search-page-scope input:checked + span {
+  border-color: var(--search-border);
+  background: var(--search-surface);
+  color: var(--search-blue);
+  box-shadow: var(--search-shadow);
+}
+#search-view :is(button, a):focus-visible,
+#search-page-scope input:focus-visible + span {
+  outline: 2px solid var(--search-focus);
+  outline-offset: 2px;
+}
+#search-view .search-page-body { padding: clamp(20px, 4vw, 30px) 0 0; }
+#search-view .search-result-summary {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  min-height: 0;
+  margin: 0 0 14px;
+  padding: 0 2px;
+  border: 0;
+}
+#search-view .search-result-summary h2 {
+  margin: 0;
+  color: var(--search-text);
+  font-size: 1.35rem;
+  line-height: 1.3;
+  letter-spacing: -.035em;
+}
+#search-view #search-result-count { color: var(--search-muted); font-size: .875rem; }
+#search-view .search-result-groups { display: grid; gap: 14px; }
+#search-view .search-result-group,
+#search-view .search-empty-state {
+  margin: 0;
+  overflow: visible;
+  border: 1px solid var(--search-border);
+  border-radius: 20px;
+  background: var(--search-surface);
+  box-shadow: var(--search-shadow);
+}
+#search-view .search-result-group-heading {
+  min-height: 0;
+  margin: 0;
+  padding: 16px clamp(14px, 3vw, 22px) 10px;
+  border: 0;
+  background: transparent;
+  color: var(--search-text);
+  font-size: 1rem;
+}
+#search-view .search-result-list { padding: 0 clamp(5px, 1.2vw, 10px) 6px; }
+#search-view .search-result-row {
+  position: relative;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 13px clamp(8px, 2vw, 13px);
+  border-color: var(--search-border);
+  border-radius: 12px;
+}
+#search-view .search-result-row:hover,
+#search-view .search-result-row:focus-within { background: var(--search-input); }
+#search-view :is(.search-result-icon, .search-file-preview) {
+  display: grid;
+  flex: 0 0 42px;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-top: 1px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--search-soft);
+  color: var(--search-blue);
+}
+#search-view :is(.search-result-icon, .search-file-preview) svg { width: 19px; height: 19px; }
+#search-view .search-file-preview { position: relative; }
+#search-view .search-file-preview img { position: absolute; inset: 0; }
+#search-view .search-result-main { min-width: 0; }
+#search-view .search-result-title {
+  color: var(--search-text);
+  font-size: 1.0625rem;
+  font-weight: 740;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+#search-view .search-result-title::after { position: absolute; inset: 0; content: ""; }
+#search-view .search-result-title:hover { color: var(--search-blue); }
+#search-view .search-result-snippet {
+  color: var(--search-muted);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+#search-view .search-result-meta {
+  margin-top: 4px;
+  color: var(--search-muted);
+  font-size: .8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#search-view .search-match {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: var(--search-soft);
+  color: var(--search-blue);
+}
+#search-view .search-empty-state { padding: clamp(24px, 5vw, 38px) 16px; }
+#search-view .search-empty-icon {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  margin: 0 0 10px;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: var(--search-soft);
+  color: var(--search-blue);
+}
+#search-view .search-empty-icon svg { width: 22px; height: 22px; }
+#search-view .search-empty-state h3 { margin: 0; color: var(--search-text); font-size: 1.125rem; }
+#search-view .search-empty-state p,
+#search-view .search-result-note { color: var(--search-muted); font-size: .9375rem; }
+#search-view .search-state-actions:not(:empty) { margin-top: 14px; }
+#search-view .search-create-link { display: flex; width: fit-content; margin: 12px auto 0; }
+#search-view .search-load-more { display: flex; width: 100%; margin-top: 14px; }
+#search-view button:disabled { opacity: .65; cursor: wait; }
+@media (max-width: 420px) {
+  body:has(#search-view:not([hidden])) .layout { width: calc(100% - 24px); }
+  #search-view .search-page-heading { padding: 18px 14px; }
+  #search-page-scope span { padding-inline: 12px; }
+}
+</style>
 </head>
 <body>
 <header class="site-header">
@@ -515,47 +822,48 @@ html[data-theme="dark"] .wiki-workspace {
         <button id="admin-token-rotate" class="button" type="button">초기 키 폐기 · 랜덤 토큰 발급</button>
       </div>
     </section>
-    <section id="search-view" class="search-view wiki-workspace" hidden>
-      <div class="breadcrumbs"><a href="/">AonWiki</a><span aria-hidden="true">›</span><span aria-current="page">검색</span></div>
-      <section class="search-page">
+    <section id="search-view" class="search-view" aria-labelledby="search-heading" hidden>
+      <div class="search-page">
         <header class="search-page-heading">
-          <div>
-            <h1>검색</h1>
-            <p class="search-page-description">제목이나 내용의 일부만 입력해도 관련 문서를 찾을 수 있습니다.</p>
-          </div>
-        </header>
-        <div class="search-page-body">
-          <form id="search-page-form" class="search-page-form" role="search">
-            <label class="search-query-wrap" for="search-page-query">
-              <span class="search-scope-label">검색어</span>
-              <input id="search-page-query" type="search" maxlength="100" placeholder="찾으려는 문서나 내용을 입력하세요." autocomplete="off" enterkeyhint="search">
-            </label>
-            <label class="search-scope-wrap" for="search-page-scope">
-              <span class="search-scope-label">검색 범위</span>
-              <select id="search-page-scope" aria-label="검색 범위">
-                <option value="all">전체</option>
-                <option value="title">제목만</option>
-                <option value="files">파일만</option>
-              </select>
-            </label>
-            <button type="submit" class="search-page-submit">검색</button>
+          <h1 id="search-heading">위키 검색</h1>
+          <form id="search-page-form" class="search-page-form" role="search" aria-label="위키 검색">
+            <div class="search-input-row">
+              <div class="search-input-box">
+                <svg class="search-input-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/></svg>
+                <input id="search-page-query" name="q" type="search" aria-label="검색어" maxlength="100" placeholder="문서나 파일을 찾아보세요" autocomplete="off" enterkeyhint="search">
+                <button id="search-clear" type="button" aria-label="검색어 지우기" hidden>
+                  <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m5 5 6 6m0-6-6 6"/></svg>
+                </button>
+              </div>
+              <button type="submit" class="search-page-submit">검색</button>
+            </div>
+            <fieldset id="search-page-scope">
+              <legend class="search-scope-legend">검색 범위</legend>
+              <label><input type="radio" name="scope" value="all" checked><span>전체</span></label>
+              <label><input type="radio" name="scope" value="title"><span>문서 제목</span></label>
+              <label><input type="radio" name="scope" value="files"><span>파일</span></label>
+            </fieldset>
           </form>
-          <div class="search-result-summary" aria-live="polite">
-            <div class="search-result-summary-copy">
-              <p id="search-result-count">검색어를 입력해 주세요.</p>
-              <span id="search-result-query"></span>
-            </div>
-            <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 만들기</button>
+        </header>
+        <div id="search-results" class="search-page-body" hidden>
+          <div class="search-result-summary">
+            <h2>검색 결과</h2>
+            <p id="search-result-count" role="status"></p>
           </div>
-          <div id="search-result-groups" class="search-result-groups" aria-live="polite">
-            <div class="search-empty-state">
-              <span class="search-empty-icon" aria-hidden="true">⌕</span>
-              <strong>어떤 문서를 찾고 있나요?</strong>
-              <p>문서 제목이나 본문, 업로드된 파일 이름으로 검색할 수 있습니다.</p>
-            </div>
-          </div>
+          <div id="search-result-groups" class="search-result-groups"></div>
+          <button id="search-create-page" type="button" class="search-create-link" hidden>새 문서 만들기</button>
+          <p id="search-more-status" class="search-result-note" role="status" hidden></p>
+          <button id="search-more-results" type="button" class="search-load-more" hidden>결과 더 보기</button>
         </div>
-      </section>
+      </div>
+      <template id="search-state-template">
+        <div class="search-empty-state">
+          <span class="search-empty-icon" aria-hidden="true"></span>
+          <h3></h3>
+          <p></p>
+          <div class="search-state-actions"></div>
+        </div>
+      </template>
     </section>
     <section id="discussion-view" class="wiki-workspace" aria-label="토론" hidden></section>
     <section id="document-view" class="document-view" hidden>
@@ -885,5 +1193,5 @@ hover-dark: #a5d6ff
 </dialog>
 <input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3-discovery"></script>
+<script type="module" src="app.bundle.js?v=20261121-wiki-shell-search-v3-custom-search"></script>
 </body></html>
